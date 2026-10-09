@@ -8,10 +8,10 @@ enum TextRaster {
     static let context=CIContext(options:[.cacheIntermediates:false])
     static func draw(_ layer:EditorLayer,rect:CGRect,in c:CGContext,directory:URL)->Bool {
         let s=layer.style
-        let advanced = !(layer.textMask ?? []).isEmpty || (s.fadeAmount ?? 0)>0 || !s.textGradient.isEmpty || !s.strokeGradient.isEmpty || !s.texturePath.isEmpty || !s.perspectivePoints.isEmpty || s.isMeshMode || s.rotationX != 0 || s.rotationY != 0 || s.effectType == .blur || s.effectType == .fade
+        let advanced = !s.shadowGradient.isEmpty || !(s.extraStrokes ?? []).isEmpty || !(layer.textMask ?? []).isEmpty || (s.fadeAmount ?? 0)>0 || !s.textGradient.isEmpty || !s.strokeGradient.isEmpty || !s.texturePath.isEmpty || !s.perspectivePoints.isEmpty || s.isMeshMode || s.rotationX != 0 || s.rotationY != 0 || s.effectType == .blur || s.effectType == .fade
         guard advanced,rect.width*rect.height<4_194_304 else{return false}
         var glyphLayer=layer;glyphLayer.frame.x=0;glyphLayer.frame.y=0;glyphLayer.rotation=0;glyphLayer.scaleX=1;glyphLayer.scaleY=1;glyphLayer.opacity=1;glyphLayer.isLocked=false;glyphLayer.isVisible=true;let key=(directory.path+String(data:(try? JSONEncoder().encode(glyphLayer)) ?? Data(),encoding:.utf8)!) as NSString
-        let pad=max(8,CGFloat(s.strokeWidth+s.shadowRadius*3+s.effectValue*3))
+        let pad=max(8,CGFloat(max(s.strokeWidth,(s.extraStrokes ?? []).map(\.width).max() ?? 0)+s.shadowRadius*3+max(abs(s.shadowDx),abs(s.shadowDy))+s.effectValue*3+Double(s.threeDDepth)))
         let size=CGSize(width:ceil(rect.width+pad*2),height:ceil(rect.height+pad*2))
         let raster:Raster
         if let cached=cache.object(forKey:key){raster=cached}else{
@@ -24,7 +24,7 @@ enum TextRaster {
             }
             var result=UIGraphicsImageRenderer(size:size,format:format).image{r in
                 let ctx=r.cgContext
-                GradientPaint.draw(colors:s.textGradient.isEmpty ? [s.color,s.color]:s.textGradient,stops:s.textGradientStops,angle:s.textGradientAngle,type:s.textGradientType,rect:CGRect(origin:.zero,size:size),in:ctx)
+                if s.textGradient.isEmpty && s.texturePath.isEmpty{var fill=layer;fill.style.innerOpacity=1;LayerRenderer.attributed(fill).draw(with:rect.offsetBy(dx:pad,dy:pad),options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)}else{GradientPaint.draw(colors:s.textGradient.isEmpty ? [s.color,s.color]:s.textGradient,stops:s.textGradientStops,angle:s.textGradientAngle,type:s.textGradientType,rect:CGRect(origin:.zero,size:size),in:ctx)}
                 if !s.texturePath.isEmpty,let texture=ImagePipeline.asset(directory.appendingPathComponent(s.texturePath)){
                     ctx.saveGState();ctx.translateBy(x:size.width/2+CGFloat(s.textureTranslationX),y:size.height/2+CGFloat(s.textureTranslationY));ctx.rotate(by:CGFloat(s.textureRotation)*CGFloat.pi/180);ctx.scaleBy(x:CGFloat(s.textureScaleX),y:CGFloat(s.textureScaleY));texture.drawAsPattern(in:CGRect(x:-size.width*10,y:-size.height*10,width:size.width*20,height:size.height*20));ctx.restoreGState()
                 }
@@ -47,6 +47,14 @@ enum TextRaster {
                     };colored.draw(at:.zero)
                 }
             }
+            if !(s.extraStrokes ?? []).isEmpty || s.threeDDepth>0{
+                let fill=result
+                result=UIGraphicsImageRenderer(size:size,format:format).image{output in
+                    for depth in stride(from:min(64,s.threeDDepth),through:1,by:-1){LayerRenderer.attributed(layer,color:UIColor(hex:s.threeDColor)).draw(with:rect.offsetBy(dx:pad+CGFloat(depth),dy:pad+CGFloat(depth)),options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)}
+                    for outline in (s.extraStrokes ?? []).sorted(by:{$0.width>$1.width}) where outline.width>0{let a=NSMutableAttributedString(attributedString:LayerRenderer.attributed(layer,color:.clear));a.addAttributes([.strokeColor:UIColor(hex:outline.color),.strokeWidth:outline.width/max(1,s.fontSize)*100],range:NSRange(location:0,length:a.length));a.draw(with:rect.offsetBy(dx:pad,dy:pad),options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)}
+                    fill.draw(at:.zero)
+                }
+            }
             if let strokes=layer.textMask,!strokes.isEmpty{
                 let mask=UIGraphicsImageRenderer(size:size,format:format).image{output in
                     UIColor.white.setFill();output.fill(CGRect(origin:.zero,size:size));output.cgContext.translateBy(x:pad,y:pad)
@@ -64,22 +72,37 @@ enum TextRaster {
                 let extent=processed.extent.integral
                 if !extent.isInfinite,!extent.isNull,extent.width*extent.height<16_777_216,let cg=context.createCGImage(processed,from:extent){result=UIImage(cgImage:cg);outputFrame=CGRect(x:extent.minX-pad,y:size.height-extent.maxY-pad,width:extent.width,height:extent.height)}
             }
+            if !s.shadowGradient.isEmpty,let input=CIImage(image:result){
+                let extent=input.extent,blurred=input.applyingFilter("CIGaussianBlur",parameters:[kCIInputRadiusKey:max(0,s.shadowRadius)])
+                if let cg=context.createCGImage(blurred,from:extent){
+                    let mask=UIImage(cgImage:cg),foreground=result
+                    let shadow=UIGraphicsImageRenderer(size:outputFrame.size,format:format).image{output in
+                        GradientPaint.draw(colors:s.shadowGradient,stops:s.shadowGradientStops,angle:s.shadowGradientAngle,type:s.shadowGradientType,rect:CGRect(origin:.zero,size:outputFrame.size),in:output.cgContext)
+                        let shifted=UIGraphicsImageRenderer(size:outputFrame.size,format:format).image{_ in mask.draw(at:CGPoint(x:s.shadowDx,y:s.shadowDy))}
+                        shifted.draw(at:.zero,blendMode:.destinationIn,alpha:CGFloat(s.shadowAlpha)/255)
+                    }
+                    result=UIGraphicsImageRenderer(size:outputFrame.size,format:format).image{_ in shadow.draw(at:.zero);foreground.draw(at:.zero)}
+                }
+            }
             raster=Raster(result,outputFrame);cache.totalCostLimit=64*1024*1024;cache.setObject(raster,forKey:key,cost:Int(outputFrame.width*outputFrame.height)*4)
         }
         c.saveGState()
-        if s.shadowRadius>0 || s.effectType == .neon || s.effectType == .shadow{c.setShadow(offset:CGSize(width:s.shadowDx,height:s.shadowDy),blur:CGFloat(s.effectType == .neon ? s.effectValue:s.shadowRadius),color:UIColor(hex:s.effectType == .neon ? s.effectColor:s.shadowColor,alpha:CGFloat(s.shadowAlpha)/255).cgColor)}
-        if s.isMeshMode,s.meshPoints.count==(s.meshRows+1)*(s.meshCols+1){drawMesh(raster.image,rect:CGRect(x:-pad,y:-pad,width:size.width,height:size.height),style:s,in:c)}else{raster.image.draw(in:raster.frame)}
+        if s.shadowGradient.isEmpty && (s.shadowRadius>0 || s.effectType == .neon || s.effectType == .shadow){c.setShadow(offset:CGSize(width:s.shadowDx,height:s.shadowDy),blur:CGFloat(s.effectType == .neon ? s.effectValue:s.shadowRadius),color:UIColor(hex:s.effectType == .neon ? s.effectColor:s.shadowColor,alpha:CGFloat(s.shadowAlpha)/255).cgColor)}
+        if s.isMeshMode,s.meshPoints.count==(s.meshRows+1)*(s.meshCols+1){drawMesh(raster.image,imageRect:raster.frame,textRect:rect,style:s,in:c)}else{raster.image.draw(in:raster.frame)}
         c.restoreGState();return true
     }
-    static func drawMesh(_ image:UIImage,rect:CGRect,style:TextStyle,in c:CGContext){
+    static func drawMesh(_ image:UIImage,imageRect:CGRect,textRect:CGRect,style:TextStyle,in c:CGContext){
         let rows=max(1,style.meshRows),cols=max(1,style.meshCols)
-        func original(_ col:Int,_ row:Int)->CGPoint{CGPoint(x:rect.minX+rect.width*CGFloat(col)/CGFloat(cols),y:rect.minY+rect.height*CGFloat(row)/CGFloat(rows))}
-        func target(_ col:Int,_ row:Int)->CGPoint{let p=style.meshPoints[row*(cols+1)+col];return CGPoint(x:rect.minX+rect.width*CGFloat(p.x),y:rect.minY+rect.height*CGFloat(p.y))}
-        for row in 0..<rows{for col in 0..<cols{for triangle in [[(col,row),(col+1,row),(col,row+1)],[(col+1,row+1),(col,row+1),(col+1,row)]]{
+        let xs=[Double(imageRect.minX/textRect.width)]+(0...cols).map{Double($0)/Double(cols)}+[Double(imageRect.maxX/textRect.width)]
+        let ys=[Double(imageRect.minY/textRect.height)]+(0...rows).map{Double($0)/Double(rows)}+[Double(imageRect.maxY/textRect.height)]
+        func original(_ col:Int,_ row:Int)->CGPoint{CGPoint(x:xs[col]*Double(textRect.width),y:ys[row]*Double(textRect.height))}
+        func target(_ col:Int,_ row:Int)->CGPoint{let p=MeshGeometry.target(x:xs[col],y:ys[row],style:style);return CGPoint(x:p.x*Double(textRect.width),y:p.y*Double(textRect.height))}
+        for row in 0..<(ys.count-1){for col in 0..<(xs.count-1){for triangle in [[(col,row),(col+1,row),(col,row+1)],[(col+1,row+1),(col,row+1),(col+1,row)]]{
             let a=triangle.map{original($0.0,$0.1)},b=triangle.map{target($0.0,$0.1)}
             let source=CGAffineTransform(a:a[1].x-a[0].x,b:a[1].y-a[0].y,c:a[2].x-a[0].x,d:a[2].y-a[0].y,tx:a[0].x,ty:a[0].y)
             let dest=CGAffineTransform(a:b[1].x-b[0].x,b:b[1].y-b[0].y,c:b[2].x-b[0].x,d:b[2].y-b[0].y,tx:b[0].x,ty:b[0].y)
-            c.saveGState();let path=UIBezierPath();path.move(to:b[0]);path.addLine(to:b[1]);path.addLine(to:b[2]);path.close();path.addClip();c.concatenate(source.inverted().concatenating(dest));image.draw(in:rect);c.restoreGState()
+            guard abs(source.a*source.d-source.b*source.c)>0.00001 else{continue}
+            c.saveGState();let path=UIBezierPath();path.move(to:b[0]);path.addLine(to:b[1]);path.addLine(to:b[2]);path.close();path.addClip();c.concatenate(source.inverted().concatenating(dest));image.draw(in:imageRect);c.restoreGState()
         }}}
     }
 }

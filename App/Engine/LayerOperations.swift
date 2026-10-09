@@ -1,6 +1,17 @@
 import UIKit
 
 extension EditorModel {
+    func transformGroupPeers(from original:EditorLayer,baseline:[EditorLayer]) {
+        guard let group=original.groupID,let current=active,current.id==original.id else{return}
+        let delta=LayerRenderer.transform(original).inverted().concatenating(LayerRenderer.transform(current))
+        let sx=current.scaleX/original.scaleX,sy=current.scaleY/original.scaleY
+        guard sx.isFinite,sy.isFinite else{return}
+        for old in baseline where old.groupID==group && old.id != original.id && !old.isLocked {
+            guard let index=page.layers.firstIndex(where:{$0.id==old.id}) else{continue}
+            let box=LayerRenderer.bounds(old),center=CGPoint(x:box.midX,y:box.midY).applying(LayerRenderer.transform(old)).applying(delta)
+            var next=old;next.frame.x=Double(center.x-box.width/2);next.frame.y=Double(center.y-box.height/2);next.rotation+=current.rotation-original.rotation;next.scaleX*=sx;next.scaleY*=sy;page.layers[index]=next
+        }
+    }
     func groupLayers(_ ids:Set<UUID>,name:String){guard !ids.isEmpty else{return};checkpoint();let group=UUID();for i in page.layers.indices where ids.contains(page.layers[i].id){page.layers[i].groupID=group;page.layers[i].groupName=name};save()}
     func ungroupLayers(_ ids:Set<UUID>){checkpoint();for i in page.layers.indices where ids.contains(page.layers[i].id){page.layers[i].groupID=nil;page.layers[i].groupName=nil};save()}
     func mergeLayers(_ ids:Set<UUID>) async {
@@ -24,7 +35,7 @@ extension EditorModel {
 enum LayerBitmap {
     static func merge(_ layers:[EditorLayer],page:EditorPage,directory:URL)throws->EditorLayer {
         var region=CGRect.null
-        for l in layers where l.isVisible{let pad=max(4,l.style.strokeWidth+l.style.shadowRadius*3+Double(l.style.threeDDepth)+max(abs(l.style.shadowDx),abs(l.style.shadowDy)));region=region.union(LayerRenderer.bounds(l).insetBy(dx:-pad,dy:-pad).applying(LayerRenderer.transform(l)))}
+        for l in layers where l.isVisible{let pad=max(4,l.style.strokeWidth+l.style.shadowRadius*3+Double(l.style.threeDDepth)+max(abs(l.style.shadowDx),abs(l.style.shadowDy)));region=region.union((l.kind == .text ? TextVisualBounds.rect(l):LayerRenderer.bounds(l).insetBy(dx:-pad,dy:-pad)).applying(LayerRenderer.transform(l)))}
         region=region.integral.intersection(CGRect(x:0,y:0,width:page.width,height:page.height));guard !region.isEmpty,!region.isNull else{throw ImageFailure.message("الطبقات المحددة خارج اللوحة")}
         let name=UUID().uuidString+".png",file=directory.appendingPathComponent(name);var error=[CChar](repeating:0,count:512)
         guard let writer=LIWriterOpen(directory.appendingPathComponent(page.source).path,file.path,Int32(region.width),Int32(region.height),&error,error.count) else{throw ImageFailure.message("تعذر بدء دمج الطبقات")};defer{LIWriterClose(writer)}

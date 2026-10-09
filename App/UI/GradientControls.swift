@@ -25,12 +25,12 @@ struct GradientControls:View {
         }
     }.padding(12).glass(16)}
 }
-private struct GradientPreview:UIViewRepresentable {
+struct GradientPreview:UIViewRepresentable {
     let colors:[String],stops:[Double],angle:Double,type:Int
     func makeUIView(context:Context)->GradientView{GradientView()}
     func updateUIView(_ view:GradientView,context:Context){view.colors=colors;view.stops=stops;view.angle=angle;view.type=type;view.setNeedsDisplay()}
 }
-private final class GradientView:UIView {
+final class GradientView:UIView {
     var colors:[String]=[],stops:[Double]=[],angle=0.0,type=0
     override func draw(_ rect:CGRect){guard let c=UIGraphicsGetCurrentContext() else{return};GradientPaint.draw(colors:colors,stops:stops,angle:angle,type:type,rect:bounds,in:c)}
 }

@@ -61,9 +61,9 @@ enum LayerRenderer {
         let s=l.style;let background=rect.insetBy(dx:-CGFloat(s.backgroundPaddingX),dy:-CGFloat(s.backgroundPaddingY))
         if s.backgroundAlpha>0{UIColor(hex:s.backgroundColor,alpha:CGFloat(s.backgroundAlpha)/255).setFill();UIBezierPath(roundedRect:background,cornerRadius:CGFloat(s.backgroundCornerRadius)).fill()}
         func text(_ color:UIColor?=nil,_ offset:CGPoint = .zero){attributed(l,color:color).draw(with:rect.offsetBy(dx:offset.x,dy:offset.y),options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)}
+        if TextRaster.draw(l,rect:rect,in:c,directory:directory){return}
         for outline in (s.extraStrokes ?? []).sorted(by:{$0.width>$1.width}) where outline.width>0{let a=NSMutableAttributedString(attributedString:attributed(l,color:.clear));a.addAttributes([.strokeColor:UIColor(hex:outline.color),.strokeWidth:outline.width/max(1,s.fontSize)*100],range:NSRange(location:0,length:a.length));a.draw(with:rect,options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)}
         for depth in stride(from:min(64,s.threeDDepth),through:1,by:-1){text(UIColor(hex:s.threeDColor),CGPoint(x:depth,y:depth))}
-        if TextRaster.draw(l,rect:rect,in:c,directory:directory){return}
         if s.shadowRadius>0||s.effectType == .shadow||s.effectType == .neon||s.effectType == .blur {c.setShadow(offset:CGSize(width:s.shadowDx,height:s.shadowDy),blur:CGFloat(s.effectType == .none ? s.shadowRadius:s.effectValue),color:UIColor(hex:s.effectType == .neon ? s.effectColor:s.shadowColor,alpha:CGFloat(s.shadowAlpha)/255).cgColor)}
         if s.strokeWidth>0||s.fakeBoldWidth>0 {
             let a=NSMutableAttributedString(attributedString:attributed(l));a.addAttributes([.strokeColor:UIColor(hex:s.strokeColor),.strokeWidth:-max(s.strokeWidth,s.fakeBoldWidth)/max(1,s.fontSize)*100],range:NSRange(location:0,length:a.length));a.draw(with:rect,options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)

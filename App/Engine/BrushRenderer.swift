@@ -21,7 +21,10 @@ enum BrushRenderer {
             for band in stride(from:12,through:1,by:-1){ctx.saveGState();ctx.setAlpha(CGFloat(alpha)*0.065);let width=CGFloat(s.width)*CGFloat(band)/12;path.lineWidth=width;if s.points.count==1{ctx.fillEllipse(in:CGRect(x:first.x-Double(width)/2,y:first.y-Double(width)/2,width:Double(width),height:Double(width)))}else{path.stroke()};ctx.restoreGState()};return
         }
         if s.brush=="texture",let name=s.texturePath,let image=ImagePipeline.asset(directory.appendingPathComponent(name)){
-            let cg=path.cgPath.copy(strokingWithWidth:CGFloat(s.width),lineCap:.round,lineJoin:.round,miterLimit:10);ctx.addPath(cg);ctx.clip();image.drawAsPattern(in:path.bounds.insetBy(dx:-CGFloat(s.width),dy:-CGFloat(s.width)));return
+            let tinted=image.withTintColor(UIColor(hex:s.color),renderingMode:.alwaysOriginal),size=CGSize(width:s.width,height:s.width*Double(image.size.height/max(1,image.size.width)))
+            func stamp(_ p:CGPoint,_ angle:CGFloat){ctx.saveGState();ctx.translateBy(x:p.x,y:p.y);ctx.rotate(by:angle);tinted.draw(in:CGRect(x:-size.width/2,y:-size.height/2,width:size.width,height:size.height));ctx.restoreGState()}
+            let spacing=max(1,s.width*0.15)
+            if s.points.count==1{stamp(first.cg,0)}else{var carry=0.0;stamp(first.cg,0);for (a,b) in zip(s.points,s.points.dropFirst()){let dx=b.x-a.x,dy=b.y-a.y,length=hypot(dx,dy);guard length>0 else{continue};let angle=CGFloat(atan2(dy,dx));var distance=spacing-carry;while distance<=length{stamp(CGPoint(x:a.x+dx*distance/length,y:a.y+dy*distance/length),angle);distance+=spacing};carry=length-(distance-spacing)}};return
         }
         if s.filled==true,s.shape=="rectangle" || s.filled==true && s.shape=="ellipse"{path.fill()}
         else if s.points.count==1{ctx.fillEllipse(in:CGRect(x:first.x-s.width/2,y:first.y-s.width/2,width:s.width,height:s.width))}else{path.stroke()}

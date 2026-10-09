@@ -2,6 +2,14 @@ import XCTest
 @testable import CookiesEditor
 
 final class TyperAndInteractionTests:XCTestCase {
+    @MainActor func testDraftAndDeletedTagFormattingSurviveRestart()throws {
+        let root=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString);defer{try? FileManager.default.removeItem(at:root)}
+        let store=TyperStore(directory:root),tag=try XCTUnwrap(store.state.tags.first)
+        let draft=DialogueChapter(title:"مسودة",source:"نص لم يُعتمد")
+        try store.saveDraft(draft);try store.removeTag(tag.id)
+        let reopened=TyperStore(directory:root);XCTAssertEqual(reopened.state.drafts?.first?.source,draft.source);XCTAssertEqual(reopened.tag(tag.id)?.style,tag.style)
+        try reopened.removeDraft(draft.id);XCTAssertTrue(TyperStore(directory:root).state.drafts?.isEmpty==true)
+    }
     @MainActor func testTagGroupsBubbleOrderAndTrashPersistWithoutLosingProgress() throws {
         let root=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString);defer{try? FileManager.default.removeItem(at:root)}
         let store=TyperStore(directory:root),originalGroup=try XCTUnwrap(store.state.activeTagSet)

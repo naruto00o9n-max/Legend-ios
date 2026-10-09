@@ -25,10 +25,10 @@ final class LayerInteraction {
             return value
         }
         static func rect(_ layer: EditorLayer) -> CGRect {
-            let style = layer.style
-            let padding = layer.kind == .text ? max(16, style.strokeWidth + style.shadowRadius * 3 + max(abs(style.shadowDx),abs(style.shadowDy)) + style.effectValue * 3 + Double(style.threeDDepth) + max(style.backgroundPaddingX, style.backgroundPaddingY)) : max(2, style.strokeWidth)
-            return LayerRenderer.bounds(layer).insetBy(dx: -padding, dy: -padding).integral
+            if layer.kind == .text{return TextVisualBounds.rect(layer)}
+            return LayerRenderer.bounds(layer).insetBy(dx:-max(2,layer.style.strokeWidth),dy:-max(2,layer.style.strokeWidth)).integral
         }
+
         static func raster(_ layer: EditorLayer, rect: CGRect, directory: URL) -> UIImage {
             let format = UIGraphicsImageRendererFormat(); format.scale = 1
             format.opaque = false; format.preferredRange = .standard
@@ -59,7 +59,9 @@ final class LayerInteraction {
     var phase = Phase.preparing
     private(set) var rasterizations = 0
     init?(page: EditorPage, selected: UUID, directory: URL,drawingViewport:CGRect?=nil) {
-        guard let index = page.layers.firstIndex(where: { $0.id == selected }) else { return nil }
+        guard let selectedIndex=page.layers.firstIndex(where:{$0.id==selected}) else{return nil}
+        let group=page.layers[selectedIndex].groupID
+        let index=group.flatMap{id in page.layers.firstIndex(where:{$0.groupID==id})} ?? selectedIndex
         let foreground = Array(page.layers[index...]).filter(\.isVisible)
         // Complex blend/drawing stacks retain the software compositor; never
         // silently change their blend or place a selected layer above its peers.

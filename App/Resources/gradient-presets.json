@@ -1,0 +1,1032 @@
+[
+  {
+    "id": "gold_royal_cinematic",
+    "title": "ذهب ملكي",
+    "english": "Royal Gold",
+    "category": "GOLD",
+    "colors": [
+      "3A2502",
+      "E5C04A",
+      "FFFEE0",
+      "E5C04A",
+      "3A2502"
+    ],
+    "stops": [
+      0.0,
+      0.45,
+      0.5,
+      0.55,
+      1.0
+    ],
+    "angle": 90.0,
+    "type": 0,
+    "stroke": [
+      "1A0F00",
+      "3A2502"
+    ],
+    "shadow": [
+      "000000",
+      "201000"
+    ]
+  },
+  {
+    "id": "silver_steel_cinematic",
+    "title": "فولاذ فضي",
+    "english": "Silver Steel",
+    "category": "METALLIC",
+    "colors": [
+      "1A1D24",
+      "8FA0B5",
+      "FFFFFF",
+      "8FA0B5",
+      "1A1D24"
+    ],
+    "stops": [
+      0.0,
+      0.45,
+      0.5,
+      0.55,
+      1.0
+    ],
+    "angle": 90.0,
+    "type": 0,
+    "stroke": [
+      "0A0B0E",
+      "1A1D24"
+    ],
+    "shadow": [
+      "000000",
+      "001B30"
+    ]
+  },
+  {
+    "id": "bronze_armor",
+    "title": "درع برونزي",
+    "english": "Bronze Armor",
+    "category": "METALLIC",
+    "colors": [
+      "2B150A",
+      "C67C4E",
+      "2B150A"
+    ],
+    "stops": [
+      0.0,
+      0.5,
+      1.0
+    ],
+    "angle": 135.0,
+    "type": 0,
+    "stroke": [
+      "100502",
+      "200A05"
+    ],
+    "shadow": [
+      "2B150A",
+      "000000"
+    ]
+  },
+  {
+    "id": "rose_gold_cinematic",
+    "title": "ذهب وردي",
+    "english": "Rose Gold",
+    "category": "GOLD",
+    "colors": [
+      "4A1525",
+      "D98093",
+      "FFF0F3",
+      "D98093",
+      "4A1525"
+    ],
+    "stops": [
+      0.0,
+      0.45,
+      0.5,
+      0.55,
+      1.0
+    ],
+    "angle": 90.0,
+    "type": 0,
+    "stroke": [
+      "20050D",
+      "4A1525"
+    ],
+    "shadow": [
+      "000000",
+      "200010"
+    ]
+  },
+  {
+    "id": "white_gold_luxury",
+    "title": "ذهب أبيض",
+    "english": "White Gold",
+    "category": "GOLD",
+    "colors": [
+      "8C8976",
+      "F2F0DF",
+      "FFFFFF",
+      "F2F0DF",
+      "8C8976"
+    ],
+    "stops": [
+      0.0,
+      0.4,
+      0.5,
+      0.6,
+      1.0
+    ],
+    "angle": 90.0,
+    "type": 0,
+    "stroke": [
+      "1A1A10",
+      "333320"
+    ],
+    "shadow": [
+      "000000",
+      "101005"
+    ]
+  },
+  {
+    "id": "dark_titanium",
+    "title": "تيتانيوم داكن",
+    "english": "Dark Titanium",
+    "category": "METALLIC",
+    "colors": [
+      "0F1115",
+      "2B3240",
+      "5A667A",
+      "2B3240",
+      "0F1115"
+    ],
+    "stops": [
+      0.0,
+      0.35,
+      0.5,
+      0.65,
+      1.0
+    ],
+    "angle": 135.0,
+    "type": 0,
+    "stroke": [
+      "000000",
+      "0A0C0F"
+    ],
+    "shadow": [
+      "5A667A",
+      "000000"
+    ]
+  },
+  {
+    "id": "copper_wire",
+    "title": "نحاس متوهج",
+    "english": "Glowing Copper",
+    "category": "METALLIC",
+    "colors": [
+      "290800",
+      "B54117",
+      "FF9666",
+      "B54117"
+    ],
+    "stops": [
+      0.0,
+      0.48,
+      0.52,
+      1.0
+    ],
+    "angle": 45.0,
+    "type": 0,
+    "stroke": [
+      "140400",
+      "290800"
+    ],
+    "shadow": [
+      "B54117",
+      "100000"
+    ]
+  },
+  {
+    "id": "cyberpunk_vibe",
+    "title": "سايبر بنك",
+    "english": "Cyberpunk",
+    "category": "NEON",
+    "colors": [
+      "00F0FF",
+      "9D00FF",
+      "FF003C",
+      "FCEE09"
+    ],
+    "stops": [
+      0.0,
+      0.25,
+      0.75,
+      1.0
+    ],
+    "angle": 45.0,
+    "type": 0,
+    "stroke": [
+      "050015",
+      "1A0033"
+    ],
+    "shadow": [
+      "FF003C",
+      "00F0FF"
+    ]
+  },
+  {
+    "id": "synthwave_80s",
+    "title": "سينث ويف",
+    "english": "Synthwave",
+    "category": "NEON",
+    "colors": [
+      "FF007F",
+      "7928CA",
+      "FF007F"
+    ],
+    "stops": [
+      0.0,
+      0.7,
+      1.0
+    ],
+    "angle": 90.0,
+    "type": 0,
+    "stroke": [
+      "100020",
+      "200040"
+    ],
+    "shadow": [
+      "00F0FF",
+      "000000"
+    ]
+  },
+  {
+    "id": "neon_toxic_core",
+    "title": "قلب مشع",
+    "english": "Toxic Core",
+    "category": "NEON",
+    "colors": [
+      "051911",
+      "00FF66",
+      "CCFF00",
+      "051911"
+    ],
+    "stops": [
+      0.0,
+      0.4,
+      0.6,
+      1.0
+    ],
+    "angle": 0.0,
+    "type": 1,
+    "stroke": [
+      "000000",
+      "020A05"
+    ],
+    "shadow": [
+      "00FF66",
+      "000000"
+    ]
+  },
+  {
+    "id": "miami_nights",
+    "title": "ليالي ميامي",
+    "english": "Miami Nights",
+    "category": "NEON",
+    "colors": [
+      "090033",
+      "FF00A0",
+      "00EAFF"
+    ],
+    "stops": [
+      0.0,
+      0.6,
+      1.0
+    ],
+    "angle": 135.0,
+    "type": 0,
+    "stroke": [
+      "00001A",
+      "050022"
+    ],
+    "shadow": [
+      "FF00A0",
+      "00EAFF"
+    ]
+  },
+  {
+    "id": "hacker_green",
+    "title": "ماتريكس الأخضر",
+    "english": "Matrix Green",
+    "category": "NEON",
+    "colors": [
+      "001A00",
+      "00FF00",
+      "CCFFCC"
+    ],
+    "stops": [
+      0.0,
+      0.8,
+      1.0
+    ],
+    "angle": 90.0,
+    "type": 0,
+    "stroke": [
+      "000000",
+      "001100"
+    ],
+    "shadow": [
+      "00FF00",
+      "000000"
+    ]
+  },
+  {
+    "id": "acid_yellow",
+    "title": "أصفر حمضي",
+    "english": "Acid Yellow",
+    "category": "NEON",
+    "colors": [
+      "1A1A00",
+      "FFFF00",
+      "FFFFFF",
+      "FFFF00"
+    ],
+    "stops": [
+      0.0,
+      0.4,
+      0.5,
+      1.0
+    ],
+    "angle": 45.0,
+    "type": 0,
+    "stroke": [
+      "000000",
+      "111100"
+    ],
+    "shadow": [
+      "FFFF00",
+      "222200"
+    ]
+  },
+  {
+    "id": "blood_moon_cinematic",
+    "title": "قمر الدم",
+    "english": "Blood Moon",
+    "category": "DARK",
+    "colors": [
+      "200000",
+      "A00000",
+      "FF2020",
+      "A00000",
+      "200000"
+    ],
+    "stops": [
+      0.0,
+      0.3,
+      0.5,
+      0.7,
+      1.0
+    ],
+    "angle": 90.0,
+    "type": 0,
+    "stroke": [
+      "000000",
+      "0A0000"
+    ],
+    "shadow": [
+      "FF0000",
+      "400000"
+    ]
+  },
+  {
+    "id": "abyssal_void",
+    "title": "فراغ الهاوية",
+    "english": "Abyssal Void",
+    "category": "DARK",
+    "colors": [
+      "050508",
+      "1A1A24"
+    ],
+    "stops": [
+      0.0,
+      1.0
+    ],
+    "angle": 45.0,
+    "type": 0,
+    "stroke": [
+      "000000",
+      "000000"
+    ],
+    "shadow": [
+      "5050FF",
+      "000000"
+    ]
+  },
+  {
+    "id": "shadow_monarch",
+    "title": "سيد الظلال",
+    "english": "Shadow Monarch",
+    "category": "DARK",
+    "colors": [
+      "000000",
+      "2A004D",
+      "6A0DAD"
+    ],
+    "stops": [
+      0.0,
+      0.7,
+      1.0
+    ],
+    "angle": 180.0,
+    "type": 0,
+    "stroke": [
+      "000000",
+      "100020"
+    ],
+    "shadow": [
+      "6A0DAD",
+      "000000"
+    ]
+  },
+  {
+    "id": "midnight_purple",
+    "title": "بنفسجي منتصف الليل",
+    "english": "Midnight Purple",
+    "category": "DARK",
+    "colors": [
+      "080011",
+      "1D004D",
+      "3D0099",
+      "080011"
+    ],
+    "stops": [
+      0.0,
+      0.45,
+      0.55,
+      1.0
+    ],
+    "angle": 90.0,
+    "type": 0,
+    "stroke": [
+      "000000",
+      "0A0015"
+    ],
+    "shadow": [
+      "3D0099",
+      "100022"
+    ]
+  },
+  {
+    "id": "obsidian_glass",
+    "title": "زجاج الأوبسيديان",
+    "english": "Obsidian Glass",
+    "category": "DARK",
+    "colors": [
+      "000000",
+      "111111",
+      "333333",
+      "111111",
+      "000000"
+    ],
+    "stops": [
+      0.0,
+      0.48,
+      0.5,
+      0.52,
+      1.0
+    ],
+    "angle": 135.0,
+    "type": 0,
+    "stroke": [
+      "000000",
+      "050505"
+    ],
+    "shadow": [
+      "555555",
+      "000000"
+    ]
+  },
+  {
+    "id": "crimson_nightmare",
+    "title": "كابوس قرمزي",
+    "english": "Crimson Nightmare",
+    "category": "DARK",
+    "colors": [
+      "0A0000",
+      "4A0000",
+      "FF0000",
+      "4A0000"
+    ],
+    "stops": [
+      0.0,
+      0.3,
+      0.5,
+      1.0
+    ],
+    "angle": 225.0,
+    "type": 0,
+    "stroke": [
+      "000000",
+      "110000"
+    ],
+    "shadow": [
+      "FF0000",
+      "220000"
+    ]
+  },
+  {
+    "id": "system_rank_ss_cinematic",
+    "title": "رتبة SS",
+    "english": "Rank SS Mythic",
+    "category": "SYSTEM",
+    "colors": [
+      "0F0026",
+      "4B0082",
+      "9D00FF",
+      "FFFFFF"
+    ],
+    "stops": [
+      0.0,
+      0.4,
+      0.8,
+      1.0
+    ],
+    "angle": 180.0,
+    "type": 0,
+    "stroke": [
+      "050010",
+      "150030"
+    ],
+    "shadow": [
+      "9D00FF",
+      "200050"
+    ]
+  },
+  {
+    "id": "gate_portal",
+    "title": "بوابة الزنزانة",
+    "english": "Gate Portal",
+    "category": "SYSTEM",
+    "colors": [
+      "000010",
+      "0044FF",
+      "00C3FF"
+    ],
+    "stops": [
+      0.0,
+      0.5,
+      1.0
+    ],
+    "angle": 90.0,
+    "type": 1,
+    "stroke": [
+      "000000",
+      "001020"
+    ],
+    "shadow": [
+      "00C3FF",
+      "002040"
+    ]
+  },
+  {
+    "id": "webtoon_overpowered_cinematic",
+    "title": "طاقة مطلقة",
+    "english": "Overpowered",
+    "category": "WEBTOON",
+    "colors": [
+      "000814",
+      "00509E",
+      "00B4D8",
+      "FFFFFF"
+    ],
+    "stops": [
+      0.0,
+      0.4,
+      0.8,
+      1.0
+    ],
+    "angle": 135.0,
+    "type": 0,
+    "stroke": [
+      "000000",
+      "001020"
+    ],
+    "shadow": [
+      "00B4D8",
+      "002040"
+    ]
+  },
+  {
+    "id": "shounen_fire_dragon",
+    "title": "تنين النار",
+    "english": "Fire Dragon",
+    "category": "SHOUNEN",
+    "colors": [
+      "330000",
+      "E62E00",
+      "FF9900",
+      "FFFF66"
+    ],
+    "stops": [
+      0.0,
+      0.3,
+      0.7,
+      1.0
+    ],
+    "angle": 90.0,
+    "type": 0,
+    "stroke": [
+      "1A0000",
+      "330000"
+    ],
+    "shadow": [
+      "FF2200",
+      "400000"
+    ]
+  },
+  {
+    "id": "holographic_blue",
+    "title": "هولوغرام أزرق",
+    "english": "Holo Blue",
+    "category": "SYSTEM",
+    "colors": [
+      "001133",
+      "00AAFF",
+      "FFFFFF",
+      "00AAFF",
+      "001133"
+    ],
+    "stops": [
+      0.0,
+      0.4,
+      0.5,
+      0.6,
+      1.0
+    ],
+    "angle": 90.0,
+    "type": 0,
+    "stroke": [
+      "000511",
+      "001122"
+    ],
+    "shadow": [
+      "00AAFF",
+      "002244"
+    ]
+  },
+  {
+    "id": "system_error_red",
+    "title": "خطأ بالنظام",
+    "english": "System Error",
+    "category": "SYSTEM",
+    "colors": [
+      "1A0000",
+      "FF0000",
+      "1A0000"
+    ],
+    "stops": [
+      0.0,
+      0.5,
+      1.0
+    ],
+    "angle": 0.0,
+    "type": 1,
+    "stroke": [
+      "000000",
+      "110000"
+    ],
+    "shadow": [
+      "FF0000",
+      "330000"
+    ]
+  },
+  {
+    "id": "level_up_gold",
+    "title": "ارتقاء المستوى",
+    "english": "Level Up Gold",
+    "category": "SYSTEM",
+    "colors": [
+      "332200",
+      "FFBB00",
+      "FFFF88"
+    ],
+    "stops": [
+      0.0,
+      0.7,
+      1.0
+    ],
+    "angle": 90.0,
+    "type": 0,
+    "stroke": [
+      "110B00",
+      "221600"
+    ],
+    "shadow": [
+      "FFBB00",
+      "442200"
+    ]
+  },
+  {
+    "id": "ice_emperor",
+    "title": "إمبراطور الجليد",
+    "english": "Ice Emperor",
+    "category": "WEBTOON",
+    "colors": [
+      "001122",
+      "006699",
+      "66CCFF",
+      "FFFFFF"
+    ],
+    "stops": [
+      0.0,
+      0.4,
+      0.8,
+      1.0
+    ],
+    "angle": 135.0,
+    "type": 0,
+    "stroke": [
+      "000511",
+      "001122"
+    ],
+    "shadow": [
+      "66CCFF",
+      "002244"
+    ]
+  },
+  {
+    "id": "lightning_god",
+    "title": "إله البرق",
+    "english": "Lightning God",
+    "category": "SHOUNEN",
+    "colors": [
+      "0A001A",
+      "330099",
+      "9933FF",
+      "E6CCFF"
+    ],
+    "stops": [
+      0.0,
+      0.5,
+      0.85,
+      1.0
+    ],
+    "angle": 45.0,
+    "type": 0,
+    "stroke": [
+      "000000",
+      "05000D"
+    ],
+    "shadow": [
+      "9933FF",
+      "1A0033"
+    ]
+  },
+  {
+    "id": "wind_blade",
+    "title": "نصل الرياح",
+    "english": "Wind Blade",
+    "category": "SHOUNEN",
+    "colors": [
+      "001A0D",
+      "008040",
+      "33FF99",
+      "FFFFFF"
+    ],
+    "stops": [
+      0.0,
+      0.35,
+      0.75,
+      1.0
+    ],
+    "angle": 110.0,
+    "type": 0,
+    "stroke": [
+      "000000",
+      "000D06"
+    ],
+    "shadow": [
+      "33FF99",
+      "00331A"
+    ]
+  },
+  {
+    "id": "ocean_depths",
+    "title": "أعماق المحيط",
+    "english": "Ocean Depths",
+    "category": "OCEAN",
+    "colors": [
+      "001B2E",
+      "005F73",
+      "0A9396",
+      "94D2BD"
+    ],
+    "stops": [
+      0.0,
+      0.3,
+      0.7,
+      1.0
+    ],
+    "angle": 135.0,
+    "type": 0,
+    "stroke": [
+      "000A15",
+      "001B2E"
+    ],
+    "shadow": [
+      "0A9396",
+      "002030"
+    ]
+  },
+  {
+    "id": "sunset_vibe_cinematic",
+    "title": "شفق الغروب",
+    "english": "Sunset Vibe",
+    "category": "SUNSET",
+    "colors": [
+      "2D0B32",
+      "9E1546",
+      "F76A35",
+      "FFD05B"
+    ],
+    "stops": [
+      0.0,
+      0.35,
+      0.7,
+      1.0
+    ],
+    "angle": 135.0,
+    "type": 0,
+    "stroke": [
+      "160518",
+      "300010"
+    ],
+    "shadow": [
+      "F76A35",
+      "500010"
+    ]
+  },
+  {
+    "id": "pastel_dream",
+    "title": "حلم الباستيل",
+    "english": "Pastel Dream",
+    "category": "PASTEL",
+    "colors": [
+      "FF9A9E",
+      "FECFEF",
+      "A18CD1"
+    ],
+    "stops": [
+      0.0,
+      0.5,
+      1.0
+    ],
+    "angle": 45.0,
+    "type": 0,
+    "stroke": [
+      "4A2545",
+      "704565"
+    ],
+    "shadow": [
+      "A18CD1",
+      "201020"
+    ]
+  },
+  {
+    "id": "forest_spirit",
+    "title": "روح الغابة",
+    "english": "Forest Spirit",
+    "category": "OCEAN",
+    "colors": [
+      "0A1A0A",
+      "1E4D1E",
+      "4CAF50",
+      "A8E6CF"
+    ],
+    "stops": [
+      0.0,
+      0.4,
+      0.75,
+      1.0
+    ],
+    "angle": 90.0,
+    "type": 0,
+    "stroke": [
+      "000000",
+      "050D05"
+    ],
+    "shadow": [
+      "4CAF50",
+      "0A1A0A"
+    ]
+  },
+  {
+    "id": "cherry_blossom",
+    "title": "زهر الساكورا",
+    "english": "Cherry Blossom",
+    "category": "PASTEL",
+    "colors": [
+      "330011",
+      "FF99BB",
+      "FFCCE6",
+      "FFFFFF"
+    ],
+    "stops": [
+      0.0,
+      0.5,
+      0.8,
+      1.0
+    ],
+    "angle": 135.0,
+    "type": 0,
+    "stroke": [
+      "1A0008",
+      "330011"
+    ],
+    "shadow": [
+      "FF99BB",
+      "1A0008"
+    ]
+  },
+  {
+    "id": "desert_sand",
+    "title": "رمال الصحراء",
+    "english": "Desert Sand",
+    "category": "SUNSET",
+    "colors": [
+      "331A00",
+      "CC8833",
+      "FFDD99",
+      "FFEECC"
+    ],
+    "stops": [
+      0.0,
+      0.45,
+      0.8,
+      1.0
+    ],
+    "angle": 45.0,
+    "type": 0,
+    "stroke": [
+      "110800",
+      "221100"
+    ],
+    "shadow": [
+      "CC8833",
+      "110800"
+    ]
+  },
+  {
+    "id": "aurora_borealis",
+    "title": "الشفق القطبي",
+    "english": "Aurora Borealis",
+    "category": "NEON",
+    "colors": [
+      "001122",
+      "008855",
+      "00FF88",
+      "001122"
+    ],
+    "stops": [
+      0.0,
+      0.4,
+      0.6,
+      1.0
+    ],
+    "angle": 90.0,
+    "type": 0,
+    "stroke": [
+      "000000",
+      "000811"
+    ],
+    "shadow": [
+      "00FF88",
+      "001122"
+    ]
+  },
+  {
+    "id": "solar_flare",
+    "title": "توهج شمسي",
+    "english": "Solar Flare",
+    "category": "SUNSET",
+    "colors": [
+      "440000",
+      "FF3300",
+      "FFFF00",
+      "FFFFFF"
+    ],
+    "stops": [
+      0.0,
+      0.5,
+      0.85,
+      1.0
+    ],
+    "angle": 180.0,
+    "type": 0,
+    "stroke": [
+      "110000",
+      "220000"
+    ],
+    "shadow": [
+      "FF3300",
+      "220000"
+    ]
+  }
+]

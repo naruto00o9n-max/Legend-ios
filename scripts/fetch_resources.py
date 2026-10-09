@@ -18,6 +18,8 @@ apk=download(p/'.work/reference.apk');fonts=resources/'Fonts';fonts.mkdir(parent
 with zipfile.ZipFile(apk) as z:
  for name in z.namelist():
   if name.startswith('assets/fonts/'): (fonts/pathlib.Path(name).name).write_bytes(z.read(name))
+  if re.match(r'res/drawable(?:-[^/]+)?/(?:b[1-8]|censor)\.png$',name):
+   brushes=resources/'Brushes';brushes.mkdir(exist_ok=True);(brushes/pathlib.Path(name).name).write_bytes(z.read(name))
   if name=='assets/ag-psd.bundle.js':(resources/'ag-psd.bundle.js').write_bytes(z.read(name))
  dex=b'\n'.join(z.read(n) for n in z.namelist() if re.match(r'classes\d*\.dex$',n))
  host='https://xbrpvumrwhbarxuksddt.supabase.co';key=None

@@ -52,6 +52,7 @@ import SwiftUI
     @Published var drawingShape="free"
     @Published var drawingFilled=false
     @Published var cleanCandidates:[CleaningCandidate]=[]
+    var cleaningGeneration=UUID()
     @Published var cleanPreviewID:UUID?
     @Published var fillTolerance=12.0
     @Published var smudgeStrength=0.4
@@ -75,7 +76,7 @@ import SwiftUI
     var active:EditorLayer? {page.layers.first{$0.id==selected}}
     @discardableResult func insertDialogues(_ values:[(String,TextStyle?)],targets:[SniperTarget]=[])throws->[UUID] {
         let previous=page.layers;var next=page
-        let center=!EditorPreferences.smartPosition || visibleCenter == .zero ? CGPoint(x:Double(page.width)/2,y:200):visibleCenter
+        let center = !EditorPreferences.smartPosition || visibleCenter == .zero ? CGPoint(x:Double(page.width)/2,y:200):visibleCenter
         for (index,value) in values.enumerated() {
             var item=EditorLayer(kind:.text,name:value.0);item.textContent=value.0
             if let style=value.1{item.style=style}
@@ -98,7 +99,7 @@ import SwiftUI
     func checkpoint() {undoStack.append(page.layers);undoDocuments.append(page);if undoStack.count>60{undoStack.removeFirst();undoDocuments.removeFirst()};redoStack=[];redoDocuments=[]}
     func change(persist:Bool=true,_ body:(inout EditorLayer)->Void) {guard let i=page.layers.firstIndex(where:{$0.id==selected}),!page.layers[i].isLocked else{return};body(&page.layers[i]);page.modified=Date();if persist{save()}}
     func add(_ kind:LayerKind,shape:Int=0) {
-        checkpoint();let center=!EditorPreferences.smartPosition || visibleCenter == .zero ? CGPoint(x:Double(page.width)/2,y:200):visibleCenter
+        checkpoint();let center = !EditorPreferences.smartPosition || visibleCenter == .zero ? CGPoint(x:Double(page.width)/2,y:200):visibleCenter
         var l=EditorLayer(kind:kind,name:kind == .text ? "نص جديد":"طبقة \(page.layers.count+1)");l.frame=Box(x:max(0,Double(center.x)-160),y:max(0,Double(center.y)-65),width:min(320,Double(page.width)),height:130);l.style.boxWidth=l.frame.width;l.style.fontSize=UserDefaults.standard.object(forKey:"default-text-size") as? Double ?? 48;l.shape=shape
         if kind == .drawing{l.frame=Box(x:0,y:0,width:Double(page.width),height:Double(page.height))}
         page.layers.append(l);selected=l.id;save();if kind == .text{panel = .content}
@@ -120,12 +121,12 @@ import SwiftUI
         }.value}catch{self.error=error.localizedDescription}
     }
     func clean(_ stroke:Stroke) async {
-        guard !stroke.points.isEmpty else{return};busy=true;defer{busy=false}
+        guard !busy,!stroke.points.isEmpty else{return};busy=true;defer{busy=false}
         let xs=stroke.points.map(\.x),ys=stroke.points.map(\.y),padding=stroke.width+20
         let region=CGRect(x:max(0,(xs.min() ?? 0)-padding),y:max(0,(ys.min() ?? 0)-padding),width:(xs.max() ?? 0)-(xs.min() ?? 0)+padding*2,height:(ys.max() ?? 0)-(ys.min() ?? 0)+padding*2).intersection(CGRect(x:0,y:0,width:page.width,height:page.height)).integral
         guard region.width*region.height<=4_194_304 else{error="اختر مساحة تنظيف أصغر";return}
         let page=self.page,directory=self.directory,radius=EditorPreferences.cleanRadius
-        discardCleaning()
+        discardCleaning();let generation=cleaningGeneration
         do{let candidates=try await BackgroundWork.run{()->[CleaningCandidate] in
             let cg=try ImagePipeline.compositeRegion(page,directory:directory,rect:region)
             let format=UIGraphicsImageRendererFormat();format.scale=1;format.opaque=true
@@ -133,6 +134,7 @@ import SwiftUI
             var results:[CleaningCandidate]=[]
             do{for (index,value) in [max(1,radius/2),radius,min(20,radius*2)].enumerated(){try Task.checkCancellation();guard let patch=CookiesInpaint(UIImage(cgImage:cg),mask,value),let data=patch.pngData() else{throw ImageFailure.message("تعذر تنظيف المنطقة")};let name=UUID().uuidString+".png";try data.write(to:directory.appendingPathComponent(name));var layer=EditorLayer(kind:.image,name:"تنظيف ذكي");layer.frame=Box(x:region.minX,y:region.minY,width:region.width,height:region.height);layer.imagePath=name;results.append(CleaningCandidate(title:"تنويع \(index+1)",layer:layer))};return results}catch{for candidate in results{try? FileManager.default.removeItem(at:directory.appendingPathComponent(candidate.layer.imagePath))};throw error}
         }
+        guard self.page==page,cleaningGeneration==generation else{for candidate in candidates{try? FileManager.default.removeItem(at:directory.appendingPathComponent(candidate.layer.imagePath))};self.error="تغيرت الصفحة أثناء التنظيف؛ أعد المحاولة على حالتها الحالية.";return}
         cleanCandidates=candidates;cleanPreviewID=candidates.first?.id
         }catch{self.error=error.localizedDescription}
     }

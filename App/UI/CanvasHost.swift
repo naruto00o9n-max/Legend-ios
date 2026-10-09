@@ -19,7 +19,7 @@ struct CanvasHost:UIViewRepresentable {
         if !c.fitted{s.layoutIfNeeded();DispatchQueue.main.async{guard !c.fitted,s.bounds.width>0,s.bounds.height>0 else{return};let full=min(s.bounds.width/CGFloat(model.page.width),s.bounds.height/CGFloat(model.page.height));s.minimumZoomScale=max(0.002,full/4);let reading=s.bounds.width/CGFloat(model.page.width)*0.96;s.setZoomScale(reading,animated:false);c.fitted=true;c.updateCenter()}}else{c.updateCenter()}
     }
     class Coordinator:NSObject,UIScrollViewDelegate,UIGestureRecognizerDelegate {
-        var model:EditorModel;var canvas:DocumentCanvas!;weak var scroll:UIScrollView?;weak var panGesture:UIPanGestureRecognizer?;var fitted=false;var readOnly=false;var centering=false;var initial:EditorLayer?;var dragHandle:String?;var rotationStart=0.0;var scaleStart=1.0;var stroke:Stroke?;var smudge:SmudgeSession?
+        var model:EditorModel;var canvas:DocumentCanvas!;weak var scroll:UIScrollView?;weak var panGesture:UIPanGestureRecognizer?;var fitted=false;var readOnly=false;var centering=false;var initial:EditorLayer?;var groupInitial:[EditorLayer]=[];var dragHandle:String?;var rotationStart=0.0;var scaleStart=1.0;var stroke:Stroke?;var smudge:SmudgeSession?
         init(_ model:EditorModel){self.model=model}
         func viewForZooming(in scrollView:UIScrollView)->UIView?{canvas}
         func scrollViewDidZoom(_ s:UIScrollView){if !readOnly{model.zoom=Double(s.zoomScale)};canvas.zoom=s.zoomScale;canvas.updateSelection();updateCenter()}
@@ -64,7 +64,7 @@ struct CanvasHost:UIViewRepresentable {
                 else if g.state == .ended{if let stroke{if model.tool == .cleaner{canvas.showStroke(nil,on:model.page,selected:model.selected);Task{await model.clean(stroke)}}else{canvas.commitLiveStroke();model.change{$0.strokes.append(stroke)}}};stroke=nil}
                 return
             }
-            if g.state == .began{let translation=g.translation(in:canvas),origin=CGPoint(x:point.x-translation.x,y:point.y-translation.y);dragHandle=canvas.handle(at:origin);guard let l=(dragHandle != nil ? model.active:hit(point)) else{return};model.selected=l.id;initial=l;model.checkpoint();canvas.beginLayerInteraction(l.id);let b=LayerRenderer.bounds(l),dx=Double(origin.x)-l.frame.x-Double(b.width)/2,dy=Double(origin.y)-l.frame.y-Double(b.height)/2;rotationStart=atan2(dy,dx);scaleStart=max(1,hypot(dx,dy))}
+            if g.state == .began{let translation=g.translation(in:canvas),origin=CGPoint(x:point.x-translation.x,y:point.y-translation.y);dragHandle=canvas.handle(at:origin);guard let l=(dragHandle != nil ? model.active:hit(point)) else{return};model.selected=l.id;initial=l;groupInitial=model.page.layers;model.checkpoint();canvas.beginLayerInteraction(l.id);let b=LayerRenderer.bounds(l),dx=Double(origin.x)-l.frame.x-Double(b.width)/2,dy=Double(origin.y)-l.frame.y-Double(b.height)/2;rotationStart=atan2(dy,dx);scaleStart=max(1,hypot(dx,dy))}
             if (g.state == .changed || g.state == .ended),let initial {let raw=g.translation(in:canvas),speed=CGFloat(dragHandle==nil ? 1:EditorPreferences.handleSpeed),t=CGPoint(x:raw.x*speed,y:raw.y*speed),b=LayerRenderer.bounds(initial);model.change(persist:false){l in
                 if let handle=dragHandle,handle.hasPrefix("deform-"),let index=Int(handle.dropFirst(7)) {
                     let local=point.applying(LayerRenderer.transform(initial).inverted())
@@ -84,8 +84,8 @@ struct CanvasHost:UIViewRepresentable {
                 default:l.frame.x=initial.frame.x+Double(t.x);l.frame.y=initial.frame.y+Double(t.y)
                     if EditorPreferences.snap{let tolerance=8/max(0.01,model.zoom),w=Double(b.width)*l.scaleX,h=Double(b.height)*l.scaleY;for anchor in [0.0,(Double(model.page.width)-w)/2,Double(model.page.width)-w] where abs(l.frame.x-anchor)<tolerance{l.frame.x=anchor};for anchor in [0.0,(Double(model.page.height)-h)/2,Double(model.page.height)-h] where abs(l.frame.y-anchor)<tolerance{l.frame.y=anchor}}
                 }
-            };canvas.update(page:model.page,directory:model.directory,selected:model.selected,zoom:scroll?.zoomScale ?? 1)}
-            if g.state == .ended || g.state == .cancelled{canvas.endLayerInteraction();initial=nil;dragHandle=nil;model.save()}
+            };if dragHandle==nil || ["resize","rotate"].contains(dragHandle ?? ""){model.transformGroupPeers(from:initial,baseline:groupInitial)};canvas.update(page:model.page,directory:model.directory,selected:model.selected,zoom:scroll?.zoomScale ?? 1)}
+            if g.state == .ended || g.state == .cancelled{canvas.endLayerInteraction();initial=nil;groupInitial=[];dragHandle=nil;model.save()}
         }
     }
 }

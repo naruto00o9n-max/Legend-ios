@@ -3,6 +3,32 @@ import UIKit
 @testable import CookiesEditor
 
 final class TextStyleTests:XCTestCase {
+    func testMeshPaddingIdentityAndResamplingKeepTextCoordinates() {
+        var style=TextStyle();style.meshRows=2;style.meshCols=4;style.meshPoints=MeshGeometry.grid(rows:2,cols:4)
+        let padded=MeshGeometry.target(x:-0.15,y:1.2,style:style)
+        XCTAssertEqual(padded.x,-0.15,accuracy:0.000001);XCTAssertEqual(padded.y,1.2,accuracy:0.000001)
+        style.meshPoints=style.meshPoints.map{Point(x:$0.x+0.3,y:$0.y-0.2)}
+        let shifted=MeshGeometry.target(x:0.25,y:0.5,style:style)
+        XCTAssertEqual(shifted.x,0.55,accuracy:0.000001);XCTAssertEqual(shifted.y,0.3,accuracy:0.000001)
+    }
+    func testGradientCatalogTargetsTheGlyphOutlineAndShadowIndependently()throws {
+        let presets=try GradientPreset.catalog();XCTAssertEqual(presets.count,37)
+        let gold=try XCTUnwrap(presets.first{$0.id=="gold_royal_cinematic"});var style=TextStyle()
+        gold.apply(to:&style,target:"stroke");XCTAssertTrue(style.textGradient.isEmpty);XCTAssertEqual(style.strokeGradient,gold.colors);XCTAssertTrue(style.shadowGradient.isEmpty)
+        gold.apply(to:&style,target:"all");XCTAssertEqual(style.textGradientStops,gold.stops);XCTAssertEqual(style.strokeGradient,gold.stroke);XCTAssertEqual(style.shadowGradient,gold.shadow)
+        for preset in presets{XCTAssertEqual(preset.colors.count,preset.stops.count);XCTAssertTrue(preset.stops.allSatisfy{(0...1).contains($0)})}
+    }
+    @MainActor func testRasterConversionPreservesRotatedScaledDeformedTextAndUndo()async throws {
+        let root=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString);defer{try? FileManager.default.removeItem(at:root)}
+        let library=LibraryStore(root:root);var page=try PageOperations.blank(title:"نص",width:400,height:240,color:"000000",transparent:true,root:root)
+        var text=EditorLayer(kind:.text);text.textContent="OO";text.frame.x=90;text.frame.y=75;text.style.boxWidth=160;text.style.fontSize=50;text.style.strokeWidth=3;text.style.textGradient=["FF0000","0000FF"];text.style.perspectivePoints=[Point(x:-0.2,y:0),Point(x:1.2,y:0),Point(x:1,y:1),Point(x:0,y:1)];text.rotation=18;text.scaleX=1.2;text.scaleY=0.8;page.layers=[text];try library.persist(page)
+        let model=EditorModel(page:page,library:library);model.selected=text.id
+        let before=raster(text,directory:model.directory);await model.rasterizeText();let converted=try XCTUnwrap(model.active);XCTAssertEqual(converted.kind,.image)
+        let after=raster(converted,directory:model.directory)
+        var mismatch=0;for i in before.indices where abs(Int(before[i])-Int(after[i]))>8{mismatch+=1}
+        XCTAssertLessThan(mismatch,4000,"Raster conversion retains transformed position and visible glyph pixels")
+        model.undo();XCTAssertEqual(model.page.layers,[text])
+    }
     private func raster(_ layer:EditorLayer,directory:URL)->[UInt8] {
         var bytes=[UInt8](repeating:0,count:400*240*4)
         bytes.withUnsafeMutableBytes{buffer in

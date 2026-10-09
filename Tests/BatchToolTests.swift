@@ -3,6 +3,13 @@ import UIKit
 @testable import CookiesEditor
 
 final class BatchToolTests:XCTestCase {
+    @MainActor func testGroupedLayersMoveTogetherAndUndoAsOneEdit()throws {
+        let root=try root();defer{try? FileManager.default.removeItem(at:root)}
+        let library=LibraryStore(root:root);var page=try PageOperations.blank(title:"مجموعة",width:200,height:300,color:"FFFFFF",transparent:false,root:root)
+        let group=UUID();var a=EditorLayer(kind:.shape);a.frame=Box(x:10,y:20,width:30,height:30);a.groupID=group;var b=a;b.id=UUID();b.frame.x=80;b.frame.y=100;page.layers=[a,b];try library.persist(page)
+        let model=EditorModel(page:page,library:library);model.selected=a.id;model.checkpoint();model.change(persist:false){$0.frame.x+=25;$0.frame.y+=40};model.transformGroupPeers(from:a,baseline:page.layers);model.save()
+        XCTAssertEqual(model.page.layers[1].frame.x,105,accuracy:0.001);XCTAssertEqual(model.page.layers[1].frame.y,140,accuracy:0.001);model.undo();XCTAssertEqual(model.page.layers,page.layers)
+    }
     private func root()throws->URL{let url=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString);try FileManager.default.createDirectory(at:url,withIntermediateDirectories:true);return url}
     private func rgba(_ file:URL)throws->Data {let raw=file.deletingPathExtension().appendingPathExtension("rgba");defer{try? FileManager.default.removeItem(at:raw)};var width:Int32=0,height:Int32=0,error=[CChar](repeating:0,count:512);XCTAssertEqual(LIImportPNG(file.path,raw.path,&width,&height,&error,error.count),1);return try Data(contentsOf:raw)}
     @MainActor func testNormalMergeAndTransparentFlattenRetainCompositeAndUndo()async throws {
