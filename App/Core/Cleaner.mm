@@ -22,3 +22,25 @@ UIImage *CookiesInpaint(UIImage *source,UIImage *mask,double radius) {
         UIImage *result=[UIImage imageWithCGImage:cg];CGImageRelease(cg);CGColorSpaceRelease(space);CGDataProviderRelease(provider);return result;
     }catch(const cv::Exception &){return nil;}}@catch(NSException *exception){return nil;}
 }
+
+NSDictionary *CookiesDetectBubble(UIImage *source,CGPoint point) {
+    @try {try {
+        cv::Mat rgba=pixels(source),rgb,gray,edges;
+        // pixels() uses Quartz's lower-left orientation. Work in UIKit's
+        // top-left coordinates before OpenCV, unlike the inpaint round trip.
+        cv::flip(rgba,rgba,0);cv::cvtColor(rgba,rgb,cv::COLOR_RGBA2RGB);
+        if(point.x<0||point.y<0||point.x>=rgb.cols||point.y>=rgb.rows)return nil;
+        cv::cvtColor(rgb,gray,cv::COLOR_RGB2GRAY);cv::medianBlur(gray,gray,7);
+        cv::Canny(gray,edges,20,80);cv::dilate(edges,edges,cv::getStructuringElement(cv::MORPH_RECT,cv::Size(3,3)));
+        cv::Mat mask=cv::Mat::zeros(rgb.rows+2,rgb.cols+2,CV_8UC1),inner=mask(cv::Rect(1,1,rgb.cols,rgb.rows));edges.copyTo(inner);
+        cv::floodFill(rgb,mask,cv::Point((int)point.x,(int)point.y),cv::Scalar(255),nullptr,cv::Scalar(15,15,15),cv::Scalar(15,15,15),261892);
+        cv::subtract(inner,edges,inner);cv::morphologyEx(inner,inner,cv::MORPH_CLOSE,cv::getStructuringElement(cv::MORPH_ELLIPSE,cv::Size(15,15)));
+        std::vector<std::vector<cv::Point>> contours;cv::findContours(inner,contours,cv::RETR_EXTERNAL,cv::CHAIN_APPROX_SIMPLE);
+        const std::vector<cv::Point> *best=nullptr;double bestArea=200;
+        for(auto &contour:contours){double area=cv::contourArea(contour);cv::Rect box=cv::boundingRect(contour);if(area>bestArea&&box.width<rgb.cols-5&&box.height<rgb.rows-5){best=&contour;bestArea=area;}}
+        if(!best)return @{ @"pin":@YES, @"x":@(point.x), @"y":@(point.y), @"width":@0, @"height":@0, @"points":@[] };
+        std::vector<cv::Point> simplified;cv::approxPolyDP(*best,simplified,2,true);NSMutableArray *points=[NSMutableArray array];for(auto &p:simplified)[points addObject:@[@(p.x),@(p.y)]];
+        cv::Rect box=cv::boundingRect(*best);
+        return @{ @"pin":@NO, @"x":@(box.x+box.width*0.1), @"y":@(box.y+box.height*0.1), @"width":@(box.width*0.8), @"height":@(box.height*0.8), @"points":points };
+    }catch(const cv::Exception &){return nil;}}@catch(NSException *exception){return nil;}
+}

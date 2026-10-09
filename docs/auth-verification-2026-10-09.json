@@ -1,0 +1,20 @@
+{
+  "utc": "2026-10-09T15:05:50.468777+00:00",
+  "google": {
+    "status": 302
+  },
+  "signup_status": 200,
+  "signup_error": null,
+  "signup_error_code": null,
+  "user_returned": true,
+  "confirmation_sent_at": "2026-10-09T15:05:49.840393141Z",
+  "session_returned": false,
+  "inbox_message_count": 1,
+  "password_login_status": 400,
+  "password_login_error": "email_not_confirmed",
+  "confirmation_http_status": 303,
+  "confirmation_return_origin": "http://localhost:3000",
+  "confirmed_password_login_status": 200,
+  "valid_session_returned": true,
+  "user_confirmed": true
+}

@@ -26,7 +26,7 @@ struct LibraryView:View {
             LazyVGrid(columns:[GridItem(.adaptive(minimum:150),spacing:12)],spacing:12){
                 workspace("مكتبة الخطوط","textformat.alt",id:"font-library"){fontLibrary=true}
                 workspace("المجتمع","person.2",id:"community"){community=true}
-                workspace("مساعد الحوارات","text.bubble",id:"assistant"){assistant=true}
+                workspace("التايبر","text.bubble",id:"assistant"){assistant=true}
                 workspace("الإعدادات","slider.horizontal.3",id:"settings-link"){settings=true}
             }
 
@@ -41,7 +41,7 @@ struct LibraryView:View {
         }
         .alert("مجلد جديد",isPresented:$folderPrompt){TextField("اسم العمل أو الفصل",text:$name);Button("إنشاء"){if !name.trimmingCharacters(in:.whitespaces).isEmpty{library.createFolder(name,parent:parent);name=""}};Button("إلغاء",role:.cancel){}}
         .alert("تغيير الاسم",isPresented:Binding(get:{renaming != nil},set:{if !$0{renaming=nil}})){TextField("الاسم",text:$renameText);Button("حفظ"){if let item=renaming,!renameText.isEmpty{library.rename(item,to:renameText)};renaming=nil};Button("إلغاء",role:.cancel){renaming=nil}}
-        .sheet(isPresented:$assistant){AssistantView()}.fullScreenCover(isPresented:$settings){SettingsView()}.sheet(isPresented:$fontLibrary){FontLibraryView()}.fullScreenCover(isPresented:$community){ServiceHub()}
+        .fullScreenCover(isPresented:$assistant){TyperLibraryView(folder:parent)}.fullScreenCover(isPresented:$settings){SettingsView()}.sheet(isPresented:$fontLibrary){FontLibraryView()}.fullScreenCover(isPresented:$community){ServiceHub()}
         .alert("تعذر إكمال العملية",isPresented:Binding(get:{library.error != nil},set:{if !$0{library.error=nil}})){Button("حسنًا"){library.error=nil}}message:{Text(library.error ?? "")}
     }
     func importCard(_ title:String,_ subtitle:String,_ icon:String,id:String,action:@escaping ()->Void)->some View{Button(action:action){HStack(spacing:12){Image(systemName:icon).font(.system(size:24,weight:.regular)).frame(width:46,height:46).background(Palette.gold.opacity(0.08),in:Circle());VStack(alignment:.leading,spacing:5){Text(title).font(.system(size:14,weight:.semibold));Text(subtitle).font(.system(size:11)).foregroundStyle(Palette.quiet)};Spacer(minLength:0)}.padding(16).frame(maxWidth:.infinity,minHeight:98).glass(20)}.accessibilityIdentifier(id)}

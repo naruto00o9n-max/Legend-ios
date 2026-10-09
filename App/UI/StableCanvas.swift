@@ -22,6 +22,16 @@ final class DocumentCanvas: UIView {
     private let preview = UIImageView()
     private let border = CAShapeLayer()
     private let stem = CAShapeLayer()
+    private let liveInk = CAShapeLayer()
+    private let sniperOverlay=CALayer()
+    private var sniperTargets:[SniperTarget]=[]
+    private var sniperZoom:CGFloat=0
+    private var pendingInk: [(revision: Int, layer: CAShapeLayer)] = []
+    private var strokeCommitRevision: Int?
+    private var stagedImages: [String: UIImage] = [:]
+    private var interaction: LayerInteraction?
+    private var interactionRevision: Int?
+    private var renderedLayers: [EditorLayer] = []
     private var handles: [String: UIButton] = [:]
     private var currentKeys = Set<String>()
     private var visible = CGRect.zero
@@ -39,6 +49,9 @@ final class DocumentCanvas: UIView {
         preview.frame = bounds; preview.isUserInteractionEnabled = false
         preview.layer.magnificationFilter = .nearest; addSubview(preview)
         sourceCache.totalCostLimit = 48 * 1024 * 1024
+        liveInk.lineCap = .round; liveInk.lineJoin = .round
+        liveInk.fillColor = UIColor.clear.cgColor; layer.addSublayer(liveInk)
+        layer.addSublayer(sniperOverlay)
         for shape in [border, stem] { shape.fillColor = UIColor.clear.cgColor; shape.strokeColor = UIColor.white.cgColor; layer.addSublayer(shape) }
         for (name, icon) in [("delete","xmark"),("duplicate","plus.square.on.square"),("edit","pencil"),("resize","arrow.up.left.and.arrow.down.right"),("rotate","arrow.clockwise"),("scale-x","arrow.left.and.right"),("scale-y","arrow.up.and.down"),("box-width","rectangle"),("styles","square.grid.2x2")] {
             let button = UIButton(type: .custom)
@@ -57,19 +70,27 @@ final class DocumentCanvas: UIView {
     func update(page: EditorPage, directory: URL, selected: UUID?, zoom: CGFloat) {
         let identity = directory.path + "/" + page.raw
         let sourceChanged = sourceIdentity != identity
-        let pixelsChanged = sourceChanged || self.page?.layers != page.layers
+        if sourceChanged { interaction?.remove(); interaction = nil; interactionRevision = nil }
+        let renderPage = rasterPage(page)
+        let pixelsChanged = sourceChanged || renderedLayers != renderPage.layers
+        renderedLayers = renderPage.layers
         self.page = page; self.directory = directory; self.selected = selected; self.zoom = zoom
         if sourceChanged {
             sourceIdentity = identity; sourceCache.removeAllObjects()
             tiles.values.forEach { $0.view.removeFromSuperview() }; tiles.removeAll(); preview.image = nil
+            liveInk.path = nil; strokeCommitRevision = nil; stagedImages.removeAll()
+            pendingInk.forEach { $0.layer.removeFromSuperlayer() }; pendingInk.removeAll()
+            interaction?.remove(); interaction = nil; interactionRevision = nil
             loadPreview(page, directory: directory, identity: identity)
         }
         if pixelsChanged { revision += 1 }
+        interaction?.update(page)
         updateSelection()
         if !visible.isEmpty { refreshVisible(visible) }
     }
     func refreshVisible(_ rect: CGRect) {
-        guard let page, let directory else { return }
+        guard let fullPage = page, let directory else { return }
+        let page = rasterPage(fullPage)
         visible = rect
         let imageBounds = CGRect(x: 0, y: 0, width: page.width, height: page.height)
         var sample = 1
@@ -94,7 +115,9 @@ final class DocumentCanvas: UIView {
         currentKeys = keys
         retireOldDetail()
         // Selection controls stay above every image tile.
-        layer.addSublayer(border); layer.addSublayer(stem)
+        pendingInk.forEach { layer.addSublayer($0.layer) }
+        interaction?.bringForward(in: self)
+        layer.addSublayer(liveInk);layer.addSublayer(sniperOverlay); layer.addSublayer(border); layer.addSublayer(stem)
         handles.values.forEach { bringSubviewToFront($0) }
     }
     private func loadPreview(_ page: EditorPage, directory: URL, identity: String) {
@@ -113,12 +136,13 @@ final class DocumentCanvas: UIView {
         worker.async { [weak self] in
             let base: UIImage?
             var read = false
-            if let cached = cache.object(forKey: key as NSString) { base = cached } else {
+            let cacheKey = (identity + "|" + key) as NSString
+            if let cached = cache.object(forKey: cacheKey) { base = cached } else {
                 read = true
                 let pixels = try? ImagePipeline.tile(directory.appendingPathComponent(page.raw), width: page.width, height: page.height, rect: tile.rect, sample: tile.sample)
                 let cg = pixels.flatMap { ImagePipeline.image($0, width: (Int(tile.rect.width) + tile.sample - 1) / tile.sample, height: (Int(tile.rect.height) + tile.sample - 1) / tile.sample, colorSpace: ImagePipeline.colorSpace(directory.appendingPathComponent(page.source))) }
                 base = cg.map { UIImage(cgImage: $0) }
-                if let base { cache.setObject(base, forKey: key as NSString, cost: Int(base.size.width * base.size.height) * 4) }
+                if let base { cache.setObject(base, forKey: cacheKey, cost: Int(base.size.width * base.size.height) * 4) }
             }
             var composite = base
             if let base, !page.layers.isEmpty {
@@ -137,19 +161,36 @@ final class DocumentCanvas: UIView {
                 if read { self.sourceReads += 1 }
                 if requested == self.revision {
                     // Keep the previous contents until its replacement is complete.
-                    if let composite {tile.view.image = composite}; tile.revision = requested
+                    if let composite {
+                        if let commit = [self.strokeCommitRevision, self.interactionRevision].compactMap({ $0 }).min(), requested >= commit { self.stagedImages[key] = composite }
+                        else { tile.view.image = composite }
+                    }; tile.revision = requested
                 }
                 if tile.revision != self.revision, let latest = self.page, let directory = self.directory {
-                    self.render(tile, key: key, page: latest, directory: directory)
+                    self.render(tile, key: key, page: self.rasterPage(latest), directory: directory)
                 } else { self.retireOldDetail() }
             }
         }
     }
     private func retireOldDetail() {
         guard !currentKeys.isEmpty, currentKeys.allSatisfy({ tiles[$0]?.revision == revision }) else { return }
+        if let commit = [strokeCommitRevision, interactionRevision].compactMap({ $0 }).min(), revision >= commit {
+            CATransaction.begin(); CATransaction.setDisableActions(true)
+            for (key, image) in stagedImages { tiles[key]?.view.image = image }
+            stagedImages.removeAll()
+            pendingInk.removeAll { item in if item.revision <= revision { item.layer.removeFromSuperlayer(); return true }; return false }
+            strokeCommitRevision = pendingInk.map(\.revision).min()
+            if let target = interactionRevision, revision >= target {
+                if interaction?.phase == .preparing { interaction?.reveal() }
+                else if interaction?.phase == .finishing { interaction?.remove(); interaction = nil }
+                interactionRevision = nil
+            }
+            CATransaction.commit()
+        }
         for key in Array(tiles.keys) where !currentKeys.contains(key) { tiles.removeValue(forKey: key)?.view.removeFromSuperview() }
     }
     func updateSelection() {
+        renderSniper()
         guard let item = page?.layers.first(where: { $0.id == selected && $0.isVisible }), item.kind != .drawing else {
             border.path = nil; stem.path = nil; handles.values.forEach { $0.isHidden = true }; return
         }
@@ -191,8 +232,67 @@ final class DocumentCanvas: UIView {
         handles.first { !$0.value.isHidden && hypot($0.value.center.x - point.x, $0.value.center.y - point.y) < 24 / max(0.002, zoom) }?.key
     }
     func showStroke(_ stroke: Stroke?, on page: EditorPage, selected: UUID?) {
-        var temporary = page
-        if let stroke, let index = temporary.layers.firstIndex(where: { $0.id == selected }) { temporary.layers[index].strokes.append(stroke) }
-        if let directory { update(page: temporary, directory: directory, selected: selected, zoom: zoom) }
+        CATransaction.begin(); CATransaction.setDisableActions(true)
+        defer { CATransaction.commit() }
+        guard let stroke, let first = stroke.points.first else {
+            liveInk.path = nil; return
+        }
+        let path = UIBezierPath(); path.move(to: first.cg)
+        for point in stroke.points.dropFirst() { path.addLine(to: point.cg) }
+        let item = page.layers.first { $0.id == selected }
+        liveInk.setAffineTransform(item.map { LayerRenderer.transform($0) } ?? .identity)
+        liveInk.lineWidth = CGFloat(stroke.width)
+        liveInk.strokeColor = UIColor(hex: stroke.erase ? "FFFFFF" : stroke.color).cgColor
+        liveInk.opacity = Float((item?.opacity ?? 1) * (stroke.erase ? 0.35 : (stroke.brush == "water" ? 0.25 : 1)))
+        liveInk.lineDashPattern = stroke.erase ? [4, 4] : nil
+        liveInk.shadowColor = UIColor(hex: stroke.color).cgColor
+        liveInk.shadowOpacity = stroke.brush == "neon" ? 1 : 0
+        liveInk.shadowRadius = stroke.brush == "neon" ? CGFloat(stroke.width) : 0
+        liveInk.shadowOffset = .zero; liveInk.path = path.cgPath
+        pendingInk.forEach { layer.addSublayer($0.layer) }
+        layer.addSublayer(liveInk); layer.addSublayer(border); layer.addSublayer(stem)
+        handles.values.forEach { bringSubviewToFront($0) }
+    }
+    func commitLiveStroke() {
+        let committed = CAShapeLayer(layer: liveInk), target = revision + 1
+        layer.addSublayer(committed); pendingInk.append((target, committed)); liveInk.path = nil
+        strokeCommitRevision = pendingInk.map(\.revision).min()
+    }
+    var liveStrokeVisible: Bool { liveInk.path != nil || !pendingInk.isEmpty }
+    private func rasterPage(_ page: EditorPage) -> EditorPage {
+        guard let interaction, interaction.phase != .finishing else { return page }
+        var result = page; result.layers.removeAll { interaction.excluded.contains($0.id) }; return result
+    }
+    @discardableResult func beginLayerInteraction(_ id: UUID) -> Bool {
+        guard let page, let directory, interaction == nil,
+              let preview = LayerInteraction(page: page, selected: id, directory: directory) else { return false }
+        interaction = preview; preview.attach(to: self); interactionRevision = revision + 1
+        update(page: page, directory: directory, selected: selected, zoom: zoom)
+        return true
+    }
+    func endLayerInteraction() {
+        guard let interaction, let page, let directory else { return }
+        interaction.phase = .finishing; interactionRevision = revision + 1
+        update(page: page, directory: directory, selected: selected, zoom: zoom)
+    }
+    var interactionRasterizations: Int { interaction?.rasterizations ?? 0 }
+    var interactiveLayerCenter: CGPoint? { interaction?.center }
+    func showSniper(_ targets:[SniperTarget]) {
+        guard targets != sniperTargets || sniperZoom != zoom else{return}
+        sniperTargets=targets;sniperZoom=0;renderSniper()
+    }
+    private func renderSniper() {
+        guard sniperZoom != zoom else{return};sniperZoom=zoom
+        CATransaction.begin();CATransaction.setDisableActions(true);defer{CATransaction.commit()}
+        sniperOverlay.sublayers?.forEach{$0.removeFromSuperlayer()}
+        let unit=1/max(0.002,zoom)
+        for (index,target) in sniperTargets.enumerated() {
+            let path=UIBezierPath()
+            if let first=target.outline.first{path.move(to:first.cg);for p in target.outline.dropFirst(){path.addLine(to:p.cg)};path.close()}
+            else{path.append(UIBezierPath(ovalIn:CGRect(x:target.point.x-16*unit,y:target.point.y-16*unit,width:32*unit,height:32*unit)))}
+            let outline=CAShapeLayer();outline.path=path.cgPath;outline.fillColor=UIColor.clear.cgColor;outline.strokeColor=UIColor(hex:"D4AF37").cgColor;outline.lineWidth=1.5*unit;sniperOverlay.addSublayer(outline)
+            let label=CATextLayer();label.string="\(index+1)";label.fontSize=12*unit;label.alignmentMode = .center;label.contentsScale=traitCollection.displayScale;label.foregroundColor=UIColor.white.cgColor;label.backgroundColor=UIColor.black.withAlphaComponent(0.8).cgColor;label.cornerRadius=10*unit
+            label.frame=CGRect(x:target.point.x-12*unit,y:target.point.y-12*unit,width:24*unit,height:24*unit);sniperOverlay.addSublayer(label)
+        }
     }
 }

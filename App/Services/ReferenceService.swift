@@ -14,6 +14,8 @@ enum NetworkPolicy {
     @Published var session:ServiceSession?
     @Published var message:String?
     @Published var busy=false
+    @Published var confirmationEmail:String?
+    @Published var confirmationCooldown:Date?
     @Published var rows:[[String:Any]]=[]
     private var web:ASWebAuthenticationSession?
     override init(){super.init();if NetworkPolicy.enabled,let data=Keychain.read("session"),let saved=try? JSONDecoder().decode(ServiceSession.self,from:data){session=saved}}
@@ -39,8 +41,25 @@ enum NetworkPolicy {
         guard !signup || password.count>=6 else{message="كلمة المرور للحساب الجديد يجب أن تحتوي على ستة أحرف على الأقل.";return}
         busy=true;defer{busy=false}
         do{let data=try await request(signup ? "/auth/v1/signup":"/auth/v1/token?grant_type=password",method:"POST",body:signup ? ["email":email,"password":password,"data":["full_name":name.trimmingCharacters(in:.whitespacesAndNewlines),"display_name":name.trimmingCharacters(in:.whitespacesAndNewlines)]]:["email":email,"password":password])
-            if let s=try? JSONDecoder().decode(ServiceSession.self,from:data){store(s);message=nil}else{message="أُرسل تأكيد الحساب إلى بريدك. أكّد البريد ثم سجّل الدخول."}
+            if let s=try? JSONDecoder().decode(ServiceSession.self,from:data){store(s);message=nil;confirmationEmail=nil}
+            else if signup {
+                let object=try JSONSerialization.jsonObject(with:data) as? [String:Any]
+                guard let user=(object?["user"] as? [String:Any]) ?? object,user["id"] as? String != nil else{throw ImageFailure.message("لم يُرجع الخادم حسابًا أو جلسة دخول. حاول تسجيل الدخول أو إعادة إرسال التأكيد.")}
+                confirmationEmail=email;confirmationCooldown=Date().addingTimeInterval(60)
+                message=Self.signupMessage(user)
+            }else{throw ImageFailure.message("لم يُرجع الخادم جلسة دخول صالحة")}
         }catch{message=error.localizedDescription}
+    }
+    static func signupMessage(_ user:[String:Any])->String {
+        if let identities=user["identities"] as? [Any],identities.isEmpty{return "قد يكون البريد مسجلًا بالفعل. جرّب تسجيل الدخول أو إعادة إرسال التأكيد. لا تؤكد هذه الاستجابة إرسال رسالة جديدة."}
+        return "قَبِل الخادم طلب التسجيل ويحتاج البريد إلى تأكيد. تحقّق من الوارد والرسائل غير المرغوبة، ثم سجّل الدخول. يمكنك إعادة إرسال التأكيد إذا لم يصلك؛ قبول الطلب لا يضمن وصول الرسالة."
+    }
+    func resendConfirmation(email:String) async {
+        let email=email.trimmingCharacters(in:.whitespacesAndNewlines)
+        guard email.contains("@"),!busy else{message="اكتب البريد الإلكتروني أولًا";return}
+        if let until=confirmationCooldown,until>Date(){message="انتظر دقيقة قبل طلب رسالة أخرى";return}
+        busy=true;defer{busy=false}
+        do{_ = try await request("/auth/v1/resend",method:"POST",body:["type":"signup","email":email]);confirmationEmail=email;confirmationCooldown=Date().addingTimeInterval(60);message="قَبِل الخادم طلب إعادة التأكيد. تحقّق من الوارد والرسائل غير المرغوبة؛ قد يتأخر وصول الرسالة."}catch{message=error.localizedDescription}
     }
     private func tokenExpiry(_ token:String)->Double {
         let segments=token.split(separator:".");guard segments.count==3 else{return 0}
@@ -52,7 +71,7 @@ enum NetworkPolicy {
     func refresh() async throws{guard let refresh=session?.refresh_token else{return};let d=try await request("/auth/v1/token?grant_type=refresh_token",method:"POST",body:["refresh_token":refresh]);store(try JSONDecoder().decode(ServiceSession.self,from:d))}
     static func errorMessage(status:Int,code:String,reason:String)->String {
         switch code{case "invalid_credentials":return "البريد أو كلمة المرور غير صحيحة. حساب Google يحتاج الدخول باستخدام Google ما لم تُعيّن له كلمة مرور."
-        case "email_not_confirmed":return "أكّد بريدك الإلكتروني من رسالة التأكيد ثم سجّل الدخول."
+        case "email_not_confirmed":return "أكّد بريدك الإلكتروني من رسالة التأكيد ثم سجّل الدخول. يمكنك استخدام إعادة إرسال التأكيد."
         case "over_email_send_rate_limit","over_request_rate_limit":return "وصلت إلى حد المحاولات. انتظر قليلًا ثم حاول مجددًا."
         case "signup_disabled":return "الخادم لا يسمح بإنشاء حسابات جديدة حاليًا."
         default:break}

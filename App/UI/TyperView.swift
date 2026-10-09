@@ -1,0 +1,105 @@
+import SwiftUI
+import UniformTypeIdentifiers
+
+struct TyperLibraryView:View {
+    @EnvironmentObject var typer:TyperStore
+    @Environment(\.dismiss) private var dismiss
+    var folder:UUID?=nil
+    @State private var editing:DialogueChapter?
+    @State private var newChapter=false
+    @State private var importing=false
+    @State private var query=""
+    @State private var deletion:DialogueChapter?
+    var body:some View {
+        NavigationStack {ZStack{Ambient();ScrollView{VStack(alignment:.leading,spacing:18){
+            HStack{Brand();Spacer();IconButton(icon:"xmark",title:"إغلاق التايبر"){dismiss()}.accessibilityIdentifier("typer-close")}
+            Text("التايبر").font(.system(size:28,weight:.semibold))
+            Text("نص الفصل، فقاعاته، وتقدّمك في التحرير.").font(.system(size:13)).foregroundStyle(Palette.quiet)
+            HStack{Button{newChapter=true}label:{Label("فصل جديد",systemImage:"plus")}.accessibilityIdentifier("typer-new");Spacer();Button{importing=true}label:{Label("استيراد نص",systemImage:"doc.badge.plus")}.accessibilityIdentifier("typer-import")}.font(.system(size:14,weight:.medium)).padding(16).glass(16)
+            if typer.state.chapters.isEmpty{ContentUnavailableView("أضف نص الفصل",systemImage:"text.bubble",description:Text("اكتب الحوارات أو استورد ملف TXT. كل سطر يصبح فقاعة مستقلة، وتُحفظ الفقاعات المستخدمة لتتبع تقدّمك."))}
+            else{TextField("بحث في الفصول",text:$query).padding(14).glass(12)
+                ForEach(typer.state.chapters.filter{query.isEmpty || $0.title.localizedCaseInsensitiveContains(query)}){chapter in
+                    Button{do{try typer.activate(chapter.id);editing=chapter}catch{typer.error=error.localizedDescription}}label:{VStack(alignment:.leading,spacing:12){HStack{Image(systemName:"text.bubble");Text(chapter.title).font(.system(size:16,weight:.semibold));Spacer();if typer.state.active==chapter.id{Image(systemName:"checkmark.circle")}};ProgressView(value:Double(chapter.usedCount),total:Double(max(1,chapter.pasteable.count))).tint(Palette.gold);Text("\(chapter.usedCount) من \(chapter.pasteable.count) فقاعة مستخدمة").font(.system(size:12)).foregroundStyle(Palette.quiet)}.padding(18).glass(18)}.buttonStyle(.plain).accessibilityIdentifier("typer-chapter-\(chapter.id)").contextMenu{Button("حذف الفصل",role:.destructive){deletion=chapter}}
+                }
+            }
+        }.padding(24).frame(maxWidth:760).frame(maxWidth:.infinity)}}.toolbar(.hidden,for:.navigationBar)
+        .fullScreenCover(isPresented:$newChapter){ChapterSourceView(folder:folder)}
+        .fullScreenCover(item:$editing){chapter in ChapterSourceView(chapter:chapter,folder:chapter.folder)}
+        .fileImporter(isPresented:$importing,allowedContentTypes:[.plainText,.json],allowsMultipleSelection:false){result in do{try typer.importFile(result.get()[0],folder:folder)}catch{typer.error=error.localizedDescription}}
+        .alert("حذف الفصل؟",isPresented:Binding(get:{deletion != nil},set:{if !$0{deletion=nil}})){Button("حذف",role:.destructive){if let chapter=deletion{do{try typer.remove(chapter.id)}catch{typer.error=error.localizedDescription}};deletion=nil};Button("إلغاء",role:.cancel){deletion=nil}}message:{Text("سيُحذف النص وتقدّمه من التايبر. تبقى طبقات النص الموجودة في الصور.")}
+        }.foregroundStyle(Palette.pale).cookiesInterface().typerErrors(typer)
+    }
+}
+struct ChapterSourceView:View {
+    @EnvironmentObject var typer:TyperStore
+    @Environment(\.dismiss) private var dismiss
+    var chapter:DialogueChapter?
+    var folder:UUID?
+    @State private var title=""
+    @State private var source=""
+    @State private var separation=BubbleSeparation.lines
+    @State private var exporting:URL?
+    @FocusState private var focused:Bool
+    var count:Int {TranscriptParser.parse(source,separation:separation,tags:typer.state.tags,link:typer.state.linkPrefix).filter{!$0.noPaste}.count}
+    var body:some View {
+        NavigationStack{ZStack{Ambient();VStack(spacing:14){
+            HStack{IconButton(icon:"xmark",title:"إلغاء"){dismiss()};Spacer();Text(chapter==nil ? "نص فصل جديد":"تحرير نص الفصل").font(.system(size:17,weight:.semibold));Spacer();Button("حفظ"){do{try typer.saveChapter(id:chapter?.id,title:title,source:source,separation:separation,folder:folder);dismiss()}catch{typer.error=error.localizedDescription}}.disabled(count==0).accessibilityIdentifier("typer-save")}.padding(.horizontal,12)
+            TextField("اسم الفصل",text:$title).font(.system(size:17,weight:.medium)).padding(16).glass(14).accessibilityIdentifier("typer-title")
+            Picker("فصل الفقاعات",selection:$separation){ForEach(BubbleSeparation.allCases,id:\.self){mode in Text(mode.title).tag(mode)}}.pickerStyle(.segmented).accessibilityIdentifier("typer-separation")
+            ArabicTextEditor(text:$source).padding(12).glass(18).accessibilityIdentifier("typer-source").focused($focused)
+            HStack{Text("\(count) فقاعة قابلة للإدراج").font(.system(size:12)).foregroundStyle(Palette.quiet);Spacer();Button{source=UIPasteboard.general.string ?? source}label:{Label("لصق",systemImage:"doc.on.clipboard")}.accessibilityIdentifier("typer-clipboard")
+                if chapter != nil{Menu{Button("تصدير TXT"){export(plain:true)};Button("تصدير الفصل مع تقدّمه"){export(plain:false)}}label:{Image(systemName:"square.and.arrow.up")}}
+            }.font(.system(size:14)).padding(.vertical,8)
+            Text("## عنوان · () تفكير · ** مؤثرات · // استمرار الوسم السابق").font(.system(size:11)).foregroundStyle(Palette.quiet)
+            if let exporting{ShareLink(item:exporting){Label("مشاركة الملف",systemImage:"square.and.arrow.up")}}
+        }.padding(.horizontal,20).padding(.bottom,20).frame(maxWidth:820).frame(maxWidth:.infinity)}.toolbar(.hidden,for:.navigationBar)}.foregroundStyle(Palette.pale).cookiesInterface().typerErrors(typer)
+        .onAppear{if let chapter{title=chapter.title;source=chapter.source;separation=chapter.separation}else{separation=BubbleSeparation(rawValue:UserDefaults.standard.string(forKey:"typer-default-separation") ?? "lines") ?? .lines}}
+    }
+    private func export(plain:Bool){do{guard let chapter else{return};exporting=try typer.export(chapter,plain:plain)}catch{typer.error=error.localizedDescription}}
+}
+
+/// An editor overlay, not a blocking sheet: the canvas and selected text remain
+/// available while the user chooses and tracks chapter bubbles.
+struct TyperPanel:View {
+    @EnvironmentObject var typer:TyperStore
+    @ObservedObject var model:EditorModel
+    var close:()->Void
+    var compact=false
+    @State private var query=""
+    @State private var filter="all"
+    @State private var library=false
+    @State private var reset=false
+    @State private var uppercase=false
+    var body:some View {
+        VStack(spacing:0){
+            HStack(spacing:8){Image(systemName:"text.bubble");Text("التايبر").font(.system(size:14,weight:.semibold));Spacer();IconButton(icon:"xmark",title:"إغلاق لوحة التايبر",action:close).accessibilityIdentifier("typer-panel-close")}.padding(.leading,14).frame(height:48)
+            HStack{Menu{ForEach(typer.state.chapters){chapter in Button(chapter.title){do{try typer.activate(chapter.id)}catch{typer.error=error.localizedDescription}}};Divider();Button("إدارة الفصول"){library=true}}label:{HStack{Text(typer.activeChapter?.title ?? "اختر نص الفصل").lineLimit(1);Image(systemName:"chevron.down")}.font(.system(size:12,weight:.medium))}.accessibilityIdentifier("typer-chapters");Spacer();Text("\(typer.activeChapter?.usedCount ?? 0) / \(typer.activeChapter?.pasteable.count ?? 0)").font(.system(size:11,design:.monospaced)).foregroundStyle(Palette.quiet).accessibilityIdentifier("typer-progress")}.padding(.horizontal,14).padding(.bottom,10)
+            if let chapter=typer.activeChapter {
+                if !compact{HStack(spacing:6){Image(systemName:"magnifyingglass").foregroundStyle(Palette.quiet);TextField("بحث في الفقاعات",text:$query).font(.system(size:12));Menu{Button("الكل"){filter="all"};Button("المتبقية"){filter="unused"};Button("المستخدمة"){filter="used"}}label:{Image(systemName:"line.3.horizontal.decrease.circle")}}.padding(10).background(.white.opacity(0.04)).clipShape(RoundedRectangle(cornerRadius:10)).padding(.horizontal,12)}
+                ScrollView{LazyVStack(spacing:7){ForEach(Array(chapter.bubbles.enumerated()),id:\.element.id){index,bubble in
+                    if (query.isEmpty || bubble.text.localizedCaseInsensitiveContains(query)) && (filter=="all" || (filter=="used" ? bubble.used:!bubble.used)) {
+                        Button{insert([bubble],chapter:chapter.id)}label:{HStack(alignment:.top,spacing:9){Text("\(index+1)").font(.system(size:10,design:.monospaced)).frame(width:22);VStack(alignment:.leading,spacing:5){HStack{Text(typer.tag(bubble.tagID)?.title ?? "حوار").font(.system(size:9));Spacer();if bubble.used{Image(systemName:"checkmark.circle.fill")}}.foregroundStyle(Palette.quiet);Text(bubble.text).font(.system(size:13)).lineLimit(4).multilineTextAlignment(.leading)}}.padding(11).frame(maxWidth:.infinity,alignment:.leading).background(bubble.used ? Color(white:0.18):Palette.gold.opacity(bubble.noPaste ? 0.025:0.08),in:RoundedRectangle(cornerRadius:11)).foregroundStyle(bubble.used ? Color(white:0.54):Palette.pale)}.buttonStyle(.plain).disabled(bubble.noPaste || model.busy).accessibilityIdentifier("typer-bubble-\(index)").accessibilityValue(bubble.noPaste ? "عنوان":bubble.used ? "مستخدمة":"متاحة").contextMenu{Button("نسخ النص"){UIPasteboard.general.string=bubble.text};Button(bubble.used ? "إعادتها إلى المتبقية":"تحديد كمستخدمة"){do{try typer.mark(bubble.id,in:chapter.id,used:!bubble.used)}catch{typer.error=error.localizedDescription}}}
+                    }
+                }}}.padding(12).accessibilityIdentifier("typer-bubbles")
+                if !compact{HStack{Button{library=true}label:{Image(systemName:"doc.badge.plus")}.accessibilityLabel("تحرير أو استيراد الفصل");Spacer();Button{uppercase.toggle()}label:{Image(systemName:"textformat.abc")}.accessibilityLabel("تحويل إلى أحرف كبيرة");Spacer();Button{reset=true}label:{Image(systemName:"arrow.counterclockwise")}.accessibilityLabel("إعادة تعيين الفقاعات المستخدمة")}.font(.system(size:17)).padding(.horizontal,22).frame(height:40)}
+                HStack(spacing:8){Button{model.sniperMode.toggle();model.tool = .move;model.panel=nil;close()}label:{Label("القنص",systemImage:"scope")}.font(.system(size:12)).padding(.horizontal,12).frame(height:42).glass(12).accessibilityIdentifier("typer-sniper")
+                    Button{let count=max(1,model.sniperTargets.count);let next=Array(chapter.bubbles.filter{!$0.noPaste && !$0.used}.prefix(count));insert(next,chapter:chapter.id)}label:{Label(model.sniperTargets.isEmpty ? "الفقاعة التالية":"إدراج \(model.sniperTargets.count) أهداف",systemImage:"text.badge.plus")}.buttonStyle(GoldButtonStyle(primary:true)).disabled(chapter.pasteable.allSatisfy(\.used)).accessibilityIdentifier("typer-next")
+                }.padding(12)
+            }else{VStack(spacing:16){Image(systemName:"doc.text").font(.system(size:30,weight:.light));Text("أضف ملف الفصل أو اكتب النص، ثم اختر أي فقاعة لإدراجها في الصورة.").font(.system(size:12)).multilineTextAlignment(.center).foregroundStyle(Palette.quiet);Button("إضافة نص الفصل"){library=true}.buttonStyle(GoldButtonStyle(primary:true))}.padding(20).frame(maxHeight:.infinity)}
+        }.foregroundStyle(Palette.pale).background(Palette.ink.opacity(0.9)).glass(20)
+        .fullScreenCover(isPresented:$library){TyperLibraryView()}
+        .alert("إعادة تعيين التقدّم؟",isPresented:$reset){Button("إعادة تعيين",role:.destructive){if let chapter=typer.activeChapter{do{try typer.reset(chapter.id)}catch{typer.error=error.localizedDescription}}};Button("إلغاء",role:.cancel){}}message:{Text("تصبح كل الفقاعات متاحة مجددًا. لن تُحذف طبقات النص من الصور.")}
+        .typerErrors(typer)
+    }
+    private func insert(_ bubbles:[DialogueBubble],chapter:UUID){
+        do {let remaining=Array(bubbles.filter{!$0.noPaste}.prefix(model.sniperTargets.isEmpty ? bubbles.count:model.sniperTargets.count))
+            var values=remaining;if uppercase{for i in values.indices{values[i].text=values[i].text.uppercased()}}
+            try typer.place(values,chapter:chapter,model:model,targets:model.sniperTargets);model.sniperTargets=[];model.sniperMode=false
+        }catch{typer.error=error.localizedDescription}
+    }
+}
+private struct TyperError:ViewModifier {
+    @ObservedObject var store:TyperStore
+    func body(content:Content)->some View{content.alert("تعذر حفظ التايبر",isPresented:Binding(get:{store.error != nil},set:{if !$0{store.error=nil}})){Button("حسنًا"){store.error=nil}}message:{Text(store.error ?? "")}}
+}
+private extension View {func typerErrors(_ store:TyperStore)->some View{modifier(TyperError(store:store))}}

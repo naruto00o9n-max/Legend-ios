@@ -67,17 +67,6 @@ struct ExportSheet:View {
         .onAppear{model.exported=nil}.onChange(of:format){_,_ in model.exported=nil}
     }
 }
-struct AssistantView:View {
-    var insert:((String)->Void)?
-    @Environment(\.dismiss) var dismiss
-    @State private var source="";@State private var lines:[String]=[];@State private var index=0
-    var body:some View{ZStack{Ambient();VStack(alignment:.leading,spacing:16){HStack{Text("مساعد الحوارات").font(.system(size:21,weight:.semibold));Spacer();IconButton(icon:"xmark",title:"إغلاق"){dismiss()}}
-        Text("كل فقرة فقاعة · نافذة داخل التطبيق").font(.system(size:12)).foregroundStyle(Palette.quiet)
-        TextEditor(text:$source).scrollContentBackground(.hidden).font(.system(size:15)).padding(12).glass(18).frame(minHeight:140,maxHeight:240).accessibilityIdentifier("assistant-text")
-        Button("تجهيز الحوارات"){lines=source.components(separatedBy:"\n\n").map{$0.trimmingCharacters(in:.whitespacesAndNewlines)}.filter{!$0.isEmpty};index=0}.buttonStyle(GoldButtonStyle(primary:true))
-        if !lines.isEmpty{VStack(spacing:14){Text("\(index+1) / \(lines.count)").font(.system(size:10,design:.monospaced)).foregroundStyle(Palette.quiet);Text(lines[index]).font(.system(size:16)).multilineTextAlignment(.center).frame(maxWidth:.infinity);HStack{IconButton(icon:"chevron.right",title:"السابق"){index=max(0,index-1)};Button("نسخ"){UIPasteboard.general.string=lines[index]}.font(.system(size:13));Spacer();if let insert{Button("إضافة إلى الصورة"){insert(lines[index]);dismiss()}.font(.system(size:13))};IconButton(icon:"chevron.left",title:"التالي"){index=min(lines.count-1,index+1)}}}.padding(18).glass(20)};Spacer(minLength:0)
-    }.padding(22)}.foregroundStyle(Palette.pale)}
-}
 struct SettingsView: View {
     @EnvironmentObject var service:ReferenceService
     @Environment(\.dismiss) private var dismiss
@@ -85,16 +74,18 @@ struct SettingsView: View {
     @State private var profile=false
     @State private var hub=false
     @State private var fonts=false
+    @State private var typerSettings=false
+    @State private var typerLibrary=false
     var body:some View {
         NavigationStack { ZStack {Ambient();ScrollView {VStack(alignment:.leading,spacing:24) {
             Button{if service.session==nil{account=true}else{profile=true}}label:{HStack(spacing:16){Image(systemName:"person.crop.circle").font(.system(size:42,weight:.ultraLight));VStack(alignment:.leading,spacing:7){Text(service.session==nil ? "تسجيل الدخول":"الملف الشخصي").font(.system(size:17,weight:.semibold));Text(service.session?.user.email ?? "حسابك وأعمالك في مكان واحد").font(.system(size:12)).foregroundStyle(Palette.quiet).lineLimit(1)};Spacer();Image(systemName:"chevron.left").font(.system(size:12))}.padding(22).glass(22)}.buttonStyle(.plain)
             Text("مساحة العمل").font(.system(size:12,weight:.medium)).foregroundStyle(Palette.quiet)
-            VStack(spacing:0){row("مكتبة الخطوط","textformat.alt"){fonts=true}.accessibilityIdentifier("settings-font-library");Divider().padding(.horizontal,20);row("المجتمع","person.2"){hub=true}.accessibilityIdentifier("settings-community")}
+            VStack(spacing:0){row("مكتبة الخطوط","textformat.alt"){fonts=true}.accessibilityIdentifier("settings-font-library");Divider().padding(.horizontal,20);row("المجتمع","person.2"){hub=true}.accessibilityIdentifier("settings-community");Divider().padding(.horizontal,20);row("فصول التايبر","text.bubble"){typerLibrary=true};Divider().padding(.horizontal,20);row("إعدادات التايبر والوسوم","tag"){typerSettings=true}.accessibilityIdentifier("settings-typer")}
                 .glass(20)
             VStack(alignment:.leading,spacing:12){HStack{Image(systemName:"photo");Text("الصورة الأصلية").font(.system(size:15,weight:.medium))};Text("تُحفظ أبعاد صورك عند التصدير إلى PNG. احفظ ملف المشروع للاحتفاظ بالنصوص والطبقات القابلة للتعديل.").font(.system(size:12)).foregroundStyle(Palette.quiet).lineSpacing(6)}.padding(20).glass(20)
             HStack{Brand();Spacer();Text("iPhone · iPad").font(.system(size:11)).foregroundStyle(Palette.quiet)}.padding(.top,12)
         }.padding(24).frame(maxWidth:760).frame(maxWidth:.infinity)} }.foregroundStyle(Palette.pale).navigationTitle("الإعدادات").navigationBarTitleDisplayMode(.inline).toolbar{ToolbarItem(placement:.topBarLeading){IconButton(icon:"chevron.right",title:"إغلاق"){dismiss()}.accessibilityIdentifier("settings-close")}}.tint(Palette.pale)
-        .fullScreenCover(isPresented:$account){AccountView()}.fullScreenCover(isPresented:$profile){ProfileView()}.fullScreenCover(isPresented:$hub){ServiceHub()}.sheet(isPresented:$fonts){FontLibraryView()}}.cookiesInterface()
+        .fullScreenCover(isPresented:$account){AccountView()}.fullScreenCover(isPresented:$profile){ProfileView()}.fullScreenCover(isPresented:$hub){ServiceHub()}.sheet(isPresented:$fonts){FontLibraryView()}.fullScreenCover(isPresented:$typerLibrary){TyperLibraryView()}.sheet(isPresented:$typerSettings){TyperSettingsView()}}.cookiesInterface()
     }
     private func row(_ title:String,_ icon:String,action:@escaping ()->Void)->some View{Button(action:action){HStack(spacing:14){Image(systemName:icon).font(.system(size:20)).frame(width:28);Text(title).font(.system(size:14));Spacer();Image(systemName:"chevron.left").font(.system(size:11)).foregroundStyle(Palette.quiet)}.padding(20).frame(maxWidth:.infinity,minHeight:62).contentShape(Rectangle())}.buttonStyle(.plain)}
 }

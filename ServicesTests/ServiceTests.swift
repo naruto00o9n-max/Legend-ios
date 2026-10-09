@@ -6,6 +6,10 @@ final class ServiceTests:XCTestCase {
         XCTAssertTrue(ReferenceService.errorMessage(status:500,code:"unexpected_failure",reason:"Database error saving new user").contains("Database error saving new user"))
         XCTAssertTrue(ReferenceService.errorMessage(status:400,code:"email_not_confirmed",reason:"").contains("أكّد"))
     }
+    @MainActor func testSignupResponseDoesNotClaimEmailDelivery(){
+        XCTAssertFalse(ReferenceService.signupMessage(["id":"test","identities":[]]).contains("أُرسل"))
+        XCTAssertTrue(ReferenceService.signupMessage(["id":"test","identities":[["provider":"email"]]]).contains("لا يضمن وصول"))
+    }
     @MainActor func testOriginalPublicAPIFromNativeClient() async throws {
         XCTAssertTrue(NetworkPolicy.enabled)
         let client=ReferenceService();XCTAssertNotNil(client.config)

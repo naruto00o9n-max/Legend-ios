@@ -33,6 +33,7 @@ struct EditorView:View {
                     toolButton(Tool.brush.icon,"رسم",id:"tool-brush"){select(.brush)}
                     toolButton("photo.badge.plus","صورة",id:"tool-image"){imagePicker=true}
                     toolButton(Tool.shapes.icon,"أشكال",id:"tool-shapes"){select(.shapes)}
+                    toolButton("text.bubble","التايبر",id:"tool-typer"){assistant.toggle();model.panel=nil}
                     Menu{
                         Button{select(.cleaner)}label:{Label("تنظيف",systemImage:"sparkles")}.accessibilityIdentifier("tool-cleaner")
                         Button{select(.eyedropper)}label:{Label("قطارة",systemImage:"eyedropper")}.accessibilityIdentifier("tool-eyedropper")
@@ -43,13 +44,14 @@ struct EditorView:View {
 
         }.foregroundStyle(Palette.pale).glass(0)}
         .toolbar(.hidden,for:.navigationBar).foregroundStyle(Palette.pale).animation(.easeInOut(duration:0.2),value:model.panel)
-        .overlay(alignment:.trailing){Button{assistant=true}label:{Image("CookiesLogo").resizable().scaledToFit().frame(width:38,height:38).clipShape(Circle()).padding(6).background(Palette.ink.opacity(0.85),in:Circle()).overlay(Circle().stroke(Palette.gold.opacity(0.4),lineWidth:0.8))}.padding(.trailing,12).accessibilityIdentifier("tool-assistant").accessibilityLabel("مساعد الحوارات")}
+        .overlay(alignment:.trailing){if !assistant{Button{assistant=true;model.panel=nil}label:{Image("CookiesLogo").resizable().scaledToFit().frame(width:38,height:38).clipShape(Circle()).padding(6).background(Palette.ink.opacity(0.85),in:Circle()).overlay(Circle().stroke(Palette.gold.opacity(0.4),lineWidth:0.8))}.padding(.trailing,12).accessibilityIdentifier("tool-assistant").accessibilityLabel("التايبر")}}
+        .overlay(alignment:.trailing){if assistant{GeometryReader{g in TyperPanel(model:model,close:{assistant=false},compact:g.size.height<500).frame(width:min(320,g.size.width-24),height:min(490,max(160,g.size.height-136))).frame(maxWidth:.infinity,maxHeight:.infinity,alignment:.trailing).padding(.trailing,8)}.transition(.move(edge:.trailing).combined(with:.opacity))}}
+        .overlay(alignment:.top){if model.sniperMode{HStack{Image(systemName:"scope");Text("حدد الفقاعات بالترتيب · \(model.sniperTargets.count)").font(.system(size:12));Button("تراجع"){_ = model.sniperTargets.popLast()}.disabled(model.sniperTargets.isEmpty);Button("الفقاعات"){assistant=true};Button("إنهاء"){model.sniperMode=false}}.padding(12).glass(14).padding(.horizontal,12).padding(.top,58)}}
         .overlay{if model.busy && !showExport{ProgressView("جارٍ معالجة المنطقة…").tint(Palette.gold).padding(20).glass()}}
         .fullScreenCover(isPresented:$reader){ReaderView(model:model).cookiesInterface()}
         .sheet(isPresented:$brushSettings){BrushSheet(model:model).cookiesInterface().presentationDetents([.height(300)]).presentationBackground(.clear)}
         .sheet(isPresented:$layers){LayerSheet(model:model).cookiesInterface().presentationDetents([.medium,.large]).presentationBackground(.clear)}
         .sheet(isPresented:$shapes){ShapeSheet(model:model).cookiesInterface().presentationDetents([.medium,.large]).presentationBackground(.clear)}
-        .sheet(isPresented:$assistant){AssistantView(insert:{text in model.add(.text);model.change{$0.textContent=text}}).cookiesInterface().presentationDetents([.medium,.large])}
         .sheet(isPresented:$showExport){ExportSheet(model:model).cookiesInterface().presentationDetents([.height(390)]).presentationBackground(.clear)}
         .sheet(isPresented:$imagePicker){PhotoLibraryPicker{result in
             switch result{case .failure(let error):model.error=error.localizedDescription

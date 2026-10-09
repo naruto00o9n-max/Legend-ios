@@ -4,6 +4,8 @@ NS_ASSUME_NONNULL_BEGIN
 extern "C" {
 #endif
 UIImage * _Nullable CookiesInpaint(UIImage *source, UIImage *mask, double radius);
+/// Region-local contour and text bounds. A pin is returned when detection fails.
+NSDictionary<NSString *, id> * _Nullable CookiesDetectBubble(UIImage *source, CGPoint point);
 #ifdef __cplusplus
 }
 #endif

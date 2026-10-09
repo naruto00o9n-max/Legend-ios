@@ -42,16 +42,40 @@ import SwiftUI
     @Published var exported:URL?
     @Published var undoStack:[[EditorLayer]]=[]
     @Published var redoStack:[[EditorLayer]]=[]
+    @Published var sniperTargets:[SniperTarget]=[]
+    @Published var sniperMode=false
     let library:LibraryStore; var visibleCenter=CGPoint.zero
     private var previewTask:Task<Void,Never>?
     init(page:EditorPage,library:LibraryStore){self.page=page;self.library=library}
     var directory:URL {library.directory(page.id)}
     var active:EditorLayer? {page.layers.first{$0.id==selected}}
+    @discardableResult func insertDialogues(_ values:[(String,TextStyle?)],targets:[SniperTarget]=[])throws->[UUID] {
+        let previous=page.layers;var next=page
+        let center=visibleCenter == .zero ? CGPoint(x:Double(page.width)/2,y:200):visibleCenter
+        for (index,value) in values.enumerated() {
+            var item=EditorLayer(kind:.text,name:value.0);item.textContent=value.0
+            if let style=value.1{item.style=style}
+            item.style.boxWidth=min(320,Double(page.width));item.frame=Box(x:max(0,center.x-160),y:max(0,center.y-65),width:item.style.boxWidth,height:130)
+            if index<targets.count{item=SniperDetector.fitted(item,to:targets[index])}
+            next.layers.append(item)
+        }
+        next.modified=Date();try library.persist(next)
+        checkpoint();page=next;selected=next.layers.last?.id;tool = .text;panel=nil;save()
+        return Array(next.layers.dropFirst(previous.count)).map(\.id)
+    }
+    func detectSniper(at point:CGPoint) async {
+        guard !busy,point.x>=0,point.y>=0,point.x<Double(page.width),point.y<Double(page.height) else{return}
+        busy=true;defer{busy=false};let page=self.page,directory=self.directory
+        do{let target=try await Task.detached(priority:.userInitiated){try SniperDetector.detect(page:page,directory:directory,point:point)}.value
+            guard sniperMode,self.page.id==page.id else{return}
+            if !sniperTargets.contains(where:{hypot($0.point.x-point.x,$0.point.y-point.y)<12}){sniperTargets.append(target)}
+        }catch{self.error=error.localizedDescription}
+    }
     func checkpoint() {undoStack.append(page.layers);if undoStack.count>60{undoStack.removeFirst()};redoStack=[]}
     func change(persist:Bool=true,_ body:(inout EditorLayer)->Void) {guard let i=page.layers.firstIndex(where:{$0.id==selected}),!page.layers[i].isLocked else{return};body(&page.layers[i]);page.modified=Date();if persist{save()}}
     func add(_ kind:LayerKind,shape:Int=0) {
         checkpoint();let center=visibleCenter == .zero ? CGPoint(x:Double(page.width)/2,y:200):visibleCenter
-        var l=EditorLayer(kind:kind,name:kind == .text ? "نص جديد":"طبقة \(page.layers.count+1)");l.frame=Box(x:max(0,Double(center.x)-160),y:max(0,Double(center.y)-65),width:min(320,Double(page.width)),height:130);l.style.boxWidth=l.frame.width;l.shape=shape
+        var l=EditorLayer(kind:kind,name:kind == .text ? "نص جديد":"طبقة \(page.layers.count+1)");l.frame=Box(x:max(0,Double(center.x)-160),y:max(0,Double(center.y)-65),width:min(320,Double(page.width)),height:130);l.style.boxWidth=l.frame.width;l.style.fontSize=UserDefaults.standard.object(forKey:"default-text-size") as? Double ?? 48;l.shape=shape
         if kind == .drawing{l.frame=Box(x:0,y:0,width:Double(page.width),height:Double(page.height))}
         page.layers.append(l);selected=l.id;save();if kind == .text{panel = .content}
     }

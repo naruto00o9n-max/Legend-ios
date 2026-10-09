@@ -31,9 +31,16 @@ struct AccountView: View {
                             if let message = service.message {
                                 HStack(alignment: .top, spacing: 10) { Image(systemName: "info.circle"); Text(message).font(.system(size: 12)).lineSpacing(5).textSelection(.enabled) }.padding(14).glass(12).accessibilityIdentifier("account-message")
                             }
+                            if service.confirmationEmail != nil || service.message?.contains("أكّد بريدك") == true {
+                                TimelineView(.periodic(from:.now,by:1)){context in
+                                    let seconds=max(0,Int((service.confirmationCooldown ?? .distantPast).timeIntervalSince(context.date)))
+                                    Button(seconds>0 ? "إعادة إرسال التأكيد خلال \(seconds) ثانية":"إعادة إرسال رسالة التأكيد"){Task{await service.resendConfirmation(email:email)}}.font(.system(size:13)).disabled(seconds>0 || service.busy).accessibilityIdentifier("account-resend")
+                                }
+                            }
                             Button { submit() } label: { HStack { if service.busy { ProgressView().tint(Palette.ink) }; Text(signup ? "إنشاء الحساب" : "تسجيل الدخول") } }.buttonStyle(GoldButtonStyle(primary: true)).disabled(service.busy).accessibilityIdentifier("account-submit")
                             HStack { Rectangle().fill(.white.opacity(0.1)).frame(height: 1); Text("أو").font(.system(size: 12)).foregroundStyle(Palette.quiet); Rectangle().fill(.white.opacity(0.1)).frame(height: 1) }
                             Button { focus = nil; service.google() } label: { Label("الدخول باستخدام Google", systemImage: "globe") }.buttonStyle(GoldButtonStyle()).disabled(service.busy).accessibilityIdentifier("account-google")
+                            Text("إذا انتهى دخول Google عند localhost، فإن الخدمة لم تُهيّئ العودة إلى نسخة iOS. استخدم البريد بعد تأكيده؛ يحتاج Google إلى تعديل إعداد العودة لدى مالك الخدمة.").font(.system(size:11)).foregroundStyle(Palette.quiet).lineSpacing(4)
                             Button(signup ? "لدي حساب بالفعل" : "إنشاء حساب جديد") { withAnimation(.easeInOut(duration: 0.2)) { signup.toggle(); service.message = nil } }.font(.system(size: 14)).frame(maxWidth: .infinity)
                             Button("متابعة التحرير") { dismiss() }.font(.system(size: 13)).foregroundStyle(Palette.quiet).frame(maxWidth: .infinity)
                         }.frame(maxWidth: 420).padding(.horizontal, 28)
