@@ -14,6 +14,8 @@ struct StyleLibraryView:View {
     @State private var importer=false
     @State private var exported:URL?
     @State private var includeLayout=false
+    @State private var pasteOptions=false
+    @State private var components=Set(StyleComponent.allCases)
     @State private var failure:String?
     var filtered:[SavedTextStyle]{store.styles.filter{(group=="الكل" || $0.group==group) && (query.isEmpty || $0.title.localizedCaseInsensitiveContains(query))}}
     var body:some View {
@@ -22,7 +24,7 @@ struct StyleLibraryView:View {
                 Button{importer=true}label:{Label("استيراد حزمة",systemImage:"square.and.arrow.down")}
                 Button{perform{exported=try store.export(tags:typer.state.tags)}}label:{Label("تصدير الأنماط والوسوم",systemImage:"square.and.arrow.up")}
                 Button{if let layer=model.active{store.copy(layer,from:model.directory)}}label:{Label("نسخ نمط المحدد",systemImage:"eyedropper")}
-                Button{perform{try store.paste(to:model)}}label:{Label("لصق آخر نمط",systemImage:"doc.on.clipboard")}
+                Button{pasteOptions=true}label:{Label("لصق خصائص النمط…",systemImage:"doc.on.clipboard")}
             }label:{Image(systemName:"ellipsis.circle")}}
             HStack{Image(systemName:"magnifyingglass");TextField("بحث في الأنماط",text:$query);Picker("المجموعة",selection:$group){Text("الكل").tag("الكل");ForEach(store.groups,id:\.self){Text($0).tag($0)}}.pickerStyle(.menu)}.font(.system(size:12))
             Toggle("تطبيق عرض النص والمنظور المحفوظ أيضًا",isOn:$includeLayout).font(.system(size:11))
@@ -38,6 +40,7 @@ struct StyleLibraryView:View {
             }}
             if let exported{ShareLink(item:exported){Label("مشاركة الحزمة",systemImage:"square.and.arrow.up")}}
         }
+        .sheet(isPresented:$pasteOptions){NavigationStack{List{ForEach(StyleComponent.allCases){component in Toggle(component.title,isOn:Binding(get:{components.contains(component)},set:{if $0{components.insert(component)}else{components.remove(component)}})).listRowBackground(Color.clear)}}.scrollContentBackground(.hidden).background(Palette.ink).navigationTitle("خصائص النمط").toolbar{ToolbarItem(placement:.cancellationAction){Button("إلغاء"){pasteOptions=false}};ToolbarItem(placement:.confirmationAction){Button("لصق"){perform{try store.paste(to:model,components:components);pasteOptions=false}}.disabled(components.isEmpty)}}}.preferredColorScheme(.dark)}
         .alert(editing==nil ? "نمط جديد":"تعديل النمط",isPresented:$naming){TextField("اسم النمط",text:$name);TextField("المجموعة",text:$category);Button("حفظ"){perform{if let editing{try store.rename(editing.id,title:name,group:category)}else if let layer=model.active{try store.save(title:name,group:category,layer:layer,from:model.directory)}}};Button("إلغاء",role:.cancel){}}
         .fileImporter(isPresented:$importer,allowedContentTypes:[UTType(filenameExtension:"cookiesstyles") ?? .zip,.zip]){result in perform{let tags=try store.importPackage(result.get());for tag in tags{try typer.saveTag(tag)}}}
         .alert("تعذر حفظ النمط",isPresented:Binding(get:{failure != nil},set:{if !$0{failure=nil}})){Button("حسنًا"){failure=nil}}message:{Text(failure ?? "")}
@@ -50,7 +53,7 @@ struct StylePreview:View {
     @State private var image:UIImage?
     var body:some View{Group{if let image{Image(uiImage:image).resizable().scaledToFit()}else{ProgressView()}}.task(id:item){
         var layer=EditorLayer(kind:.text);layer.textContent="كوكيز Aa";layer.style=item.style;layer.style.boxWidth=360;layer.style.fontSize=min(48,layer.style.fontSize)
-        let size=LayerRenderer.bounds(layer).insetBy(dx:-24,dy:-24),format=UIGraphicsImageRendererFormat();format.scale=1
-        image=UIGraphicsImageRenderer(size:size.size,format:format).image{output in output.cgContext.translateBy(x:24,y:24);LayerRenderer.draw([layer],in:output.cgContext,directory:directory)}
+        let size=TextVisualBounds.rect(layer),format=UIGraphicsImageRendererFormat();format.scale=1
+        image=UIGraphicsImageRenderer(size:size.size,format:format).image{output in output.cgContext.translateBy(x:-size.minX,y:-size.minY);LayerRenderer.draw([layer],in:output.cgContext,directory:directory)}
     }}
 }

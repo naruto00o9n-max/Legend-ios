@@ -44,6 +44,14 @@ final class TextStyleTests:XCTestCase {
         }
         return bytes
     }
+    func testSelectiveStylePasteKeepsUnselectedFontGeometryAndRichSpans()throws {
+        var current=TextStyle();current.fontSize=70;current.color="FFFFFF";current.spans=[TextRun(start:0,end:2,isBold:true)];current.rotationX=22
+        var source=TextStyle();source.fontSize=18;source.color="FF0000";source.textGradient=["FF0000","0000FF"];source.strokeWidth=12;source.rotationX=0
+        let merged=try StyleComponent.merge(source,into:current,selected:[.fill,.outline])
+        XCTAssertEqual(merged.color,"FF0000");XCTAssertEqual(merged.strokeWidth,12);XCTAssertEqual(merged.fontSize,70);XCTAssertEqual(merged.rotationX,22);XCTAssertEqual(merged.spans,current.spans)
+        var noGradient=source;noGradient.textGradientPoints=nil;current.textGradientPoints=[Point(x:0,y:0),Point(x:1,y:1)]
+        XCTAssertNil(try StyleComponent.merge(noGradient,into:current,selected:[.fill]).textGradientPoints)
+    }
     func testGradientPreservesGlyphAlphaAndEmptyLetterHoles() throws {
         var layer=EditorLayer(kind:.text);layer.textContent="OO";layer.frame.x=50;layer.frame.y=40;layer.style.boxWidth=250;layer.style.fontSize=88;layer.style.strokeWidth=0;layer.style.color="FFFFFF"
         let dir=FileManager.default.temporaryDirectory

@@ -18,7 +18,7 @@ enum FontPackage {
             var registrationError:Unmanaged<CFError>?
             if !CTFontManagerRegisterFontsForURL(target as CFURL,.process,&registrationError){
                 let error=registrationError?.takeRetainedValue()
-                guard error.map({CFErrorGetCode($0)==CTFontManagerError.alreadyRegistered.rawValue})==true else{throw ImageFailure.message("تعذر تسجيل "+file.lastPathComponent)}
+                guard error.map({CFErrorGetCode($0)==Int(CTFontManagerError.alreadyRegistered.rawValue)})==true else{throw ImageFailure.message("تعذر تسجيل "+file.lastPathComponent)}
             }
         }}catch{for file in added{CTFontManagerUnregisterFontsForURL(file as CFURL,.process,nil);try? FileManager.default.removeItem(at:file)};Fonts.register();throw error}
         Fonts.register()

@@ -1,6 +1,12 @@
 import CoreGraphics
 
 enum PerspectiveGeometry {
+    static func corners(_ style:TextStyle)->[Point] {
+        if style.perspectivePoints.count==4{return style.perspectivePoints}
+        guard style.rotationX != 0 || style.rotationY != 0 else{return []}
+        let x=sin(style.rotationY*Double.pi/180)*0.25,y=sin(style.rotationX*Double.pi/180)*0.25
+        return [Point(x:max(0,x),y:max(0,y)),Point(x:min(1,1+x),y:max(0,-y)),Point(x:min(1,1-x),y:min(1,1+y)),Point(x:max(0,-x),y:min(1,1-y))]
+    }
     /// Extend a four-corner homography to padding, so handles belong to text
     /// coordinates and outlines/shadows aren't clipped at the original edges.
     static func extended(_ corners:[Point],width:Double,height:Double,padding:Double)->[Point]? {

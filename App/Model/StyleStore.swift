@@ -93,10 +93,11 @@ struct StylePackage:Codable {
     func copy(_ layer:EditorLayer,from assets:URL) {
         do{var style=layer.style;style.texturePath=try ownTexture(style.texturePath,from:assets);copiedStyle=style;copiedDirectory=directory;error=nil}catch{self.error=error.localizedDescription}
     }
-    func paste(to model:EditorModel)throws {
+    func paste(to model:EditorModel,components:Set<StyleComponent>=Set(StyleComponent.allCases))throws {
         guard let style=copiedStyle,let source=copiedDirectory,model.active?.kind == .text else{throw ImageFailure.message("انسخ نمط نص أولًا")}
-        var next=try resolved(style,from:source,into:model.directory);next.spans=[]
-        next.boxWidth=model.active?.style.boxWidth ?? next.boxWidth
+        guard let current=model.active?.style,model.active?.isLocked==false,!components.isEmpty else{throw ImageFailure.message("حدد نصًا غير مقفل واختر خصائص اللصق")}
+        let merged=try StyleComponent.merge(style,into:current,selected:components)
+        let next=try resolved(merged,from:components.contains(.texture) ? source:model.directory,into:model.directory)
         model.checkpoint();model.change{$0.style=next}
     }
     func export(ids:Set<UUID>=[],tags:[DialogueTag]=[])throws->URL {
