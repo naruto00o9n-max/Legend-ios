@@ -1,10 +1,46 @@
 import SwiftUI
 
-struct LayerSheet:View {
-    @ObservedObject var model:EditorModel;@Environment(\.dismiss) var dismiss
-    var body:some View{VStack(spacing:14){HStack{Text("الطبقات").font(.system(size:18,weight:.semibold));Spacer();IconButton(icon:"plus",title:"طبقة رسم"){model.add(.drawing)};IconButton(icon:"checkmark",title:"تم"){dismiss()}}
-        List{ForEach(model.page.layers.reversed()){l in HStack(spacing:12){IconButton(icon:l.isVisible ? "eye":"eye.slash",title:"إظهار الطبقة"){model.selected=l.id;model.checkpoint();if let index=model.page.layers.firstIndex(where:{$0.id==l.id}){model.page.layers[index].isVisible.toggle();model.save()}};VStack(alignment:.leading){Text(l.kind == .text ? l.textContent:l.name).font(.system(size:13)).lineLimit(1);Text("\(Int(l.opacity*100))% · \(l.blend.title)").font(.system(size:10)).foregroundStyle(Palette.quiet)};Spacer();IconButton(icon:l.isLocked ? "lock":"lock.open",title:"قفل الطبقة"){if let i=model.page.layers.firstIndex(where:{$0.id==l.id}){model.checkpoint();model.page.layers[i].isLocked.toggle();model.save()}}}.contentShape(Rectangle()).onTapGesture{model.selected=l.id}.listRowBackground(model.selected==l.id ? Palette.gold.opacity(0.12):Color.clear).contextMenu{Button("نسخ"){model.selected=l.id;model.duplicate()};Button("حذف",role:.destructive){model.selected=l.id;model.delete()}}}.onMove{source,destination in model.checkpoint();var reversed=Array(model.page.layers.reversed());reversed.move(fromOffsets:source,toOffset:destination);model.page.layers=Array(reversed.reversed());model.save()}}.environment(\.editMode,.constant(.active)).scrollContentBackground(.hidden).listStyle(.plain)
-    }.padding(16).foregroundStyle(Palette.pale).background(Palette.ink.opacity(0.8)).glass(28)}
+struct LayerSheet: View {
+    @ObservedObject var model: EditorModel
+    @Environment(\.dismiss) private var dismiss
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack { Text("الطبقات").font(.system(size:18,weight:.semibold)); Text("\(model.page.layers.count+1)").font(.system(size:11,design:.monospaced)).foregroundStyle(Palette.quiet); Spacer(); IconButton(icon:"plus",title:"طبقة رسم"){model.add(.drawing)}; IconButton(icon:"checkmark",title:"تم"){dismiss()} }.padding(.horizontal,16).frame(height:56)
+            List {
+                ForEach(model.page.layers.reversed()) { item in
+                    HStack(spacing:12) {
+                        LayerThumbnail(layer:item,directory:model.directory).frame(width:48,height:48).clipShape(RoundedRectangle(cornerRadius:8))
+                        VStack(alignment:.leading,spacing:6) { Text(item.kind == .text ? item.textContent:item.name).font(.system(size:13,weight:.medium)).lineLimit(1);Text("\(Int(item.opacity*100))% · \(item.blend.title)").font(.system(size:11)).foregroundStyle(Palette.quiet) }
+                        Spacer(minLength:0)
+                        IconButton(icon:item.isVisible ? "eye":"eye.slash",title:"إظهار الطبقة") { model.selected=item.id;model.checkpoint();if let index=model.page.layers.firstIndex(where:{$0.id==item.id}){model.page.layers[index].isVisible.toggle();model.save()} }
+                        IconButton(icon:item.isLocked ? "lock":"lock.open",title:"قفل الطبقة") { if let index=model.page.layers.firstIndex(where:{$0.id==item.id}){model.checkpoint();model.page.layers[index].isLocked.toggle();model.save()} }
+                    }.contentShape(Rectangle()).onTapGesture{model.selected=item.id;model.panel=nil;model.tool=item.kind == .text ? .text:.move}
+                    .listRowBackground(model.selected==item.id ? Palette.gold.opacity(0.1):.clear)
+                    .contextMenu{Button("نسخ"){model.selected=item.id;model.duplicate()};Button("حذف",role:.destructive){model.selected=item.id;model.delete()}}
+                }.onMove { source,destination in model.checkpoint();var reversed=Array(model.page.layers.reversed());reversed.move(fromOffsets:source,toOffset:destination);model.page.layers=Array(reversed.reversed());model.save() }
+                HStack(spacing:12) {
+                    if let image=UIImage(contentsOfFile:model.directory.appendingPathComponent("thumbnail.png").path){Image(uiImage:image).resizable().scaledToFill().frame(width:48,height:48).clipped().clipShape(RoundedRectangle(cornerRadius:8))}
+                    VStack(alignment:.leading,spacing:6){Text("الصورة الأصلية").font(.system(size:13));Text("\(model.page.width) × \(model.page.height)").font(.system(size:11,design:.monospaced)).foregroundStyle(Palette.quiet)};Spacer();Image(systemName:"lock.fill").foregroundStyle(Palette.quiet)
+                }.listRowBackground(Color.clear)
+            }.environment(\.editMode,.constant(.active)).scrollContentBackground(.hidden).listStyle(.plain)
+            if model.active != nil {
+                HStack { Text("الشفافية").font(.system(size:12));Slider(value:Binding(get:{model.active?.opacity ?? 1},set:{value in model.change{$0.opacity=value}}),in:0...1);Text("\(Int((model.active?.opacity ?? 1)*100))%").font(.system(size:11,design:.monospaced)).frame(width:40) }.padding(.horizontal,20).padding(.vertical,12).disabled(model.active?.isLocked==true)
+            }
+        }.foregroundStyle(Palette.pale).background(Palette.ink.opacity(0.85)).glass(24)
+    }
+}
+struct LayerThumbnail: View {
+    let layer:EditorLayer
+    let directory:URL
+    @State private var image:UIImage?
+    var body:some View { ZStack {
+        Canvas{context,size in for y in 0..<6{for x in 0..<6{context.fill(Path(CGRect(x:CGFloat(x)*8,y:CGFloat(y)*8,width:8,height:8)),with:.color(.white.opacity((x+y)%2==0 ? 0.12:0.04)))}}}
+        if let image{Image(uiImage:image).resizable().scaledToFit()}
+    }.task(id:layer){var item=layer;item.frame.x=0;item.frame.y=0;item.rotation=0;item.scaleX=1;item.scaleY=1;item.opacity=1
+        if item.kind == .drawing{image=nil;return}
+        let snapshot=item,directory=self.directory
+        image=await Task.detached(priority:.utility){let bounds=LayerRenderer.bounds(snapshot),format=UIGraphicsImageRendererFormat();format.scale=2;format.opaque=false;let scale=min(44/max(1,bounds.width),44/max(1,bounds.height));return UIGraphicsImageRenderer(size:CGSize(width:48,height:48),format:format).image{output in output.cgContext.translateBy(x:(48-bounds.width*scale)/2,y:(48-bounds.height*scale)/2);output.cgContext.scaleBy(x:scale,y:scale);LayerRenderer.draw([snapshot],in:output.cgContext,directory:directory)}}.value
+    }}
 }
 struct ShapeSheet:View {
     @ObservedObject var model:EditorModel;@Environment(\.dismiss) var dismiss
@@ -42,39 +78,25 @@ struct AssistantView:View {
         if !lines.isEmpty{VStack(spacing:14){Text("\(index+1) / \(lines.count)").font(.system(size:10,design:.monospaced)).foregroundStyle(Palette.quiet);Text(lines[index]).font(.system(size:16)).multilineTextAlignment(.center).frame(maxWidth:.infinity);HStack{IconButton(icon:"chevron.right",title:"السابق"){index=max(0,index-1)};Button("نسخ"){UIPasteboard.general.string=lines[index]}.font(.system(size:13));Spacer();if let insert{Button("إضافة إلى الصورة"){insert(lines[index]);dismiss()}.font(.system(size:13))};IconButton(icon:"chevron.left",title:"التالي"){index=min(lines.count-1,index+1)}}}.padding(18).glass(20)};Spacer(minLength:0)
     }.padding(22)}.foregroundStyle(Palette.pale)}
 }
-struct SettingsView:View {
-    @EnvironmentObject var service:ReferenceService;@Environment(\.dismiss) var dismiss
-    @State private var account=false;@State private var hub=false;@State private var fonts=false
-    var body:some View{ZStack{Ambient();VStack(alignment:.leading,spacing:20){HStack{Brand();Spacer();IconButton(icon:"xmark",title:"إغلاق"){dismiss()}.accessibilityIdentifier("settings-close")};Text("مساحتك").font(.system(size:25,weight:.semibold))
-        VStack(alignment:.leading,spacing:12){Text("Cookies Editor").font(.system(size:16,weight:.medium));Text(service.session?.user.email ?? "المشاريع محفوظة على هذا الجهاز").font(.system(size:12)).foregroundStyle(Palette.quiet)}.frame(maxWidth:.infinity,alignment:.leading).padding(20).glass()
-        if NetworkPolicy.enabled{Button(service.session==nil ? "تسجيل الدخول":"حسابي والخدمات"){if service.session==nil{account=true}else{hub=true}}.buttonStyle(GoldButtonStyle(primary:true));Button("المجتمع"){hub=true}.buttonStyle(GoldButtonStyle());if service.session != nil{Button("تسجيل الخروج"){Task{await service.logout()}}.font(.system(size:13))}}else{Text("هذه النسخة لا ترسل طلبات إلى الخوادم.").font(.system(size:13)).foregroundStyle(Palette.quiet)}
-        Button("مكتبة الخطوط"){fonts=true}.buttonStyle(GoldButtonStyle()).accessibilityIdentifier("font-library")
-        Text("Cookies Editor · iPhone وiPad\nالأسود والذهبي، ومساحة لصورتك.").font(.system(size:12)).foregroundStyle(Palette.quiet).lineSpacing(6);Spacer()
-    }.padding(24)}.foregroundStyle(Palette.pale).fullScreenCover(isPresented:$account){AccountView()}.fullScreenCover(isPresented:$hub){ServiceHub()}.sheet(isPresented:$fonts){FontLibraryView()}}
-}
-struct ServiceHub:View {
+struct SettingsView: View {
     @EnvironmentObject var service:ReferenceService
-    @Environment(\.dismiss) var dismiss
-    @State private var section="community"
+    @Environment(\.dismiss) private var dismiss
+    @State private var account=false
+    @State private var profile=false
+    @State private var hub=false
+    @State private var fonts=false
     var body:some View {
-        ZStack{Ambient();ScrollView{VStack(alignment:.leading,spacing:18){
-            HStack{Text("مجتمع المترجمين").font(.system(size:23,weight:.semibold));Spacer();IconButton(icon:"xmark",title:"إغلاق"){dismiss()}}
-            Picker("القسم",selection:$section){Text("المجتمع").tag("community");Text("حسابي").tag("profile")}.pickerStyle(.segmented)
-            if service.busy{ProgressView().tint(Palette.gold)}
-            if let message=service.message{Text(message).font(.system(size:13)).foregroundStyle(Palette.quiet)}
-            ForEach(Array(service.rows.enumerated()),id:\.offset){index,row in
-                VStack(alignment:.leading,spacing:12){
-                    if let values=row["media_urls"] as? [String],let first=values.first,let url=URL(string:first){AsyncImage(url:url){phase in if let image=phase.image{image.resizable().scaledToFit().frame(maxHeight:230)}}}
-                    Text((row["title"] ?? row["display_name"] ?? row["username"]) as? String ?? "حسابي").font(.system(size:17,weight:.semibold))
-                    if let author=row["author_name"] as? String{Text(author).font(.system(size:11)).foregroundStyle(Palette.quiet)}
-                    Text((row["description"] ?? row["bio"]) as? String ?? "").font(.system(size:13)).lineSpacing(5)
-                    if let email=service.session?.user.email,section=="profile"{Text(email).font(.system(size:12)).foregroundStyle(Palette.quiet)}
-                    if let points=row["points"] as? Int{Text("النقاط: \(points)").font(.system(size:12)).foregroundStyle(Palette.gold)}
-                    if let tags=row["tags"] as? [String]{Text(tags.map{$0.hasPrefix("#") ? $0:"#"+$0}.joined(separator:" ")).font(.system(size:11)).foregroundStyle(Palette.quiet)}
-                }.frame(maxWidth:.infinity,alignment:.leading).padding(18).glass(20).accessibilityElement(children:.contain).accessibilityIdentifier("community-post-\(index)")
-            }
-        }.padding(22)}}.foregroundStyle(Palette.pale).task(id:section){await service.fetch(section)}
+        NavigationStack { ZStack {Ambient();ScrollView {VStack(alignment:.leading,spacing:24) {
+            Button{if service.session==nil{account=true}else{profile=true}}label:{HStack(spacing:16){Image(systemName:"person.crop.circle").font(.system(size:42,weight:.ultraLight));VStack(alignment:.leading,spacing:7){Text(service.session==nil ? "تسجيل الدخول":"الملف الشخصي").font(.system(size:17,weight:.semibold));Text(service.session?.user.email ?? "حسابك وأعمالك في مكان واحد").font(.system(size:12)).foregroundStyle(Palette.quiet).lineLimit(1)};Spacer();Image(systemName:"chevron.left").font(.system(size:12))}.padding(22).glass(22)}.buttonStyle(.plain)
+            Text("مساحة العمل").font(.system(size:12,weight:.medium)).foregroundStyle(Palette.quiet)
+            VStack(spacing:0){row("مكتبة الخطوط","textformat.alt"){fonts=true}.accessibilityIdentifier("font-library");Divider().padding(.horizontal,20);row("المجتمع","person.2"){hub=true}}
+                .glass(20)
+            VStack(alignment:.leading,spacing:12){HStack{Image(systemName:"photo");Text("الصورة الأصلية").font(.system(size:15,weight:.medium))};Text("تُحفظ أبعاد صورك عند التصدير إلى PNG. احفظ ملف المشروع للاحتفاظ بالنصوص والطبقات القابلة للتعديل.").font(.system(size:12)).foregroundStyle(Palette.quiet).lineSpacing(6)}.padding(20).glass(20)
+            HStack{Brand();Spacer();Text("iPhone · iPad").font(.system(size:11)).foregroundStyle(Palette.quiet)}.padding(.top,12)
+        }.padding(24).frame(maxWidth:760).frame(maxWidth:.infinity)} }.foregroundStyle(Palette.pale).navigationTitle("الإعدادات").navigationBarTitleDisplayMode(.inline).toolbar{ToolbarItem(placement:.topBarLeading){IconButton(icon:"chevron.right",title:"إغلاق"){dismiss()}.accessibilityIdentifier("settings-close")}}.tint(Palette.pale)
+        .fullScreenCover(isPresented:$account){AccountView()}.fullScreenCover(isPresented:$profile){ProfileView()}.fullScreenCover(isPresented:$hub){ServiceHub()}.sheet(isPresented:$fonts){FontLibraryView()}}
     }
+    private func row(_ title:String,_ icon:String,action:@escaping ()->Void)->some View{Button(action:action){HStack(spacing:14){Image(systemName:icon).font(.system(size:20)).frame(width:28);Text(title).font(.system(size:14));Spacer();Image(systemName:"chevron.left").font(.system(size:11)).foregroundStyle(Palette.quiet)}.padding(20).frame(minHeight:62)}.buttonStyle(.plain)}
 }
 struct BrushSheet:View {
     @ObservedObject var model:EditorModel

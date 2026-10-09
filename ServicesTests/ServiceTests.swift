@@ -2,7 +2,7 @@ import XCTest
 @testable import CookiesEditor
 
 final class ServiceTests:XCTestCase {
-    func testAuthenticationErrorsRemainSpecific() {
+    @MainActor func testAuthenticationErrorsRemainSpecific() {
         XCTAssertTrue(ReferenceService.errorMessage(status:500,code:"unexpected_failure",reason:"Database error saving new user").contains("Database error saving new user"))
         XCTAssertTrue(ReferenceService.errorMessage(status:400,code:"email_not_confirmed",reason:"").contains("أكّد"))
     }
@@ -14,6 +14,7 @@ final class ServiceTests:XCTestCase {
         XCTAssertEqual(object["disable_signup"] as? Bool,false)
         let posts=try await client.request("/rest/v1/community_posts?select=id&status=eq.APPROVED&limit=1")
         XCTAssertNotNil(try JSONSerialization.jsonObject(with:posts) as? [[String:Any]])
+        let full=try await client.request("/rest/v1/community_posts?select=*&status=eq.APPROVED&limit=1");let entries=try JSONDecoder().decode([CommunityEntry].self,from:full);if let id=entries.first?.id{_ = try await client.request("/rest/v1/post_comments?select=id&post_id=eq.\(id)&status=eq.APPROVED&limit=1")}
         let evidence=XCTAttachment(string:"Native URLSession client: original auth settings and approved community read succeeded. No account created; no password or session logged.")
         evidence.name="original-service-client";evidence.lifetime = .keepAlways;add(evidence)
     }

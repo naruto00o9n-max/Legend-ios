@@ -17,7 +17,7 @@ current=None
 def tap(pattern):
  if current is None:return False
  for node in current.iter('node'):
-  values=' '.join(node.get(k,'') for k in ['text','content-desc','resource-id'])
+  values=' '.join(node.get(k,'') for k in ['text','content-desc','resource-id']).strip()
   if re.search(pattern,values,re.I) and node.get('enabled')=='true':
    bounds=list(map(int,re.findall(r'\d+',node.get('bounds',''))))
    if len(bounds)==4 and bounds[2]>bounds[0] and bounds[3]>bounds[1]:
@@ -41,6 +41,9 @@ r=adb('shell','am','start','-n','com.oneguystudio.ytyper/.ui.dashboard.ProjectsA
 (ROOT/'public-project-entry.txt').write_bytes(r.stdout+r.stderr)
 time.sleep(5);current=capture('03-projects-unauthenticated')
 for name,pattern in [('04-permission',r'permission_allow_button|السماح|Allow'),('05-intro',r'التالي|Next|حسنًا|OK|Got it')]:visit(name,pattern)
+# Community is the first unlabelled header shortcut in the captured original.
+adb('shell','input','tap','468','160');current=capture('05-community-header')
+adb('shell','am','start','-n','com.oneguystudio.ytyper/.ui.dashboard.ProjectsActivity');current=capture('05-dashboard-return')
 # Header settings icon has no accessibility label in the original Compose UI.
 adb('shell','input','tap','990','160');events.append({'tap':'Original header settings icon at captured bounds [926,94][1058,226]'})
 current=capture('06-settings')
@@ -61,7 +64,7 @@ png=b'\x89PNG\r\n\x1a\n'+chunk(b'IHDR',struct.pack('>IIBBBBB',w,h,8,2,0,0,0))+ch
 fixture=ROOT/'reference-800x15000.png';fixture.write_bytes(png)
 adb('push',str(fixture),'/sdcard/Pictures/reference-800x15000.png')
 scan=adb('shell','am','broadcast','-a','android.intent.action.MEDIA_SCANNER_SCAN_FILE','-d','file:///sdcard/Pictures/reference-800x15000.png');(ROOT/'media-scan.txt').write_bytes(scan.stdout+scan.stderr)
-insert=adb('shell','content','insert','--uri','content://media/external/images/media','--bind','_display_name:s:reference-800x15000.png','--bind','mime_type:s:image/png','--bind','_data:s:/sdcard/Pictures/reference-800x15000.png');(ROOT/'media-insert.txt').write_bytes(insert.stdout+insert.stderr)
+insert=adb('shell','content','insert','--uri','content://media/external/images/media','--bind','_display_name:s:reference-800x15000.png','--bind','mime_type:s:image/png','--bind','_data:s:/storage/emulated/0/Pictures/reference-800x15000.png');(ROOT/'media-insert.txt').write_bytes(insert.stdout+insert.stderr)
 time.sleep(5)
 visit('14-image-import',r'Import Images|استيراد الصور')
 visit('15-picker-asset',r'reference-800x15000|thumbnail|icon_thumb')
@@ -72,14 +75,14 @@ if not visit('18-gallery-page',r'pageThumbnail|imagePreview|reference-800x15000|
 # A blank document provides the same editor tool screens if gallery selection fails.
 if visit('19-new-canvas',r'New Canvas|لوحة جديدة'):
  edits=[n for n in current.iter('node') if n.get('class')=='android.widget.EditText']
- if len(edits)>=3:
-  for node,value in zip(edits[:3],['Reference','800','15000']):
+ if len(edits)>=2:
+  for node,value in zip(edits[:2],['800','15000']):
    bounds=list(map(int,re.findall(r'\d+',node.get('bounds',''))))
    adb('shell','input','tap',str((bounds[0]+bounds[2])//2),str((bounds[1]+bounds[3])//2))
    adb('shell','input','keyevent','123',*(['67']*30));adb('shell','input','text',value)
   adb('shell','input','keyevent','4');current=capture('20-new-canvas-dimensions')
  visit('21-canvas-created',r'^Create$|Create Project|إنشاء|Confirm|OK')
-visit('22-open-project',r'Reference|Untitled|مشروع جديد')
+visit('22-open-project',r'Reference|Untitled|مشروع جديد|New Project')
 current=capture('23-editor-before-text')
 visit('24-text-tool',r'btnAddText|btnToolText|Add Text|إضافة نص|أضف نص')
 visit('25-text-format',r'btnToolFormat|التنسيق|Format')
