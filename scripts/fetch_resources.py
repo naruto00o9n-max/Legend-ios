@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import pathlib,zipfile,re,json,base64,hashlib,subprocess,urllib.request
+import pathlib,zipfile,re,json,base64,hashlib,subprocess,urllib.request,shutil
 from download_reference import download
 p=pathlib.Path(__file__).resolve().parents[1]
 revision='722718f6e8d8ff8f02337c5bf83a6455d9f4b6a1'
@@ -35,5 +35,8 @@ subprocess.run(['ditto','-x','-k',str(framework),str(p/'.work/opencv')],check=Tr
 icon=resources/'Assets.xcassets/AppIcon.appiconset';icon.mkdir(parents=True,exist_ok=True)
 subprocess.run(['sips','-z','1024','1024',str(resources/'cookies-logo.png'),'--out',str(icon/'icon.png')],check=True,stdout=subprocess.DEVNULL)
 (icon/'Contents.json').write_text(json.dumps({'images':[{'filename':'icon.png','idiom':'universal','platform':'ios','size':'1024x1024'}],'info':{'author':'xcode','version':1}}))
+brand=resources/'Assets.xcassets/CookiesLogo.imageset';brand.mkdir(parents=True,exist_ok=True)
+shutil.copyfile(resources/'cookies-logo.png',brand/'logo.png')
+(brand/'Contents.json').write_text(json.dumps({'images':[{'filename':'logo.png','idiom':'universal'}],'info':{'author':'xcode','version':1}}))
 (resources/'Assets.xcassets/Contents.json').write_text('{"info":{"author":"xcode","version":1}}')
 print('47 original fonts, pinned OpenCV and public client configuration prepared; no private/admin credential')

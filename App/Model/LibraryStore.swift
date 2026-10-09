@@ -18,6 +18,10 @@ import SwiftUI
     func load(_ id:UUID)throws->EditorPage {try JSONDecoder().decode(EditorPage.self,from:Data(contentsOf:directory(id).appendingPathComponent("page.json")))}
     func persist(_ page:EditorPage)throws {try JSONEncoder().encode(page).write(to:directory(page.id).appendingPathComponent("page.json"),options:.atomic)}
     func remove(_ item:LibraryItem) {for child in items.filter({$0.parent==item.id}){remove(child)};items.removeAll{$0.id==item.id};if !item.folder{try? FileManager.default.removeItem(at:directory(item.id))};save()}
+    func move(_ item:LibraryItem,parent:UUID?){
+        var next=parent,visited=Set<UUID>();while let id=next{guard id != item.id,visited.insert(id).inserted else{error="لا يمكن نقل مجلد داخل نفسه";return};next=items.first{$0.id==id}?.parent}
+        if let index=items.firstIndex(where:{$0.id==item.id}){items[index].parent=parent;save()}
+    }
     func rename(_ item:LibraryItem,to name:String) {if let i=items.firstIndex(where:{$0.id==item.id}){items[i].title=name;save()}}
     func importImage(_ url:URL,parent:UUID?) async {
         do {let root=self.root;let page=try await Task.detached(priority:.userInitiated){try url.pathExtension.lowercased()=="cookies" ? ProjectArchive.importFile(url,root:root):ImagePipeline.importImage(url,root:root)}.value;add(page,parent:parent)}catch{self.error=error.localizedDescription}

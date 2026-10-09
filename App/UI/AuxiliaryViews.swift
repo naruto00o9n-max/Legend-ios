@@ -47,20 +47,35 @@ struct SettingsView:View {
     @State private var account=false;@State private var hub=false;@State private var fonts=false
     var body:some View{ZStack{Ambient();VStack(alignment:.leading,spacing:20){HStack{Brand();Spacer();IconButton(icon:"xmark",title:"إغلاق"){dismiss()}};Text("مساحتك").font(.system(size:25,weight:.semibold))
         VStack(alignment:.leading,spacing:12){Text(NetworkPolicy.enabled ? "نسخة الخدمات":"نسخة محلية").font(.system(size:16,weight:.medium));Text(service.session?.user.email ?? "المشاريع محفوظة على هذا الجهاز").font(.system(size:12)).foregroundStyle(Palette.quiet)}.frame(maxWidth:.infinity,alignment:.leading).padding(20).glass()
-        if NetworkPolicy.enabled{Button(service.session==nil ? "تسجيل الدخول إلى الحساب الأصلي":"حسابي والخدمات"){if service.session==nil{account=true}else{hub=true}}.buttonStyle(GoldButtonStyle(primary:true));Button("إعدادات الخدمات العامة"){hub=true}.buttonStyle(GoldButtonStyle());if service.session != nil{Button("تسجيل الخروج"){Task{await service.logout()}}.font(.system(size:13))}}else{Text("هذه النسخة لا ترسل طلبات إلى الخوادم.").font(.system(size:13)).foregroundStyle(Palette.quiet)}
+        if NetworkPolicy.enabled{Button(service.session==nil ? "تسجيل الدخول إلى الحساب الأصلي":"حسابي والخدمات"){if service.session==nil{account=true}else{hub=true}}.buttonStyle(GoldButtonStyle(primary:true));Button("المجتمع"){hub=true}.buttonStyle(GoldButtonStyle());if service.session != nil{Button("تسجيل الخروج"){Task{await service.logout()}}.font(.system(size:13))}}else{Text("هذه النسخة لا ترسل طلبات إلى الخوادم.").font(.system(size:13)).foregroundStyle(Palette.quiet)}
         Button("مكتبة الخطوط"){fonts=true}.buttonStyle(GoldButtonStyle()).accessibilityIdentifier("font-library")
         Text("Cookies Editor · iPhone\nالأسود والذهبي، ومساحة لصورتك.").font(.system(size:12)).foregroundStyle(Palette.quiet).lineSpacing(6);Spacer()
     }.padding(24)}.foregroundStyle(Palette.pale).sheet(isPresented:$account){AccountView()}.sheet(isPresented:$hub){ServiceHub()}.sheet(isPresented:$fonts){FontLibraryView()}}
 }
 struct ServiceHub:View {
     @EnvironmentObject var service:ReferenceService
-    @State private var section="config"
-    var body:some View{ZStack{Ambient();ScrollView{VStack(alignment:.leading,spacing:18){Text("الخدمة الأصلية").font(.system(size:23,weight:.semibold));Picker("القسم",selection:$section){Text("إعدادات").tag("config");Text("حسابي").tag("profile");Text("المجتمع").tag("community")}.pickerStyle(.segmented)
-        if service.busy{ProgressView().tint(Palette.gold)};if let message=service.message{Text(message).font(.system(size:13))}
-        ForEach(Array(service.rows.enumerated()),id:\.offset){_,row in VStack(alignment:.leading,spacing:8){Text((row["title"] ?? row["key"] ?? row["display_name"]) as? String ?? "بيانات الخدمة").font(.system(size:15,weight:.medium));Text((row["content"] ?? row["value"] ?? row["description"]) as? String ?? "").font(.system(size:12)).foregroundStyle(Palette.quiet)}.frame(maxWidth:.infinity,alignment:.leading).padding(16).glass(18)}
-    }.padding(22)}}.foregroundStyle(Palette.pale).task(id:section){await service.fetch(section)}}
+    @Environment(\.dismiss) var dismiss
+    @State private var section="community"
+    var body:some View {
+        ZStack{Ambient();ScrollView{VStack(alignment:.leading,spacing:18){
+            HStack{Text("مجتمع المترجمين").font(.system(size:23,weight:.semibold));Spacer();IconButton(icon:"xmark",title:"إغلاق"){dismiss()}}
+            Picker("القسم",selection:$section){Text("المجتمع").tag("community");Text("حسابي").tag("profile")}.pickerStyle(.segmented)
+            if service.busy{ProgressView().tint(Palette.gold)}
+            if let message=service.message{Text(message).font(.system(size:13)).foregroundStyle(Palette.quiet)}
+            ForEach(Array(service.rows.enumerated()),id:\.offset){_,row in
+                VStack(alignment:.leading,spacing:12){
+                    if let values=row["media_urls"] as? [String],let first=values.first,let url=URL(string:first){AsyncImage(url:url){phase in if let image=phase.image{image.resizable().scaledToFit().frame(maxHeight:230)}}}
+                    Text((row["title"] ?? row["display_name"] ?? row["username"]) as? String ?? "حسابي").font(.system(size:17,weight:.semibold))
+                    if let author=row["author_name"] as? String{Text(author).font(.system(size:11)).foregroundStyle(Palette.quiet)}
+                    Text((row["description"] ?? row["bio"]) as? String ?? "").font(.system(size:13)).lineSpacing(5)
+                    if let email=service.session?.user.email,section=="profile"{Text(email).font(.system(size:12)).foregroundStyle(Palette.quiet)}
+                    if let points=row["points"] as? Int{Text("النقاط: \(points)").font(.system(size:12)).foregroundStyle(Palette.gold)}
+                    if let tags=row["tags"] as? [String]{Text(tags.map{"#"+$0}.joined(separator:" ")).font(.system(size:11)).foregroundStyle(Palette.quiet)}
+                }.frame(maxWidth:.infinity,alignment:.leading).padding(18).glass(20)
+            }
+        }.padding(22)}}.foregroundStyle(Palette.pale).task(id:section){await service.fetch(section)}
+    }
 }
-
 struct BrushSheet:View {
     @ObservedObject var model:EditorModel
     var body:some View {VStack(alignment:.leading,spacing:22){Text("الفرشاة").font(.system(size:19,weight:.semibold));Picker("نوع الفرشاة",selection:$model.brushStyle){Text("صلبة").tag("normal");Text("مائية").tag("water");Text("مضيئة").tag("neon")}.pickerStyle(.segmented);ColorPicker("لون الرسم",selection:Binding(get:{Color(uiColor:UIColor(hex:model.brushColor))},set:{model.brushColor=UIColor($0).hex}),supportsOpacity:false);Text("الحجم: \(Int(model.brushWidth)) بكسل").font(.system(size:12));Slider(value:$model.brushWidth,in:1...160).tint(Palette.gold)}.padding(24).foregroundStyle(Palette.pale).background(Palette.ink.opacity(0.85)).glass(28)}

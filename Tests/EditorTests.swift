@@ -21,11 +21,11 @@ final class EditorTests:XCTestCase {
     func testOriginalFontsAndNativeCleaner() throws {
         XCTAssertEqual(Fonts.files.count+(Bundle.main.urls(forResourcesWithExtension:"otf",subdirectory:"Fonts") ?? []).count,47)
         let format=UIGraphicsImageRendererFormat();format.scale=1
-        let source=UIGraphicsImageRenderer(size:CGSize(width:400,height:400),format:format).image{ctx in UIColor.white.setFill();ctx.fill(CGRect(x:0,y:0,width:400,height:400));("COOKIES" as NSString).draw(at:CGPoint(x:70,y:170),withAttributes:[.font:UIFont.boldSystemFont(ofSize:40),.foregroundColor:UIColor.black])}
-        let mask=UIGraphicsImageRenderer(size:CGSize(width:400,height:400),format:format).image{ctx in UIColor.black.setFill();ctx.fill(CGRect(x:0,y:0,width:400,height:400));UIColor.white.setFill();ctx.fill(CGRect(x:55,y:140,width:290,height:120))}
+        let source=UIGraphicsImageRenderer(size:CGSize(width:400,height:400),format:format).image{ctx in UIColor.white.setFill();ctx.fill(CGRect(x:0,y:0,width:400,height:400));("COOKIES" as NSString).draw(at:CGPoint(x:70,y:70),withAttributes:[.font:UIFont.boldSystemFont(ofSize:40),.foregroundColor:UIColor.black])}
+        let mask=UIGraphicsImageRenderer(size:CGSize(width:400,height:400),format:format).image{ctx in UIColor.black.setFill();ctx.fill(CGRect(x:0,y:0,width:400,height:400));UIColor.white.setFill();ctx.fill(CGRect(x:55,y:40,width:290,height:120))}
         let patch=try XCTUnwrap(CookiesInpaint(source,mask,3));XCTAssertEqual(patch.size,source.size)
         for (name,image) in [("cleaner-before",source),("cleaner-mask",mask),("cleaner-after",patch)]{let a=XCTAttachment(image:image);a.name=name;a.lifetime = .keepAlways;add(a)}
-        let data=try XCTUnwrap(patch.cgImage?.dataProvider?.data) as Data;XCTAssertEqual(data[3],0,"Unmasked patch must stay transparent")
+        let data=try XCTUnwrap(patch.cgImage?.dataProvider?.data) as Data;XCTAssertEqual(data[3],0,"Unmasked patch must stay transparent");XCTAssertEqual(data[(80*400+80)*4+3],255,"Mask must retain top-left orientation");XCTAssertEqual(data[(320*400+80)*4+3],0)
     }
     @MainActor func testUndoAndLayerTransforms() throws {
         let library=LibraryStore(root:FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString));let page=try ImagePipeline.fixture(root:library.root);library.add(page,parent:nil);let m=EditorModel(page:page,library:library)

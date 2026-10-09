@@ -5,8 +5,10 @@ import UniformTypeIdentifiers
 struct LibraryView:View {
     @EnvironmentObject var library:LibraryStore
     var parent:UUID? = nil;var title="معرضي"
+    @State private var renaming:LibraryItem?
+    @State private var renameText=""
     @State private var picker=false;@State private var folderPrompt=false;@State private var name="";@State private var selected:PhotosPickerItem?;@State private var importing=false;@State private var assistant=false;@State private var settings=false
-    var children:[LibraryItem]{library.items.filter{$0.parent==parent}.sorted{$0.modified>$1.modified}}
+    var children:[LibraryItem]{library.items.filter{$0.parent==parent}.sorted{if $0.folder != $1.folder{return $0.folder};return $0.title.localizedStandardCompare($1.title) == .orderedAscending}}
     var body:some View {
         ZStack{Ambient();ScrollView{VStack(alignment:.leading,spacing:22){
             HStack{VStack(alignment:.leading,spacing:5){Text(title).font(.system(size:28,weight:.semibold));Text("رتّب العمل، ثم امنحه صوتك.").font(.system(size:13)).foregroundStyle(Palette.quiet)};Spacer();Brand().scaleEffect(0.75,anchor:.trailing)}
@@ -22,13 +24,14 @@ struct LibraryView:View {
         .overlay{if importing{ProgressView("جارٍ تجهيز الصورة…").tint(Palette.gold).padding(24).glass()}}
         .fileImporter(isPresented:$picker,allowedContentTypes:[.image,UTType(filenameExtension:"cookies") ?? .zip],allowsMultipleSelection:true){result in if case let .success(urls)=result{Task{importing=true;for url in urls{await library.importImage(url,parent:parent)};importing=false}}}
         .alert("مجلد جديد",isPresented:$folderPrompt){TextField("اسم العمل أو الفصل",text:$name);Button("إنشاء"){if !name.trimmingCharacters(in:.whitespaces).isEmpty{library.createFolder(name,parent:parent);name=""}};Button("إلغاء",role:.cancel){}}
+        .alert("تغيير الاسم",isPresented:Binding(get:{renaming != nil},set:{if !$0{renaming=nil}})){TextField("الاسم",text:$renameText);Button("حفظ"){if let item=renaming,!renameText.isEmpty{library.rename(item,to:renameText)};renaming=nil};Button("إلغاء",role:.cancel){renaming=nil}}
         .sheet(isPresented:$assistant){AssistantView()}.sheet(isPresented:$settings){SettingsView()}
         .alert("تعذر إكمال العملية",isPresented:Binding(get:{library.error != nil},set:{if !$0{library.error=nil}})){Button("حسنًا"){library.error=nil}}message:{Text(library.error ?? "")}
     }
     func card(_ item:LibraryItem)->some View {
         VStack(alignment:.leading,spacing:12){ZStack{RoundedRectangle(cornerRadius:14).fill(Palette.gold.opacity(0.06));if item.folder{Image(systemName:"folder").font(.system(size:36,weight:.ultraLight))}else if let image=UIImage(contentsOfFile:library.directory(item.id).appendingPathComponent("thumbnail.png").path){Image(uiImage:image).resizable().scaledToFill().frame(height:140).clipped().clipShape(RoundedRectangle(cornerRadius:14))}else{Image(systemName:"photo")}}.frame(height:140)
             Text(item.title).font(.system(size:14,weight:.medium)).lineLimit(1);Text(item.folder ? "\(library.items.filter{$0.parent==item.id}.count) أعمال":"صورة أصلية · محفوظة محليًا").font(.system(size:10)).foregroundStyle(Palette.quiet)
-        }.padding(12).glass(22).contextMenu{Button("حذف",role:.destructive){library.remove(item)}}.accessibilityIdentifier("project-\(item.id)")
+        }.padding(12).glass(22).contextMenu{Button("تغيير الاسم"){renameText=item.title;renaming=item};Menu("نقل إلى"){Button("المعرض"){library.move(item,parent:nil)};ForEach(library.items.filter{$0.folder && $0.id != item.id}){folder in Button(folder.title){library.move(item,parent:folder.id)}}};Button("حذف",role:.destructive){library.remove(item)}}.accessibilityIdentifier("project-\(item.id)")
     }
 }
 struct PageDestination:View {

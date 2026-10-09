@@ -28,7 +28,15 @@ enum ImagePipeline {
             if let signature=try? FileHandle(forReadingFrom:input).read(upToCount:8),signature==Data([137,80,78,71,13,10,26,10]) {try FileManager.default.copyItem(at:input,to:source)}
             else {
                 guard let src=CGImageSourceCreateWithURL(input as CFURL,nil),let cg=CGImageSourceCreateImageAtIndex(src,0,[kCGImageSourceShouldCache:false] as CFDictionary),let destination=CGImageDestinationCreateWithURL(source as CFURL,UTType.png.identifier as CFString,1,nil) else{throw ImageFailure.message("تعذر فتح صيغة الصورة")}
-                CGImageDestinationAddImage(destination,cg,nil);guard CGImageDestinationFinalize(destination) else{throw ImageFailure.message("تعذر تجهيز الصورة")}
+                let properties=CGImageSourceCopyPropertiesAtIndex(src,0,nil) as? [String:Any],orientation=properties?[kCGImagePropertyOrientation as String] as? Int ?? 1
+                var normalized=cg
+                if orientation != 1 {
+                    let orientations:[UIImage.Orientation]=[.up,.up,.upMirrored,.down,.downMirrored,.leftMirrored,.right,.rightMirrored,.left]
+                    let image=UIImage(cgImage:cg,scale:1,orientation:orientations[min(8,max(1,orientation))]),rotated=(5...8).contains(orientation)
+                    let size=CGSize(width:rotated ? cg.height:cg.width,height:rotated ? cg.width:cg.height),format=UIGraphicsImageRendererFormat();format.scale=1;format.preferredRange = .standard
+                    normalized=UIGraphicsImageRenderer(size:size,format:format).image{_ in image.draw(in:CGRect(origin:.zero,size:size))}.cgImage ?? cg
+                }
+                CGImageDestinationAddImage(destination,normalized,nil);guard CGImageDestinationFinalize(destination) else{throw ImageFailure.message("تعذر تجهيز الصورة")}
             }
             var w:Int32=0,h:Int32=0,error=[CChar](repeating:0,count:512)
             guard LIImportPNG(source.path,directory.appendingPathComponent(page.raw).path,&w,&h,&error,error.count)==1 else{throw ImageFailure.message(String(cString:error).contains("16-bit") ? "صور PNG ذات 16 بت تحتاج نسخة 8 بت؛ لم تُخفض دقتها تلقائيًا.":"تعذر قراءة الصورة: \(String(cString:error))")}
