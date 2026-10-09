@@ -8,6 +8,7 @@ struct EditorView:View {
     @State private var reader=false
     @State private var brushSettings=false
     @State private var replacingBackground=false
+    @State private var objectPanel:Panel?
     @State private var showExport=false;@State private var imagePicker=false
     @AppStorage("text-inline-dock") private var textDock="bottom"
     @AppStorage("editor-icon-scale") private var iconScale=1.0
@@ -16,7 +17,7 @@ struct EditorView:View {
     @AppStorage("typer-panel-width") private var typerWidth=320.0
     @AppStorage("typer-panel-height") private var typerHeight=490.0
     var body:some View {
-        ZStack(alignment:textDock=="top" ? .top:.bottom){Palette.ink.ignoresSafeArea();CanvasHost(model:model);if model.tool == .text{if let panel=model.panel,model.active?.kind == .text{TextInspector(model:model,panel:panel,close:{model.panel=nil}).frame(maxWidth:560).frame(height:panel == .content ? 240:290).padding(.horizontal,12).padding(.bottom,8).transition(.move(edge:.bottom).combined(with:.opacity))}}}
+        ZStack(alignment:textDock=="top" ? .top:.bottom){Palette.ink.ignoresSafeArea();CanvasHost(model:model);if let objectPanel,model.tool == .move,[LayerKind.image,.shape].contains(model.active?.kind ?? .text){TextInspector(model:model,panel:objectPanel,close:{self.objectPanel=nil}).frame(maxWidth:560).frame(height:290).padding(.horizontal,12).padding(.bottom,8)};if model.tool == .text{if let panel=model.panel,model.active?.kind == .text{TextInspector(model:model,panel:panel,close:{model.panel=nil}).frame(maxWidth:560).frame(height:panel == .content ? 240:290).padding(.horizontal,12).padding(.bottom,8).transition(.move(edge:.bottom).combined(with:.opacity))}}}
         .safeAreaInset(edge:.top,spacing:0){HStack(spacing:4){IconButton(icon:"chevron.right",title:"العودة"){model.save();dismiss()};VStack(alignment:.leading,spacing:2){Text(model.page.title).font(.system(size:12,weight:.medium)).lineLimit(1);Text(verbatim:"\(model.page.width) × \(model.page.height) · \(Int(model.zoom*100))%").font(.system(size:9,design:.monospaced)).foregroundStyle(Palette.quiet).accessibilityIdentifier("canvas-zoom")};Spacer(minLength:4);IconButton(icon:"arrow.uturn.backward",title:"تراجع"){model.undo()}.disabled(model.undoStack.isEmpty).accessibilityIdentifier("undo");IconButton(icon:"arrow.uturn.forward",title:"إعادة"){model.redo()}.disabled(model.redoStack.isEmpty);IconButton(icon:"square.3.layers.3d",title:"الطبقات"){layers=true}.accessibilityIdentifier("layers-header");IconButton(icon:"square.and.arrow.up",title:"تصدير"){showExport=true}.accessibilityIdentifier("export")}.padding(.horizontal,4).glass(0).frame(height:52)}
         .safeAreaInset(edge:.bottom,spacing:0){VStack(spacing:0){
             if [.brush,.eraser,.cleaner].contains(model.tool){HStack(spacing:12){Button{brushSettings=true}label:{Circle().fill(Color(uiColor:UIColor(hex:model.brushColor))).frame(width:24,height:24).overlay(Circle().stroke(Palette.gold.opacity(0.5),lineWidth:1))}.accessibilityLabel("إعدادات الفرشاة");Slider(value:$model.brushWidth,in:1...160).tint(Palette.gold);Text("\(Int(model.brushWidth))").font(.system(size:10,design:.monospaced)).frame(width:30)}.padding(.horizontal,16).frame(height:38)}
@@ -34,6 +35,16 @@ struct EditorView:View {
                     toolButton("paintpalette","اللون والحجم",id:"brush-settings"){brushSettings=true}
                     toolButton("square.3.layers.3d","الطبقات",id:"tool-layers"){layers=true}
                 }.padding(.horizontal,8)}.frame(height:68*min(1.15,max(0.85,toolbarScale))).accessibilityIdentifier("tool-strip")
+            }else if model.tool == .move,[LayerKind.image,.shape].contains(model.active?.kind ?? .text){
+                ScrollView(.horizontal,showsIndicators:false){HStack(spacing:2){
+                    toolButton("chevron.right","رجوع",id:"object-back"){objectPanel=nil;model.selected=nil}
+                    toolButton("move.3d","الموضع",id:"object-position",selected:objectPanel == .position){objectPanel=objectPanel == .position ? nil:.position}
+                    toolButton("circle.lefthalf.filled","الشفافية",id:"object-opacity",selected:objectPanel == .opacity){objectPanel=objectPanel == .opacity ? nil:.opacity}
+                    if model.active?.kind == .shape{toolButton("paintpalette","اللون",id:"shape-color",selected:objectPanel == .color){objectPanel=objectPanel == .color ? nil:.color};toolButton("a.square","الحدود",id:"shape-stroke",selected:objectPanel == .stroke){objectPanel=objectPanel == .stroke ? nil:.stroke};toolButton("square.on.circle","شكل جديد",id:"shape-add"){shapes=true}}
+                    toolButton("doc.on.doc","نسخ",id:"object-duplicate"){model.duplicate()}
+                    toolButton("trash","حذف",id:"object-delete"){objectPanel=nil;model.delete()}
+                    toolButton("square.3.layers.3d","الطبقات",id:"object-layers"){layers=true}
+                }.padding(.horizontal,8)}.frame(height:68*min(1.15,max(0.85,toolbarScale))).accessibilityIdentifier("object-strip")
             }else{
                 ScrollView(.horizontal,showsIndicators:false){HStack(spacing:2){
                     toolButton(Tool.text.icon,"نص",id:"tool-text"){select(.text)}
@@ -57,6 +68,7 @@ struct EditorView:View {
         .overlay(alignment:.top){if model.sniperMode{HStack{Image(systemName:"scope");Text("حدد الفقاعات بالترتيب · \(model.sniperTargets.count)").font(.system(size:12));Button("تراجع"){_ = model.sniperTargets.popLast()}.disabled(model.sniperTargets.isEmpty);Button("الفقاعات"){assistant=true};Button("إنهاء"){model.sniperMode=false}}.padding(12).glass(14).padding(.horizontal,12).padding(.top,58)}}
         .overlay(alignment:.top){if !model.cleanCandidates.isEmpty{HStack(spacing:8){ForEach(model.cleanCandidates){candidate in Button(candidate.title){model.cleanPreviewID=candidate.id}.buttonStyle(.bordered).tint(model.cleanPreviewID==candidate.id ? Palette.gold:Palette.pale)};Button("اعتماد"){model.acceptCleaning()};Button("إلغاء"){model.discardCleaning()}}.font(.system(size:11)).padding(12).glass(14).padding(.horizontal,12).padding(.top,58)}}
         .overlay{if model.busy && !showExport{ProgressView("جارٍ معالجة المنطقة…").tint(Palette.gold).padding(20).glass()}}
+        .onChange(of:model.selected){_,_ in objectPanel=nil}
         .onChange(of:model.requestTyper){_,open in if open{assistant=true;model.requestTyper=false}}
         .fullScreenCover(isPresented:$reader){ReaderView(model:model).cookiesInterface()}
         .sheet(isPresented:$brushSettings){BrushSheet(model:model).cookiesInterface().presentationDetents([.height(300)]).presentationBackground(.clear)}
@@ -70,7 +82,7 @@ struct EditorView:View {
                 let name=UUID().uuidString+"."+url.pathExtension;let destination=model.directory.appendingPathComponent(name)
                 try FileManager.default.copyItem(at:url,to:destination)
                 guard let image=ImagePipeline.asset(destination),image.size.width>0 else{throw ImageFailure.message("تعذر قراءة الصورة المختارة")}
-                model.add(.image);model.change{$0.imagePath=name;$0.frame.height=$0.frame.width*Double(image.size.height/image.size.width)}
+                model.add(.image);model.tool = .move;model.change{$0.imagePath=name;$0.frame.height=$0.frame.width*Double(image.size.height/image.size.width)}
             }catch{model.error=error.localizedDescription}}}
         }}
 

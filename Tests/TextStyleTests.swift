@@ -70,6 +70,11 @@ final class TextStyleTests:XCTestCase {
         let styles=try ReferenceStyleImport.decode(JSONSerialization.data(withJSONObject:[row]))
         XCTAssertEqual(styles[0].title,"نمط عربي");XCTAssertEqual(styles[0].style.color,"FF0000");XCTAssertEqual(styles[0].style.textGradient,["FF0000","0000FF"]);XCTAssertEqual(styles[0].style.textGradientStops,[0.2,0.8]);XCTAssertEqual(styles[0].style.perspectivePoints.first,Point(x:0.1,y:0))
     }
+    func testAndroidExtraStrokeKeepsItsOwnGradientAndUnsupportedEffectsAreExplicit()throws {
+        let row:[String:Any]=["name":"حد","extraStrokes":[["strokeWidth":8,"strokeColor":-65536,"strokeGradient":[-65536,-16776961],"strokeGradientStops":[0,1],"strokeGradientAngle":45]]]
+        let imported=try ReferenceStyleImport.decode(JSONSerialization.data(withJSONObject:[row]));XCTAssertEqual(imported[0].style.extraStrokes?.first?.width,8);XCTAssertEqual(imported[0].style.extraStrokes?.first?.gradient,["FF0000","0000FF"])
+        XCTAssertThrowsError(try ReferenceStyleImport.decode(JSONSerialization.data(withJSONObject:[["effectType":"PLASMA_SHADER"]])))
+    }
     func testSpanBoldOverridesOnlySelectedUTF16Range() {
         var layer=EditorLayer(kind:.text);layer.textContent="عربي ABC";layer.style.spans=[TextRun(start:5,end:8,color:"FF0000",fontSize:70,isBold:true)]
         let attributed=LayerRenderer.attributed(layer)

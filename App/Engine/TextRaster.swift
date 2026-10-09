@@ -51,7 +51,11 @@ enum TextRaster {
                 let fill=result
                 result=UIGraphicsImageRenderer(size:size,format:format).image{output in
                     for depth in stride(from:min(64,s.threeDDepth),through:1,by:-1){LayerRenderer.attributed(layer,color:UIColor(hex:s.threeDColor)).draw(with:rect.offsetBy(dx:pad+CGFloat(depth),dy:pad+CGFloat(depth)),options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)}
-                    for outline in (s.extraStrokes ?? []).sorted(by:{$0.width>$1.width}) where outline.width>0{let a=NSMutableAttributedString(attributedString:LayerRenderer.attributed(layer,color:.clear));a.addAttributes([.strokeColor:UIColor(hex:outline.color),.strokeWidth:outline.width/max(1,s.fontSize)*100],range:NSRange(location:0,length:a.length));a.draw(with:rect.offsetBy(dx:pad,dy:pad),options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)}
+                    for outline in (s.extraStrokes ?? []).sorted(by:{$0.width>$1.width}) where outline.width>0{
+                        let mask=UIGraphicsImageRenderer(size:size,format:format).image{_ in let a=NSMutableAttributedString(attributedString:LayerRenderer.attributed(layer,color:.clear));a.addAttributes([.strokeColor:UIColor.white,.strokeWidth:outline.width/max(1,s.fontSize)*100],range:NSRange(location:0,length:a.length));a.draw(with:rect.offsetBy(dx:pad,dy:pad),options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)}
+                        let colored=UIGraphicsImageRenderer(size:size,format:format).image{r in GradientPaint.draw(colors:(outline.gradient ?? []).isEmpty ? [outline.color,outline.color]:outline.gradient!,stops:outline.stops ?? [],angle:outline.angle ?? 0,type:outline.gradientType ?? 0,rect:rect.offsetBy(dx:pad,dy:pad),in:r.cgContext);mask.draw(at:.zero,blendMode:.destinationIn,alpha:1)}
+                        colored.draw(at:.zero)
+                    }
                     fill.draw(at:.zero)
                 }
             }

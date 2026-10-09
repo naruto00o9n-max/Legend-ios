@@ -34,7 +34,7 @@ import SwiftUI
     }
     func rename(_ item:LibraryItem,to name:String) {if let i=items.firstIndex(where:{$0.id==item.id}){do{if !item.folder,item.isChapter != true{var page=try load(item.id);page.title=name;try persist(page)};items[i].title=name;save()}catch{self.error=error.localizedDescription}}}
     func importImage(_ url:URL,parent:UUID?) async {
-        if ["pdf","zip","cookieschapter"].contains(url.pathExtension.lowercased()) {do{let id=try createChapter(url.deletingPathExtension().lastPathComponent,parent:parent);try await importPages([url],chapter:id)}catch{self.error=error.localizedDescription};return}
+        if ["pdf","zip","cookieschapter"].contains(url.pathExtension.lowercased()) {var created:UUID?;do{let id=try createChapter(url.deletingPathExtension().lastPathComponent,parent:parent);created=id;try await importPages([url],chapter:id)}catch{if let created,let item=items.first(where:{$0.id==created}),item.pages.isEmpty{remove(item)};self.error=error.localizedDescription};return}
         do {let root=self.root;let page=try await Task.detached(priority:.userInitiated){try url.pathExtension.lowercased()=="cookies" ? ProjectArchive.importFile(url,root:root):ImagePipeline.importImage(url,root:root)}.value;add(page,parent:parent)}catch{self.error=error.localizedDescription}
     }
 }

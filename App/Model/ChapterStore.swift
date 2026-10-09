@@ -41,7 +41,7 @@ extension LibraryStore {
     }
     func importPages(_ urls:[URL],chapter id:UUID) async throws {
         guard chapter(id) != nil else{throw ImageFailure.message("اختر الفصل")}
-        let root=self.root;var imported:[EditorPage]=[]
+        let root=self.root;var imported:[EditorPage]=[];var incomingCover:UUID?
         do {
             for url in urls{try Task.checkCancellation()
                 let pages=try await BackgroundWork.run{()->[EditorPage] in
@@ -52,9 +52,10 @@ extension LibraryStore {
                     default:return [try ImagePipeline.importImage(url,root:root)]}
                 }
                 imported+=pages
+                if url.pathExtension.lowercased()=="cookieschapter",let cover=try ChapterArchive.coverIndex(url),cover<pages.count{incomingCover=pages[cover].id}
             }
             guard let item=chapter(id) else{throw ImageFailure.message("لم يعد الفصل موجودًا")}
-            try setPages(item.pages+imported.map(\.id),chapter:id)
+            var next=items;guard let index=next.firstIndex(where:{$0.id==id}) else{throw ImageFailure.message("لم يعد الفصل موجودًا")};next[index].pages=item.pages+imported.map(\.id);next[index].modified=Date();if item.pages.isEmpty{next[index].cover=incomingCover ?? imported.first?.id};try commitItems(next)
         }catch{for page in imported{try? FileManager.default.removeItem(at:directory(page.id))};throw error}
     }
 }
@@ -74,6 +75,14 @@ enum ChapterArchive {
         for entry in archive {size+=entry.uncompressedSize;guard size<=1024*1024*1024,!entry.path.contains(".."),!entry.path.hasPrefix("/"),entry.type != .symlink else{throw ImageFailure.message("الأرشيف كبير جدًا أو يحتوي مسارات غير صالحة")}}
         let folder=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString,isDirectory:true)
         try FileManager.default.unzipItem(at:url,to:folder);return folder
+    }
+    static func coverIndex(_ url:URL)throws->Int? {
+        let scoped=url.startAccessingSecurityScopedResource();defer{if scoped{url.stopAccessingSecurityScopedResource()}}
+        let archive=try Archive(url:url,accessMode:.read)
+        guard let entry=archive["chapter.json"],entry.uncompressedSize<=1024*1024 else{throw ImageFailure.message("بيانات الفصل مفقودة أو غير صالحة")}
+        var bytes=Data();_ = try archive.extract(entry){bytes.append($0)}
+        let metadata=try JSONDecoder().decode(LibraryItem.self,from:bytes)
+        return metadata.cover.flatMap{metadata.pages.firstIndex(of:$0)}
     }
     static func importFile(_ url:URL,root:URL)throws->[EditorPage] {
         let access=url.startAccessingSecurityScopedResource();defer{if access{url.stopAccessingSecurityScopedResource()}}

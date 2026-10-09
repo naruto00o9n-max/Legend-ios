@@ -3,7 +3,7 @@ import ImageIO
 
 extension EditorModel {
     func fillBucket(at point:CGPoint) async {
-        guard !busy else{return};guard Int64(page.width)*Int64(page.height)<=16_777_216 else{error="التعبئة تدعم حتى 16 مليون بكسل؛ قسّم الصفحة الأكبر أولًا";return}
+        guard !busy,point.x>=0,point.y>=0,point.x<Double(page.width),point.y<Double(page.height) else{return};guard Int64(page.width)*Int64(page.height)<=16_777_216 else{error="التعبئة تدعم حتى 16 مليون بكسل؛ قسّم الصفحة الأكبر أولًا";return}
         busy=true;defer{busy=false};let snapshot=page,directory=self.directory,color=UIColor(hex:brushColor,alpha:CGFloat(brushOpacity)),tolerance=fillTolerance
         do{let filename=try await BackgroundWork.run{()->String in
             let composite=try ImagePipeline.exportPNG(snapshot,directory:directory);defer{try? FileManager.default.removeItem(at:composite)}

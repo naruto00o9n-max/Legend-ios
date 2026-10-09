@@ -29,6 +29,7 @@ final class ChapterTests:XCTestCase {
         let archive=try ChapterArchive.export(try XCTUnwrap(library.chapter(id)),root:root)
         let restored=try ChapterArchive.importFile(archive,root:root)
         XCTAssertEqual(restored.map(\.title),["أ","ب"]);XCTAssertEqual(restored.map(\.height),[50,60])
+        let copy=try library.createChapter("نسخة",parent:nil);try await library.importPages([archive],chapter:copy);let copied=try XCTUnwrap(library.chapter(copy));XCTAssertEqual(copied.cover,copied.pages[1]);XCTAssertEqual(copied.pages.count,2)
         let zip=try BatchExport.export(pages:[one,two],root:root,format:"PNG",progress:{_,_ in})
         let exported=try Archive(url:zip,accessMode:.read);XCTAssertEqual(Array(exported).filter{$0.path.hasSuffix(".png")}.count,2)
     }

@@ -41,20 +41,20 @@ struct TextInspector:View {
             Toggle("تنسيق السطر المحدد فقط",isOn:$selectedLineOnly).font(.system(size:12)).disabled(model.textSelectionLayer != model.selected)
             HStack{Button("تنسيق مربع"){typeset("box")};Button("تنسيق دائري"){typeset("circle")};Button("الكشيدة"){typeset("kashida")}}.font(.system(size:12))
         case .color:
-            swatches("لون النص",\.color)
-            GradientControls(model:model,colors:\.textGradient,stops:\.textGradientStops,angle:\.textGradientAngle,type:\.textGradientType)
+            swatches(model.active?.kind == .shape ? "لون الشكل":"لون النص",\.color)
+            if model.active?.kind == .text{GradientControls(model:model,colors:\.textGradient,stops:\.textGradientStops,angle:\.textGradientAngle,type:\.textGradientType)}
         case .gradientMap:GradientMapView(model:model)
         case .stroke:
-            ForEach(style.extraStrokes ?? []){outline in HStack{ColorPicker("حد إضافي",selection:Binding(get:{Color(uiColor:UIColor(hex:outline.color))},set:{color in model.change{layer in if let i=layer.style.extraStrokes?.firstIndex(where:{$0.id==outline.id}){layer.style.extraStrokes?[i].color=UIColor(color).hex}}}),supportsOpacity:false);Slider(value:Binding(get:{outline.width},set:{width in model.change{layer in if let i=layer.style.extraStrokes?.firstIndex(where:{$0.id==outline.id}){layer.style.extraStrokes?[i].width=width}}}),in:0...40);Button(role:.destructive){model.change{$0.style.extraStrokes?.removeAll{$0.id==outline.id}}}label:{Image(systemName:"trash")}}}
-            Button("إضافة حد"){model.change{$0.style.extraStrokes=($0.style.extraStrokes ?? [])+[ExtraOutline(width:6,color:"FFFFFF")]}}.disabled((style.extraStrokes?.count ?? 0)>=8)
-            knob("السماكة",value(\.strokeWidth),0...18);swatches("لون الحدود",\.strokeColor);GradientControls(model:model,colors:\.strokeGradient,stops:\.strokeGradientStops,angle:\.strokeGradientAngle,type:\.strokeGradientType)
+            if model.active?.kind == .text{ForEach(style.extraStrokes ?? []){outline in ExtraOutlineControls(model:model,id:outline.id)}
+            Button("إضافة حد"){model.change{$0.style.extraStrokes=($0.style.extraStrokes ?? [])+[ExtraOutline(width:6,color:"FFFFFF")]}}.disabled((style.extraStrokes?.count ?? 0)>=8)}
+            knob("السماكة",value(\.strokeWidth),0...18);swatches("لون الحدود",\.strokeColor);if model.active?.kind == .text{GradientControls(model:model,colors:\.strokeGradient,stops:\.strokeGradientStops,angle:\.strokeGradientAngle,type:\.strokeGradientType)}
         case .background:knob("الشفافية",Binding(get:{Double(style.backgroundAlpha)},set:{v in model.change{$0.style.backgroundAlpha=Int(v)}}),0...255);knob("الاستدارة",value(\.backgroundCornerRadius),0...80);swatches("الخلفية",\.backgroundColor);knob("الحشو أفقيًا",value(\.backgroundPaddingX),0...100);knob("الحشو رأسيًا",value(\.backgroundPaddingY),0...100)
         case .shadow:GradientControls(model:model,colors:\.shadowGradient,stops:\.shadowGradientStops,angle:\.shadowGradientAngle,type:\.shadowGradientType);knob("النعومة",value(\.shadowRadius),0...50);knob("أفقي",value(\.shadowDx),-80...80);knob("رأسي",value(\.shadowDy),-80...80);swatches("لون الظل",\.shadowColor);knob("شفافية الظل",Binding(get:{Double(style.shadowAlpha)},set:{v in model.change{$0.style.shadowAlpha=Int(v)}}),0...255)
         case .position:
             knob("الموضع أفقيًا",Binding(get:{model.active?.frame.x ?? 0},set:{v in model.change{$0.frame.x=v}}),-Double(model.page.width)...Double(model.page.width))
             knob("الموضع رأسيًا",Binding(get:{model.active?.frame.y ?? 0},set:{v in model.change{$0.frame.y=v}}),-Double(model.page.height)...Double(model.page.height))
             Toggle("مسطرة حدود النص",isOn:Binding(get:{style.rulerEnabled ?? false},set:{v in model.change{$0.style.rulerEnabled=v}}))
-            Button("تحويل النص إلى طبقة PNG"){Task{await model.rasterizeText()}}
+            if model.active?.kind == .text{Button("تحويل النص إلى طبقة PNG"){Task{await model.rasterizeText()}}}
             HStack{Button("توسيط أفقي"){model.change{$0.frame.x=(Double(model.page.width)-Double(LayerRenderer.bounds($0).width))/2}};Button("توسيط رأسي"){model.change{$0.frame.y=(Double(model.page.height)-Double(LayerRenderer.bounds($0).height))/2}}}.font(.system(size:12))
             HStack{Button("قلب أفقي"){model.change{$0.scaleX *= -1}};Button("قلب رأسي"){model.change{$0.scaleY *= -1}};Button("←"){model.change{$0.frame.x-=1}};Button("→"){model.change{$0.frame.x+=1}};Button("↑"){model.change{$0.frame.y-=1}};Button("↓"){model.change{$0.frame.y+=1}}}.font(.system(size:12))
             knob("الدوران",Binding(get:{model.active?.rotation ?? 0},set:{v in model.change{$0.rotation=v}}),-180...180)
