@@ -40,14 +40,14 @@ final class DocumentCanvas: UIView {
         preview.layer.magnificationFilter = .nearest; addSubview(preview)
         sourceCache.totalCostLimit = 48 * 1024 * 1024
         for shape in [border, stem] { shape.fillColor = UIColor.clear.cgColor; shape.strokeColor = UIColor.white.cgColor; layer.addSublayer(shape) }
-        for (name, icon) in [("delete","xmark"),("duplicate","plus.square.on.square"),("edit","pencil"),("resize","arrow.up.left.and.arrow.down.right"),("rotate","arrow.clockwise")] {
+        for (name, icon) in [("delete","xmark"),("duplicate","plus.square.on.square"),("edit","pencil"),("resize","arrow.up.left.and.arrow.down.right"),("rotate","arrow.clockwise"),("scale-x","arrow.left.and.right"),("scale-y","arrow.up.and.down"),("box-width","rectangle"),("styles","square.grid.2x2")] {
             let button = UIButton(type: .custom)
             button.setImage(UIImage(systemName: icon), for: .normal)
             button.tintColor = .white; button.backgroundColor = UIColor(white: 0.06, alpha: 0.94)
             button.layer.borderColor = UIColor.white.withAlphaComponent(0.48).cgColor
             button.addAction(UIAction { [weak self] _ in self?.onHandle?(name) }, for: .touchUpInside)
             button.accessibilityIdentifier = "selection-" + name
-            button.accessibilityLabel = ["delete":"حذف الطبقة","duplicate":"نسخ الطبقة","edit":"تعديل النص","resize":"تغيير الحجم بالسحب","rotate":"تدوير بالسحب"][name]
+            button.accessibilityLabel = ["delete":"حذف الطبقة","duplicate":"نسخ الطبقة","edit":"تعديل النص","resize":"تكبير متناسب بالسحب","rotate":"تدوير بالسحب","scale-x":"تمديد أفقي بالسحب","scale-y":"تمديد عمودي بالسحب","box-width":"عرض مربع النص بالسحب","styles":"أنماط النص"][name]
             addSubview(button); handles[name] = button
         }
         accessibilityIdentifier = "document-canvas"
@@ -157,17 +157,31 @@ final class DocumentCanvas: UIView {
         let path = UIBezierPath(rect: box); path.apply(transform)
         CATransaction.begin(); CATransaction.setDisableActions(true)
         border.path = path.cgPath; border.lineWidth = 1 / max(0.002, zoom); border.lineDashPattern = [5 / max(0.002, zoom), 3 / max(0.002, zoom)].map { NSNumber(value: Double($0)) }
-        let positions: [String: CGPoint] = ["delete": CGPoint(x: box.minX, y: box.minY), "duplicate": CGPoint(x: box.minX, y: box.maxY), "edit": CGPoint(x: box.maxX, y: box.maxY), "resize": CGPoint(x: box.maxX, y: box.midY)]
+        // Reference 4.5: delete / vertical scale / rotate across the top,
+        // horizontal scale and box width at the sides; text actions below.
+        let padding = 32 / max(0.002, zoom)
+        let controls = box.insetBy(dx: -padding / max(0.05, CGFloat(abs(item.scaleX))), dy: -padding / max(0.05, CGFloat(abs(item.scaleY))))
+        let positions: [String: CGPoint] = [
+            "delete": CGPoint(x: controls.minX, y: controls.minY),
+            "scale-y": CGPoint(x: controls.midX, y: controls.minY),
+            "rotate": CGPoint(x: controls.maxX, y: controls.minY),
+            "scale-x": CGPoint(x: controls.minX, y: controls.midY),
+            "box-width": CGPoint(x: controls.maxX, y: controls.midY),
+            "edit": CGPoint(x: controls.minX, y: controls.maxY),
+            "duplicate": CGPoint(x: item.kind == .text ? controls.minX + controls.width * 0.35 : controls.minX, y: controls.maxY),
+            "styles": CGPoint(x: controls.minX + controls.width * 0.7, y: controls.maxY),
+            "resize": CGPoint(x: controls.maxX, y: controls.maxY)
+        ]
         for (name, point) in positions { place(name, at: point.applying(transform), size: size) }
-        let top = CGPoint(x: box.midX, y: box.minY).applying(transform)
-        let rotate = CGPoint(x: top.x + sin(CGFloat(item.rotation) * .pi / 180) * size * 1.25, y: top.y - cos(CGFloat(item.rotation) * .pi / 180) * size * 1.25)
-        let line = UIBezierPath(); line.move(to: top); line.addLine(to: rotate); stem.path = line.cgPath; stem.lineWidth = border.lineWidth
-        place("rotate", at: rotate, size: size)
+        stem.path = nil
         handles["edit"]?.isHidden = item.kind != .text
+        handles["styles"]?.isHidden = item.kind != .text
+        handles["box-width"]?.isHidden = item.kind != .text
         CATransaction.commit()
     }
     private func place(_ name: String, at point: CGPoint, size: CGFloat) {
         guard let button = handles[name] else { return }
+        button.tintColor = .white
         button.isHidden = false; button.bounds = CGRect(x: 0, y: 0, width: 32, height: 32)
         button.center = point; button.transform = CGAffineTransform(scaleX: size / 32, y: size / 32)
         button.layer.cornerRadius = 16; button.layer.borderWidth = 0.8

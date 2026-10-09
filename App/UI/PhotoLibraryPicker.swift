@@ -5,10 +5,10 @@ import UniformTypeIdentifiers
 /// Own the provider's file before its callback returns; its URL is temporary.
 enum PhotoImport {
     static func ownFile(_ url: URL) throws -> URL {
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("PhotoImports", isDirectory: true)
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("PhotoImports/"+UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let name = url.deletingPathExtension().lastPathComponent
-        let target = folder.appendingPathComponent(name + "-" + UUID().uuidString).appendingPathExtension(url.pathExtension)
+        let target = folder.appendingPathComponent(name).appendingPathExtension(url.pathExtension)
         try FileManager.default.copyItem(at: url, to: target)
         guard (try target.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0) > 0 else {
             throw ImageFailure.message("الصورة المختارة فارغة. أعد تنزيلها من iCloud ثم حاول مجددًا.")
@@ -94,6 +94,7 @@ struct ArabicTextEditor: UIViewRepresentable {
     final class Coordinator: NSObject, UITextViewDelegate {
         var parent: ArabicTextEditor
         init(_ parent: ArabicTextEditor) { self.parent = parent }
+        func textViewDidBeginEditing(_ view: UITextView) { if view.text == "نص جديد" { view.selectedRange = NSRange(location: 0, length: view.text.utf16.count) } }
         func textViewDidChange(_ view: UITextView) { parent.text = view.text }
     }
 }

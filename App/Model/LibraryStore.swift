@@ -22,7 +22,7 @@ import SwiftUI
         var next=parent,visited=Set<UUID>();while let id=next{guard id != item.id,visited.insert(id).inserted else{error="لا يمكن نقل مجلد داخل نفسه";return};next=items.first{$0.id==id}?.parent}
         if let index=items.firstIndex(where:{$0.id==item.id}){items[index].parent=parent;save()}
     }
-    func rename(_ item:LibraryItem,to name:String) {if let i=items.firstIndex(where:{$0.id==item.id}){items[i].title=name;save()}}
+    func rename(_ item:LibraryItem,to name:String) {if let i=items.firstIndex(where:{$0.id==item.id}){do{if !item.folder{var page=try load(item.id);page.title=name;try persist(page)};items[i].title=name;save()}catch{error=error.localizedDescription}}}
     func importImage(_ url:URL,parent:UUID?) async {
         do {let root=self.root;let page=try await Task.detached(priority:.userInitiated){try url.pathExtension.lowercased()=="cookies" ? ProjectArchive.importFile(url,root:root):ImagePipeline.importImage(url,root:root)}.value;add(page,parent:parent)}catch{self.error=error.localizedDescription}
     }

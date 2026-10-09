@@ -89,7 +89,7 @@ struct SettingsView: View {
         NavigationStack { ZStack {Ambient();ScrollView {VStack(alignment:.leading,spacing:24) {
             Button{if service.session==nil{account=true}else{profile=true}}label:{HStack(spacing:16){Image(systemName:"person.crop.circle").font(.system(size:42,weight:.ultraLight));VStack(alignment:.leading,spacing:7){Text(service.session==nil ? "تسجيل الدخول":"الملف الشخصي").font(.system(size:17,weight:.semibold));Text(service.session?.user.email ?? "حسابك وأعمالك في مكان واحد").font(.system(size:12)).foregroundStyle(Palette.quiet).lineLimit(1)};Spacer();Image(systemName:"chevron.left").font(.system(size:12))}.padding(22).glass(22)}.buttonStyle(.plain)
             Text("مساحة العمل").font(.system(size:12,weight:.medium)).foregroundStyle(Palette.quiet)
-            VStack(spacing:0){row("مكتبة الخطوط","textformat.alt"){fonts=true}.accessibilityIdentifier("font-library");Divider().padding(.horizontal,20);row("المجتمع","person.2"){hub=true}}
+            VStack(spacing:0){row("مكتبة الخطوط","textformat.alt"){fonts=true}.accessibilityIdentifier("settings-font-library");Divider().padding(.horizontal,20);row("المجتمع","person.2"){hub=true}.accessibilityIdentifier("settings-community")}
                 .glass(20)
             VStack(alignment:.leading,spacing:12){HStack{Image(systemName:"photo");Text("الصورة الأصلية").font(.system(size:15,weight:.medium))};Text("تُحفظ أبعاد صورك عند التصدير إلى PNG. احفظ ملف المشروع للاحتفاظ بالنصوص والطبقات القابلة للتعديل.").font(.system(size:12)).foregroundStyle(Palette.quiet).lineSpacing(6)}.padding(20).glass(20)
             HStack{Brand();Spacer();Text("iPhone · iPad").font(.system(size:11)).foregroundStyle(Palette.quiet)}.padding(.top,12)
