@@ -81,18 +81,22 @@ adb('shell','input','keyevent','4')
 adb('shell','am','start','-n','com.oneguystudio.ytyper/.ui.dashboard.ProjectsActivity')
 current=capture('18-projects-for-blank')
 if visit('19-new-canvas',r'New Canvas|لوحة جديدة'):
- edits=[n for n in current.iter('node') if n.get('class')=='android.widget.EditText']
- if len(edits)>=2:
-  for node,value in zip(edits[:2],['800','15000']):
+ for index,value in enumerate(['800','15000']):
+  edits=[n for n in current.iter('node') if n.get('class')=='android.widget.EditText']
+  if len(edits)>=2:
+   node=edits[index]
    bounds=list(map(int,re.findall(r'\d+',node.get('bounds',''))))
    adb('shell','input','tap',str((bounds[0]+bounds[2])//2),str((bounds[1]+bounds[3])//2))
    adb('shell','input','keyevent','123',*(['67']*30));adb('shell','input','text',value)
-  adb('shell','input','keyevent','4');current=capture('20-new-canvas-dimensions')
+   adb('shell','input','keyevent','4');current=capture('20-new-canvas-dimension-'+str(index))
  visit('21-canvas-created',r'\bCreate\b|إنشاء|Confirm|OK')
  time.sleep(8);current=capture('22-created-project')
- visit('22-open-project',r'Untitled|مشروع جديد|New Project|Project [0-9]|800.*15000')
+ visit('22-open-page',r'blank_[0-9]+\.png|reference-800x15000\.png')
 current=capture('23-editor-before-text')
 visit('24-text-tool',r'btnAddText|btnToolText|Add Text|إضافة نص|أضف نص')
+visit('24-add-text',r'btnAddText|Add Text|إضافة نص|أضف نص')
+adb('shell','input','tap','540','750');current=capture('24-text-on-canvas')
+visit('24-confirm-text',r'btnConfirm|btnDone|done|apply|حفظ|تم|تطبيق')
 visit('25-text-format',r'btnToolFormat|التنسيق|Format')
 adb('shell','input','keyevent','4');current=capture('26-text-return')
 visit('27-font-tool',r'btnToolFont|الخط|Font')
