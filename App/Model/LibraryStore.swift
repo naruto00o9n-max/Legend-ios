@@ -39,6 +39,7 @@ import SwiftUI
     @Published var undoStack:[[EditorLayer]]=[]
     @Published var redoStack:[[EditorLayer]]=[]
     let library:LibraryStore; var visibleCenter=CGPoint.zero
+    private var previewTask:Task<Void,Never>?
     init(page:EditorPage,library:LibraryStore){self.page=page;self.library=library}
     var directory:URL {library.directory(page.id)}
     var active:EditorLayer? {page.layers.first{$0.id==selected}}
@@ -54,7 +55,10 @@ import SwiftUI
     func duplicate() {guard var l=active else{return};checkpoint();l.id=UUID();l.frame.x+=20;l.frame.y+=20;page.layers.append(l);selected=l.id;save()}
     func undo(){guard let previous=undoStack.popLast() else{return};redoStack.append(page.layers);page.layers=previous;selected=nil;save()}
     func redo(){guard let next=redoStack.popLast() else{return};undoStack.append(page.layers);page.layers=next;selected=nil;save()}
-    func save(){do{try library.persist(page)}catch{self.error=error.localizedDescription}}
+    func save(){do{try library.persist(page)}catch{self.error=error.localizedDescription}
+        previewTask?.cancel();let snapshot=page,directory=self.directory
+        previewTask=Task {try? await Task.sleep(nanoseconds:500_000_000);guard !Task.isCancelled else{return};try? await Task.detached(priority:.utility){try ImagePipeline.projectThumbnail(snapshot,directory:directory)}.value}
+    }
     func exportPNG() async {await export(format:"PNG")}
     func export(format:String,quality:Double=0.95) async {
         busy=true;defer{busy=false};let page=self.page,directory=self.directory

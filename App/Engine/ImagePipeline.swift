@@ -17,7 +17,7 @@ enum ImagePipeline {
     static func tile(_ url:URL,width:Int,height:Int,rect:CGRect,sample:Int=1)throws->[UInt8] {
         let x=max(0,Int(rect.minX)),y=max(0,Int(rect.minY)),w=min(width-x,max(1,Int(ceil(rect.width)))),h=min(height-y,max(1,Int(ceil(rect.height))))
         guard w>0,h>0 else{return []};var bytes=[UInt8](repeating:0,count:((w+sample-1)/sample)*((h+sample-1)/sample)*4)
-        guard LIReadTile(url.path,Int32(width),Int32(height),Int32(x),Int32(y),Int32(w),Int32(h),Int32(sample),&bytes)==1 else{throw ImageFailure.message("تعذر قراءة جزء من الصورة")};return bytes
+        guard LIReadRegion(url.path,Int32(width),Int32(height),Int32(x),Int32(y),Int32(w),Int32(h),Int32(sample),&bytes)==1 else{throw ImageFailure.message("تعذر قراءة جزء من الصورة")};return bytes
     }
     static func importImage(_ input:URL,root:URL)throws->EditorPage {
         let scoped=input.startAccessingSecurityScopedResource();defer{if scoped{input.stopAccessingSecurityScopedResource()}}
@@ -33,8 +33,18 @@ enum ImagePipeline {
             var w:Int32=0,h:Int32=0,error=[CChar](repeating:0,count:512)
             guard LIImportPNG(source.path,directory.appendingPathComponent(page.raw).path,&w,&h,&error,error.count)==1 else{throw ImageFailure.message(String(cString:error).contains("16-bit") ? "صور PNG ذات 16 بت تحتاج نسخة 8 بت؛ لم تُخفض دقتها تلقائيًا.":"تعذر قراءة الصورة: \(String(cString:error))")}
             page.width=Int(w);page.height=Int(h);try JSONEncoder().encode(page).write(to:directory.appendingPathComponent("page.json"),options:.atomic)
-            thumbnail(source,to:directory.appendingPathComponent("thumbnail.png"));return page
+            try? projectThumbnail(page,directory:directory);return page
         }catch{try? FileManager.default.removeItem(at:directory);throw error}
+    }
+    static func projectThumbnail(_ page:EditorPage,directory:URL)throws {
+        let visibleHeight=min(page.height,max(page.width,Int(Double(page.width)*1.25))),sample=max(1,page.width/320)
+        let pixels=try tile(directory.appendingPathComponent(page.raw),width:page.width,height:page.height,rect:CGRect(x:0,y:0,width:page.width,height:visibleHeight),sample:sample)
+        guard let cg=image(pixels,width:(page.width+sample-1)/sample,height:(visibleHeight+sample-1)/sample,colorSpace:colorSpace(directory.appendingPathComponent(page.source))) else{return}
+        let format=UIGraphicsImageRendererFormat();format.scale=1
+        let preview=UIGraphicsImageRenderer(size:CGSize(width:cg.width,height:cg.height),format:format).image{renderer in
+            UIImage(cgImage:cg).draw(in:CGRect(x:0,y:0,width:cg.width,height:cg.height));renderer.cgContext.scaleBy(x:1/CGFloat(sample),y:1/CGFloat(sample));LayerRenderer.draw(page.layers,in:renderer.cgContext,directory:directory)
+        }
+        try preview.pngData()?.write(to:directory.appendingPathComponent("thumbnail.png"),options:.atomic)
     }
     static func thumbnail(_ source:URL,to output:URL) {
         guard let s=CGImageSourceCreateWithURL(source as CFURL,nil),let c=CGImageSourceCreateThumbnailAtIndex(s,0,[kCGImageSourceCreateThumbnailFromImageAlways:true,kCGImageSourceThumbnailMaxPixelSize:480,kCGImageSourceCreateThumbnailWithTransform:true] as CFDictionary) else{return}

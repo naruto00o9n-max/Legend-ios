@@ -56,6 +56,17 @@ targetTemplates:
         LSSupportsOpeningDocumentsInPlace: true
         UISupportsDocumentBrowser: false
         UIFileSharingEnabled: true
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: Cookies Document
+            CFBundleTypeRole: Editor
+            LSHandlerRank: Owner
+            LSItemContentTypes: [com.cookies.editor.document, public.image, com.adobe.photoshop-image]
+        UTExportedTypeDeclarations:
+          - UTTypeIdentifier: com.cookies.editor.document
+            UTTypeDescription: Editable Cookies Document
+            UTTypeConformsTo: [public.zip-archive]
+            UTTypeTagSpecification:
+              public.filename-extension: [cookies]
         CFBundleURLTypes:
           - CFBundleURLName: Cookies Reference Login
             CFBundleURLSchemes: [io.supabase.ytyper]

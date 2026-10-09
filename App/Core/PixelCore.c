@@ -77,6 +77,18 @@ int LIReadTile(const char *raw,int width,int height,int x,int y,int w,int h,int 
   free(row);fclose(file);return ok;
 }
 
+int LIReadRegion(const char *raw,int width,int height,int x,int y,int w,int h,int sample,uint8_t *rgba) {
+  if(!rgba||width<1||height<1||sample<1||w<1||h<1||x<0||y<0||x>=width||y>=height||w>width-x||h>height-y)return 0;
+  FILE *file=fopen(raw,"rb");if(!file)return 0;
+  unsigned char *row=malloc((size_t)w*4);if(!row){fclose(file);return 0;}
+  int columns=(w+sample-1)/sample,rows=(h+sample-1)/sample,ok=1;
+  for(int j=0;j<rows;j++) {
+    if(fseeko(file,((off_t)(y+j*sample)*width+x)*4,SEEK_SET)!=0||fread(row,4,w,file)!=(size_t)w){ok=0;break;}
+    for(int i=0;i<columns;i++)memcpy(rgba+((size_t)j*columns+i)*4,row+(size_t)i*sample*4,4);
+  }
+  free(row);fclose(file);return ok;
+}
+
 void LICompositeRGBA(uint8_t *base,const uint8_t *overlay,size_t pixels) {
   for(size_t i=0;i<pixels;i++){
     uint8_t *b=base+i*4;const uint8_t *o=overlay+i*4;

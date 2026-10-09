@@ -44,12 +44,13 @@ struct AssistantView:View {
 }
 struct SettingsView:View {
     @EnvironmentObject var service:ReferenceService;@Environment(\.dismiss) var dismiss
-    @State private var account=false;@State private var hub=false
+    @State private var account=false;@State private var hub=false;@State private var fonts=false
     var body:some View{ZStack{Ambient();VStack(alignment:.leading,spacing:20){HStack{Brand();Spacer();IconButton(icon:"xmark",title:"إغلاق"){dismiss()}};Text("مساحتك").font(.system(size:25,weight:.semibold))
         VStack(alignment:.leading,spacing:12){Text(NetworkPolicy.enabled ? "نسخة الخدمات":"نسخة محلية").font(.system(size:16,weight:.medium));Text(service.session?.user.email ?? "المشاريع محفوظة على هذا الجهاز").font(.system(size:12)).foregroundStyle(Palette.quiet)}.frame(maxWidth:.infinity,alignment:.leading).padding(20).glass()
         if NetworkPolicy.enabled{Button(service.session==nil ? "تسجيل الدخول إلى الحساب الأصلي":"حسابي والخدمات"){if service.session==nil{account=true}else{hub=true}}.buttonStyle(GoldButtonStyle(primary:true));Button("إعدادات الخدمات العامة"){hub=true}.buttonStyle(GoldButtonStyle());if service.session != nil{Button("تسجيل الخروج"){Task{await service.logout()}}.font(.system(size:13))}}else{Text("هذه النسخة لا ترسل طلبات إلى الخوادم.").font(.system(size:13)).foregroundStyle(Palette.quiet)}
+        Button("مكتبة الخطوط"){fonts=true}.buttonStyle(GoldButtonStyle()).accessibilityIdentifier("font-library")
         Text("Cookies Editor · iPhone\nالأسود والذهبي، ومساحة لصورتك.").font(.system(size:12)).foregroundStyle(Palette.quiet).lineSpacing(6);Spacer()
-    }.padding(24)}.foregroundStyle(Palette.pale).sheet(isPresented:$account){AccountView()}.sheet(isPresented:$hub){ServiceHub()}}
+    }.padding(24)}.foregroundStyle(Palette.pale).sheet(isPresented:$account){AccountView()}.sheet(isPresented:$hub){ServiceHub()}.sheet(isPresented:$fonts){FontLibraryView()}}
 }
 struct ServiceHub:View {
     @EnvironmentObject var service:ReferenceService
@@ -63,4 +64,10 @@ struct ServiceHub:View {
 struct BrushSheet:View {
     @ObservedObject var model:EditorModel
     var body:some View {VStack(alignment:.leading,spacing:22){Text("الفرشاة").font(.system(size:19,weight:.semibold));Picker("نوع الفرشاة",selection:$model.brushStyle){Text("صلبة").tag("normal");Text("مائية").tag("water");Text("مضيئة").tag("neon")}.pickerStyle(.segmented);ColorPicker("لون الرسم",selection:Binding(get:{Color(uiColor:UIColor(hex:model.brushColor))},set:{model.brushColor=UIColor($0).hex}),supportsOpacity:false);Text("الحجم: \(Int(model.brushWidth)) بكسل").font(.system(size:12));Slider(value:$model.brushWidth,in:1...160).tint(Palette.gold)}.padding(24).foregroundStyle(Palette.pale).background(Palette.ink.opacity(0.85)).glass(28)}
+}
+
+struct ReaderView:View {
+    @ObservedObject var model:EditorModel
+    @Environment(\.dismiss) var dismiss
+    var body:some View {CanvasHost(model:model,readOnly:true).ignoresSafeArea(edges:.bottom).background(Palette.ink).safeAreaInset(edge:.top,spacing:0){HStack{Text(model.page.title).font(.system(size:13)).lineLimit(1);Spacer();IconButton(icon:"xmark",title:"إغلاق القراءة"){dismiss()}}.padding(.horizontal,14).foregroundStyle(Palette.pale).glass(0)}}
 }
