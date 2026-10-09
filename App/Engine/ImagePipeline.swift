@@ -104,3 +104,15 @@ enum ImagePipeline {
         guard LIWriterFinish(writer)==1 else{throw ImageFailure.message("صورة الاختبار")};return try importImage(input,root:root)
     }
 }
+
+extension ImagePipeline {
+    static func compositeRegion(_ page:EditorPage,directory:URL,rect:CGRect)throws->CGImage {
+        let region=rect.integral.intersection(CGRect(x:0,y:0,width:page.width,height:page.height)),width=Int(region.width),height=Int(region.height)
+        guard width>0,height>0,width*height<=4_194_304 else{throw ImageFailure.message("منطقة المعالجة كبيرة جدًا")}
+        var base=page.baseHidden==true ? [UInt8](repeating:0,count:width*height*4):(try tile(directory.appendingPathComponent(page.raw),width:page.width,height:page.height,rect:region))
+        for layer in page.layers where layer.isVisible{var overlay=[UInt8](repeating:0,count:base.count);var isolated=layer;isolated.blend = .normal
+            let drawn=overlay.withUnsafeMutableBytes{bytes->Bool in guard let c=CGContext(data:bytes.baseAddress,width:width,height:height,bitsPerComponent:8,bytesPerRow:width*4,space:colorSpace(directory.appendingPathComponent(page.source)),bitmapInfo:CGImageAlphaInfo.premultipliedLast.rawValue) else{return false};c.translateBy(x:0,y:CGFloat(height));c.scaleBy(x:1,y:-1);c.translateBy(x:-region.minX,y:-region.minY);LayerRenderer.draw([isolated],in:c,directory:directory);return true};guard drawn else{throw ImageFailure.message("تعذر تركيب منطقة المعالجة")};LICompositeBlend(&base,&overlay,width*height,Int32(Blend.allCases.firstIndex(of:layer.blend) ?? 0))
+        }
+        guard let result=image(base,width:width,height:height,colorSpace:colorSpace(directory.appendingPathComponent(page.source))) else{throw ImageFailure.message("تعذر قراءة منطقة المعالجة")};return result
+    }
+}

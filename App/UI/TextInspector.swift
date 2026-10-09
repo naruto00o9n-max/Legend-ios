@@ -12,8 +12,8 @@ struct TextInspector:View {
     var style:TextStyle {model.active?.style ?? TextStyle()}
     func value(_ key:WritableKeyPath<TextStyle,Double>)->Binding<Double>{Binding(get:{style[keyPath:key]},set:{v in model.change{$0.style[keyPath:key]=v}})}
     func flag(_ key:WritableKeyPath<TextStyle,Bool>)->Binding<Bool>{Binding(get:{style[keyPath:key]},set:{v in model.change{$0.style[keyPath:key]=v}})}
-    var body:some View {VStack(spacing:0){HStack{Text(panel.title).font(.system(size:15,weight:.semibold));Spacer();IconButton(icon:"checkmark",title:"تم"){model.save();if let close{close()}else{dismiss()}}}.padding(.horizontal,18).frame(height:52)
-        ScrollView{VStack(alignment:.leading,spacing:18){content}.padding(.horizontal,20).padding(.bottom,24)}
+    var body:some View {VStack(spacing:0){HStack{Text(panel.title).font(.system(size:15,weight:.semibold));Spacer();IconButton(icon:"checkmark",title:"تم"){model.save();model.textMaskMode=false;if let close{close()}else{dismiss()}}}.padding(.horizontal,18).frame(height:52)
+        ScrollView{VStack(alignment:.leading,spacing:18){content}.padding(.horizontal,20).padding(.bottom,24)}.accessibilityIdentifier("text-inspector-scroll")
     }.foregroundStyle(Palette.pale).background(Palette.ink.opacity(0.75)).glass(28).ignoresSafeArea(edges:.bottom).onAppear{model.checkpoint()}.scrollDismissesKeyboard(.interactively)
         .sheet(isPresented:$texturePicker){PhotoLibraryPicker{result in
             switch result{case .failure(let error):model.error=error.localizedDescription;case .success(let urls):if let url=urls.first{defer{try? FileManager.default.removeItem(at:url)};do{let name=UUID().uuidString+"."+url.pathExtension;try FileManager.default.copyItem(at:url,to:model.directory.appendingPathComponent(name));model.change{$0.style.texturePath=name}}catch{model.error=error.localizedDescription}}}
@@ -40,17 +40,19 @@ struct TextInspector:View {
             ForEach(style.extraStrokes ?? []){outline in HStack{ColorPicker("حد إضافي",selection:Binding(get:{Color(uiColor:UIColor(hex:outline.color))},set:{color in model.change{layer in if let i=layer.style.extraStrokes?.firstIndex(where:{$0.id==outline.id}){layer.style.extraStrokes?[i].color=UIColor(color).hex}}}),supportsOpacity:false);Slider(value:Binding(get:{outline.width},set:{width in model.change{layer in if let i=layer.style.extraStrokes?.firstIndex(where:{$0.id==outline.id}){layer.style.extraStrokes?[i].width=width}}}),in:0...40);Button(role:.destructive){model.change{$0.style.extraStrokes?.removeAll{$0.id==outline.id}}}label:{Image(systemName:"trash")}}}
             Button("إضافة حد"){model.change{$0.style.extraStrokes=($0.style.extraStrokes ?? [])+[ExtraOutline(width:6,color:"FFFFFF")]}}.disabled((style.extraStrokes?.count ?? 0)>=8)
             knob("السماكة",value(\.strokeWidth),0...18);swatches("لون الحدود",\.strokeColor);GradientControls(model:model,colors:\.strokeGradient,stops:\.strokeGradientStops,angle:\.strokeGradientAngle,type:\.strokeGradientType)
-        case .background:knob("الشفافية",Binding(get:{Double(style.backgroundAlpha)},set:{v in model.change{$0.style.backgroundAlpha=Int(v)}}),0...255);knob("الاستدارة",value(\.backgroundCornerRadius),0...80);swatches("الخلفية",\.backgroundColor)
+        case .background:knob("الشفافية",Binding(get:{Double(style.backgroundAlpha)},set:{v in model.change{$0.style.backgroundAlpha=Int(v)}}),0...255);knob("الاستدارة",value(\.backgroundCornerRadius),0...80);swatches("الخلفية",\.backgroundColor);knob("الحشو أفقيًا",value(\.backgroundPaddingX),0...100);knob("الحشو رأسيًا",value(\.backgroundPaddingY),0...100)
         case .shadow:knob("النعومة",value(\.shadowRadius),0...50);knob("أفقي",value(\.shadowDx),-80...80);knob("رأسي",value(\.shadowDy),-80...80);swatches("لون الظل",\.shadowColor);knob("شفافية الظل",Binding(get:{Double(style.shadowAlpha)},set:{v in model.change{$0.style.shadowAlpha=Int(v)}}),0...255)
         case .position:
             knob("الموضع أفقيًا",Binding(get:{model.active?.frame.x ?? 0},set:{v in model.change{$0.frame.x=v}}),-Double(model.page.width)...Double(model.page.width))
             knob("الموضع رأسيًا",Binding(get:{model.active?.frame.y ?? 0},set:{v in model.change{$0.frame.y=v}}),-Double(model.page.height)...Double(model.page.height))
             Toggle("مسطرة حدود النص",isOn:Binding(get:{style.rulerEnabled ?? false},set:{v in model.change{$0.style.rulerEnabled=v}}))
             Button("تحويل النص إلى طبقة PNG"){Task{await model.rasterizeText()}}
+            HStack{Button("توسيط أفقي"){model.change{$0.frame.x=(Double(model.page.width)-Double(LayerRenderer.bounds($0).width))/2}};Button("توسيط رأسي"){model.change{$0.frame.y=(Double(model.page.height)-Double(LayerRenderer.bounds($0).height))/2}}}.font(.system(size:12))
+            HStack{Button("قلب أفقي"){model.change{$0.scaleX *= -1}};Button("قلب رأسي"){model.change{$0.scaleY *= -1}};Button("←"){model.change{$0.frame.x-=1}};Button("→"){model.change{$0.frame.x+=1}};Button("↑"){model.change{$0.frame.y-=1}};Button("↓"){model.change{$0.frame.y+=1}}}.font(.system(size:12))
             knob("الدوران",Binding(get:{model.active?.rotation ?? 0},set:{v in model.change{$0.rotation=v}}),-180...180)
-            knob("الحجم أفقيًا",Binding(get:{model.active?.scaleX ?? 1},set:{v in model.change{$0.scaleX=v}}),0.1...6)
-            knob("الحجم رأسيًا",Binding(get:{model.active?.scaleY ?? 1},set:{v in model.change{$0.scaleY=v}}),0.1...6)
-        case .spacing:knob("بين الحروف",value(\.letterSpacing),-4...20);knob("بين الأسطر",value(\.lineSpacing),0...60)
+            knob("الحجم أفقيًا",Binding(get:{abs(model.active?.scaleX ?? 1)},set:{v in model.change{$0.scaleX=($0.scaleX<0 ? -1:1)*v}}),0.1...6)
+            knob("الحجم رأسيًا",Binding(get:{abs(model.active?.scaleY ?? 1)},set:{v in model.change{$0.scaleY=($0.scaleY<0 ? -1:1)*v}}),0.1...6)
+        case .spacing:knob("بين الحروف",value(\.letterSpacing),-4...20);knob("بين الأسطر",value(\.lineSpacing),0...60);knob("إزاحة التشكيل",Binding(get:{style.tashkeelOffset ?? 0},set:{v in model.change{$0.style.tashkeelOffset=v}}),-20...20)
         case .threeD:knob("عمق البروز",Binding(get:{Double(style.threeDDepth)},set:{v in model.change{$0.style.threeDDepth=Int(v)}}),0...40);swatches("لون البروز",\.threeDColor)
         case .effects:
             Picker("التأثير",selection:Binding(get:{style.effectType},set:{v in model.change{$0.style.effectType=v}})){ForEach(TextEffect.allCases,id:\.self){Text($0.title).tag($0)}}.pickerStyle(.menu)

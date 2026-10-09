@@ -92,7 +92,8 @@ struct ArabicTextEditor: UIViewRepresentable {
     func updateUIView(_ view: UITextView, context: Context) {
         context.coordinator.parent = self
         if let layer,view.markedTextRange==nil {
-            let styled=LayerRenderer.attributed(layer),selection=view.selectedRange
+            let styled=NSMutableAttributedString(attributedString:LayerRenderer.attributed(layer)),selection=view.selectedRange
+            styled.enumerateAttribute(.font,in:NSRange(location:0,length:styled.length)){value,range,_ in if let font=value as? UIFont{styled.addAttribute(.font,value:UIFont(descriptor:font.fontDescriptor,size:min(40,max(8,17*font.pointSize/CGFloat(max(1,layer.style.fontSize))))),range:range)}}
             if !view.attributedText.isEqual(to:styled){view.attributedText=styled;view.selectedRange=NSRange(location:min(selection.location,styled.length),length:min(selection.length,max(0,styled.length-selection.location)))}
         }else if view.text != text { view.text = text }
     }

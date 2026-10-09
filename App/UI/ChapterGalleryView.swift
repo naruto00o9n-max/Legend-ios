@@ -31,7 +31,7 @@ struct ChapterGalleryView:View {
                 Menu("نقل المحدد إلى"){ForEach(library.items.filter{$0.isChapter==true && $0.id != id}){item in Button(item.title){perform{try library.movePages(Set(chosen),from:id,to:item.id);selection=[]}}}}
                 Button{perform{try library.restoreChapter(id)}}label:{Label("استعادة الصفحات قبل آخر عملية",systemImage:"arrow.uturn.backward")}
                 Button(role:.destructive){deleting=true}label:{Label("حذف المحدد من الفصل",systemImage:"trash")}.disabled(chosen.isEmpty)
-            }label:{Image(systemName:"ellipsis.circle")}}
+            }label:{Image(systemName:"ellipsis.circle")}.accessibilityIdentifier("chapter-actions")}
             if ids.isEmpty{ContentUnavailableView("فصل جديد",systemImage:"rectangle.stack",description:Text("أضف صور الفصل أو اسحبه من رابط أو أنشئ لوحة فارغة."))}
             LazyVGrid(columns:[GridItem(.adaptive(minimum:150),spacing:12)],spacing:12){ForEach(Array(ids.enumerated()),id:\.element){index,pageID in
                 Group{if selecting{Button{if selection.contains(pageID){selection.remove(pageID)}else{selection.insert(pageID)}}label:{card(pageID,index:index)}}else{NavigationLink{PageDestination(id:pageID)}label:{card(pageID,index:index)}}}
@@ -43,7 +43,7 @@ struct ChapterGalleryView:View {
             }}
         }.padding(20).frame(maxWidth:1200).frame(maxWidth:.infinity)}}
         .foregroundStyle(Palette.pale).navigationTitle(chapter?.title ?? "الفصل").navigationBarTitleDisplayMode(.inline)
-        .toolbar{ToolbarItemGroup(placement:.topBarTrailing){Button{reading=true}label:{Image(systemName:"book")}.disabled(ids.isEmpty);Button{exporting=true}label:{Image(systemName:"square.and.arrow.up")}.disabled(chosen.isEmpty)}}
+        .toolbar{ToolbarItemGroup(placement:.topBarTrailing){Button{reading=true}label:{Image(systemName:"book")}.disabled(ids.isEmpty).accessibilityIdentifier("chapter-reader");Button{exporting=true}label:{Image(systemName:"square.and.arrow.up")}.disabled(chosen.isEmpty).accessibilityIdentifier("chapter-export-open")}}
         .overlay{if busy{VStack(spacing:12){ProgressView("جارٍ تجهيز الصفحات…");Button("إلغاء"){task?.cancel()}}.padding(24).glass(20)}}
         .sheet(isPresented:$photos){PhotoLibraryPicker(multiple:true){result in switch result{case .failure(let error):failure=error.localizedDescription;case .success(let urls):importFiles(urls,owned:true)}}}
         .fileImporter(isPresented:$files,allowedContentTypes:[.image,.pdf,.zip,UTType(filenameExtension:"cookies") ?? .zip,UTType(filenameExtension:"cookieschapter") ?? .zip],allowsMultipleSelection:true){result in switch result{case .failure(let error):failure=error.localizedDescription;case .success(let urls):importFiles(urls)}}
@@ -143,7 +143,7 @@ struct ChapterExportSheet:View {
         if format=="JPEG"{Slider(value:$quality,in:0.1...1);Text("الجودة \(Int(quality*100))%")}
         if format != "فصل قابل للتعديل"{Toggle("تصدير ذكي: دمج ثم تقطيع",isOn:$smart);if smart{TextField("طول الجزء px",value:$maxHeight,format:.number).keyboardType(.numberPad)}}
         if busy{ProgressView(value:Double(completed),total:Double(max(1,total)));Text("\(completed) / \(total)");Button("إلغاء"){task?.cancel()}}else{Button("تصدير \(ids.count) صفحة"){export()}.accessibilityIdentifier("chapter-export")}
-        if let output{ShareLink(item:output){Label("حفظ أو مشاركة الحزمة",systemImage:"square.and.arrow.up")}}
+        if let output{ShareLink(item:output){Label("حفظ أو مشاركة الحزمة",systemImage:"square.and.arrow.up")}.accessibilityIdentifier("chapter-export-share")}
         Button("حفظ الصفحات المحددة في الاستوديو"){savePhotos()}.disabled(busy)
         Text("الحفظ في الصور يستخدم PNG بالأبعاد الأصلية. الأرشيف يحتفظ بالمشروع والطبقات.").font(.system(size:12)).foregroundStyle(Palette.quiet)
     }.navigationTitle("استوديو التصدير").navigationBarTitleDisplayMode(.inline)}.alert("تعذر التصدير",isPresented:Binding(get:{failure != nil},set:{if !$0{failure=nil}})){Button("حسنًا"){failure=nil}}message:{Text(failure ?? "")}}

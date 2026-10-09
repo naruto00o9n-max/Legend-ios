@@ -35,6 +35,7 @@ struct TextStyle: Codable, Equatable {
     var texturePath = ""; var textureScaleX = 1.0; var textureScaleY = 1.0; var textureRotation = 0.0
     var textureTranslationX = 0.0; var textureTranslationY = 0.0
     var perspectivePoints: [Point] = []; var isMeshMode = false; var meshRows = 3; var meshCols = 3; var meshPoints: [Point] = []
+    var tashkeelOffset:Double?
     var innerOpacity:Double?;var fadeAmount:Double?;var fadeAngle:Double?;var rulerEnabled:Bool?
     var extraStrokes:[ExtraOutline]?
     var spans: [TextRun] = []; var customWidth: Double?; var baseWidth = 0.0; var baseHeight = 0.0

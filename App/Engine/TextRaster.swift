@@ -20,12 +20,7 @@ enum TextRaster {
             let glyph=UIGraphicsImageRenderer(size:size,format:format).image{r in
                 let a=NSMutableAttributedString(attributedString:LayerRenderer.attributed(layer,color:.white))
                 a.draw(with:rect.offsetBy(dx:pad,dy:pad),options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)
-                if let strokes=layer.textMask,!strokes.isEmpty{
-                    let mask=UIGraphicsImageRenderer(size:size,format:format).image{output in
-                        UIColor.white.setFill();output.fill(CGRect(origin:.zero,size:size));output.cgContext.translateBy(x:pad,y:pad)
-                        for stroke in strokes{BrushRenderer.draw(stroke,in:output.cgContext,directory:directory)}
-                    };mask.draw(at:.zero,blendMode:.destinationIn,alpha:1)
-                }
+
             }
             var result=UIGraphicsImageRenderer(size:size,format:format).image{r in
                 let ctx=r.cgContext
@@ -52,13 +47,20 @@ enum TextRaster {
                     };colored.draw(at:.zero)
                 }
             }
+            if let strokes=layer.textMask,!strokes.isEmpty{
+                let mask=UIGraphicsImageRenderer(size:size,format:format).image{output in
+                    UIColor.white.setFill();output.fill(CGRect(origin:.zero,size:size));output.cgContext.translateBy(x:pad,y:pad)
+                    for stroke in strokes{BrushRenderer.draw(stroke,in:output.cgContext,directory:directory)}
+                }
+                let previous=result;result=UIGraphicsImageRenderer(size:size,format:format).image{output in previous.draw(at:.zero);mask.draw(at:.zero,blendMode:.destinationIn,alpha:1)}
+            }
             if let input=CIImage(image:result){
                 var processed=input
                 if s.effectType == .blur{processed=input.applyingFilter("CIGaussianBlur",parameters:[kCIInputRadiusKey:max(0,s.effectValue)])}
                 if s.effectType == .fade{processed=input.applyingFilter("CIFadeTransition",parameters:[kCIInputTargetImageKey:CIImage(color:.clear).cropped(to:input.extent),kCIInputTimeKey:min(1,max(0,s.effectValue/100))])}
                 var corners=s.perspectivePoints
                 if corners.count != 4 && (s.rotationX != 0 || s.rotationY != 0){let x=sin(s.rotationY*Double.pi/180)*0.25,y=sin(s.rotationX*Double.pi/180)*0.25;corners=[Point(x:max(0,x),y:max(0,y)),Point(x:min(1,1+x),y:max(0,-y)),Point(x:min(1,1-x),y:min(1,1+y)),Point(x:max(0,-x),y:min(1,1-y))]}
-                if corners.count==4{func vector(_ p:Point)->CIVector{CIVector(x:pad+CGFloat(p.x)*rect.width,y:size.height-pad-CGFloat(p.y)*rect.height)};processed=processed.applyingFilter("CIPerspectiveTransformWithExtent",parameters:["inputExtent":CIVector(cgRect:CGRect(x:pad,y:pad,width:rect.width,height:rect.height)),"inputTopLeft":vector(corners[0]),"inputTopRight":vector(corners[1]),"inputBottomRight":vector(corners[2]),"inputBottomLeft":vector(corners[3])])}
+                if corners.count==4,let extended=PerspectiveGeometry.extended(corners,width:Double(rect.width),height:Double(rect.height),padding:Double(pad)),extended.count==4{func vector(_ p:Point)->CIVector{CIVector(x:pad+CGFloat(p.x)*rect.width,y:size.height-pad-CGFloat(p.y)*rect.height)};processed=processed.applyingFilter("CIPerspectiveTransform",parameters:["inputTopLeft":vector(extended[0]),"inputTopRight":vector(extended[1]),"inputBottomRight":vector(extended[2]),"inputBottomLeft":vector(extended[3])])}
                 let extent=processed.extent.integral
                 if !extent.isInfinite,!extent.isNull,extent.width*extent.height<16_777_216,let cg=context.createCGImage(processed,from:extent){result=UIImage(cgImage:cg);outputFrame=CGRect(x:extent.minX-pad,y:size.height-extent.maxY-pad,width:extent.width,height:extent.height)}
             }

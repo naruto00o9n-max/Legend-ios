@@ -36,6 +36,11 @@ final class TextStyleTests:XCTestCase {
         XCTAssertEqual((attributed.attribute(.font,at:5,effectiveRange:nil) as? UIFont)?.pointSize,70)
         XCTAssertEqual((attributed.attribute(.font,at:0,effectiveRange:nil) as? UIFont)?.pointSize,48)
     }
+    func testHomographyPaddingKeepsIdentityAndTranslatedTextCoordinates() throws {
+        let corners=[Point(x:0,y:0),Point(x:1,y:0),Point(x:1,y:1),Point(x:0,y:1)]
+        let values=try XCTUnwrap(PerspectiveGeometry.extended(corners,width:200,height:100,padding:20));XCTAssertEqual(values,[Point(x:-0.1,y:-0.2),Point(x:1.1,y:-0.2),Point(x:1.1,y:1.2),Point(x:-0.1,y:1.2)])
+        let translated=corners.map{Point(x:$0.x+0.3,y:$0.y-0.1)},shifted=try XCTUnwrap(PerspectiveGeometry.extended(translated,width:200,height:100,padding:20));XCTAssertEqual(shifted[0].x,0.2,accuracy:0.0001);XCTAssertEqual(shifted[0].y,-0.3,accuracy:0.0001)
+    }
     @MainActor func testSavedStyleSurvivesProjectRemovalAndKeepsTextAndPosition() throws {
         let root=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer{try? FileManager.default.removeItem(at:root)}

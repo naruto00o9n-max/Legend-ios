@@ -23,6 +23,8 @@ final class DocumentCanvas: UIView {
     private let border = CAShapeLayer()
     private let stem = CAShapeLayer()
     private let liveInk = CAShapeLayer()
+    private let livePatch=UIImageView()
+    var visibleRect:CGRect{visible}
     private let sniperOverlay=CALayer()
     private var sniperTargets:[SniperTarget]=[]
     private var sniperZoom:CGFloat=0
@@ -280,6 +282,7 @@ final class DocumentCanvas: UIView {
         layer.addSublayer(liveInk); layer.addSublayer(border); layer.addSublayer(stem)
         handles.values.forEach { bringSubviewToFront($0) }
     }
+    func showPatch(_ image:UIImage?,rect:CGRect = .zero){livePatch.isUserInteractionEnabled=false;livePatch.frame=rect;livePatch.image=image;if image != nil{addSubview(livePatch)}}
     func commitLiveStroke() {
         if drawingInteraction{drawingInteraction=false;endLayerInteraction();return}
         let committed = CAShapeLayer(layer: liveInk), target = revision + 1

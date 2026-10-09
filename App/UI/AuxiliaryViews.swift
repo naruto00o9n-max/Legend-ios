@@ -1,7 +1,7 @@
 import SwiftUI
 
-struct LayerSheet: View {
-    @ObservedObject var model: EditorModel
+struct LayerSheet:View {
+    @ObservedObject var model:EditorModel
     @Environment(\.dismiss) private var dismiss
     @State private var filter="all"
     @State private var multiple=false
@@ -10,49 +10,41 @@ struct LayerSheet: View {
     @State private var grouping=false
     @State private var groupName=""
     @State private var flattening=false
-    var body: some View {
-        VStack(spacing: 0) {
-            HStack { Text("الطبقات").font(.system(size:18,weight:.semibold)); Text("\(model.page.layers.count+1)").font(.system(size:11,design:.monospaced)).foregroundStyle(Palette.quiet); Spacer(); IconButton(icon:"plus",title:"طبقة رسم"){model.add(.drawing)}; IconButton(icon:"checkmark",title:"تم"){dismiss()} }.padding(.horizontal,16).frame(height:56)
-            HStack{Picker("نوع الطبقة",selection:$filter){Text("الكل").tag("all");Text("نص").tag("text");Text("صور").tag("image");Text("رسم").tag("drawing");Text("أشكال").tag("shape")}.pickerStyle(.menu);Spacer();Toggle("تحديد متعدد",isOn:$multiple).toggleStyle(.button)}.font(.system(size:12)).padding(.horizontal,16)
-            if multiple{HStack{Button("الكل"){selection=Set(model.page.layers.filter{filter=="all" || $0.kind.rawValue==filter}.map(\.id))};Button("دمج"){Task{await model.mergeLayers(selection)}}.disabled(selection.count<2 || model.busy);Button("تجميع"){grouping=true}.disabled(selection.isEmpty);Button("فك التجميع"){model.ungroupLayers(selection)}.disabled(selection.isEmpty);Button("تسطيح"){flattening=true}}.font(.system(size:11)).padding(12)}
-            List {
-                ForEach(model.page.layers.reversed().filter{filter=="all" || $0.kind.rawValue==filter}) { item in
-                    HStack(spacing:12) {
-                        if multiple{Image(systemName:selection.contains(item.id) ? "checkmark.circle.fill":"circle")}
-                        LayerThumbnail(layer:item,directory:model.directory).frame(width:48,height:48).clipShape(RoundedRectangle(cornerRadius:8))
-                        VStack(alignment:.leading,spacing:6) { Text(item.kind == .text ? item.textContent:item.name).font(.system(size:13,weight:.medium)).lineLimit(1);Text("\(Int(item.opacity*100))% · \(item.blend.title)\(item.groupName.map{" · "+$0} ?? "")").font(.system(size:11)).foregroundStyle(Palette.quiet) }
-                        Spacer(minLength:0)
-                        IconButton(icon:item.isVisible ? "eye":"eye.slash",title:"إظهار الطبقة") { model.selected=item.id;model.checkpoint();if let index=model.page.layers.firstIndex(where:{$0.id==item.id}){model.page.layers[index].isVisible.toggle();model.save()} }
-                        IconButton(icon:item.isLocked ? "lock":"lock.open",title:"قفل الطبقة") { if let index=model.page.layers.firstIndex(where:{$0.id==item.id}){model.checkpoint();model.page.layers[index].isLocked.toggle();model.save()} }
-                    }.contentShape(Rectangle()).onTapGesture{if multiple{let ids=item.groupID.map{group in Set(model.page.layers.filter{$0.groupID==group}.map(\.id))} ?? [item.id];if selection.contains(item.id){selection.subtract(ids)}else{selection.formUnion(ids)}}else{model.selected=item.id;model.panel=nil;model.tool=item.kind == .text ? .text:.move}}
-                    .listRowBackground(model.selected==item.id ? Palette.gold.opacity(0.1):.clear)
-                    .contextMenu{Button("معاينة مكبرة"){preview=item};Button("نسخ"){model.selected=item.id;model.duplicate()};Button("حذف",role:.destructive){model.selected=item.id;model.delete()}}
-                }.onMove { source,destination in guard filter=="all" else{return};model.checkpoint();var reversed=Array(model.page.layers.reversed());reversed.move(fromOffsets:source,toOffset:destination);model.page.layers=Array(reversed.reversed());model.save() }
-                HStack(spacing:12) {
-                    if let image=UIImage(contentsOfFile:model.directory.appendingPathComponent("thumbnail.png").path){Image(uiImage:image).resizable().scaledToFill().frame(width:48,height:48).clipped().clipShape(RoundedRectangle(cornerRadius:8))}
-                    VStack(alignment:.leading,spacing:6){Text("الصورة الأصلية").font(.system(size:13));Text("\(model.page.width) × \(model.page.height)").font(.system(size:11,design:.monospaced)).foregroundStyle(Palette.quiet)};Spacer();Image(systemName:"lock.fill").foregroundStyle(Palette.quiet)
-                }.listRowBackground(Color.clear)
-            }.environment(\.editMode,.constant(.active)).scrollContentBackground(.hidden).listStyle(.plain)
-            if model.active != nil {
-                HStack { Text("الشفافية").font(.system(size:12));Slider(value:Binding(get:{model.active?.opacity ?? 1},set:{value in model.change{$0.opacity=value}}),in:0...1);Text("\(Int((model.active?.opacity ?? 1)*100))%").font(.system(size:11,design:.monospaced)).frame(width:40) }.padding(.horizontal,20).padding(.vertical,12).disabled(model.active?.isLocked==true)
-            }
-        }.foregroundStyle(Palette.pale).background(Palette.ink.opacity(0.85)).glass(24)
-        .sheet(item:$preview){layer in LayerThumbnail(layer:layer,directory:model.directory).frame(maxWidth:.infinity,maxHeight:.infinity).padding(24).background(Palette.ink)}
+    private var layers:[EditorLayer]{model.page.layers.reversed().filter{filter=="all" || $0.kind.rawValue==filter}}
+    var body:some View {VStack(spacing:0){header;filters;if multiple{operations};layerList;opacity}
+        .foregroundStyle(Palette.pale).background(Palette.ink.opacity(0.85)).glass(24)
+        .sheet(item:$preview){layer in LayerThumbnail(layer:layer,directory:model.directory,previewSize:512).frame(maxWidth:.infinity,maxHeight:.infinity).padding(24).background(Palette.ink)}
         .alert("مجموعة طبقات",isPresented:$grouping){TextField("اسم المجموعة",text:$groupName);Button("حفظ"){model.groupLayers(selection,name:groupName.isEmpty ? "مجموعة":groupName)};Button("إلغاء",role:.cancel){}}
-        .alert("تسطيح العمل؟",isPresented:$flattening){Button("تسطيح"){Task{await model.flattenLayers()}};Button("إلغاء",role:.cancel){}}message:{Text("تتحول نتيجة الصورة والطبقات إلى طبقة صورة واحدة. التراجع يعيد الطبقات القابلة للتعديل.")}
-
+        .alert("تسطيح العمل؟",isPresented:$flattening){Button("تسطيح"){Task{await model.flattenLayers()}};Button("إلغاء",role:.cancel){}}message:{Text("تتحول الصورة والطبقات إلى طبقة صورة واحدة. التراجع يعيد الطبقات القابلة للتعديل.")}
     }
+    private var header:some View{HStack{Text("الطبقات").font(.system(size:18,weight:.semibold));Text("\(model.page.layers.count+1)").font(.system(size:11,design:.monospaced)).foregroundStyle(Palette.quiet);Spacer();IconButton(icon:"plus",title:"طبقة رسم"){model.add(.drawing)};IconButton(icon:"checkmark",title:"تم"){dismiss()}}.padding(.horizontal,16).frame(height:56)}
+    private var filters:some View{HStack{Picker("نوع الطبقة",selection:$filter){Text("الكل").tag("all");Text("نص").tag("text");Text("صور").tag("image");Text("رسم").tag("drawing");Text("أشكال").tag("shape")}.pickerStyle(.menu);Spacer();Toggle("تحديد متعدد",isOn:$multiple).toggleStyle(.button)}.font(.system(size:12)).padding(.horizontal,16)}
+    private var operations:some View{ScrollView(.horizontal,showsIndicators:false){HStack(spacing:14){Button("الكل"){selection=Set(layers.map(\.id))};Button("دمج"){Task{await model.mergeLayers(selection)}}.disabled(selection.count<2 || model.busy);Button("تجميع"){grouping=true}.disabled(selection.isEmpty);Button("فك التجميع"){model.ungroupLayers(selection)}.disabled(selection.isEmpty);Button("تسطيح"){flattening=true}}.font(.system(size:12)).padding(12)}}
+    private var layerList:some View{List{ForEach(layers){item in layerRow(item)}.onMove{source,destination in guard filter=="all" else{return};model.checkpoint();var ordered=Array(model.page.layers.reversed());ordered.move(fromOffsets:source,toOffset:destination);model.page.layers=Array(ordered.reversed());model.save()};backgroundRow}.environment(\.editMode,.constant(.active)).scrollContentBackground(.hidden).listStyle(.plain)}
+    private func layerRow(_ item:EditorLayer)->some View{HStack(spacing:8){
+        if multiple{Image(systemName:selection.contains(item.id) ? "checkmark.circle.fill":"circle")}
+        LayerThumbnail(layer:item,directory:model.directory).frame(width:48,height:48).clipShape(RoundedRectangle(cornerRadius:8))
+        VStack(alignment:.leading,spacing:6){Text(item.kind == .text ? item.textContent:item.name).font(.system(size:13,weight:.medium)).lineLimit(1);Text("\(Int(item.opacity*100))% · \(item.blend.title)").font(.system(size:11)).foregroundStyle(Palette.quiet);if let group=item.groupName{Text(group).font(.system(size:10)).foregroundStyle(Palette.quiet)}}
+        Spacer(minLength:0)
+        if !multiple{IconButton(icon:item.isVisible ? "eye":"eye.slash",title:"إظهار الطبقة"){model.selected=item.id;model.checkpoint();if let i=model.page.layers.firstIndex(where:{$0.id==item.id}){model.page.layers[i].isVisible.toggle();model.save()}};IconButton(icon:item.isLocked ? "lock":"lock.open",title:"قفل الطبقة"){if let i=model.page.layers.firstIndex(where:{$0.id==item.id}){model.checkpoint();model.page.layers[i].isLocked.toggle();model.save()}}}
+    }.contentShape(Rectangle()).onTapGesture{select(item)}.listRowBackground(model.selected==item.id ? Palette.gold.opacity(0.1):.clear)
+        .contextMenu{Button("معاينة مكبرة"){preview=item};Button("نسخ"){model.selected=item.id;model.duplicate()};Button("حذف",role:.destructive){model.selected=item.id;model.delete()}}
+    }
+    private func select(_ item:EditorLayer){if multiple{let ids:Set<UUID>=item.groupID.map{group in Set(model.page.layers.filter{$0.groupID==group}.map(\.id))} ?? Set([item.id]);if selection.contains(item.id){selection.subtract(ids)}else{selection.formUnion(ids)}}else{model.selected=item.id;model.panel=nil;model.tool=item.kind == .text ? .text:.move}}
+    private var backgroundRow:some View{HStack(spacing:12){if let image=UIImage(contentsOfFile:model.directory.appendingPathComponent("thumbnail.png").path){Image(uiImage:image).resizable().scaledToFill().frame(width:48,height:48).clipped().clipShape(RoundedRectangle(cornerRadius:8))};VStack(alignment:.leading,spacing:6){Text("الصورة الأصلية").font(.system(size:13));Text("\(model.page.width) × \(model.page.height)").font(.system(size:11,design:.monospaced)).foregroundStyle(Palette.quiet)};Spacer();Button{model.checkpoint();model.page.baseHidden = !(model.page.baseHidden ?? false);model.save()}label:{Image(systemName:model.page.baseHidden==true ? "eye.slash":"eye")}}.listRowBackground(Color.clear)}
+    @ViewBuilder private var opacity:some View{if model.active != nil{HStack{Text("الشفافية").font(.system(size:12));Slider(value:Binding(get:{model.active?.opacity ?? 1},set:{v in model.change{$0.opacity=v}}),in:0...1);Text("\(Int((model.active?.opacity ?? 1)*100))%").font(.system(size:11,design:.monospaced)).frame(width:40)}.padding(.horizontal,20).padding(.vertical,12).disabled(model.active?.isLocked==true)}}
 }
 struct LayerThumbnail: View {
     let layer:EditorLayer
     let directory:URL
+    var previewSize:CGFloat=48
     @State private var image:UIImage?
     var body:some View { ZStack {
         Canvas{context,size in for y in 0..<6{for x in 0..<6{context.fill(Path(CGRect(x:CGFloat(x)*8,y:CGFloat(y)*8,width:8,height:8)),with:.color(.white.opacity((x+y)%2==0 ? 0.12:0.04)))}}}
         if let image{Image(uiImage:image).resizable().scaledToFit()}
     }.task(id:layer){var item=layer;item.frame.x=0;item.frame.y=0;item.rotation=0;item.scaleX=1;item.scaleY=1;item.opacity=1
-        let snapshot=item,directory=self.directory
-        image=await Task.detached(priority:.utility){let bounds=LayerRenderer.bounds(snapshot),format=UIGraphicsImageRendererFormat();format.scale=2;format.opaque=false;let scale=min(44/max(1,bounds.width),44/max(1,bounds.height));return UIGraphicsImageRenderer(size:CGSize(width:48,height:48),format:format).image{output in output.cgContext.translateBy(x:(48-bounds.width*scale)/2,y:(48-bounds.height*scale)/2);output.cgContext.scaleBy(x:scale,y:scale);LayerRenderer.draw([snapshot],in:output.cgContext,directory:directory)}}.value
+        let snapshot=item,directory=self.directory,previewSize=self.previewSize
+        image=await Task.detached(priority:.utility){let bounds=LayerRenderer.bounds(snapshot),format=UIGraphicsImageRendererFormat();format.scale=2;format.opaque=false;let scale=min((previewSize-4)/max(1,bounds.width),(previewSize-4)/max(1,bounds.height));return UIGraphicsImageRenderer(size:CGSize(width:previewSize,height:previewSize),format:format).image{output in output.cgContext.translateBy(x:(previewSize-bounds.width*scale)/2,y:(previewSize-bounds.height*scale)/2);output.cgContext.scaleBy(x:scale,y:scale);LayerRenderer.draw([snapshot],in:output.cgContext,directory:directory)}}.value
     }}
 }
 struct ShapeSheet:View {
@@ -115,7 +107,8 @@ struct BrushSheet:View {
         ScrollView{VStack(alignment:.leading,spacing:16){
             Picker("نوع الفرشاة",selection:$model.brushStyle){Text("صلبة").tag("normal");Text("مائية").tag("water");Text("مضيئة").tag("neon");Text("ناعمة").tag("soft");Text("تحديد").tag("marker");Text("خامة").tag("texture")}.pickerStyle(.menu)
             if model.brushStyle=="texture"{Button(model.brushTexture.isEmpty ? "استيراد خامة من الصور":"تغيير الخامة"){importing=true};if !model.brushTexture.isEmpty,let image=ImagePipeline.asset(model.directory.appendingPathComponent(model.brushTexture)){Image(uiImage:image).resizable().scaledToFit().frame(height:70)}}
-            Picker("شكل الضربة",selection:$model.drawingShape){Text("حر").tag("free");Text("خط").tag("line");Text("مستطيل").tag("rectangle");Text("دائرة").tag("ellipse");Text("تعبئة").tag("fill")}.pickerStyle(.menu)
+            Picker("شكل الضربة",selection:$model.drawingShape){Text("حر").tag("free");Text("خط").tag("line");Text("مستطيل").tag("rectangle");Text("دائرة").tag("ellipse");Text("تعبئة").tag("fill");Text("طمس").tag("smudge")}.pickerStyle(.menu)
+            if model.drawingShape=="smudge"{Text("قوة الطمس: \(Int(model.smudgeStrength*100))%").font(.system(size:12));Slider(value:$model.smudgeStrength,in:0...1)}
             if model.drawingShape=="fill"{Text("تسامح اللون: \(Int(model.fillTolerance))").font(.system(size:12));Slider(value:$model.fillTolerance,in:0...80)}
             Toggle("تعبئة الشكل",isOn:$model.drawingFilled).disabled(!["rectangle","ellipse"].contains(model.drawingShape))
             ColorPicker("لون الرسم",selection:Binding(get:{Color(uiColor:UIColor(hex:model.brushColor))},set:{model.brushColor=UIColor($0).hex}),supportsOpacity:false)

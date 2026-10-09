@@ -6,6 +6,8 @@ enum EditorPreferences {
     static var icons:Double{number("editor-icon-scale",1,0.8...1.2)}
     static var toolbar:Double{number("editor-toolbar-scale",1,0.85...1.15)}
     static var labels:Double{number("editor-label-scale",1,0.85...1.3)}
+    static var handleSpeed:Double{number("editor-handle-speed",1,0.25...2)}
+    static var typerScale:Double{number("typer-insert-scale",1,0.5...2)}
     static var handles:Double{number("editor-handle-scale",1,0.8...1.5)}
     static var quality:Double{number("editor-preview-quality",1,0.5...2)}
     static var snap:Bool{UserDefaults.standard.bool(forKey:"editor-snap")}

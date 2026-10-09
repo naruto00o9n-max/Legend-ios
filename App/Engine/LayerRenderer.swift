@@ -27,6 +27,7 @@ enum LayerRenderer {
         if s.isUnderline{attributes[.underlineStyle]=NSUnderlineStyle.single.rawValue};if s.isStrikeThrough{attributes[.strikethroughStyle]=NSUnderlineStyle.single.rawValue}
         let result=NSMutableAttributedString(string:l.textContent,attributes:attributes)
         for run in s.spans {let range=NSRange(location:max(0,run.start),length:max(0,min(result.length,run.end)-max(0,run.start)));guard range.location+range.length<=result.length else{continue};if let color=run.color{result.addAttribute(.foregroundColor,value:UIColor(hex:color),range:range)};if run.fontSize != nil || run.isBold != nil{var fontStyle=s;if let size=run.fontSize{fontStyle.fontSize=size};if let bold=run.isBold{fontStyle.isBold=bold};result.addAttribute(.font,value:Fonts.font(fontStyle),range:range)}}
+        if let offset=s.tashkeelOffset,offset != 0{var index=0;for scalar in l.textContent.unicodeScalars{let count=scalar.value>0xFFFF ? 2:1;if CharacterSet.nonBaseCharacters.contains(scalar){result.addAttribute(.baselineOffset,value:offset,range:NSRange(location:index,length:count))};index+=count}}
         return result
     }
     static func bounds(_ l:EditorLayer)->CGRect {
