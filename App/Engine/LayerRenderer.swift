@@ -25,11 +25,15 @@ enum LayerRenderer {
         if l.kind == .text {let b=attributed(l).boundingRect(with:CGSize(width:max(20,l.style.boxWidth),height:100000),options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil);return CGRect(x:0,y:0,width:max(20,l.style.boxWidth),height:max(24,ceil(b.height)))}
         return CGRect(x:0,y:0,width:l.frame.width,height:l.frame.height)
     }
+    static func transform(_ l:EditorLayer)->CGAffineTransform {
+        let b=bounds(l)
+        return CGAffineTransform(translationX:CGFloat(l.frame.x)+b.width/2,y:CGFloat(l.frame.y)+b.height/2).rotated(by:CGFloat(l.rotation)*CGFloat.pi/180).scaledBy(x:CGFloat(l.scaleX),y:CGFloat(l.scaleY)).translatedBy(x:-b.width/2,y:-b.height/2)
+    }
     static func draw(_ layers:[EditorLayer],in ctx:CGContext,directory:URL) {
         UIGraphicsPushContext(ctx);defer{UIGraphicsPopContext()}
         for l in layers where l.isVisible {
             ctx.saveGState();ctx.setAlpha(CGFloat(l.opacity));ctx.setBlendMode(l.blend.cg)
-            let b=bounds(l);ctx.translateBy(x:CGFloat(l.frame.x)+b.width/2,y:CGFloat(l.frame.y)+b.height/2);ctx.rotate(by:CGFloat(l.rotation) * .pi / 180);ctx.scaleBy(x:CGFloat(l.scaleX),y:CGFloat(l.scaleY));ctx.translateBy(x:-b.width/2,y:-b.height/2)
+            let b=bounds(l);ctx.concatenate(transform(l))
             if l.isMaskEnabled{ctx.addEllipse(in:CGRect(x:l.maskX-l.maskRadius,y:l.maskY-l.maskRadius,width:l.maskRadius*2,height:l.maskRadius*2));ctx.clip()}
             switch l.kind {
             case .text:drawText(l,rect:b,context:ctx)

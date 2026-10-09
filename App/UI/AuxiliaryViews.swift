@@ -27,7 +27,7 @@ struct AssistantView:View {
         TextEditor(text:$source).scrollContentBackground(.hidden).font(.system(size:15)).padding(12).glass(18).frame(minHeight:140,maxHeight:240).accessibilityIdentifier("assistant-text")
         Button("تجهيز الحوارات"){lines=source.components(separatedBy:"\n\n").map{$0.trimmingCharacters(in:.whitespacesAndNewlines)}.filter{!$0.isEmpty};index=0}.buttonStyle(GoldButtonStyle(primary:true))
         if !lines.isEmpty{VStack(spacing:14){Text("\(index+1) / \(lines.count)").font(.system(size:10,design:.monospaced)).foregroundStyle(Palette.quiet);Text(lines[index]).font(.system(size:16)).multilineTextAlignment(.center).frame(maxWidth:.infinity);HStack{IconButton(icon:"chevron.right",title:"السابق"){index=max(0,index-1)};Button("نسخ"){UIPasteboard.general.string=lines[index]}.font(.system(size:13));Spacer();if let insert{Button("إضافة إلى الصورة"){insert(lines[index]);dismiss()}.font(.system(size:13))};IconButton(icon:"chevron.left",title:"التالي"){index=min(lines.count-1,index+1)}}}.padding(18).glass(20)};Spacer(minLength:0)
-    }.padding(22)}}.foregroundStyle(Palette.pale)}
+    }.padding(22)}.foregroundStyle(Palette.pale)}
 }
 struct SettingsView:View {
     @EnvironmentObject var service:ReferenceService;@Environment(\.dismiss) var dismiss
@@ -36,7 +36,7 @@ struct SettingsView:View {
         VStack(alignment:.leading,spacing:12){Text(NetworkPolicy.enabled ? "نسخة الخدمات":"نسخة محلية").font(.system(size:16,weight:.medium));Text(service.session?.user.email ?? "المشاريع محفوظة على هذا الجهاز").font(.system(size:12)).foregroundStyle(Palette.quiet)}.frame(maxWidth:.infinity,alignment:.leading).padding(20).glass()
         if NetworkPolicy.enabled{Button(service.session==nil ? "تسجيل الدخول إلى الحساب الأصلي":"حسابي والخدمات"){if service.session==nil{account=true}else{hub=true}}.buttonStyle(GoldButtonStyle(primary:true));Button("إعدادات الخدمات العامة"){hub=true}.buttonStyle(GoldButtonStyle());if service.session != nil{Button("تسجيل الخروج"){Task{await service.logout()}}.font(.system(size:13))}}else{Text("هذه النسخة لا ترسل طلبات إلى الخوادم.").font(.system(size:13)).foregroundStyle(Palette.quiet)}
         Text("Cookies Editor · iPhone\nالأسود والذهبي، ومساحة لصورتك.").font(.system(size:12)).foregroundStyle(Palette.quiet).lineSpacing(6);Spacer()
-    }.padding(24)}}.foregroundStyle(Palette.pale).sheet(isPresented:$account){AccountView()}.sheet(isPresented:$hub){ServiceHub()}}
+    }.padding(24)}.foregroundStyle(Palette.pale).sheet(isPresented:$account){AccountView()}.sheet(isPresented:$hub){ServiceHub()}}
 }
 struct ServiceHub:View {
     @EnvironmentObject var service:ReferenceService

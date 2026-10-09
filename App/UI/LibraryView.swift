@@ -16,7 +16,7 @@ struct LibraryView:View {
             }
             LazyVGrid(columns:[GridItem(.adaptive(minimum:145),spacing:12)],spacing:12){ForEach(children){item in
                 if item.folder{NavigationLink{LibraryView(parent:item.id,title:item.title)}label:{card(item)}}else{NavigationLink{PageDestination(id:item.id)}label:{card(item)}}
-            }
+            }}
             HStack(spacing:12){Button{assistant=true}label:{Label("مساعد الحوارات",systemImage:"text.bubble").font(.system(size:13)).frame(maxWidth:.infinity).padding(16).glass(18)}.accessibilityIdentifier("assistant");Button{settings=true}label:{Image(systemName:"slider.horizontal.3").frame(width:48,height:48).glass(16)}.accessibilityLabel("الإعدادات").accessibilityIdentifier("settings")}
         }.padding(20)}}.foregroundStyle(Palette.pale).toolbar(parent==nil ? .hidden:.visible,for:.navigationBar)
         .overlay{if importing{ProgressView("جارٍ تجهيز الصورة…").tint(Palette.gold).padding(24).glass()}}
