@@ -36,11 +36,11 @@ struct TextInspector:View {
         case .spacing:knob("بين الحروف",value(\.letterSpacing),-4...20);knob("بين الأسطر",value(\.lineSpacing),0...60)
         case .threeD:knob("عمق البروز",Binding(get:{Double(style.threeDDepth)},set:{v in model.change{$0.style.threeDDepth=Int(v)}}),0...40);swatches("لون البروز",\.threeDColor)
         case .effects:
-            Picker("التأثير",selection:Binding(get:{style.effectType},set:{v in model.change{$0.style.effectType=v}})){ForEach(TextEffect.allCases,id:\.self){Text($0.rawValue.uppercased()).tag($0)}}.pickerStyle(.menu)
+            Picker("التأثير",selection:Binding(get:{style.effectType},set:{v in model.change{$0.style.effectType=v}})){ForEach(TextEffect.allCases,id:\.self){Text($0.title).tag($0)}}.pickerStyle(.menu)
             knob("القوة",value(\.effectValue),0...50);knob("التفاصيل",value(\.effectDetail),2...20);swatches("لون التأثير",\.effectColor)
         case .opacity:
             knob("شفافية الطبقة",Binding(get:{model.active?.opacity ?? 1},set:{v in model.change{$0.opacity=v}}),0...1)
-            Picker("المزج",selection:Binding(get:{model.active?.blend ?? .normal},set:{v in model.change{$0.blend=v}})){ForEach(Blend.allCases,id:\.self){Text($0.rawValue).tag($0)}}.pickerStyle(.menu)
+            Picker("المزج",selection:Binding(get:{model.active?.blend ?? .normal},set:{v in model.change{$0.blend=v}})){ForEach(Blend.allCases,id:\.self){Text($0.title).tag($0)}}.pickerStyle(.menu)
         case .mask:
             Toggle("تفعيل قناع دائري",isOn:Binding(get:{model.active?.isMaskEnabled ?? false},set:{v in model.change{$0.isMaskEnabled=v}}));knob("نصف القطر",Binding(get:{model.active?.maskRadius ?? 80},set:{v in model.change{$0.maskRadius=v}}),5...400)
             knob("المركز أفقيًا",Binding(get:{model.active?.maskX ?? 0},set:{v in model.change{$0.maskX=v}}),0...500);knob("المركز رأسيًا",Binding(get:{model.active?.maskY ?? 0},set:{v in model.change{$0.maskY=v}}),0...500)

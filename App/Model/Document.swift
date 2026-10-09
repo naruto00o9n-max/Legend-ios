@@ -7,9 +7,13 @@ struct Box: Codable, Equatable {
     var cg: CGRect { CGRect(x:x,y:y,width:width,height:height) }
 }
 enum LayerKind: String, Codable, CaseIterable { case text, image, shape, drawing }
-enum TextEffect: String, Codable, CaseIterable { case none, blur, glitch, slice, neon, fade, warp, shadow, error }
+enum TextEffect: String, Codable, CaseIterable {
+    case none, blur, glitch, slice, neon, fade, warp, shadow, error
+    var title:String {switch self {case .none:"بلا تأثير";case .blur:"تمويه";case .glitch:"تشويش";case .slice:"تقطيع";case .neon:"توهج";case .fade:"تلاشي";case .warp:"تشويه";case .shadow:"ظل";case .error:"خلل"}}
+}
 enum Blend: String, Codable, CaseIterable {
     case normal, multiply, screen, overlay, darken, lighten, difference, add
+    var title:String {switch self {case .normal:"عادي";case .multiply:"ضرب";case .screen:"شاشة";case .overlay:"تراكب";case .darken:"تغميق";case .lighten:"تفتيح";case .difference:"فرق";case .add:"جمع"}}
     var cg: CGBlendMode { switch self {case .normal:.normal;case .multiply:.multiply;case .screen:.screen;case .overlay:.overlay;case .darken:.darken;case .lighten:.lighten;case .difference:.difference;case .add:.plusLighter} }
 }
 struct TextStyle: Codable, Equatable {
