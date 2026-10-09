@@ -14,7 +14,9 @@ PY
 TASK_INDEX=0
 while IFS= read -r TASK_DEVICE || [[ -n "$TASK_DEVICE" ]]; do
   TASK_INDEX=$((TASK_INDEX+1))
-  xcodebuild -project CookiesEditor.xcodeproj -scheme CookiesOffline -configuration Debug -destination "platform=iOS Simulator,id=$TASK_DEVICE" -derivedDataPath .work/simulator -resultBundlePath "build/iPhone-$TASK_INDEX.xcresult" ARCHS=x86_64 ONLY_ACTIVE_ARCH=YES test > "build/test-$TASK_INDEX.log" 2>&1 || { tail -100 "build/test-$TASK_INDEX.log"; exit 1; }
+  TASK_STATUS=0
+  xcodebuild -project CookiesEditor.xcodeproj -scheme CookiesOffline -configuration Debug -destination "platform=iOS Simulator,id=$TASK_DEVICE" -derivedDataPath .work/simulator -resultBundlePath "build/iPhone-$TASK_INDEX.xcresult" ARCHS=x86_64 ONLY_ACTIVE_ARCH=YES test > "build/test-$TASK_INDEX.log" 2>&1 || TASK_STATUS=$?
   xcrun xcresulttool export attachments --path "build/iPhone-$TASK_INDEX.xcresult" --output-path "build/screenshots/iPhone-$TASK_INDEX"
   xcrun simctl shutdown "$TASK_DEVICE" || true
+  if [[ "$TASK_STATUS" != 0 ]]; then tail -100 "build/test-$TASK_INDEX.log"; exit "$TASK_STATUS"; fi
 done < .work/simulators.txt

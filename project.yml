@@ -15,6 +15,10 @@ settings:
     ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
     SWIFT_STRICT_CONCURRENCY: minimal
     ENABLE_USER_SCRIPT_SANDBOXING: NO
+packages:
+  ZIPFoundation:
+    url: https://github.com/weichsel/ZIPFoundation.git
+    exactVersion: 0.9.19
 targetTemplates:
   CookiesBase:
     type: application
@@ -28,6 +32,7 @@ targetTemplates:
         type: folder
         buildPhase: resources
     dependencies:
+      - package: ZIPFoundation
       - framework: .work/opencv/opencv2.framework
         embed: false
       - sdk: UIKit.framework
@@ -88,6 +93,8 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.cookies.editor.tests
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/CookiesEditor.app/CookiesEditor
+        BUNDLE_LOADER: $(TEST_HOST)
         SWIFT_OBJC_BRIDGING_HEADER: ''
         GENERATE_INFOPLIST_FILE: YES
     sources:

@@ -12,11 +12,24 @@ struct ShapeSheet:View {
 }
 struct ShapePreview:Shape {var index:Int;func path(in rect:CGRect)->Path{Path(LayerRenderer.shapePath(index,rect:rect).cgPath)}}
 struct ExportSheet:View {
-    @ObservedObject var model:EditorModel;@Environment(\.dismiss) var dismiss
-    var body:some View{VStack(alignment:.leading,spacing:18){HStack{Text("تصدير الصورة").font(.system(size:20,weight:.semibold));Spacer();Image(systemName:"square.and.arrow.up")};Text("PNG · \(model.page.width) × \(model.page.height)").font(.system(size:13,design:.monospaced)).foregroundStyle(Palette.quiet);Text("يقرأ ملف الصورة الأصلي ويطبق الطبقات على أجزاء، مع حفظ الأبعاد الأصلية.").font(.system(size:13)).lineSpacing(4)
-        if model.busy{ProgressView("جارٍ التصدير…").tint(Palette.gold)}else if let url=model.exported{ShareLink(item:url){Label("حفظ أو مشاركة الصورة",systemImage:"square.and.arrow.up")}.buttonStyle(GoldButtonStyle(primary:true)).accessibilityIdentifier("share-png")}else{Button("تصدير PNG"){Task{await model.exportPNG()}}.buttonStyle(GoldButtonStyle(primary:true)).accessibilityIdentifier("export-png")}
-        Button("إغلاق"){dismiss()}.font(.system(size:12)).foregroundStyle(Palette.quiet)
-    }.padding(24).foregroundStyle(Palette.pale).background(Palette.ink.opacity(0.85)).glass(28)}
+    @ObservedObject var model:EditorModel
+    @Environment(\.dismiss) var dismiss
+    @State private var format="PNG"
+    @State private var quality=0.95
+    var body:some View {
+        VStack(alignment:.leading,spacing:16){
+            HStack{Text("تصدير العمل").font(.system(size:20,weight:.semibold));Spacer();Image(systemName:"square.and.arrow.up")}
+            Picker("الصيغة",selection:$format){ForEach(["PNG","JPEG","PSD","مشروع"],id:\.self){Text($0).tag($0)}}.pickerStyle(.segmented)
+            Text("\(model.page.width) × \(model.page.height)").font(.system(size:13,design:.monospaced)).foregroundStyle(Palette.quiet)
+            if format=="JPEG"{Slider(value:$quality,in:0.5...1);Text("جودة JPEG: \(Int(quality*100))% · ضغط مع فقدان").font(.system(size:11)).foregroundStyle(Palette.quiet)}
+            else{Text(format=="مشروع" ? "يحفظ الصورة الأصلية والنصوص والطبقات القابلة للتعديل.":format=="PSD" ? "طبقات منفصلة في PSD؛ النصوص طبقات مرسومة. احتفظ بملف المشروع لتعديلها.":"PNG بلا فقدان وبالأبعاد الأصلية.").font(.system(size:12)).lineSpacing(4)}
+            if model.busy{ProgressView("جارٍ التصدير…").tint(Palette.gold)}
+            else if let url=model.exported{ShareLink(item:url){Label("حفظ أو مشاركة العمل",systemImage:"square.and.arrow.up")}.buttonStyle(GoldButtonStyle(primary:true)).accessibilityIdentifier("share-png")}
+            else{Button("تصدير \(format)"){Task{await model.export(format:format,quality:quality)}}.buttonStyle(GoldButtonStyle(primary:true)).accessibilityIdentifier("export-png")}
+            Button("إغلاق"){dismiss()}.font(.system(size:12)).foregroundStyle(Palette.quiet)
+        }.padding(24).foregroundStyle(Palette.pale).background(Palette.ink.opacity(0.85)).glass(28)
+        .onAppear{model.exported=nil}.onChange(of:format){_,_ in model.exported=nil}
+    }
 }
 struct AssistantView:View {
     var insert:((String)->Void)?
@@ -45,4 +58,9 @@ struct ServiceHub:View {
         if service.busy{ProgressView().tint(Palette.gold)};if let message=service.message{Text(message).font(.system(size:13))}
         ForEach(Array(service.rows.enumerated()),id:\.offset){_,row in VStack(alignment:.leading,spacing:8){Text((row["title"] ?? row["key"] ?? row["display_name"]) as? String ?? "بيانات الخدمة").font(.system(size:15,weight:.medium));Text((row["content"] ?? row["value"] ?? row["description"]) as? String ?? "").font(.system(size:12)).foregroundStyle(Palette.quiet)}.frame(maxWidth:.infinity,alignment:.leading).padding(16).glass(18)}
     }.padding(22)}}.foregroundStyle(Palette.pale).task(id:section){await service.fetch(section)}}
+}
+
+struct BrushSheet:View {
+    @ObservedObject var model:EditorModel
+    var body:some View {VStack(alignment:.leading,spacing:22){Text("الفرشاة").font(.system(size:19,weight:.semibold));Picker("نوع الفرشاة",selection:$model.brushStyle){Text("صلبة").tag("normal");Text("مائية").tag("water");Text("مضيئة").tag("neon")}.pickerStyle(.segmented);ColorPicker("لون الرسم",selection:Binding(get:{Color(uiColor:UIColor(hex:model.brushColor))},set:{model.brushColor=UIColor($0).hex}),supportsOpacity:false);Text("الحجم: \(Int(model.brushWidth)) بكسل").font(.system(size:12));Slider(value:$model.brushWidth,in:1...160).tint(Palette.gold)}.padding(24).foregroundStyle(Palette.pale).background(Palette.ink.opacity(0.85)).glass(28)}
 }

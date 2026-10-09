@@ -20,7 +20,7 @@ struct LibraryView:View {
             HStack(spacing:12){Button{assistant=true}label:{Label("مساعد الحوارات",systemImage:"text.bubble").font(.system(size:13)).frame(maxWidth:.infinity).padding(16).glass(18)}.accessibilityIdentifier("assistant");Button{settings=true}label:{Image(systemName:"slider.horizontal.3").frame(width:48,height:48).glass(16)}.accessibilityLabel("الإعدادات").accessibilityIdentifier("settings")}
         }.padding(20)}}.foregroundStyle(Palette.pale).toolbar(parent==nil ? .hidden:.visible,for:.navigationBar)
         .overlay{if importing{ProgressView("جارٍ تجهيز الصورة…").tint(Palette.gold).padding(24).glass()}}
-        .fileImporter(isPresented:$picker,allowedContentTypes:[.image],allowsMultipleSelection:true){result in if case let .success(urls)=result{Task{importing=true;for url in urls{await library.importImage(url,parent:parent)};importing=false}}}
+        .fileImporter(isPresented:$picker,allowedContentTypes:[.image,UTType(filenameExtension:"cookies") ?? .zip],allowsMultipleSelection:true){result in if case let .success(urls)=result{Task{importing=true;for url in urls{await library.importImage(url,parent:parent)};importing=false}}}
         .alert("مجلد جديد",isPresented:$folderPrompt){TextField("اسم العمل أو الفصل",text:$name);Button("إنشاء"){if !name.trimmingCharacters(in:.whitespaces).isEmpty{library.createFolder(name,parent:parent);name=""}};Button("إلغاء",role:.cancel){}}
         .sheet(isPresented:$assistant){AssistantView()}.sheet(isPresented:$settings){SettingsView()}
         .alert("تعذر إكمال العملية",isPresented:Binding(get:{library.error != nil},set:{if !$0{library.error=nil}})){Button("حسنًا"){library.error=nil}}message:{Text(library.error ?? "")}

@@ -60,7 +60,7 @@ struct CanvasHost:UIViewRepresentable {
         @objc func pan(_ g:UIPanGestureRecognizer){let point=g.location(in:canvas)
             if [.brush,.eraser,.cleaner].contains(model.tool){
                 if g.state == .began{
-                    if model.tool != .cleaner{if model.active?.kind != .drawing{model.add(.drawing)};model.checkpoint()};stroke=Stroke(points:[Point(x:point.x,y:point.y)],width:model.brushWidth,color:model.tool == .cleaner ? "FFFFFF":model.brushColor,erase:model.tool == .eraser)
+                    if model.tool != .cleaner{if model.active?.kind != .drawing{model.add(.drawing)};model.checkpoint()};stroke=Stroke(points:[Point(x:point.x,y:point.y)],width:model.brushWidth,color:model.tool == .cleaner ? "FFFFFF":model.brushColor,erase:model.tool == .eraser,brush:model.brushStyle)
                 }else if g.state == .changed{stroke?.points.append(Point(x:point.x,y:point.y));canvas.page=model.page;if let stroke,var page=canvas.page,let i=page.layers.firstIndex(where:{$0.id==model.selected}){page.layers[i].strokes.append(stroke);canvas.page=page};canvas.setNeedsDisplay()}
                 else if g.state == .ended{if let stroke{if model.tool == .cleaner{Task{await model.clean(stroke)}}else{model.change{$0.strokes.append(stroke)}}};stroke=nil}
                 return

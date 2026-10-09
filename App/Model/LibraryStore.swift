@@ -20,7 +20,7 @@ import SwiftUI
     func remove(_ item:LibraryItem) {for child in items.filter({$0.parent==item.id}){remove(child)};items.removeAll{$0.id==item.id};if !item.folder{try? FileManager.default.removeItem(at:directory(item.id))};save()}
     func rename(_ item:LibraryItem,to name:String) {if let i=items.firstIndex(where:{$0.id==item.id}){items[i].title=name;save()}}
     func importImage(_ url:URL,parent:UUID?) async {
-        do {let root=self.root;let page=try await Task.detached(priority:.userInitiated){try ImagePipeline.importImage(url,root:root)}.value;add(page,parent:parent)}catch{self.error=error.localizedDescription}
+        do {let root=self.root;let page=try await Task.detached(priority:.userInitiated){try url.pathExtension.lowercased()=="cookies" ? ProjectArchive.importFile(url,root:root):ImagePipeline.importImage(url,root:root)}.value;add(page,parent:parent)}catch{self.error=error.localizedDescription}
     }
 }
 
@@ -31,6 +31,7 @@ import SwiftUI
     @Published var panel:Panel?
     @Published var brushWidth = 12.0
     @Published var brushColor = "D4AF37"
+    @Published var brushStyle = "normal"
     @Published var zoom = 1.0
     @Published var error:String?
     @Published var busy = false
@@ -54,9 +55,12 @@ import SwiftUI
     func undo(){guard let previous=undoStack.popLast() else{return};redoStack.append(page.layers);page.layers=previous;selected=nil;save()}
     func redo(){guard let next=redoStack.popLast() else{return};undoStack.append(page.layers);page.layers=next;selected=nil;save()}
     func save(){do{try library.persist(page)}catch{self.error=error.localizedDescription}}
-    func exportPNG() async {
+    func exportPNG() async {await export(format:"PNG")}
+    func export(format:String,quality:Double=0.95) async {
         busy=true;defer{busy=false};let page=self.page,directory=self.directory
-        do{exported=try await Task.detached(priority:.userInitiated){try ImagePipeline.exportPNG(page,directory:directory)}.value}catch{self.error=error.localizedDescription}
+        do{exported=try await Task.detached(priority:.userInitiated){()->URL in
+            switch format {case "JPEG":return try ImagePipeline.exportJPEG(page,directory:directory,quality:quality);case "PSD":return try PSDWriter.export(page,directory:directory);case "مشروع":return try ProjectArchive.export(page,directory:directory);default:return try ImagePipeline.exportPNG(page,directory:directory)}
+        }.value}catch{self.error=error.localizedDescription}
     }
     func clean(_ stroke:Stroke) async {
         guard !stroke.points.isEmpty else{return};busy=true;defer{busy=false}

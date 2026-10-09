@@ -31,5 +31,14 @@ final class EditorTests:XCTestCase {
         let library=LibraryStore(root:FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString));let page=try ImagePipeline.fixture(root:library.root);library.add(page,parent:nil);let m=EditorModel(page:page,library:library)
         m.add(.text);m.change{$0.textContent="كوكيز"};let id=m.selected;m.checkpoint();m.change{$0.scaleX=2;$0.rotation=25};m.undo();XCTAssertEqual(m.page.layers.first?.scaleX,1);m.redo();XCTAssertEqual(m.page.layers.first?.scaleX,2);m.selected=id;m.duplicate();XCTAssertEqual(m.page.layers.count,2);m.delete();XCTAssertEqual(m.page.layers.count,1)
     }
+    func testProjectArchiveJPEGAndPSD() throws {
+        let root=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString,isDirectory:true);try FileManager.default.createDirectory(at:root,withIntermediateDirectories:true);defer{try? FileManager.default.removeItem(at:root)}
+        var page=try ImagePipeline.fixture(root:root);let directory=root.appendingPathComponent(page.id.uuidString)
+        var text=EditorLayer(kind:.text,name:"حوار عربي");text.textContent="أصل الصورة والطبقات";text.frame.y=14800;text.style.textGradient=["D4AF37","FFFFFF"];page.layers=[text]
+        let archive=try ProjectArchive.export(page,directory:directory);let restored=try ProjectArchive.importFile(archive,root:root);XCTAssertEqual(restored.layers,page.layers);XCTAssertEqual(restored.width,800);XCTAssertEqual(restored.height,15000)
+        let jpeg=try ImagePipeline.exportJPEG(page,directory:directory,quality:0.95),psd=try PSDWriter.export(page,directory:directory)
+        for url in [jpeg,psd]{let source=try XCTUnwrap(CGImageSourceCreateWithURL(url as CFURL,nil));let props=try XCTUnwrap(CGImageSourceCopyPropertiesAtIndex(source,0,nil)) as NSDictionary;XCTAssertEqual(props[kCGImagePropertyPixelWidth] as? Int,800);XCTAssertEqual(props[kCGImagePropertyPixelHeight] as? Int,15000);XCTAssertNotNil(CGImageSourceCreateImageAtIndex(source,0,nil))}
+        let attachment=XCTAttachment(contentsOfFile:psd);attachment.name="layered-800x15000.psd";attachment.lifetime = .keepAlways;add(attachment)
+    }
     func testOfflinePolicy(){XCTAssertFalse(NetworkPolicy.enabled)}
 }

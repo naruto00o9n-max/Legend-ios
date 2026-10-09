@@ -70,18 +70,34 @@ enum LayerRenderer {
         }
     }
     static func shapePath(_ type:Int,rect:CGRect)->UIBezierPath {
+        let p=UIBezierPath(),w=rect.width/2,h=rect.height/2
+        func q(_ x:CGFloat,_ y:CGFloat)->CGPoint{CGPoint(x:x+w+rect.minX,y:y+h+rect.minY)}
+        func lines(_ values:[CGPoint]){for (i,v) in values.enumerated(){if i==0{p.move(to:v)}else{p.addLine(to:v)}};p.close()}
+        func regular(_ sides:Int,_ inner:CGFloat?=nil){let radius=min(w,h),count=inner==nil ? sides:sides*2;for i in 0..<count{let angle=CGFloat(i)*CGFloat.pi*2/CGFloat(count),r=(inner != nil && i%2==1) ? radius*inner!:radius;let point=q(sin(angle)*r,-cos(angle)*r);if i==0{p.move(to:point)}else{p.addLine(to:point)}};p.close()}
         switch type%20 {
-        case 0:return UIBezierPath(roundedRect:rect,cornerRadius:min(rect.width,rect.height)*0.16)
-        case 1:return UIBezierPath(ovalIn:rect)
-        case 2:return UIBezierPath(rect:rect)
-        case 3,4,5,6,7,8,9,10:
-            let points=[3,4,5,6,8,10,12,20][max(0,min(7,type-3))];return polygon(points,rect:rect,star:type>7)
-        case 11,12,13:
-            let p=UIBezierPath(roundedRect:rect.insetBy(dx:0,dy:rect.height*0.1),cornerRadius:rect.height*0.25);p.move(to:CGPoint(x:rect.width*0.5,y:rect.height*0.85));p.addLine(to:CGPoint(x:rect.width*0.45,y:rect.height));p.addLine(to:CGPoint(x:rect.width*0.7,y:rect.height*0.85));p.close();return p
-        case 14,15:
-            let p=UIBezierPath();for v in [CGPoint(x:0,y:rect.height*0.3),CGPoint(x:rect.width*0.65,y:rect.height*0.3),CGPoint(x:rect.width*0.65,y:0),CGPoint(x:rect.width,y:rect.height/2),CGPoint(x:rect.width*0.65,y:rect.height),CGPoint(x:rect.width*0.65,y:rect.height*0.7),CGPoint(x:0,y:rect.height*0.7)]{if p.isEmpty{p.move(to:v)}else{p.addLine(to:v)}};p.close();return p
-        default:return polygon(type==16 ? 4:16,rect:rect,star:type==19)
-        }
+        case 0:p.append(UIBezierPath(rect:rect))
+        case 1:p.append(UIBezierPath(roundedRect:rect,byRoundingCorners:.allCorners,cornerRadii:CGSize(width:rect.width*0.15,height:rect.height*0.15)))
+        case 2:p.append(UIBezierPath(ovalIn:CGRect(x:rect.midX-min(w,h),y:rect.midY-min(w,h),width:min(w,h)*2,height:min(w,h)*2)))
+        case 3:p.append(UIBezierPath(ovalIn:rect))
+        case 4:lines([q(0,-h),q(w,h),q(-w,h)])
+        case 5:lines([q(-w,-h),q(w,h),q(-w,h)])
+        case 6:regular(5)
+        case 7:regular(6)
+        case 8:regular(8)
+        case 9:regular(5,0.4)
+        case 10:regular(6,0.5)
+        case 11:p.move(to:q(0,h*0.3));p.addCurve(to:q(0,-h*0.5),controlPoint1:q(-w,-h*0.1),controlPoint2:q(-w,-h));p.addCurve(to:q(0,h*0.3),controlPoint1:q(w,-h),controlPoint2:q(w,-h*0.1));p.close()
+        case 12:lines([q(0,-h),q(w,0),q(0,h),q(-w,0)])
+        case 13,14:
+            let r=CGRect(x:rect.minX,y:rect.minY,width:rect.width,height:h*1.6)
+            p.append(type==13 ? UIBezierPath(ovalIn:r):UIBezierPath(roundedRect:r,byRoundingCorners:.allCorners,cornerRadii:CGSize(width:w*0.1,height:h*0.1)))
+            lines([q(-w*0.3,h*(type==13 ? 0.5:0.6)),q(-w*0.6,h),q(0,h*0.6)])
+        case 15:lines([q(-w,-h*0.4),q(w*0.8,-h*0.4),q(w*0.8,-h),q(w,0),q(w*0.8,h),q(w*0.8,h*0.4),q(-w,h*0.4)])
+        case 16:lines([q(-w*0.4,h),q(-w*0.4,-h*0.8),q(-w,-h*0.8),q(0,-h),q(w,-h*0.8),q(w*0.4,-h*0.8),q(w*0.4,h)])
+        case 17:p.append(UIBezierPath(rect:CGRect(x:rect.midX-w*0.3,y:rect.minY,width:w*0.6,height:rect.height)));p.append(UIBezierPath(rect:CGRect(x:rect.minX,y:rect.midY-h*0.3,width:rect.width,height:h*0.6)))
+        case 18:p.append(UIBezierPath(ovalIn:rect));p.append(UIBezierPath(ovalIn:CGRect(x:rect.midX-w*0.3,y:rect.midY-h*0.8,width:w*1.6,height:h*1.6)));p.usesEvenOddFillRule=true
+        default:p.move(to:q(0,-h));p.addCurve(to:q(0,h),controlPoint1:q(w,-h*0.2),controlPoint2:q(w,h));p.addCurve(to:q(0,-h),controlPoint1:q(-w,h),controlPoint2:q(-w,-h*0.2));p.close()
+        };return p
     }
     static func polygon(_ count:Int,rect:CGRect,star:Bool)->UIBezierPath {
         let p=UIBezierPath();let n=star ? count*2:count

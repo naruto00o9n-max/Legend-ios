@@ -8,7 +8,8 @@ enum ImageFailure: LocalizedError {
 }
 enum ImagePipeline {
     static let space=CGColorSpaceCreateDeviceRGB()
-    static func colorSpace(_ source:URL)->CGColorSpace {var count=0;guard let pointer=LICopyPNGProfile(source.path,&count) else{return CGColorSpace(name:CGColorSpace.sRGB) ?? space};defer{LIFreeBuffer(pointer)};return CGColorSpace(iccData:Data(bytes:pointer,count:count) as CFData) ?? space}
+    static let spaces=NSCache<NSString,CGColorSpace>()
+    static func colorSpace(_ source:URL)->CGColorSpace {if let cached=spaces.object(forKey:source.path as NSString){return cached};var count=0;guard let pointer=LICopyPNGProfile(source.path,&count) else{return CGColorSpace(name:CGColorSpace.sRGB) ?? space};defer{LIFreeBuffer(pointer)};let result=CGColorSpace(iccData:Data(bytes:pointer,count:count) as CFData) ?? space;spaces.setObject(result,forKey:source.path as NSString);return result}
     static func image(_ rgba:[UInt8],width:Int,height:Int,colorSpace:CGColorSpace=space)->CGImage? {
         guard width>0,height>0,let provider=CGDataProvider(data:Data(rgba) as CFData) else{return nil}
         return CGImage(width:width,height:height,bitsPerComponent:8,bitsPerPixel:32,bytesPerRow:width*4,space:colorSpace,bitmapInfo:CGBitmapInfo(rawValue:CGImageAlphaInfo.last.rawValue),provider:provider,decode:nil,shouldInterpolate:false,intent:.defaultIntent)
@@ -59,6 +60,14 @@ enum ImagePipeline {
             guard LIWriterRows(writer,&base,Int32(rows))==1 else{throw ImageFailure.message("تعذر كتابة الصورة؛ تحقق من مساحة التخزين")}
         }
         guard LIWriterFinish(writer)==1 else{throw ImageFailure.message("لم يكتمل التصدير")};return output
+    }
+    static func exportJPEG(_ page:EditorPage,directory:URL,quality:Double)throws->URL {
+        let png=try exportPNG(page,directory:directory);defer{try? FileManager.default.removeItem(at:png)}
+        let output=png.deletingPathExtension().appendingPathExtension("jpg")
+        guard let source=CGImageSourceCreateWithURL(png as CFURL,nil),let image=CGImageSourceCreateImageAtIndex(source,0,nil),let context=CGContext(data:nil,width:page.width,height:page.height,bitsPerComponent:8,bytesPerRow:page.width*4,space:image.colorSpace ?? space,bitmapInfo:CGImageAlphaInfo.noneSkipLast.rawValue) else{throw ImageFailure.message("تعذر إعداد JPEG")}
+        context.setFillColor(UIColor.white.cgColor);context.fill(CGRect(x:0,y:0,width:page.width,height:page.height));context.draw(image,in:CGRect(x:0,y:0,width:page.width,height:page.height))
+        guard let flattened=context.makeImage(),let destination=CGImageDestinationCreateWithURL(output as CFURL,UTType.jpeg.identifier as CFString,1,nil) else{throw ImageFailure.message("تعذر التصدير")}
+        CGImageDestinationAddImage(destination,flattened,[kCGImageDestinationLossyCompressionQuality:min(1,max(0.1,quality))] as CFDictionary);guard CGImageDestinationFinalize(destination) else{throw ImageFailure.message("لم يكتمل تصدير JPEG")};return output
     }
     static func fixture(root:URL)throws->EditorPage {
         let input=root.appendingPathComponent("الفصل التجريبي.png");var error=[CChar](repeating:0,count:512)
