@@ -20,7 +20,7 @@ struct TextStyle: Codable, Equatable {
     var fontPath = "bein_normal.ttf"; var fontSize = 48.0; var boxWidth = 320.0
     var color = "FFFFFF"; var isBold = false; var isItalic = false; var isUnderline = false; var isStrikeThrough = false
     var alignment = 1; var letterSpacing = 0.0; var lineSpacing = 0.0; var fakeBoldWidth = 0.0
-    var strokeColor = "000000"; var strokeWidth = 0.0
+    var strokeColor = "000000"; var strokeWidth = 2.0
     var shadowColor = "000000"; var shadowRadius = 0.0; var shadowDx = 0.0; var shadowDy = 0.0; var shadowAlpha = 255
     var backgroundColor = "000000"; var backgroundAlpha = 0; var backgroundCornerRadius = 16.0
     var backgroundPaddingX = 12.0; var backgroundPaddingY = 8.0
