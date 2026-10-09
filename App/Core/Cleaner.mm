@@ -23,12 +23,12 @@ UIImage *CookiesInpaint(UIImage *source,UIImage *mask,double radius) {
     }catch(const cv::Exception &){return nil;}}@catch(NSException *exception){return nil;}
 }
 
-NSDictionary *CookiesDetectBubble(UIImage *source,CGPoint point) {
+NSDictionary<NSString *, id> *CookiesDetectBubble(UIImage *source,CGPoint point) {
     @try {try {
         cv::Mat rgba=pixels(source),rgb,gray,edges;
-        // pixels() uses Quartz's lower-left orientation. Work in UIKit's
-        // top-left coordinates before OpenCV, unlike the inpaint round trip.
-        cv::flip(rgba,rgba,0);cv::cvtColor(rgba,rgb,cv::COLOR_RGBA2RGB);
+        // CGContextDrawImage into this bitmap preserves CGImage row order,
+        // as verified by the existing asymmetric inpaint orientation fixture.
+        cv::cvtColor(rgba,rgb,cv::COLOR_RGBA2RGB);
         if(point.x<0||point.y<0||point.x>=rgb.cols||point.y>=rgb.rows)return nil;
         cv::cvtColor(rgb,gray,cv::COLOR_RGB2GRAY);cv::medianBlur(gray,gray,7);
         cv::Canny(gray,edges,20,80);cv::dilate(edges,edges,cv::getStructuringElement(cv::MORPH_RECT,cv::Size(3,3)));
