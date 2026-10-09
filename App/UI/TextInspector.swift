@@ -3,18 +3,21 @@ import SwiftUI
 struct TextInspector:View {
     @ObservedObject var model:EditorModel;var panel:Panel
     @Environment(\.dismiss) var dismiss
+    var close:(()->Void)? = nil
     @State private var texturePicker=false
     var style:TextStyle {model.active?.style ?? TextStyle()}
     func value(_ key:WritableKeyPath<TextStyle,Double>)->Binding<Double>{Binding(get:{style[keyPath:key]},set:{v in model.change{$0.style[keyPath:key]=v}})}
     func flag(_ key:WritableKeyPath<TextStyle,Bool>)->Binding<Bool>{Binding(get:{style[keyPath:key]},set:{v in model.change{$0.style[keyPath:key]=v}})}
-    var body:some View {VStack(spacing:0){HStack{Text(panel.title).font(.system(size:15,weight:.semibold));Spacer();IconButton(icon:"checkmark",title:"تم"){model.save();dismiss()}}.padding(.horizontal,18).frame(height:52)
+    var body:some View {VStack(spacing:0){HStack{Text(panel.title).font(.system(size:15,weight:.semibold));Spacer();IconButton(icon:"checkmark",title:"تم"){model.save();if let close{close()}else{dismiss()}}}.padding(.horizontal,18).frame(height:52)
         ScrollView{VStack(alignment:.leading,spacing:18){content}.padding(.horizontal,20).padding(.bottom,24)}
     }.foregroundStyle(Palette.pale).background(Palette.ink.opacity(0.75)).glass(28).ignoresSafeArea(edges:.bottom).onAppear{model.checkpoint()}.scrollDismissesKeyboard(.interactively)
-        .fileImporter(isPresented:$texturePicker,allowedContentTypes:[.image]){result in if case let .success(url)=result{let access=url.startAccessingSecurityScopedResource();defer{if access{url.stopAccessingSecurityScopedResource()}};do{let name=UUID().uuidString+"."+url.pathExtension;try FileManager.default.copyItem(at:url,to:model.directory.appendingPathComponent(name));model.change{$0.style.texturePath=name}}catch{model.error=error.localizedDescription}}}
+        .sheet(isPresented:$texturePicker){PhotoLibraryPicker{result in
+            switch result{case .failure(let error):model.error=error.localizedDescription;case .success(let urls):if let url=urls.first{defer{try? FileManager.default.removeItem(at:url)};do{let name=UUID().uuidString+"."+url.pathExtension;try FileManager.default.copyItem(at:url,to:model.directory.appendingPathComponent(name));model.change{$0.style.texturePath=name}}catch{model.error=error.localizedDescription}}}
+        }}
     }
     @ViewBuilder var content:some View {
         switch panel {
-        case .content:TextEditor(text:Binding(get:{model.active?.textContent ?? ""},set:{v in model.change{$0.textContent=v}})).font(.system(size:17)).scrollContentBackground(.hidden).frame(minHeight:140).padding(12).glass(16).accessibilityIdentifier("text-input")
+        case .content:ArabicTextEditor(text:Binding(get:{model.active?.textContent ?? ""},set:{v in model.change{$0.textContent=v}})).frame(minHeight:140).padding(12).glass(16).accessibilityIdentifier("text-input")
         case .font:
             ForEach((Fonts.files+Fonts.otf).sorted{$0.lastPathComponent<$1.lastPathComponent},id:\.self){url in Button{model.change{$0.style.fontPath=url.lastPathComponent}}label:{HStack{Text("حروف تصنع الحوار").font(Font(Fonts.font({var s=style;s.fontPath=url.lastPathComponent;s.fontSize=20;return s}())));Spacer();if style.fontPath==url.lastPathComponent{Image(systemName:"checkmark")}}.padding(12).glass(14)}}
         case .format:

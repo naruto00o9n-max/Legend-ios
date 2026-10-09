@@ -46,11 +46,11 @@ struct SettingsView:View {
     @EnvironmentObject var service:ReferenceService;@Environment(\.dismiss) var dismiss
     @State private var account=false;@State private var hub=false;@State private var fonts=false
     var body:some View{ZStack{Ambient();VStack(alignment:.leading,spacing:20){HStack{Brand();Spacer();IconButton(icon:"xmark",title:"إغلاق"){dismiss()}.accessibilityIdentifier("settings-close")};Text("مساحتك").font(.system(size:25,weight:.semibold))
-        VStack(alignment:.leading,spacing:12){Text(NetworkPolicy.enabled ? "نسخة الخدمات":"نسخة محلية").font(.system(size:16,weight:.medium));Text(service.session?.user.email ?? "المشاريع محفوظة على هذا الجهاز").font(.system(size:12)).foregroundStyle(Palette.quiet)}.frame(maxWidth:.infinity,alignment:.leading).padding(20).glass()
-        if NetworkPolicy.enabled{Button(service.session==nil ? "تسجيل الدخول إلى الحساب الأصلي":"حسابي والخدمات"){if service.session==nil{account=true}else{hub=true}}.buttonStyle(GoldButtonStyle(primary:true));Button("المجتمع"){hub=true}.buttonStyle(GoldButtonStyle());if service.session != nil{Button("تسجيل الخروج"){Task{await service.logout()}}.font(.system(size:13))}}else{Text("هذه النسخة لا ترسل طلبات إلى الخوادم.").font(.system(size:13)).foregroundStyle(Palette.quiet)}
+        VStack(alignment:.leading,spacing:12){Text("Cookies Editor").font(.system(size:16,weight:.medium));Text(service.session?.user.email ?? "المشاريع محفوظة على هذا الجهاز").font(.system(size:12)).foregroundStyle(Palette.quiet)}.frame(maxWidth:.infinity,alignment:.leading).padding(20).glass()
+        if NetworkPolicy.enabled{Button(service.session==nil ? "تسجيل الدخول":"حسابي والخدمات"){if service.session==nil{account=true}else{hub=true}}.buttonStyle(GoldButtonStyle(primary:true));Button("المجتمع"){hub=true}.buttonStyle(GoldButtonStyle());if service.session != nil{Button("تسجيل الخروج"){Task{await service.logout()}}.font(.system(size:13))}}else{Text("هذه النسخة لا ترسل طلبات إلى الخوادم.").font(.system(size:13)).foregroundStyle(Palette.quiet)}
         Button("مكتبة الخطوط"){fonts=true}.buttonStyle(GoldButtonStyle()).accessibilityIdentifier("font-library")
-        Text("Cookies Editor · iPhone\nالأسود والذهبي، ومساحة لصورتك.").font(.system(size:12)).foregroundStyle(Palette.quiet).lineSpacing(6);Spacer()
-    }.padding(24)}.foregroundStyle(Palette.pale).sheet(isPresented:$account){AccountView()}.sheet(isPresented:$hub){ServiceHub()}.sheet(isPresented:$fonts){FontLibraryView()}}
+        Text("Cookies Editor · iPhone وiPad\nالأسود والذهبي، ومساحة لصورتك.").font(.system(size:12)).foregroundStyle(Palette.quiet).lineSpacing(6);Spacer()
+    }.padding(24)}.foregroundStyle(Palette.pale).fullScreenCover(isPresented:$account){AccountView()}.fullScreenCover(isPresented:$hub){ServiceHub()}.sheet(isPresented:$fonts){FontLibraryView()}}
 }
 struct ServiceHub:View {
     @EnvironmentObject var service:ReferenceService

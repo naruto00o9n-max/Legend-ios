@@ -9,7 +9,7 @@ enum TextRaster {
         let s=layer.style
         let advanced = !s.textGradient.isEmpty || !s.texturePath.isEmpty || !s.perspectivePoints.isEmpty || s.isMeshMode || s.rotationX != 0 || s.rotationY != 0 || s.effectType == .blur || s.effectType == .fade
         guard advanced,rect.width*rect.height<4_194_304 else{return false}
-        let key=(directory.path+String(data:(try? JSONEncoder().encode(layer)) ?? Data(),encoding:.utf8)!) as NSString
+        var glyphLayer=layer;glyphLayer.frame.x=0;glyphLayer.frame.y=0;glyphLayer.rotation=0;glyphLayer.scaleX=1;glyphLayer.scaleY=1;glyphLayer.opacity=1;glyphLayer.isLocked=false;glyphLayer.isVisible=true;let key=(directory.path+String(data:(try? JSONEncoder().encode(glyphLayer)) ?? Data(),encoding:.utf8)!) as NSString
         let pad=max(8,CGFloat(s.strokeWidth+s.shadowRadius*3+s.effectValue*3))
         let size=CGSize(width:ceil(rect.width+pad*2),height:ceil(rect.height+pad*2))
         let image:UIImage

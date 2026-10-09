@@ -60,6 +60,7 @@ enum Tool: String, CaseIterable {
 }
 enum Panel: String, CaseIterable, Identifiable {
     case content, font, format, color, stroke, background, shadow, position, spacing, threeD, perspective, effects, texture, opacity, styles, mask
+    var icon:String {switch self{case .content:"text.bubble";case .font:"textformat.alt";case .format:"textformat.size";case .color:"paintpalette";case .stroke:"a.square";case .background:"rectangle.fill";case .shadow:"shadow";case .position:"move.3d";case .spacing:"arrow.left.and.right";case .threeD:"cube";case .perspective:"view.3d";case .effects:"sparkles";case .texture:"square.stack.3d.up";case .opacity:"circle.lefthalf.filled";case .styles:"square.grid.2x2";case .mask:"circle.dashed"}}
     var id: String {rawValue}
     var title: String { switch self {case .content:"النص";case .font:"الخط";case .format:"التنسيق";case .color:"اللون";case .stroke:"الحدود";case .background:"الخلفية";case .shadow:"الظل";case .position:"الموضع";case .spacing:"التباعد";case .threeD:"الأبعاد";case .perspective:"المنظور";case .effects:"التأثيرات";case .texture:"الخامة";case .opacity:"الشفافية";case .styles:"الأنماط";case .mask:"القناع"} }
 }

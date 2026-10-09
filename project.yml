@@ -7,14 +7,20 @@ settings:
   base:
     SWIFT_VERSION: '5.0'
     CLANG_CXX_LANGUAGE_STANDARD: c++17
-    GCC_PREPROCESSOR_DEFINITIONS: ['$(inherited)', 'PNG_ARM_NEON_OPT=0']
+    GCC_PREPROCESSOR_DEFINITIONS:
+    - $(inherited)
+    - PNG_ARM_NEON_OPT=0
     SWIFT_OBJC_BRIDGING_HEADER: App/Core/Bridge.h
-    HEADER_SEARCH_PATHS: ['$(SRCROOT)/App/Core/Vendor/libpng', '$(SRCROOT)/.work/opencv/opencv2.framework/Headers']
-    FRAMEWORK_SEARCH_PATHS: ['$(inherited)', '$(SRCROOT)/.work/opencv']
-    TARGETED_DEVICE_FAMILY: '1,2'
+    HEADER_SEARCH_PATHS:
+    - $(SRCROOT)/App/Core/Vendor/libpng
+    - $(SRCROOT)/.work/opencv/opencv2.framework/Headers
+    FRAMEWORK_SEARCH_PATHS:
+    - $(inherited)
+    - $(SRCROOT)/.work/opencv
+    TARGETED_DEVICE_FAMILY: 1,2
     ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
     SWIFT_STRICT_CONCURRENCY: minimal
-    ENABLE_USER_SCRIPT_SANDBOXING: NO
+    ENABLE_USER_SCRIPT_SANDBOXING: false
 packages:
   ZIPFoundation:
     url: https://github.com/weichsel/ZIPFoundation.git
@@ -24,32 +30,40 @@ targetTemplates:
     type: application
     platform: iOS
     sources:
-      - path: App
-        excludes: [Resources]
-      - path: App/Resources
-        excludes: [ReferenceService.json, ag-psd.bundle.js, Fonts]
-      - path: App/Resources/Fonts
-        type: folder
-        buildPhase: resources
+    - path: App
+      excludes:
+      - Resources
+    - path: App/Resources
+      excludes:
+      - ReferenceService.json
+      - ag-psd.bundle.js
+      - Fonts
+    - path: App/Resources/Fonts
+      type: folder
+      buildPhase: resources
     dependencies:
-      - package: ZIPFoundation
-      - framework: .work/opencv/opencv2.framework
-        embed: false
-      - sdk: UIKit.framework
-      - sdk: Accelerate.framework
-      - sdk: AVFoundation.framework
-      - sdk: CoreMedia.framework
-      - sdk: CoreVideo.framework
-      - sdk: CoreImage.framework
-      - sdk: ImageIO.framework
-      - sdk: libz.tbd
-      - sdk: libc++.tbd
+    - package: ZIPFoundation
+    - framework: .work/opencv/opencv2.framework
+      embed: false
+    - sdk: UIKit.framework
+    - sdk: Accelerate.framework
+    - sdk: AVFoundation.framework
+    - sdk: CoreMedia.framework
+    - sdk: CoreVideo.framework
+    - sdk: CoreImage.framework
+    - sdk: ImageIO.framework
+    - sdk: libz.tbd
+    - sdk: libc++.tbd
+    - sdk: PhotosUI.framework
     info:
       path: .work/Info-$(TARGET_NAME).plist
       properties:
         CFBundleDisplayName: Cookies Editor
         UILaunchScreen: {}
-        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        UISupportedInterfaceOrientations:
+        - UIInterfaceOrientationPortrait
+        - UIInterfaceOrientationLandscapeLeft
+        - UIInterfaceOrientationLandscapeRight
         NSPhotoLibraryUsageDescription: لاختيار الصور وحفظ الأعمال المعدلة.
         NSPhotoLibraryAddUsageDescription: لحفظ صورك المعدلة بأبعادها الأصلية.
         UIUserInterfaceStyle: Dark
@@ -57,107 +71,106 @@ targetTemplates:
         UISupportsDocumentBrowser: false
         UIFileSharingEnabled: true
         CFBundleDocumentTypes:
-          - CFBundleTypeName: Cookies Document
-            CFBundleTypeRole: Editor
-            LSHandlerRank: Owner
-            LSItemContentTypes: [com.cookies.editor.document, public.image, com.adobe.photoshop-image]
+        - CFBundleTypeName: Cookies Document
+          CFBundleTypeRole: Editor
+          LSHandlerRank: Owner
+          LSItemContentTypes:
+          - com.cookies.editor.document
+          - public.image
+          - com.adobe.photoshop-image
         UTExportedTypeDeclarations:
-          - UTTypeIdentifier: com.cookies.editor.document
-            UTTypeDescription: Editable Cookies Document
-            UTTypeConformsTo: [public.zip-archive]
-            UTTypeTagSpecification:
-              public.filename-extension: [cookies]
+        - UTTypeIdentifier: com.cookies.editor.document
+          UTTypeDescription: Editable Cookies Document
+          UTTypeConformsTo:
+          - public.zip-archive
+          UTTypeTagSpecification:
+            public.filename-extension:
+            - cookies
         CFBundleURLTypes:
-          - CFBundleURLName: Cookies Reference Login
-            CFBundleURLSchemes: [io.supabase.ytyper]
+        - CFBundleURLName: Cookies Reference Login
+          CFBundleURLSchemes:
+          - cookies-editor
     settings:
       base:
         PRODUCT_NAME: CookiesEditor
 targets:
-  CookiesOffline:
-    templates: [CookiesBase]
-    settings:
-      base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.cookies.editor.ios.offline
-    info:
-      path: .work/Info-Offline.plist
-      properties:
-        CookiesServicesEnabled: false
-        CFBundleURLTypes: []
-  CookiesServices:
-    templates: [CookiesBase]
-    settings:
-      base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.cookies.editor.ios.services
-    sources:
-      - path: App/Resources/ReferenceService.json
-        buildPhase: resources
-    info:
-      path: .work/Info-Services.plist
-      properties:
-        CookiesServicesEnabled: true
-        CFBundleDisplayName: Cookies Online
   CookiesTests:
     type: bundle.unit-test
     platform: iOS
     dependencies:
-      - target: CookiesOffline
+    - target: CookiesEditor
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.cookies.editor.tests
         TEST_HOST: $(BUILT_PRODUCTS_DIR)/CookiesEditor.app/CookiesEditor
         BUNDLE_LOADER: $(TEST_HOST)
         SWIFT_OBJC_BRIDGING_HEADER: ''
-        GENERATE_INFOPLIST_FILE: YES
+        GENERATE_INFOPLIST_FILE: true
     sources:
-      - path: Tests
-        excludes: [pixel_roundtrip.c]
+    - path: Tests
+      excludes:
+      - pixel_roundtrip.c
   CookiesUITests:
     type: bundle.ui-testing
     platform: iOS
-    sources: [UITests]
+    sources:
+    - UITests
     dependencies:
-      - target: CookiesOffline
+    - target: CookiesEditor
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.cookies.editor.uitests
         SWIFT_OBJC_BRIDGING_HEADER: ''
-        GENERATE_INFOPLIST_FILE: YES
+        GENERATE_INFOPLIST_FILE: true
   CookiesServicesTests:
     type: bundle.unit-test
     platform: iOS
-    sources: [ServicesTests]
+    sources:
+    - ServicesTests
     dependencies:
-      - target: CookiesServices
+    - target: CookiesEditor
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.cookies.editor.servicestests
         TEST_HOST: $(BUILT_PRODUCTS_DIR)/CookiesEditor.app/CookiesEditor
         BUNDLE_LOADER: $(TEST_HOST)
         SWIFT_OBJC_BRIDGING_HEADER: ''
-        GENERATE_INFOPLIST_FILE: YES
+        GENERATE_INFOPLIST_FILE: true
   CookiesServicesUITests:
     type: bundle.ui-testing
     platform: iOS
-    sources: [ServicesUITests]
+    sources:
+    - ServicesUITests
     dependencies:
-      - target: CookiesServices
+    - target: CookiesEditor
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.cookies.editor.servicesuitests
         SWIFT_OBJC_BRIDGING_HEADER: ''
-        GENERATE_INFOPLIST_FILE: YES
+        GENERATE_INFOPLIST_FILE: true
+  CookiesEditor:
+    templates:
+    - CookiesBase
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.cookies.editor.ios
+    sources:
+    - path: App/Resources/ReferenceService.json
+      buildPhase: resources
+    info:
+      path: .work/Info-Cookies.plist
+      properties:
+        CookiesServicesEnabled: true
+        CFBundleDisplayName: Cookies Editor
 schemes:
-  CookiesOffline:
+  CookiesEditor:
     build:
       targets:
-        CookiesOffline: all
+        CookiesEditor: all
     test:
-      targets: [CookiesTests, CookiesUITests]
+      targets:
+      - CookiesTests
+      - CookiesUITests
+      - CookiesServicesTests
+      - CookiesServicesUITests
       gatherCoverageData: true
-  CookiesServices:
-    build:
-      targets:
-        CookiesServices: all
-    test:
-      targets: [CookiesServicesTests, CookiesServicesUITests]

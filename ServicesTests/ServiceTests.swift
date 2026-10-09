@@ -2,6 +2,10 @@ import XCTest
 @testable import CookiesEditor
 
 final class ServiceTests:XCTestCase {
+    func testAuthenticationErrorsRemainSpecific() {
+        XCTAssertTrue(ReferenceService.errorMessage(status:500,code:"unexpected_failure",reason:"Database error saving new user").contains("Database error saving new user"))
+        XCTAssertTrue(ReferenceService.errorMessage(status:400,code:"email_not_confirmed",reason:"").contains("أكّد"))
+    }
     @MainActor func testOriginalPublicAPIFromNativeClient() async throws {
         XCTAssertTrue(NetworkPolicy.enabled)
         let client=ReferenceService();XCTAssertNotNil(client.config)

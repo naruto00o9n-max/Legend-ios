@@ -53,9 +53,37 @@ final class EditorTests:XCTestCase {
         for url in [jpeg,psd]{let source=try XCTUnwrap(CGImageSourceCreateWithURL(url as CFURL,nil));let props=try XCTUnwrap(CGImageSourceCopyPropertiesAtIndex(source,0,nil)) as NSDictionary;XCTAssertEqual(props[kCGImagePropertyPixelWidth] as? Int,800);XCTAssertEqual(props[kCGImagePropertyPixelHeight] as? Int,15000);XCTAssertNotNil(CGImageSourceCreateImageAtIndex(source,0,nil))}
         let attachment=XCTAttachment(contentsOfFile:psd);attachment.name="layered-800x15000.psd";attachment.lifetime = .keepAlways;add(attachment)
     }
-    @MainActor func testOfflinePolicy() async throws {
-        XCTAssertFalse(NetworkPolicy.enabled);let service=ReferenceService();XCTAssertNil(service.config)
-        do {_ = try await service.request("/auth/v1/settings");XCTFail("Offline must reject requests before transport")}catch{XCTAssertTrue(error.localizedDescription.contains("محليًا"))}
+    @MainActor func testUnifiedApplicationIdentity() throws {
+        XCTAssertTrue(NetworkPolicy.enabled)
+        XCTAssertEqual(Bundle.main.object(forInfoDictionaryKey:"CFBundleDisplayName") as? String,"Cookies Editor")
+        XCTAssertNotNil(ReferenceService().config)
+    }
+    func testPhotoProviderFileSurvivesCallbackAndKeepsOriginalBytes() throws {
+        let temporary=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString+".png")
+        let format=UIGraphicsImageRendererFormat();format.scale=1
+        let image=UIGraphicsImageRenderer(size:CGSize(width:800,height:15000),format:format).image{$0.cgContext.setFillColor(UIColor.white.cgColor);$0.fill(CGRect(x:0,y:0,width:800,height:15000))}
+        let data=try XCTUnwrap(image.pngData());try data.write(to:temporary)
+        let owned=try PhotoImport.ownFile(temporary);try FileManager.default.removeItem(at:temporary);defer{try? FileManager.default.removeItem(at:owned)}
+        XCTAssertEqual(try Data(contentsOf:owned),data)
+    }
+    @MainActor func testCanvasKeepsPixelsWhenSelectionOrViewportChanges() async throws {
+        let root=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString);defer{try? FileManager.default.removeItem(at:root)}
+        let library=LibraryStore(root:root);var page=try ImagePipeline.fixture(root:root)
+        page.layers=[EditorLayer(kind:.text)];let directory=library.directory(page.id)
+        let canvas=DocumentCanvas(frame:CGRect(x:0,y:0,width:800,height:15000))
+        canvas.update(page:page,directory:directory,selected:nil,zoom:1)
+        canvas.refreshVisible(CGRect(x:0,y:0,width:400,height:600))
+        try await Task.sleep(nanoseconds:2_000_000_000)
+        let reads=canvas.sourceReads,revision=canvas.revision
+        canvas.update(page:page,directory:directory,selected:page.layers.first?.id,zoom:1)
+        canvas.refreshVisible(CGRect(x:2,y:5,width:400,height:600))
+        try await Task.sleep(nanoseconds:500_000_000)
+        XCTAssertGreaterThan(reads,0);XCTAssertEqual(canvas.sourceReads,reads);XCTAssertEqual(canvas.revision,revision)
+        page.layers[0].textContent="نص عربي";canvas.update(page:page,directory:directory,selected:page.layers[0].id,zoom:1)
+        try await Task.sleep(nanoseconds:1_000_000_000)
+        XCTAssertEqual(canvas.sourceReads,reads,"Editing reuses immutable source tiles")
+        let paragraph=LayerRenderer.attributed(page.layers[0]).attribute(.paragraphStyle,at:0,effectiveRange:nil) as? NSParagraphStyle
+        XCTAssertEqual(paragraph?.baseWritingDirection,.rightToLeft)
     }
     @MainActor func testSmallCanvasIsCenteredWhileZoomedOut() throws {
         let root=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString);defer{try? FileManager.default.removeItem(at:root)}

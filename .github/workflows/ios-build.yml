@@ -1,8 +1,8 @@
-name: iPhone editor builds and real simulator verification
+name: Cookies Editor iPad repair and unsigned IPA
 on:
   push:
     branches: [main]
-    paths-ignore: ['docs/**', 'README.md', 'AGENTS.md']
+    paths: ['App/**', 'Tests/**', 'UITests/**', 'ServicesTests/**', 'ServicesUITests/**', 'project.yml', 'scripts/build_ipas.sh', 'scripts/test_simulators.sh', '.github/workflows/ios-build.yml']
   workflow_dispatch:
 concurrency:
   group: cookies-ios-${{ github.ref }}
@@ -10,21 +10,17 @@ concurrency:
 permissions:
   contents: read
 jobs:
-  packages:
-    name: Two unsigned arm64 IPAs and PNG integrity
+  package:
+    name: One unsigned arm64 IPA and PNG integrity
     runs-on: macos-15-intel
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v5
-      - name: Prepare build tools
-        run: brew install xcodegen
-      - name: Fetch pinned reference assets and OpenCV
-        run: python3 scripts/fetch_resources.py
-      - name: Generate native Xcode project
-        run: xcodegen generate
-      - name: Build real arm64 apps and two unsigned IPAs
-        run: bash scripts/build_ipas.sh
-      - name: Verify full-dimension pixel core
+      - run: brew install xcodegen
+      - run: python3 scripts/fetch_resources.py
+      - run: xcodegen generate
+      - run: bash scripts/build_ipas.sh
+      - name: Verify original dimensions and untouched source pixels
         run: |
           clang -O2 -DPNG_ARM_NEON_OPT=0 -I App/Core/Vendor/libpng Tests/pixel_roundtrip.c App/Core/PixelCore.c App/Core/Vendor/libpng/*.c -lz -o .work/pixel-test
           mkdir -p .work/pixel-fixture
@@ -32,15 +28,15 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: cookies-iphone-unsigned-ipas
+          name: cookies-editor-unsigned-ipa
           path: build/
-          retention-days: 14
-  offline-tests:
-    name: Offline editor on ${{ matrix.screen }} iPhone
+          retention-days: 30
+  ui:
+    name: Editor, Photos and account on ${{ matrix.screen }}
     strategy:
       fail-fast: false
       matrix:
-        screen: [small, modern]
+        screen: [ipad, iphone]
     runs-on: macos-15-intel
     timeout-minutes: 45
     steps:
@@ -48,34 +44,12 @@ jobs:
       - run: brew install xcodegen
       - run: python3 scripts/fetch_resources.py
       - run: xcodegen generate
-      - name: Verify editor and actual compact interfaces
-        run: bash scripts/test_simulators.sh offline ${{ matrix.screen }}
-      - name: Collect original screenshots and test results
+      - run: bash scripts/test_simulators.sh ${{ matrix.screen }}
+      - run: python3 scripts/collect_evidence.py
         if: always()
-        run: python3 scripts/collect_evidence.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: cookies-iphone-evidence-${{ matrix.screen }}
+          name: cookies-editor-evidence-${{ matrix.screen }}
           path: build/
-          retention-days: 14
-  services-tests:
-    name: Original service client and actual account interfaces
-    runs-on: macos-15-intel
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v5
-      - run: brew install xcodegen
-      - run: python3 scripts/fetch_resources.py
-      - run: xcodegen generate
-      - name: Verify original public API and connected screens
-        run: bash scripts/test_simulators.sh services modern
-      - name: Collect original screenshots and test results
-        if: always()
-        run: python3 scripts/collect_evidence.py
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: cookies-iphone-services-evidence
-          path: build/
-          retention-days: 14
+          retention-days: 30

@@ -2,9 +2,9 @@ import SwiftUI
 
 enum Palette {
     static let gold=Color(red:0.83,green:0.69,blue:0.22)
-    static let pale=Color(red:0.95,green:0.84,blue:0.57)
+    static let pale=Color.white
     static let ink=Color(red:0.025,green:0.025,blue:0.03)
-    static let quiet=gold.opacity(0.6)
+    static let quiet=Color.white.opacity(0.54)
 }
 struct Glass:ViewModifier {
     var radius:CGFloat=22
@@ -21,7 +21,7 @@ struct GoldButtonStyle:ButtonStyle {
     func makeBody(configuration:Configuration)->some View {
         configuration.label.font(.system(size:15,weight:.semibold)).foregroundStyle(primary ? Palette.ink:Palette.pale)
             .frame(minHeight:46).frame(maxWidth:.infinity)
-            .background(primary ? AnyShapeStyle(LinearGradient(colors:[Palette.pale,Palette.gold],startPoint:.topLeading,endPoint:.bottomTrailing)):AnyShapeStyle(.ultraThinMaterial),in:RoundedRectangle(cornerRadius:16))
+            .background(primary ? AnyShapeStyle(LinearGradient(colors:[Palette.gold.opacity(0.92),Palette.gold],startPoint:.topLeading,endPoint:.bottomTrailing)):AnyShapeStyle(.ultraThinMaterial),in:RoundedRectangle(cornerRadius:16))
             .overlay(RoundedRectangle(cornerRadius:16).stroke(Palette.gold.opacity(primary ? 0:0.3),lineWidth:0.6))
             .scaleEffect(configuration.isPressed ? 0.98:1)
     }

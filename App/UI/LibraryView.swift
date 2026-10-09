@@ -14,7 +14,7 @@ struct LibraryView:View {
             HStack{VStack(alignment:.leading,spacing:5){Text(title).font(.system(size:28,weight:.semibold));Text("رتّب العمل، ثم امنحه صوتك.").font(.system(size:13)).foregroundStyle(Palette.quiet)};Spacer();Brand().scaleEffect(0.75,anchor:.trailing)}
             HStack(spacing:10){Button{picker=true}label:{Label("استيراد صورة",systemImage:"plus")}.buttonStyle(GoldButtonStyle(primary:true)).accessibilityIdentifier("import-image");Button{folderPrompt=true}label:{Image(systemName:"folder.badge.plus").frame(width:46,height:46).glass(16)}.accessibilityLabel("مجلد جديد").accessibilityIdentifier("new-folder")}
             if children.isEmpty{VStack(spacing:16){Image(systemName:"rectangle.stack").font(.system(size:38,weight:.ultraLight));Text("بداية فصل جديد").font(.system(size:19,weight:.medium));Text("أضف صور الفصل أو أنشئ مجلدًا\nلتجميع أعمالك وفصولها.").font(.system(size:13)).multilineTextAlignment(.center).foregroundStyle(Palette.quiet)}.frame(maxWidth:.infinity).padding(.vertical,60).glass()
-                Button("افتح فصلًا تجريبيًا") {Task{importing=true;do{let root=library.root;let p=try await Task.detached{try ImagePipeline.fixture(root:root)}.value;library.add(p,parent:parent)}catch{library.error=error.localizedDescription};importing=false}}.font(.system(size:13)).accessibilityIdentifier("demo-project")
+                if ProcessInfo.processInfo.arguments.contains("-ui-tests"){Button("افتح فصلًا تجريبيًا") {Task{importing=true;do{let root=library.root;let p=try await Task.detached{try ImagePipeline.fixture(root:root)}.value;library.add(p,parent:parent)}catch{library.error=error.localizedDescription};importing=false}}.font(.system(size:13)).accessibilityIdentifier("demo-project")}
             }
             LazyVGrid(columns:[GridItem(.adaptive(minimum:145),spacing:12)],spacing:12){ForEach(children){item in
                 if item.folder{NavigationLink{LibraryView(parent:item.id,title:item.title)}label:{card(item)}}else{NavigationLink{PageDestination(id:item.id)}label:{card(item)}}
@@ -22,7 +22,10 @@ struct LibraryView:View {
             HStack(spacing:12){Button{assistant=true}label:{Label("مساعد الحوارات",systemImage:"text.bubble").font(.system(size:13)).frame(maxWidth:.infinity).padding(16).glass(18)}.accessibilityIdentifier("assistant");Button{settings=true}label:{Image(systemName:"slider.horizontal.3").frame(width:48,height:48).glass(16)}.accessibilityLabel("الإعدادات").accessibilityIdentifier("settings")}
         }.padding(20)}}.foregroundStyle(Palette.pale).toolbar(parent==nil ? .hidden:.visible,for:.navigationBar)
         .overlay{if importing{ProgressView("جارٍ تجهيز الصورة…").tint(Palette.gold).padding(24).glass()}}
-        .fileImporter(isPresented:$picker,allowedContentTypes:[.image,UTType(filenameExtension:"cookies") ?? .zip],allowsMultipleSelection:true){result in if case let .success(urls)=result{Task{importing=true;for url in urls{await library.importImage(url,parent:parent)};importing=false}}}
+        .sheet(isPresented:$picker){PhotoLibraryPicker(multiple:true){result in
+            switch result{case .success(let urls):Task{importing=true;for url in urls{await library.importImage(url,parent:parent);try? FileManager.default.removeItem(at:url)};importing=false};case .failure(let error):library.error=error.localizedDescription}
+        }}
+
         .alert("مجلد جديد",isPresented:$folderPrompt){TextField("اسم العمل أو الفصل",text:$name);Button("إنشاء"){if !name.trimmingCharacters(in:.whitespaces).isEmpty{library.createFolder(name,parent:parent);name=""}};Button("إلغاء",role:.cancel){}}
         .alert("تغيير الاسم",isPresented:Binding(get:{renaming != nil},set:{if !$0{renaming=nil}})){TextField("الاسم",text:$renameText);Button("حفظ"){if let item=renaming,!renameText.isEmpty{library.rename(item,to:renameText)};renaming=nil};Button("إلغاء",role:.cancel){renaming=nil}}
         .sheet(isPresented:$assistant){AssistantView()}.sheet(isPresented:$settings){SettingsView()}

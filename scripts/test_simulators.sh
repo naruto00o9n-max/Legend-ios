@@ -1,44 +1,39 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
-TASK_GROUP="${1:-all}"
-TASK_SCREEN="${2:-all}"
-case "$TASK_GROUP/$TASK_SCREEN" in all/all|offline/small|offline/modern|services/modern) ;; *) echo "Use: all all, offline small, offline modern, or services modern"; exit 2;; esac
-mkdir -p build/screenshots
+TASK_SCREEN="${1:-ipad}"
+mkdir -p build/screenshots .work
 xcrun simctl list devices available -j > .work/devices.json
-python3 - <<'PY'
-import json,pathlib
-items=[x for a in json.load(open('.work/devices.json'))['devices'].values() for x in a if x['isAvailable'] and 'iPhone' in x['name']]
-small=next((x for x in items if 'SE' in x['name']),None)
-modern=next((x for x in items if '16 Pro' in x['name']),items[0])
-if small is None: raise SystemExit('iPhone SE simulator required to verify small-screen layout; do not silently omit this check')
-pathlib.Path('.work/simulators.txt').write_text('\n'.join(x['udid'] for x in [small,modern]))
-PY
-TASK_INDEX=0
-TASK_OVERALL_STATUS=0
-while IFS= read -r TASK_DEVICE || [[ -n "$TASK_DEVICE" ]]; do
-  TASK_INDEX=$((TASK_INDEX+1))
-  if [[ "$TASK_GROUP" == services || "$TASK_SCREEN" == small && "$TASK_INDEX" != 1 || "$TASK_SCREEN" == modern && "$TASK_INDEX" != 2 ]]; then continue; fi
-  TASK_STATUS=0
-  xcrun simctl boot "$TASK_DEVICE" || true
-  xcrun simctl bootstatus "$TASK_DEVICE" -b
-  open -a Simulator --args -CurrentDeviceUDID "$TASK_DEVICE"
-  xcodebuild -project CookiesEditor.xcodeproj -scheme CookiesOffline -configuration Debug -destination "platform=iOS Simulator,id=$TASK_DEVICE" -parallel-testing-enabled NO -derivedDataPath .work/simulator -resultBundlePath "build/iPhone-$TASK_INDEX.xcresult" ARCHS=x86_64 ONLY_ACTIVE_ARCH=YES test > "build/test-$TASK_INDEX.log" 2>&1 || TASK_STATUS=$?
-  if [[ "$TASK_STATUS" != 0 ]]; then xcrun xcresulttool export diagnostics --path "build/iPhone-$TASK_INDEX.xcresult" --output-path "build/diagnostics-$TASK_INDEX" || true; fi
-  xcrun xcresulttool export attachments --path "build/iPhone-$TASK_INDEX.xcresult" --output-path "build/screenshots/iPhone-$TASK_INDEX"
-  xcrun simctl shutdown "$TASK_DEVICE" || true
-  if [[ "$TASK_STATUS" != 0 ]]; then tail -100 "build/test-$TASK_INDEX.log"; TASK_OVERALL_STATUS="$TASK_STATUS"; fi
-done < .work/simulators.txt
-
-if [[ "$TASK_GROUP" == offline ]]; then exit "$TASK_OVERALL_STATUS"; fi
-TASK_DEVICE=$(tail -1 .work/simulators.txt)
-TASK_STATUS=0
+python3 - "$TASK_SCREEN" <<'PYDEV'
+import json,pathlib,sys
+items=[x for a in json.load(open('.work/devices.json'))['devices'].values() for x in a if x['isAvailable']]
+kind='iPad' if sys.argv[1]=='ipad' else 'iPhone'
+matching=[x for x in items if kind in x['name']]
+if not matching:raise SystemExit('Required '+kind+' simulator missing')
+device=next((x for x in matching if ('11-inch' if kind=='iPad' else '16 Pro') in x['name']),matching[0])
+pathlib.Path('.work/simulator-id').write_text(device['udid'])
+print(device['name'],device['udid'])
+PYDEV
+TASK_DEVICE=$(cat .work/simulator-id)
 xcrun simctl boot "$TASK_DEVICE" || true
 xcrun simctl bootstatus "$TASK_DEVICE" -b
 open -a Simulator --args -CurrentDeviceUDID "$TASK_DEVICE"
-xcodebuild -project CookiesEditor.xcodeproj -scheme CookiesServices -configuration Debug -destination "platform=iOS Simulator,id=$TASK_DEVICE" -parallel-testing-enabled NO -derivedDataPath .work/service-simulator -resultBundlePath build/iPhone-services.xcresult ARCHS=x86_64 ONLY_ACTIVE_ARCH=YES test > build/test-services.log 2>&1 || TASK_STATUS=$?
-if [[ "$TASK_STATUS" != 0 ]]; then xcrun xcresulttool export diagnostics --path build/iPhone-services.xcresult --output-path build/diagnostics-services || true; fi
-xcrun xcresulttool export attachments --path build/iPhone-services.xcresult --output-path build/screenshots/iPhone-services
+# Seed the actual Photos library; the picker test must import this asset.
+python3 - <<'PYFIX'
+import struct,zlib,pathlib
+w,h=800,15000
+chunk=lambda n,d:struct.pack('>I',len(d))+n+d+struct.pack('>I',zlib.crc32(n+d)&0xffffffff)
+rows=b''.join(b'\0'+bytes((240-y%40,240-y%40,240-y%40))*w for y in range(h))
+png=b'\x89PNG\r\n\x1a\n'+chunk(b'IHDR',struct.pack('>IIBBBBB',w,h,8,2,0,0,0))+chunk(b'IDAT',zlib.compress(rows))+chunk(b'IEND',b'')
+pathlib.Path('.work/Photos-800x15000.png').write_bytes(png)
+PYFIX
+xcrun simctl addmedia "$TASK_DEVICE" .work/Photos-800x15000.png
+TASK_STATUS=0
+xcodebuild -project CookiesEditor.xcodeproj -scheme CookiesEditor -configuration Debug -destination "platform=iOS Simulator,id=$TASK_DEVICE" -parallel-testing-enabled NO -derivedDataPath .work/simulator -resultBundlePath "build/$TASK_SCREEN.xcresult" ARCHS=x86_64 ONLY_ACTIVE_ARCH=YES test > "build/test-$TASK_SCREEN.log" 2>&1 || TASK_STATUS=$?
+if [[ "$TASK_STATUS" != 0 ]]; then
+  xcrun xcresulttool export diagnostics --path "build/$TASK_SCREEN.xcresult" --output-path "build/diagnostics-$TASK_SCREEN" || true
+  tail -100 "build/test-$TASK_SCREEN.log"
+fi
+xcrun xcresulttool export attachments --path "build/$TASK_SCREEN.xcresult" --output-path "build/screenshots/$TASK_SCREEN" || true
 xcrun simctl shutdown "$TASK_DEVICE" || true
-if [[ "$TASK_STATUS" != 0 ]]; then tail -100 build/test-services.log; TASK_OVERALL_STATUS="$TASK_STATUS"; fi
-exit "$TASK_OVERALL_STATUS"
+exit "$TASK_STATUS"

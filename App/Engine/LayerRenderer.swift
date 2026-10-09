@@ -22,7 +22,7 @@ enum Fonts {
 extension Bundle {func url(forResource name:String,deletingExtension:Bool)->URL?{url(forResource:name,withExtension:nil,subdirectory:"Fonts")}}
 enum LayerRenderer {
     static func attributed(_ l:EditorLayer,color:UIColor?=nil)->NSAttributedString {
-        let s=l.style,p=NSMutableParagraphStyle();p.alignment=[NSTextAlignment.left,.center,.right,.justified][max(0,min(3,s.alignment))];p.lineSpacing=CGFloat(s.lineSpacing);p.lineBreakMode = .byWordWrapping
+        let s=l.style,p=NSMutableParagraphStyle();p.alignment=[NSTextAlignment.left,.center,.right,.justified][max(0,min(3,s.alignment))];p.baseWritingDirection = .rightToLeft;p.lineSpacing=CGFloat(s.lineSpacing);p.lineBreakMode = .byWordWrapping
         var attributes:[NSAttributedString.Key:Any]=[.font:Fonts.font(s),.foregroundColor:color ?? UIColor(hex:s.color),.paragraphStyle:p,.kern:s.letterSpacing]
         if s.isUnderline{attributes[.underlineStyle]=NSUnderlineStyle.single.rawValue};if s.isStrikeThrough{attributes[.strikethroughStyle]=NSUnderlineStyle.single.rawValue}
         let result=NSMutableAttributedString(string:l.textContent,attributes:attributes)
