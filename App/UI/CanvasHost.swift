@@ -14,7 +14,7 @@ struct CanvasHost:UIViewRepresentable {
         let longPress=UILongPressGestureRecognizer(target:context.coordinator,action:#selector(Coordinator.longPress(_:)));canvas.addGestureRecognizer(longPress)
         return s
     }
-        func updateUIView(_ s:UIScrollView,context:Context){let c=context.coordinator;c.model=model;c.canvas.update(page:model.page,directory:model.directory,selected:readOnly ? nil:model.selected,zoom:s.zoomScale);c.canvas.showSniper(readOnly ? []:model.sniperTargets);s.accessibilityValue="\(model.page.layers.count) طبقات، \(model.page.layers.reduce(0){$0+$1.strokes.count}) خطوط رسم، الحجم \(String(format:"%.2f",model.active?.scaleX ?? 1))";s.panGestureRecognizer.minimumNumberOfTouches=(!readOnly && [Tool.brush,.eraser,.cleaner].contains(model.tool)) ? 2:1
+        func updateUIView(_ s:UIScrollView,context:Context){let c=context.coordinator;c.model=model;c.canvas.deformationMode = !readOnly && model.panel == .perspective;c.canvas.update(page:model.page,directory:model.directory,selected:readOnly ? nil:model.selected,zoom:s.zoomScale);c.canvas.showSniper(readOnly ? []:model.sniperTargets);s.accessibilityValue="\(model.page.layers.count) طبقات، \(model.page.layers.reduce(0){$0+$1.strokes.count}) خطوط رسم، الحجم \(String(format:"%.2f",model.active?.scaleX ?? 1))";s.panGestureRecognizer.minimumNumberOfTouches=(!readOnly && [Tool.brush,.eraser,.cleaner].contains(model.tool)) ? 2:1
         if !c.fitted{s.layoutIfNeeded();DispatchQueue.main.async{guard !c.fitted,s.bounds.width>0,s.bounds.height>0 else{return};let full=min(s.bounds.width/CGFloat(model.page.width),s.bounds.height/CGFloat(model.page.height));s.minimumZoomScale=max(0.002,full/4);let reading=s.bounds.width/CGFloat(model.page.width)*0.96;s.setZoomScale(reading,animated:false);c.fitted=true;c.updateCenter()}}else{c.updateCenter()}
     }
     class Coordinator:NSObject,UIScrollViewDelegate,UIGestureRecognizerDelegate {
@@ -49,6 +49,13 @@ struct CanvasHost:UIViewRepresentable {
             }
             if g.state == .began{dragHandle=canvas.handle(at:point);guard let l=(dragHandle != nil ? model.active:hit(point)) else{return};model.selected=l.id;initial=l;model.checkpoint();canvas.beginLayerInteraction(l.id);let b=LayerRenderer.bounds(l),dx=Double(point.x)-l.frame.x-Double(b.width)/2,dy=Double(point.y)-l.frame.y-Double(b.height)/2;rotationStart=atan2(dy,dx);scaleStart=max(1,hypot(dx,dy))}
             else if g.state == .changed,let initial {let t=g.translation(in:canvas),b=LayerRenderer.bounds(initial);model.change(persist:false){l in
+                if let handle=dragHandle,handle.hasPrefix("deform-"),let index=Int(handle.dropFirst(7)) {
+                    let local=point.applying(LayerRenderer.transform(initial).inverted())
+                    let p=Point(x:min(2,max(-1,Double(local.x/max(1,b.width)))),y:min(2,max(-1,Double(local.y/max(1,b.height)))))
+                    if l.style.isMeshMode,index<l.style.meshPoints.count{l.style.meshPoints[index]=p}
+                    else{if l.style.perspectivePoints.count != 4{l.style.perspectivePoints=[Point(x:0,y:0),Point(x:1,y:0),Point(x:1,y:1),Point(x:0,y:1)]};if index<4{l.style.perspectivePoints[index]=p}}
+                    return
+                }
                 let delta=CGSize(width:t.x,height:t.y).applying(CGAffineTransform(rotationAngle:-CGFloat(initial.rotation)*CGFloat.pi/180))
                 switch dragHandle {
                 case "rotate":let angle=atan2(Double(point.y)-initial.frame.y-Double(b.height)/2,Double(point.x)-initial.frame.x-Double(b.width)/2);l.rotation=initial.rotation+(angle-rotationStart)*180/Double.pi

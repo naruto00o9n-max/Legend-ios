@@ -73,7 +73,9 @@ final class EditorTests:XCTestCase {
         let canvas=DocumentCanvas(frame:CGRect(x:0,y:0,width:800,height:15000))
         canvas.update(page:page,directory:directory,selected:nil,zoom:1)
         canvas.refreshVisible(CGRect(x:0,y:0,width:400,height:600))
-        try await Task.sleep(nanoseconds:2_000_000_000)
+        let deadline=Date().addingTimeInterval(15)
+        while !canvas.visibleTilesReady && Date()<deadline{try await Task.sleep(nanoseconds:50_000_000)}
+        XCTAssertTrue(canvas.visibleTilesReady,"Initial source tiles must be ready before measuring cache reuse")
         let reads=canvas.sourceReads,revision=canvas.revision
         canvas.update(page:page,directory:directory,selected:page.layers.first?.id,zoom:1)
         canvas.refreshVisible(CGRect(x:2,y:5,width:400,height:600))

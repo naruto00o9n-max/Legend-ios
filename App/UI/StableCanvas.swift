@@ -38,10 +38,12 @@ final class DocumentCanvas: UIView {
     private var sourceIdentity = ""
     private(set) var revision = 0
     private(set) var sourceReads = 0
+    var visibleTilesReady:Bool{!currentKeys.isEmpty && currentKeys.allSatisfy{tiles[$0]?.revision==revision && tiles[$0]?.pending==false}}
     var page: EditorPage?
     var directory: URL?
     var selected: UUID?
     var zoom: CGFloat = 1
+    var deformationMode=false
     var onHandle: ((String) -> Void)?
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -195,6 +197,23 @@ final class DocumentCanvas: UIView {
             border.path = nil; stem.path = nil; handles.values.forEach { $0.isHidden = true }; return
         }
         let box = LayerRenderer.bounds(item), transform = LayerRenderer.transform(item), size = 32 / max(0.002, zoom)
+        if deformationMode,item.kind == .text {
+            let s=item.style
+            let points=s.isMeshMode && s.meshPoints.count==(s.meshRows+1)*(s.meshCols+1) ? s.meshPoints : (s.perspectivePoints.count==4 ? s.perspectivePoints:[Point(x:0,y:0),Point(x:1,y:0),Point(x:1,y:1),Point(x:0,y:1)])
+            handles.values.forEach{$0.isHidden=true}
+            let outline=UIBezierPath()
+            for (index,point) in points.enumerated(){
+                let name="deform-\(index)"
+                if handles[name]==nil {let button=UIButton(type:.custom);button.setImage(UIImage(systemName:"circle.fill"),for:.normal);button.backgroundColor=UIColor(white:0.06,alpha:0.94);button.accessibilityIdentifier="selection-"+name;button.accessibilityLabel="نقطة المنظور \(index+1)";addSubview(button);handles[name]=button}
+                let p=CGPoint(x:CGFloat(point.x)*box.width,y:CGFloat(point.y)*box.height).applying(transform)
+                place(name,at:p,size:size)
+                if !s.isMeshMode {if index==0{outline.move(to:p)}else{outline.addLine(to:p)}}
+            }
+            if !s.isMeshMode{outline.close()}
+            border.path=outline.cgPath;border.lineWidth=1/max(0.002,zoom);stem.path=nil
+            return
+        }
+        for (key,button) in handles where key.hasPrefix("deform-"){button.isHidden=true}
         let path = UIBezierPath(rect: box); path.apply(transform)
         CATransaction.begin(); CATransaction.setDisableActions(true)
         border.path = path.cgPath; border.lineWidth = 1 / max(0.002, zoom); border.lineDashPattern = [5 / max(0.002, zoom), 3 / max(0.002, zoom)].map { NSNumber(value: Double($0)) }

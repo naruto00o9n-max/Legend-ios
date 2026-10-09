@@ -48,7 +48,7 @@ struct TextInspector:View {
             Toggle("تفعيل قناع دائري",isOn:Binding(get:{model.active?.isMaskEnabled ?? false},set:{v in model.change{$0.isMaskEnabled=v}}));knob("نصف القطر",Binding(get:{model.active?.maskRadius ?? 80},set:{v in model.change{$0.maskRadius=v}}),5...400)
             knob("المركز أفقيًا",Binding(get:{model.active?.maskX ?? 0},set:{v in model.change{$0.maskX=v}}),0...500);knob("المركز رأسيًا",Binding(get:{model.active?.maskY ?? 0},set:{v in model.change{$0.maskY=v}}),0...500)
         case .styles:
-            ForEach(["حوار","عنوان","صراخ","تعليق"],id:\.self){name in Button(name){model.change{l in l.style.strokeWidth=name=="حوار" ? 0:2;l.style.isBold=name=="عنوان"||name=="صراخ";l.style.fontSize=name=="عنوان" ? 72:48;l.style.color=name=="حوار" ? "000000":(name=="تعليق" ? "D4AF37":"FFFFFF")}}.buttonStyle(GoldButtonStyle())}
+            StyleLibraryView(model:model)
         case .perspective:GeometryInspector(model:model);knob("دوران أفقي ثلاثي الأبعاد",value(\.rotationY),-70...70);knob("دوران رأسي ثلاثي الأبعاد",value(\.rotationX),-70...70)
         case .texture:
             Button("استيراد خامة من الصور"){texturePicker=true}.buttonStyle(GoldButtonStyle())

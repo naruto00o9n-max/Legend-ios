@@ -31,7 +31,11 @@ enum TextRaster {
                 if !s.texturePath.isEmpty,let texture=ImagePipeline.asset(directory.appendingPathComponent(s.texturePath)){
                     ctx.saveGState();ctx.translateBy(x:size.width/2+CGFloat(s.textureTranslationX),y:size.height/2+CGFloat(s.textureTranslationY));ctx.rotate(by:CGFloat(s.textureRotation)*CGFloat.pi/180);ctx.scaleBy(x:CGFloat(s.textureScaleX),y:CGFloat(s.textureScaleY));texture.drawAsPattern(in:CGRect(x:-size.width*10,y:-size.height*10,width:size.width*20,height:size.height*20));ctx.restoreGState()
                 }
-                ctx.setBlendMode(.destinationIn);glyph.draw(at:.zero);ctx.setBlendMode(.normal)
+                // UIImage.draw(at:) uses normal blending by default and overrides
+                // the CGContext blend mode. Pass the mask blend explicitly: a
+                // gradient must retain glyph alpha, never the enclosing rectangle.
+                glyph.draw(at:.zero,blendMode:.destinationIn,alpha:1)
+                ctx.setBlendMode(.normal)
                 if s.strokeWidth>0{let a=NSMutableAttributedString(attributedString:LayerRenderer.attributed(layer,color:.clear));a.addAttributes([.strokeColor:UIColor(hex:s.strokeColor),.strokeWidth:s.strokeWidth/max(1,s.fontSize)*100],range:NSRange(location:0,length:a.length));a.draw(with:rect.offsetBy(dx:pad,dy:pad),options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)}
             }
             if let input=CIImage(image:result){
