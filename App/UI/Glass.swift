@@ -33,12 +33,12 @@ struct GoldButtonStyle:ButtonStyle {
             .frame(minHeight:46).frame(maxWidth:.infinity)
             .background(primary ? AnyShapeStyle(LinearGradient(colors:[Palette.gold.opacity(0.92),Palette.gold],startPoint:.topLeading,endPoint:.bottomTrailing)):AnyShapeStyle(.ultraThinMaterial),in:RoundedRectangle(cornerRadius:16))
             .overlay(RoundedRectangle(cornerRadius:16).stroke(Palette.gold.opacity(primary ? 0:0.3),lineWidth:0.6))
-            .scaleEffect(configuration.isPressed ? 0.98:1)
+            .scaleEffect(configuration.isPressed && EditorPreferences.motion ? 0.98:1)
     }
 }
 struct IconButton:View {
     var icon:String;var title:String;var selected=false;var action:()->Void
-    var body:some View {Button(action:action){Image(systemName:icon).font(.system(size:18,weight:.medium)).frame(width:44,height:44).background(selected ? Palette.gold.opacity(0.18):.clear,in:RoundedRectangle(cornerRadius:12))}.foregroundStyle(Palette.pale).accessibilityLabel(title)}
+    var body:some View {Button{EditorPreferences.feedback();action()}label:{Image(systemName:icon).font(.system(size:18,weight:.medium)).frame(width:44,height:44).background(selected ? Palette.gold.opacity(0.18):.clear,in:RoundedRectangle(cornerRadius:12))}.foregroundStyle(Palette.pale).accessibilityLabel(title)}
 }
 struct Brand:View {
     var body:some View{HStack(spacing:10){Image("CookiesLogo").resizable().scaledToFit().frame(width:34,height:34).clipShape(Circle());VStack(alignment:.leading,spacing:1){Text("COOKIES").font(.system(size:13,weight:.semibold,design:.rounded)).tracking(3);Text("EDITOR").font(.system(size:9,weight:.medium)).tracking(4).foregroundStyle(Palette.quiet)}}.foregroundStyle(Palette.pale).environment(\.layoutDirection,.leftToRight)}

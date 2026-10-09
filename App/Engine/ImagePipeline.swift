@@ -69,6 +69,7 @@ enum ImagePipeline {
         guard let writer=LIWriterOpen(original.path,output.path,Int32(page.width),Int32(page.height),&error,error.count) else{throw ImageFailure.message("تعذر بدء التصدير")}
         defer{LIWriterClose(writer)}
         for y in stride(from:0,to:page.height,by:256) {
+            try Task.checkCancellation()
             let rows=min(256,page.height-y);var base=try tile(directory.appendingPathComponent(page.raw),width:page.width,height:page.height,rect:CGRect(x:0,y:y,width:page.width,height:rows))
             for layer in page.layers where layer.isVisible {
                 var overlay=[UInt8](repeating:0,count:base.count)

@@ -30,7 +30,7 @@ enum PageOperations {
             let input=source.appendingPathComponent(name),target=UUID().uuidString+"."+input.pathExtension
             try FileManager.default.copyItem(at:input,to:destination.appendingPathComponent(target));map[name]=target;return target
         }
-        return try layers.map{layer in var next=layer;next.id=UUID();next.frame.x+=offset.x;next.frame.y+=offset.y;next.imagePath=try copy(next.imagePath);next.style.texturePath=try copy(next.style.texturePath);return next}
+        return try layers.map{layer in var next=layer;next.id=UUID();next.frame.x+=offset.x;next.frame.y+=offset.y;next.imagePath=try copy(next.imagePath);next.style.texturePath=try copy(next.style.texturePath);for i in next.strokes.indices{if let texture=next.strokes[i].texturePath,!texture.isEmpty{next.strokes[i].texturePath=try copy(texture)}};return next}
     }
     static func cropped(_ page:EditorPage,rect:CGRect,root:URL)throws->EditorPage {
         let region=rect.integral.intersection(CGRect(x:0,y:0,width:page.width,height:page.height))

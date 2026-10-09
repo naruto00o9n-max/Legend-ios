@@ -35,15 +35,19 @@ struct TextStyle: Codable, Equatable {
     var texturePath = ""; var textureScaleX = 1.0; var textureScaleY = 1.0; var textureRotation = 0.0
     var textureTranslationX = 0.0; var textureTranslationY = 0.0
     var perspectivePoints: [Point] = []; var isMeshMode = false; var meshRows = 3; var meshCols = 3; var meshPoints: [Point] = []
+    var innerOpacity:Double?;var fadeAmount:Double?;var fadeAngle:Double?;var rulerEnabled:Bool?
+    var extraStrokes:[ExtraOutline]?
     var spans: [TextRun] = []; var customWidth: Double?; var baseWidth = 0.0; var baseHeight = 0.0
 }
+struct ExtraOutline:Codable,Equatable,Identifiable {var id=UUID();var width:Double;var color:String}
 struct TextRun: Codable, Equatable { var start: Int; var end: Int; var color: String?; var fontSize: Double?; var isBold: Bool? }
-struct Stroke: Codable, Equatable { var points: [Point]; var width: Double; var color: String; var erase = false; var brush = "normal" }
+struct Stroke: Codable, Equatable { var points: [Point]; var width: Double; var color: String; var erase = false; var brush = "normal";var opacity:Double?;var texturePath:String?;var shape:String?;var filled:Bool? }
 struct EditorLayer: Codable, Equatable, Identifiable {
     var id = UUID(); var kind: LayerKind; var name = "طبقة"; var frame = Box()
     var rotation = 0.0; var scaleX = 1.0; var scaleY = 1.0; var opacity = 1.0
     var isVisible = true; var isLocked = false; var blend = Blend.normal
     var textContent = "نص جديد"; var style = TextStyle(); var imagePath = ""; var shape = 0
+    var groupID:UUID?;var groupName:String?
     var strokes: [Stroke] = []; var isMaskEnabled = false; var maskX = 0.0; var maskY = 0.0; var maskRadius = 80.0
 }
 struct EditorPage: Codable, Equatable, Identifiable {

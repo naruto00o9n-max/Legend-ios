@@ -106,8 +106,9 @@ struct ChapterReaderView:View {
     @Environment(\.dismiss) var dismiss
     let chapter:UUID
     @State private var index=0
+    @AppStorage("reader-direction") private var readingDirection="rtl"
     var pages:[UUID]{library.chapter(chapter)?.pages ?? []}
-    var body:some View {NavigationStack{Group{if pages.indices.contains(index){ChapterReaderPage(id:pages[index]).id(pages[index])}else{Text("لا توجد صفحات")}}.safeAreaInset(edge:.bottom){HStack{Button{index=max(0,index-1)}label:{Image(systemName:"chevron.right")}.disabled(index==0);Spacer();Text("\(index+1) / \(pages.count)").font(.system(size:12));Spacer();Button{index=min(pages.count-1,index+1)}label:{Image(systemName:"chevron.left")}.disabled(index>=pages.count-1)}.padding().glass(0)}.toolbar{ToolbarItem(placement:.topBarLeading){Button("إغلاق"){dismiss()}};ToolbarItem(placement:.topBarTrailing){if pages.indices.contains(index){NavigationLink("تعديل"){PageDestination(id:pages[index])}}}}}.foregroundStyle(Palette.pale)}
+    var body:some View {NavigationStack{Group{if pages.indices.contains(index){ChapterReaderPage(id:pages[index]).id(pages[index])}else{Text("لا توجد صفحات")}}.safeAreaInset(edge:.bottom){HStack{Button{index=max(0,index-1)}label:{Image(systemName:readingDirection=="rtl" ? "chevron.right":"chevron.left")}.disabled(index==0);Spacer();Text("\(index+1) / \(pages.count)").font(.system(size:12));Spacer();Button{index=min(pages.count-1,index+1)}label:{Image(systemName:readingDirection=="rtl" ? "chevron.left":"chevron.right")}.disabled(index>=pages.count-1)}.padding().glass(0)}.toolbar{ToolbarItem(placement:.topBarLeading){Button("إغلاق"){dismiss()}};ToolbarItem(placement:.topBarTrailing){if pages.indices.contains(index){NavigationLink("تعديل"){PageDestination(id:pages[index])}}}}}.foregroundStyle(Palette.pale)}
 }
 struct ChapterReaderPage:View {
     @EnvironmentObject var library:LibraryStore
@@ -137,7 +138,10 @@ struct ChapterExportSheet:View {
         if format != "فصل قابل للتعديل"{Toggle("تصدير ذكي: دمج ثم تقطيع",isOn:$smart);if smart{TextField("طول الجزء px",value:$maxHeight,format:.number).keyboardType(.numberPad)}}
         if busy{ProgressView(value:Double(completed),total:Double(max(1,total)));Text("\(completed) / \(total)");Button("إلغاء"){task?.cancel()}}else{Button("تصدير \(ids.count) صفحة"){export()}.accessibilityIdentifier("chapter-export")}
         if let output{ShareLink(item:output){Label("حفظ أو مشاركة الحزمة",systemImage:"square.and.arrow.up")}}
+        Button("حفظ الصفحات المحددة في الاستوديو"){savePhotos()}.disabled(busy)
+        Text("الحفظ في الصور يستخدم PNG بالأبعاد الأصلية. الأرشيف يحتفظ بالمشروع والطبقات.").font(.system(size:12)).foregroundStyle(Palette.quiet)
     }.navigationTitle("استوديو التصدير").navigationBarTitleDisplayMode(.inline)}.alert("تعذر التصدير",isPresented:Binding(get:{failure != nil},set:{if !$0{failure=nil}})){Button("حسنًا"){failure=nil}}message:{Text(failure ?? "")}}
+    func savePhotos(){task=Task{busy=true;completed=0;total=ids.count;defer{busy=false};do{for id in ids{try Task.checkCancellation();let page=try library.load(id),directory=library.directory(id);let file=try await BackgroundWork.run{try ImagePipeline.exportPNG(page,directory:directory)};defer{try? FileManager.default.removeItem(at:file)};try await PhotoSave.save(file);completed+=1}}catch is CancellationError{}catch{failure=error.localizedDescription}}}
     func export(){task=Task{busy=true;completed=0;total=ids.count;defer{busy=false};do{
         let pages=try ids.map{try library.load($0)},root=library.root,format=self.format,prefix=self.prefix,quality=self.quality,h=smart ? Int(maxHeight):nil
         if format=="فصل قابل للتعديل",var item=library.chapter(chapter){item.pages=ids;output=try await BackgroundWork.run{try ChapterArchive.export(item,root:root)}}

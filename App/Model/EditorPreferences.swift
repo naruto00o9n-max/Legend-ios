@@ -1,0 +1,17 @@
+import Foundation
+import UIKit
+
+enum EditorPreferences {
+    static func number(_ key:String,_ fallback:Double,_ bounds:ClosedRange<Double>)->Double {let value=UserDefaults.standard.object(forKey:key) as? Double ?? fallback;return min(bounds.upperBound,max(bounds.lowerBound,value))}
+    static var icons:Double{number("editor-icon-scale",1,0.8...1.2)}
+    static var toolbar:Double{number("editor-toolbar-scale",1,0.85...1.15)}
+    static var labels:Double{number("editor-label-scale",1,0.85...1.3)}
+    static var handles:Double{number("editor-handle-scale",1,0.8...1.5)}
+    static var quality:Double{number("editor-preview-quality",1,0.5...2)}
+    static var snap:Bool{UserDefaults.standard.bool(forKey:"editor-snap")}
+    static var haptics:Bool{UserDefaults.standard.object(forKey:"editor-haptics") as? Bool ?? true}
+    static var motion:Bool{!(UserDefaults.standard.bool(forKey:"editor-reduce-motion") || UIAccessibility.isReduceMotionEnabled)}
+    static var cleanRadius:Double{number("editor-clean-radius",3,1...12)}
+    static func feedback(){if haptics{UISelectionFeedbackGenerator().selectionChanged()}}
+    static func reset(){for key in ["editor-icon-scale","editor-toolbar-scale","editor-label-scale","editor-handle-scale","editor-preview-quality","editor-snap","editor-haptics","editor-reduce-motion","editor-clean-radius","reader-direction"]{UserDefaults.standard.removeObject(forKey:key)}}
+}

@@ -70,6 +70,8 @@ struct PhotoLibraryPicker: UIViewControllerRepresentable {
 struct ArabicTextEditor: UIViewRepresentable {
     @Binding var text: String
     var identifier = "text-input"
+    var layer:EditorLayer?=nil
+    var selectionChanged:((NSRange)->Void)?=nil
     func makeCoordinator() -> Coordinator { Coordinator(self) }
     func makeUIView(context: Context) -> UITextView {
         let view = UITextView()
@@ -89,12 +91,16 @@ struct ArabicTextEditor: UIViewRepresentable {
     }
     func updateUIView(_ view: UITextView, context: Context) {
         context.coordinator.parent = self
-        if view.text != text { view.text = text }
+        if let layer,view.markedTextRange==nil {
+            let styled=LayerRenderer.attributed(layer),selection=view.selectedRange
+            if !view.attributedText.isEqual(to:styled){view.attributedText=styled;view.selectedRange=NSRange(location:min(selection.location,styled.length),length:min(selection.length,max(0,styled.length-selection.location)))}
+        }else if view.text != text { view.text = text }
     }
     final class Coordinator: NSObject, UITextViewDelegate {
         var parent: ArabicTextEditor
         init(_ parent: ArabicTextEditor) { self.parent = parent }
         func textViewDidBeginEditing(_ view: UITextView) { if view.text == "نص جديد" { view.selectedRange = NSRange(location: 0, length: view.text.utf16.count) } }
         func textViewDidChange(_ view: UITextView) { parent.text = view.text }
+        func textViewDidChangeSelection(_ view:UITextView){parent.selectionChanged?(view.selectedRange)}
     }
 }

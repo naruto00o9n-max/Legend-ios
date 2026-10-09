@@ -2,6 +2,25 @@ import XCTest
 @testable import CookiesEditor
 
 final class TyperAndInteractionTests:XCTestCase {
+    @MainActor func testTagGroupsBubbleOrderAndTrashPersistWithoutLosingProgress() throws {
+        let root=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString);defer{try? FileManager.default.removeItem(at:root)}
+        let store=TyperStore(directory:root),originalGroup=try XCTUnwrap(store.state.activeTagSet)
+        let id=try store.saveChapter(title:"فصل",source:"أول\nثان",separation:.lines)
+        let bubbles=try XCTUnwrap(store.chapter(id)).bubbles
+        try store.mark(bubbles[0].id,in:id,used:true)
+        try store.createTagSet(title:"الفصل الثاني",copyActive:true)
+        XCTAssertEqual(store.tagSets.count,2);XCTAssertNotEqual(store.state.activeTagSet,originalGroup)
+        XCTAssertNotNil(store.tag(bubbles[0].tagID),"A chapter keeps resolving tags from its original group")
+        try store.activateTagSet(originalGroup)
+        var edited=try XCTUnwrap(store.chapter(id)).bubbles[0];edited.text="أول معدل"
+        try store.updateBubble(edited,in:id);try store.reorderBubbles(bubbles.reversed().map(\.id),in:id)
+        try store.setQuickFonts(["bein_normal.ttf"]);try store.setLinkPrefix("@@")
+        try store.remove(id);XCTAssertNil(store.chapter(id))
+        let reopened=TyperStore(directory:root);try reopened.restore(id)
+        let restored=try XCTUnwrap(reopened.chapter(id))
+        XCTAssertEqual(restored.bubbles.map(\.id),bubbles.reversed().map(\.id));XCTAssertTrue(restored.bubbles[1].used);XCTAssertEqual(restored.bubbles[1].text,"أول معدل")
+        XCTAssertEqual(reopened.state.quickFonts,["bein_normal.ttf"]);XCTAssertEqual(reopened.state.linkPrefix,"@@")
+    }
     @MainActor func testTranscriptIdentityAndProgressSurviveRestart() throws {
         let root=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString);defer{try? FileManager.default.removeItem(at:root)}
         let store=TyperStore(directory:root)

@@ -25,6 +25,17 @@ final class TextStyleTests:XCTestCase {
         }
         XCTAssertGreaterThan(painted,500);XCTAssertGreaterThan(changed,500)
     }
+    func testAndroidStyleSchemaPreservesColorsStopsAndDeformation() throws {
+        let row:[String:Any]=["name":"نمط عربي","folder":"حوار","color":-65536,"textGradient":[-65536,-16776961],"textGradientStops":[0.2,0.8],"fontSize":57,"boxWidth":300,"perspectivePoints":[0.1,0,1,0,1,1,0,1]]
+        let styles=try ReferenceStyleImport.decode(JSONSerialization.data(withJSONObject:[row]))
+        XCTAssertEqual(styles[0].title,"نمط عربي");XCTAssertEqual(styles[0].style.color,"FF0000");XCTAssertEqual(styles[0].style.textGradient,["FF0000","0000FF"]);XCTAssertEqual(styles[0].style.textGradientStops,[0.2,0.8]);XCTAssertEqual(styles[0].style.perspectivePoints.first,Point(x:0.1,y:0))
+    }
+    func testSpanBoldOverridesOnlySelectedUTF16Range() {
+        var layer=EditorLayer(kind:.text);layer.textContent="عربي ABC";layer.style.spans=[TextRun(start:5,end:8,color:"FF0000",fontSize:70,isBold:true)]
+        let attributed=LayerRenderer.attributed(layer)
+        XCTAssertEqual((attributed.attribute(.font,at:5,effectiveRange:nil) as? UIFont)?.pointSize,70)
+        XCTAssertEqual((attributed.attribute(.font,at:0,effectiveRange:nil) as? UIFont)?.pointSize,48)
+    }
     @MainActor func testSavedStyleSurvivesProjectRemovalAndKeepsTextAndPosition() throws {
         let root=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer{try? FileManager.default.removeItem(at:root)}

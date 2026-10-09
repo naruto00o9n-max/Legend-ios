@@ -5,6 +5,10 @@ struct TextInspector:View {
     @Environment(\.dismiss) var dismiss
     var close:(()->Void)? = nil
     @State private var texturePicker=false
+    @State private var textRange=NSRange(location:0,length:0)
+    @State private var rangeColor=Color.white
+    @State private var rangeSize=48.0
+    @State private var rangeBold=false
     var style:TextStyle {model.active?.style ?? TextStyle()}
     func value(_ key:WritableKeyPath<TextStyle,Double>)->Binding<Double>{Binding(get:{style[keyPath:key]},set:{v in model.change{$0.style[keyPath:key]=v}})}
     func flag(_ key:WritableKeyPath<TextStyle,Bool>)->Binding<Bool>{Binding(get:{style[keyPath:key]},set:{v in model.change{$0.style[keyPath:key]=v}})}
@@ -17,7 +21,10 @@ struct TextInspector:View {
     }
     @ViewBuilder var content:some View {
         switch panel {
-        case .content:ArabicTextEditor(text:Binding(get:{model.active?.textContent ?? ""},set:{v in model.change{$0.textContent=v}})).frame(minHeight:140).padding(12).glass(16).accessibilityIdentifier("text-input")
+        case .content:ArabicTextEditor(text:Binding(get:{model.active?.textContent ?? ""},set:{v in model.change{$0.textContent=v}}),layer:model.active,selectionChanged:{textRange=$0}).frame(minHeight:140).padding(12).glass(16).accessibilityIdentifier("text-input")
+            HStack{Text(textRange.length>0 ? "\(textRange.length) حرف محدد":"حدد جزءًا من النص لتنسيقه");Spacer();Button("تنسيق التحديد"){if textRange.length>0{model.change{$0.style.spans.append(TextRun(start:textRange.location,end:textRange.location+textRange.length,color:UIColor(rangeColor).hex,fontSize:rangeSize,isBold:rangeBold))}}}.disabled(textRange.length==0)}.font(.system(size:11))
+            ColorPicker("لون التحديد",selection:$rangeColor,supportsOpacity:false);Toggle("التحديد غامق",isOn:$rangeBold);knob("حجم التحديد",$rangeSize,8...240)
+            Button("مسح تنسيق التحديد"){let start=textRange.location,end=start+textRange.length;model.change{$0.style.spans.removeAll{$0.start<end && $0.end>start}}}.disabled(textRange.length==0)
         case .font:
             ForEach((Fonts.files+Fonts.otf).sorted{$0.lastPathComponent<$1.lastPathComponent},id:\.self){url in Button{model.change{$0.style.fontPath=url.lastPathComponent}}label:{HStack{Text("حروف تصنع الحوار").font(Font(Fonts.font({var s=style;s.fontPath=url.lastPathComponent;s.fontSize=20;return s}())));Spacer();if style.fontPath==url.lastPathComponent{Image(systemName:"checkmark")}}.padding(12).glass(14)}}
         case .format:
@@ -25,14 +32,21 @@ struct TextInspector:View {
             HStack{Toggle("غامق",isOn:flag(\.isBold));Toggle("مائل",isOn:flag(\.isItalic))}.toggleStyle(.button)
             HStack{Toggle("تسطير",isOn:flag(\.isUnderline));Toggle("شطب",isOn:flag(\.isStrikeThrough))}.toggleStyle(.button)
             Picker("المحاذاة",selection:Binding(get:{style.alignment},set:{v in model.change{$0.style.alignment=v}})){Text("يسار").tag(0);Text("وسط").tag(1);Text("يمين").tag(2);Text("ضبط").tag(3)}.pickerStyle(.segmented)
+            HStack{Button("تنسيق مربع"){typeset("box")};Button("تنسيق دائري"){typeset("circle")};Button("الكشيدة"){typeset("kashida")}}.font(.system(size:12))
         case .color:
             swatches("لون النص",\.color)
-            Toggle("تدرج لوني",isOn:Binding(get:{!style.textGradient.isEmpty},set:{v in model.change{$0.style.textGradient=v ? ["D4AF37","FFFFFF"]:[]}}))
-            if !style.textGradient.isEmpty {ForEach(0..<2,id:\.self){index in ColorPicker(index==0 ? "البداية":"النهاية",selection:Binding(get:{Color(uiColor:UIColor(hex:style.textGradient[index]))},set:{v in model.change{$0.style.textGradient[index]=UIColor(v).hex}}),supportsOpacity:false)};knob("زاوية التدرج",value(\.textGradientAngle),0...360)}
-        case .stroke:knob("السماكة",value(\.strokeWidth),0...18);swatches("لون الحدود",\.strokeColor)
+            GradientControls(model:model,colors:\.textGradient,stops:\.textGradientStops,angle:\.textGradientAngle,type:\.textGradientType)
+        case .stroke:
+            ForEach(style.extraStrokes ?? []){outline in HStack{ColorPicker("حد إضافي",selection:Binding(get:{Color(uiColor:UIColor(hex:outline.color))},set:{color in model.change{layer in if let i=layer.style.extraStrokes?.firstIndex(where:{$0.id==outline.id}){layer.style.extraStrokes?[i].color=UIColor(color).hex}}}),supportsOpacity:false);Slider(value:Binding(get:{outline.width},set:{width in model.change{layer in if let i=layer.style.extraStrokes?.firstIndex(where:{$0.id==outline.id}){layer.style.extraStrokes?[i].width=width}}}),in:0...40);Button(role:.destructive){model.change{$0.style.extraStrokes?.removeAll{$0.id==outline.id}}}label:{Image(systemName:"trash")}}}
+            Button("إضافة حد"){model.change{$0.style.extraStrokes=($0.style.extraStrokes ?? [])+[ExtraOutline(width:6,color:"FFFFFF")]}}.disabled((style.extraStrokes?.count ?? 0)>=8)
+            knob("السماكة",value(\.strokeWidth),0...18);swatches("لون الحدود",\.strokeColor);GradientControls(model:model,colors:\.strokeGradient,stops:\.strokeGradientStops,angle:\.strokeGradientAngle,type:\.strokeGradientType)
         case .background:knob("الشفافية",Binding(get:{Double(style.backgroundAlpha)},set:{v in model.change{$0.style.backgroundAlpha=Int(v)}}),0...255);knob("الاستدارة",value(\.backgroundCornerRadius),0...80);swatches("الخلفية",\.backgroundColor)
-        case .shadow:knob("النعومة",value(\.shadowRadius),0...50);knob("أفقي",value(\.shadowDx),-80...80);knob("رأسي",value(\.shadowDy),-80...80);swatches("لون الظل",\.shadowColor)
+        case .shadow:knob("النعومة",value(\.shadowRadius),0...50);knob("أفقي",value(\.shadowDx),-80...80);knob("رأسي",value(\.shadowDy),-80...80);swatches("لون الظل",\.shadowColor);knob("شفافية الظل",Binding(get:{Double(style.shadowAlpha)},set:{v in model.change{$0.style.shadowAlpha=Int(v)}}),0...255)
         case .position:
+            knob("الموضع أفقيًا",Binding(get:{model.active?.frame.x ?? 0},set:{v in model.change{$0.frame.x=v}}),-Double(model.page.width)...Double(model.page.width))
+            knob("الموضع رأسيًا",Binding(get:{model.active?.frame.y ?? 0},set:{v in model.change{$0.frame.y=v}}),-Double(model.page.height)...Double(model.page.height))
+            Toggle("مسطرة حدود النص",isOn:Binding(get:{style.rulerEnabled ?? false},set:{v in model.change{$0.style.rulerEnabled=v}}))
+            Button("تحويل النص إلى طبقة PNG"){Task{await model.rasterizeText()}}
             knob("الدوران",Binding(get:{model.active?.rotation ?? 0},set:{v in model.change{$0.rotation=v}}),-180...180)
             knob("الحجم أفقيًا",Binding(get:{model.active?.scaleX ?? 1},set:{v in model.change{$0.scaleX=v}}),0.1...6)
             knob("الحجم رأسيًا",Binding(get:{model.active?.scaleY ?? 1},set:{v in model.change{$0.scaleY=v}}),0.1...6)
@@ -42,6 +56,9 @@ struct TextInspector:View {
             Picker("التأثير",selection:Binding(get:{style.effectType},set:{v in model.change{$0.style.effectType=v}})){ForEach(TextEffect.allCases,id:\.self){Text($0.title).tag($0)}}.pickerStyle(.menu)
             knob("القوة",value(\.effectValue),0...50);knob("التفاصيل",value(\.effectDetail),2...20);swatches("لون التأثير",\.effectColor)
         case .opacity:
+            knob("شفافية الحروف",Binding(get:{style.innerOpacity ?? 1},set:{v in model.change{$0.style.innerOpacity=v}}),0...1)
+            knob("تلاشي الحروف",Binding(get:{style.fadeAmount ?? 0},set:{v in model.change{$0.style.fadeAmount=v}}),0...1)
+            knob("اتجاه التلاشي",Binding(get:{style.fadeAngle ?? 0},set:{v in model.change{$0.style.fadeAngle=v}}),0...360)
             knob("شفافية الطبقة",Binding(get:{model.active?.opacity ?? 1},set:{v in model.change{$0.opacity=v}}),0...1)
             Picker("المزج",selection:Binding(get:{model.active?.blend ?? .normal},set:{v in model.change{$0.blend=v}})){ForEach(Blend.allCases,id:\.self){Text($0.title).tag($0)}}.pickerStyle(.menu)
         case .mask:
@@ -55,6 +72,7 @@ struct TextInspector:View {
             if !style.texturePath.isEmpty{knob("الحجم أفقيًا",value(\.textureScaleX),0.1...5);knob("الحجم رأسيًا",value(\.textureScaleY),0.1...5);knob("دوران الخامة",value(\.textureRotation),-180...180);knob("إزاحة أفقية",value(\.textureTranslationX),-500...500);knob("إزاحة رأسية",value(\.textureTranslationY),-500...500);Button("إزالة الخامة"){model.change{$0.style.texturePath=""}}}
         }
     }
+    private func typeset(_ mode:String){guard let layer=model.active else{return};let formatter=Typesetter(measure:{Double(($0 as NSString).size(withAttributes:[.font:Fonts.font(layer.style)]).width)});let text=mode=="circle" ? formatter.circle(layer.textContent,width:layer.style.boxWidth,fontSize:layer.style.fontSize):formatter.box(layer.textContent,width:layer.style.boxWidth,tatweel:mode=="kashida");model.checkpoint();model.change{$0.textContent=text;$0.style.spans=[]}}
     func knob(_ label:String,_ source:Binding<Double>,_ range:ClosedRange<Double>)->some View{let binding=Binding<Double>(get:{min(range.upperBound,max(range.lowerBound,source.wrappedValue))},set:{source.wrappedValue=min(range.upperBound,max(range.lowerBound,$0))});return VStack(alignment:.leading,spacing:8){HStack{Text(label).font(.system(size:12));Spacer();TextField(label,value:binding,format:.number.precision(.fractionLength(0...1))).font(.system(size:12,design:.monospaced)).multilineTextAlignment(.trailing).keyboardType(.numbersAndPunctuation).frame(width:70).accessibilityIdentifier("value-\(label)")};Slider(value:binding,in:range).tint(Palette.gold)}.padding(12).glass(16)}
     func swatches(_ label:String,_ key:WritableKeyPath<TextStyle,String>)->some View {VStack(alignment:.leading,spacing:12){Text(label).font(.system(size:12));HStack(spacing:12){ForEach(["FFFFFF","000000","D4AF37","F5DF99","E74646","46A4D8","7957B7"],id:\.self){hex in Button{model.change{$0.style[keyPath:key]=hex}}label:{Circle().fill(Color(uiColor:UIColor(hex:hex))).frame(width:26,height:26).overlay(Circle().stroke(style[keyPath:key]==hex ? Palette.gold:.clear,lineWidth:3))}}}.environment(\.layoutDirection,.leftToRight);ColorPicker("لون مخصص",selection:Binding(get:{Color(uiColor:UIColor(hex:style[keyPath:key]))},set:{v in model.change{$0.style[keyPath:key]=UIColor(v).hex}}),supportsOpacity:false).font(.system(size:12))}.padding(12).glass(16)}
 }

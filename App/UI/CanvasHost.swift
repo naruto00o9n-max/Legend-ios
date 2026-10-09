@@ -32,7 +32,7 @@ struct CanvasHost:UIViewRepresentable {
         func gestureRecognizerShouldBegin(_ g:UIGestureRecognizer)->Bool{guard g === panGesture else{return true};if model.sniperMode{return false};if [.brush,.eraser,.cleaner].contains(model.tool){return true};return canvas.handle(at:g.location(in:canvas)) != nil || hit(g.location(in:canvas)) != nil}
         @objc func tap(_ g:UITapGestureRecognizer){let point=g.location(in:canvas);model.visibleCenter=point
             if model.sniperMode{Task{await model.detectSniper(at:point)};return}
-            if [.brush,.eraser,.cleaner].contains(model.tool){let dot=Stroke(points:[Point(x:point.x,y:point.y)],width:model.brushWidth,color:model.brushColor,erase:model.tool == .eraser,brush:model.brushStyle);if model.tool == .cleaner{Task{await model.clean(dot)}}else{if model.active?.kind != .drawing{model.add(.drawing)};model.checkpoint();model.change{$0.strokes.append(dot)}};return}
+            if [.brush,.eraser,.cleaner].contains(model.tool){let dot=Stroke(points:[Point(x:point.x,y:point.y)],width:model.brushWidth,color:model.brushColor,erase:model.tool == .eraser,brush:model.brushStyle,opacity:model.brushOpacity,texturePath:model.brushTexture,shape:model.drawingShape,filled:model.drawingFilled);if model.tool == .cleaner{Task{await model.clean(dot)}}else{if model.active?.kind != .drawing{model.add(.drawing)};model.checkpoint();model.change{$0.strokes.append(dot)}};return}
             if model.tool == .text,hit(point)==nil{model.add(.text)}else if model.tool == .eyedropper{
                 if let bytes=try? ImagePipeline.tile(model.directory.appendingPathComponent(model.page.raw),width:model.page.width,height:model.page.height,rect:CGRect(x:Int(point.x),y:Int(point.y),width:1,height:1)),bytes.count>=4{model.brushColor=String(format:"%02X%02X%02X",bytes[0],bytes[1],bytes[2])}
             }else{model.selected=hit(point)?.id;if model.active?.kind == .text{model.tool = .text}}
@@ -41,8 +41,8 @@ struct CanvasHost:UIViewRepresentable {
         @objc func pan(_ g:UIPanGestureRecognizer){let point=g.location(in:canvas)
             if [.brush,.eraser,.cleaner].contains(model.tool){
                 if g.state == .began{
-                    if model.tool != .cleaner{if model.active?.kind != .drawing{model.add(.drawing)};model.checkpoint()};stroke=Stroke(points:[Point(x:point.x,y:point.y)],width:model.brushWidth,color:model.tool == .cleaner ? "FFFFFF":model.brushColor,erase:model.tool == .eraser,brush:model.brushStyle)
-                }else if g.state == .changed{stroke?.points.append(Point(x:point.x,y:point.y));canvas.showStroke(stroke,on:model.page,selected:model.selected)}
+                    if model.tool != .cleaner{if model.active?.kind != .drawing{model.add(.drawing)};model.checkpoint()};stroke=Stroke(points:[Point(x:point.x,y:point.y)],width:model.brushWidth,color:model.tool == .cleaner ? "FFFFFF":model.brushColor,erase:model.tool == .eraser,brush:model.brushStyle,opacity:model.brushOpacity,texturePath:model.brushTexture,shape:model.drawingShape,filled:model.drawingFilled)
+                }else if g.state == .changed{if model.drawingShape=="free"{stroke?.points.append(Point(x:point.x,y:point.y))}else if let first=stroke?.points.first{stroke?.points=[first,Point(x:point.x,y:point.y)]};canvas.showStroke(stroke,on:model.page,selected:model.selected)}
                 else if g.state == .cancelled{stroke=nil;canvas.showStroke(nil,on:model.page,selected:model.selected)}
                 else if g.state == .ended{if let stroke{if model.tool == .cleaner{canvas.showStroke(nil,on:model.page,selected:model.selected);Task{await model.clean(stroke)}}else{canvas.commitLiveStroke();model.change{$0.strokes.append(stroke)}}};stroke=nil}
                 return
@@ -65,6 +65,7 @@ struct CanvasHost:UIViewRepresentable {
                 case "box-width":l.style.boxWidth=max(20,initial.style.boxWidth+Double(delta.width)/max(0.05,initial.scaleX));l.frame.width=l.style.boxWidth
                 case "delete","duplicate","edit","styles":break
                 default:l.frame.x=initial.frame.x+Double(t.x);l.frame.y=initial.frame.y+Double(t.y)
+                    if EditorPreferences.snap{let tolerance=8/max(0.01,model.zoom),w=Double(b.width)*l.scaleX,h=Double(b.height)*l.scaleY;for anchor in [0.0,(Double(model.page.width)-w)/2,Double(model.page.width)-w] where abs(l.frame.x-anchor)<tolerance{l.frame.x=anchor};for anchor in [0.0,(Double(model.page.height)-h)/2,Double(model.page.height)-h] where abs(l.frame.y-anchor)<tolerance{l.frame.y=anchor}}
                 }
             };canvas.update(page:model.page,directory:model.directory,selected:model.selected,zoom:scroll?.zoomScale ?? 1)}
             else if g.state == .ended || g.state == .cancelled{canvas.endLayerInteraction();initial=nil;dragHandle=nil;model.save()}

@@ -8,6 +8,9 @@ struct EditorView:View {
     @State private var reader=false
     @State private var brushSettings=false
     @State private var showExport=false;@State private var imagePicker=false
+    @AppStorage("editor-icon-scale") private var iconScale=1.0
+    @AppStorage("editor-toolbar-scale") private var toolbarScale=1.0
+    @AppStorage("editor-label-scale") private var labelScale=1.0
     @AppStorage("typer-panel-width") private var typerWidth=320.0
     @AppStorage("typer-panel-height") private var typerHeight=490.0
     var body:some View {
@@ -20,7 +23,7 @@ struct EditorView:View {
                     toolButton("chevron.right","رجوع",id:"text-back"){model.panel=nil;model.tool = .move}
                     toolButton("plus","إضافة نص",id:"text-add"){model.add(.text)}
                     if model.active?.kind == .text{ForEach(Panel.allCases){panel in toolButton(panel.icon,panel.title,id:"panel-\(panel.rawValue)",selected:model.panel==panel){model.panel = model.panel==panel ? nil:panel}}}
-                }.padding(.horizontal,8)}.frame(height:68).accessibilityIdentifier("panel-strip")
+                }.padding(.horizontal,8)}.frame(height:68*min(1.15,max(0.85,toolbarScale))).accessibilityIdentifier("panel-strip")
             }else if [.brush,.eraser].contains(model.tool){
                 ScrollView(.horizontal,showsIndicators:false){HStack(spacing:2){
                     toolButton("chevron.right","رجوع",id:"brush-back"){model.tool = .move}
@@ -28,7 +31,7 @@ struct EditorView:View {
                     toolButton("eraser","ممحاة",id:"tool-eraser",selected:model.tool == .eraser){model.tool = .eraser}
                     toolButton("paintpalette","اللون والحجم",id:"brush-settings"){brushSettings=true}
                     toolButton("square.3.layers.3d","الطبقات",id:"tool-layers"){layers=true}
-                }.padding(.horizontal,8)}.frame(height:68).accessibilityIdentifier("tool-strip")
+                }.padding(.horizontal,8)}.frame(height:68*min(1.15,max(0.85,toolbarScale))).accessibilityIdentifier("tool-strip")
             }else{
                 ScrollView(.horizontal,showsIndicators:false){HStack(spacing:2){
                     toolButton(Tool.text.icon,"نص",id:"tool-text"){select(.text)}
@@ -41,7 +44,7 @@ struct EditorView:View {
                         Button{select(.eyedropper)}label:{Label("قطارة",systemImage:"eyedropper")}.accessibilityIdentifier("tool-eyedropper")
                         Button{reader=true}label:{Label("القراءة",systemImage:"book")}.accessibilityIdentifier("tool-reader")
                     }label:{VStack(spacing:6){Image(systemName:"ellipsis").font(.system(size:20));Text("المزيد").font(.system(size:10))}.frame(width:62,height:60)}.accessibilityIdentifier("tool-more")
-                }.padding(.horizontal,8)}.frame(height:68).accessibilityIdentifier("tool-strip")
+                }.padding(.horizontal,8)}.frame(height:68*min(1.15,max(0.85,toolbarScale))).accessibilityIdentifier("tool-strip")
             }
 
         }.foregroundStyle(Palette.pale).glass(0)}
@@ -68,6 +71,6 @@ struct EditorView:View {
         .alert("تعذر إكمال العملية",isPresented:Binding(get:{model.error != nil},set:{if !$0{model.error=nil}})){Button("حسنًا"){model.error=nil}}message:{Text(model.error ?? "")}
         .onDisappear{model.save()}
     }
-    func toolButton(_ icon:String,_ title:String,id:String,selected:Bool=false,action:@escaping ()->Void)->some View{Button(action:action){VStack(spacing:6){Image(systemName:icon).font(.system(size:20,weight:.regular));Text(title).font(.system(size:10)).lineLimit(1)}.frame(width:62,height:60).background(selected ? Palette.gold.opacity(0.16):.clear,in:RoundedRectangle(cornerRadius:12))}.accessibilityIdentifier(id).accessibilityLabel(title)}
+    func toolButton(_ icon:String,_ title:String,id:String,selected:Bool=false,action:@escaping ()->Void)->some View{Button(action:action){VStack(spacing:6){Image(systemName:icon).font(.system(size:20*min(1.2,max(0.8,iconScale)),weight:.regular));Text(title).font(.system(size:10*min(1.3,max(0.85,labelScale)))).lineLimit(1)}.frame(width:62,height:60*min(1.15,max(0.85,toolbarScale))).background(selected ? Palette.gold.opacity(0.16):.clear,in:RoundedRectangle(cornerRadius:12))}.accessibilityIdentifier(id).accessibilityLabel(title)}
     func select(_ tool:Tool){model.tool=tool;switch tool{case .layers:layers=true;case .shapes:shapes=true;case .text:if model.active?.kind != .text{model.add(.text)}else{model.panel = .content};case .brush,.eraser:if model.active?.kind != .drawing{model.add(.drawing)};default:break}}
 }

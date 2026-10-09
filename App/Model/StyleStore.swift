@@ -52,7 +52,7 @@ struct StylePackage:Codable {
     }
     private func ownTexture(_ filename:String,from assets:URL)throws->String {
         guard !filename.isEmpty else{return ""}
-        guard filename==URL(fileURLWithPath:filename).lastPathComponent,!filename.contains("..") else{throw ImageFailure.message("مسار الخامة غير صالح")}
+        guard !filename.hasPrefix("/"),!filename.split(separator:"/").contains(".."),!filename.contains("\\") else{throw ImageFailure.message("مسار الخامة غير صالح")}
         let source=assets.appendingPathComponent(filename)
         guard FileManager.default.fileExists(atPath:source.path) else{throw ImageFailure.message("خامة النمط مفقودة")}
         let name=UUID().uuidString+"."+source.pathExtension
@@ -120,11 +120,13 @@ struct StylePackage:Codable {
         let staging=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString,isDirectory:true)
         defer{try? FileManager.default.removeItem(at:staging)}
         try FileManager.default.unzipItem(at:url,to:staging)
-        var package=try JSONDecoder().decode(StylePackage.self,from:Data(contentsOf:staging.appendingPathComponent("styles.json")))
+        let bytes=try Data(contentsOf:staging.appendingPathComponent("styles.json"))
+        var package:StylePackage
+        if let own=try? JSONDecoder().decode(StylePackage.self,from:bytes){package=own}else{package=StylePackage(styles:try ReferenceStyleImport.decode(bytes),tags:[])}
         guard package.version==1 else{throw ImageFailure.message("إصدار حزمة الأنماط غير مدعوم")}
         for index in package.styles.indices {package.styles[index].id=UUID();package.styles[index].style.texturePath=try ownTexture(package.styles[index].style.texturePath,from:staging)}
         for index in package.tags.indices {package.tags[index].id=UUID();package.tags[index].style.texturePath=try ownTexture(package.tags[index].style.texturePath,from:staging)}
-        for font in (try? FileManager.default.contentsOfDirectory(at:staging.appendingPathComponent("Fonts"),includingPropertiesForKeys:nil)) ?? [] where ["ttf","otf"].contains(font.pathExtension.lowercased()) {
+        for font in (FileManager.default.enumerator(at:staging,includingPropertiesForKeys:nil)?.allObjects as? [URL]) ?? [] where ["ttf","otf"].contains(font.pathExtension.lowercased()) {
             try FileManager.default.createDirectory(at:Fonts.userDirectory,withIntermediateDirectories:true)
             let target=Fonts.userDirectory.appendingPathComponent(font.lastPathComponent)
             if !FileManager.default.fileExists(atPath:target.path){try FileManager.default.copyItem(at:font,to:target)}

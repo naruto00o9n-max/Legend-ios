@@ -37,6 +37,10 @@ import SwiftUI
     @Published var brushWidth = 12.0
     @Published var brushColor = "D4AF37"
     @Published var brushStyle = "normal"
+    @Published var brushOpacity=1.0
+    @Published var brushTexture=""
+    @Published var drawingShape="free"
+    @Published var drawingFilled=false
     @Published var zoom = 1.0
     @Published var error:String?
     @Published var busy = false
@@ -56,7 +60,7 @@ import SwiftUI
         for (index,value) in values.enumerated() {
             var item=EditorLayer(kind:.text,name:value.0);item.textContent=value.0
             if let style=value.1{item.style=style}
-            item.style.boxWidth=min(320,Double(page.width));item.frame=Box(x:max(0,center.x-160),y:max(0,center.y-65),width:item.style.boxWidth,height:130)
+            item.style.boxWidth=min(item.style.boxWidth,Double(page.width));item.frame=Box(x:max(0,center.x-160),y:max(0,center.y-65),width:item.style.boxWidth,height:130)
             if index<targets.count{item=SniperDetector.fitted(item,to:targets[index])}
             next.layers.append(item)
         }
@@ -101,13 +105,13 @@ import SwiftUI
         let xs=stroke.points.map(\.x),ys=stroke.points.map(\.y),padding=stroke.width+20
         let region=CGRect(x:max(0,(xs.min() ?? 0)-padding),y:max(0,(ys.min() ?? 0)-padding),width:(xs.max() ?? 0)-(xs.min() ?? 0)+padding*2,height:(ys.max() ?? 0)-(ys.min() ?? 0)+padding*2).intersection(CGRect(x:0,y:0,width:page.width,height:page.height)).integral
         guard region.width*region.height<=4_194_304 else{error="اختر مساحة تنظيف أصغر";return}
-        let page=self.page,directory=self.directory
+        let page=self.page,directory=self.directory,radius=EditorPreferences.cleanRadius
         do{let filename=try await Task.detached(priority:.userInitiated){()->String in
             let rgba=try ImagePipeline.tile(directory.appendingPathComponent(page.raw),width:page.width,height:page.height,rect:region)
             guard let cg=ImagePipeline.image(rgba,width:Int(region.width),height:Int(region.height)) else{throw ImageFailure.message("تعذر قراءة منطقة التنظيف")}
             let format=UIGraphicsImageRendererFormat();format.scale=1;format.opaque=true
             let mask=UIGraphicsImageRenderer(size:region.size,format:format).image{ctx in UIColor.black.setFill();ctx.fill(CGRect(origin:.zero,size:region.size));UIColor.white.setStroke();let path=UIBezierPath();path.lineWidth=CGFloat(stroke.width);path.lineCapStyle = .round;path.move(to:CGPoint(x:stroke.points[0].x-Double(region.minX),y:stroke.points[0].y-Double(region.minY)));for p in stroke.points.dropFirst(){path.addLine(to:CGPoint(x:p.x-Double(region.minX),y:p.y-Double(region.minY)))};if stroke.points.count==1{UIColor.white.setFill();let point=stroke.points[0];UIBezierPath(ovalIn:CGRect(x:point.x-Double(region.minX)-stroke.width/2,y:point.y-Double(region.minY)-stroke.width/2,width:stroke.width,height:stroke.width)).fill()}else{path.stroke()}}
-            guard let patch=CookiesInpaint(UIImage(cgImage:cg),mask,3),let data=patch.pngData() else{throw ImageFailure.message("تعذر تنظيف المنطقة")};let name=UUID().uuidString+".png";try data.write(to:directory.appendingPathComponent(name));return name
+            guard let patch=CookiesInpaint(UIImage(cgImage:cg),mask,radius),let data=patch.pngData() else{throw ImageFailure.message("تعذر تنظيف المنطقة")};let name=UUID().uuidString+".png";try data.write(to:directory.appendingPathComponent(name));return name
         }.value
         checkpoint();var l=EditorLayer(kind:.image,name:"تنظيف ذكي");l.frame=Box(x:region.minX,y:region.minY,width:region.width,height:region.height);l.imagePath=filename;self.page.layers.append(l);selected=l.id;save()
         }catch{self.error=error.localizedDescription}

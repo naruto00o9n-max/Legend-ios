@@ -5,7 +5,7 @@ on:
     paths: ['App/**', 'Tests/**', 'UITests/**', 'ServicesTests/**', 'ServicesUITests/**', 'project.yml', 'scripts/build_ipas.sh', 'scripts/test_simulators.sh', '.github/workflows/ios-build.yml']
   workflow_dispatch:
 concurrency:
-  group: cookies-ios-${{ github.ref }}
+  group: cookies-ios-${{ github.ref }}-${{ github.sha }}
   cancel-in-progress: true
 permissions:
   contents: read

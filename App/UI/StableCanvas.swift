@@ -96,7 +96,7 @@ final class DocumentCanvas: UIView {
         visible = rect
         let imageBounds = CGRect(x: 0, y: 0, width: page.width, height: page.height)
         var sample = 1
-        let resolution = max(0.0001, zoom * max(1, traitCollection.displayScale))
+        let resolution = max(0.0001, zoom * max(1, traitCollection.displayScale) * CGFloat(EditorPreferences.quality))
         while CGFloat(sample * 2) * resolution <= 1 { sample *= 2 }
         let extent = CGFloat(512 * sample)
         let area = rect.insetBy(dx: -extent * 0.5, dy: -extent * 0.5).intersection(imageBounds)
@@ -206,7 +206,7 @@ final class DocumentCanvas: UIView {
                 let name="deform-\(index)"
                 if handles[name]==nil {let button=UIButton(type:.custom);button.setImage(UIImage(systemName:"circle.fill"),for:.normal);button.backgroundColor=UIColor(white:0.06,alpha:0.94);button.accessibilityIdentifier="selection-"+name;button.accessibilityLabel="نقطة المنظور \(index+1)";addSubview(button);handles[name]=button}
                 let p=CGPoint(x:CGFloat(point.x)*box.width,y:CGFloat(point.y)*box.height).applying(transform)
-                place(name,at:p,size:size)
+                place(name,at:p,size:size * CGFloat(EditorPreferences.handles))
                 if !s.isMeshMode {if index==0{outline.move(to:p)}else{outline.addLine(to:p)}}
             }
             if !s.isMeshMode{outline.close()}
@@ -214,7 +214,9 @@ final class DocumentCanvas: UIView {
             return
         }
         for (key,button) in handles where key.hasPrefix("deform-"){button.isHidden=true}
-        let path = UIBezierPath(rect: box); path.apply(transform)
+        let path = UIBezierPath(rect: box)
+        if item.style.rulerEnabled==true{let length=6/max(0.002,zoom);for x in stride(from:CGFloat(0),through:box.width,by:50){path.move(to:CGPoint(x:x,y:0));path.addLine(to:CGPoint(x:x,y:-length))};for y in stride(from:CGFloat(0),through:box.height,by:50){path.move(to:CGPoint(x:0,y:y));path.addLine(to:CGPoint(x:-length,y:y))}}
+        path.apply(transform)
         CATransaction.begin(); CATransaction.setDisableActions(true)
         border.path = path.cgPath; border.lineWidth = 1 / max(0.002, zoom); border.lineDashPattern = [5 / max(0.002, zoom), 3 / max(0.002, zoom)].map { NSNumber(value: Double($0)) }
         // Reference 4.5: delete / vertical scale / rotate across the top,
@@ -232,7 +234,7 @@ final class DocumentCanvas: UIView {
             "styles": CGPoint(x: controls.minX + controls.width * 0.7, y: controls.maxY),
             "resize": CGPoint(x: controls.maxX, y: controls.maxY)
         ]
-        for (name, point) in positions { place(name, at: point.applying(transform), size: size) }
+        for (name, point) in positions { place(name, at: point.applying(transform), size: size * CGFloat(EditorPreferences.handles)) }
         stem.path = nil
         handles["edit"]?.isHidden = item.kind != .text
         handles["styles"]?.isHidden = item.kind != .text
@@ -248,7 +250,7 @@ final class DocumentCanvas: UIView {
         button.setPreferredSymbolConfiguration(UIImage.SymbolConfiguration(pointSize: 14, weight: .medium), forImageIn: .normal)
     }
     func handle(at point: CGPoint) -> String? {
-        handles.first { !$0.value.isHidden && hypot($0.value.center.x - point.x, $0.value.center.y - point.y) < 24 / max(0.002, zoom) }?.key
+        handles.first { !$0.value.isHidden && hypot($0.value.center.x - point.x, $0.value.center.y - point.y) < 24 * CGFloat(EditorPreferences.handles) / max(0.002, zoom) }?.key
     }
     func showStroke(_ stroke: Stroke?, on page: EditorPage, selected: UUID?) {
         CATransaction.begin(); CATransaction.setDisableActions(true)
@@ -256,13 +258,14 @@ final class DocumentCanvas: UIView {
         guard let stroke, let first = stroke.points.first else {
             liveInk.path = nil; return
         }
-        let path = UIBezierPath(); path.move(to: first.cg)
-        for point in stroke.points.dropFirst() { path.addLine(to: point.cg) }
+        let path = BrushRenderer.path(stroke)
         let item = page.layers.first { $0.id == selected }
         liveInk.setAffineTransform(item.map { LayerRenderer.transform($0) } ?? .identity)
         liveInk.lineWidth = CGFloat(stroke.width)
+        liveInk.lineCap=stroke.brush=="marker" ? .square:.round
+        liveInk.fillColor=stroke.filled==true ? UIColor(hex:stroke.color).cgColor:UIColor.clear.cgColor
         liveInk.strokeColor = UIColor(hex: stroke.erase ? "FFFFFF" : stroke.color).cgColor
-        liveInk.opacity = Float((item?.opacity ?? 1) * (stroke.erase ? 0.35 : (stroke.brush == "water" ? 0.25 : 1)))
+        liveInk.opacity = Float((item?.opacity ?? 1) * (stroke.erase ? 0.35 : (stroke.opacity ?? 1) * (stroke.brush == "water" ? 0.25 : stroke.brush=="marker" ? 0.55:1)))
         liveInk.lineDashPattern = stroke.erase ? [4, 4] : nil
         liveInk.shadowColor = UIColor(hex: stroke.color).cgColor
         liveInk.shadowOpacity = stroke.brush == "neon" ? 1 : 0

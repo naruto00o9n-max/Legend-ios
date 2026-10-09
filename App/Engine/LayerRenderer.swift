@@ -23,10 +23,10 @@ extension Bundle {func url(forResource name:String,deletingExtension:Bool)->URL?
 enum LayerRenderer {
     static func attributed(_ l:EditorLayer,color:UIColor?=nil)->NSAttributedString {
         let s=l.style,p=NSMutableParagraphStyle();p.alignment=[NSTextAlignment.left,.center,.right,.justified][max(0,min(3,s.alignment))];p.baseWritingDirection = .rightToLeft;p.lineSpacing=CGFloat(s.lineSpacing);p.lineBreakMode = .byWordWrapping
-        var attributes:[NSAttributedString.Key:Any]=[.font:Fonts.font(s),.foregroundColor:color ?? UIColor(hex:s.color),.paragraphStyle:p,.kern:s.letterSpacing]
+        var attributes:[NSAttributedString.Key:Any]=[.font:Fonts.font(s),.foregroundColor:color ?? UIColor(hex:s.color,alpha:CGFloat(s.innerOpacity ?? 1)),.paragraphStyle:p,.kern:s.letterSpacing]
         if s.isUnderline{attributes[.underlineStyle]=NSUnderlineStyle.single.rawValue};if s.isStrikeThrough{attributes[.strikethroughStyle]=NSUnderlineStyle.single.rawValue}
         let result=NSMutableAttributedString(string:l.textContent,attributes:attributes)
-        for run in s.spans {let range=NSRange(location:max(0,run.start),length:max(0,min(result.length,run.end)-max(0,run.start)));guard range.location+range.length<=result.length else{continue};if let color=run.color{result.addAttribute(.foregroundColor,value:UIColor(hex:color),range:range)};if let size=run.fontSize{var fontStyle=s;fontStyle.fontSize=size;result.addAttribute(.font,value:Fonts.font(fontStyle),range:range)}}
+        for run in s.spans {let range=NSRange(location:max(0,run.start),length:max(0,min(result.length,run.end)-max(0,run.start)));guard range.location+range.length<=result.length else{continue};if let color=run.color{result.addAttribute(.foregroundColor,value:UIColor(hex:color),range:range)};if run.fontSize != nil || run.isBold != nil{var fontStyle=s;if let size=run.fontSize{fontStyle.fontSize=size};if let bold=run.isBold{fontStyle.isBold=bold};result.addAttribute(.font,value:Fonts.font(fontStyle),range:range)}}
         return result
     }
     static func bounds(_ l:EditorLayer)->CGRect {
@@ -50,7 +50,7 @@ enum LayerRenderer {
                 let path=shapePath(l.shape,rect:b);UIColor(hex:l.style.color).setFill();path.fill();if l.style.strokeWidth>0{UIColor(hex:l.style.strokeColor).setStroke();path.lineWidth=CGFloat(l.style.strokeWidth);path.stroke()}
             case .drawing:
                 ctx.beginTransparencyLayer(auxiliaryInfo:nil)
-                for s in l.strokes where !s.points.isEmpty {ctx.saveGState();let path=UIBezierPath();path.move(to:s.points[0].cg);for p in s.points.dropFirst(){path.addLine(to:p.cg)};path.lineCapStyle = .round;path.lineJoinStyle = .round;path.lineWidth=CGFloat(s.width);UIColor(hex:s.color).setStroke();if s.erase{ctx.setBlendMode(.clear)};if s.brush=="neon"{ctx.setShadow(offset:.zero,blur:CGFloat(s.width),color:UIColor(hex:s.color).cgColor)};if s.brush=="water"{ctx.setAlpha(0.25)};if s.points.count==1{UIColor(hex:s.color).setFill();UIBezierPath(ovalIn:CGRect(x:s.points[0].x-s.width/2,y:s.points[0].y-s.width/2,width:s.width,height:s.width)).fill()}else{path.stroke()};ctx.restoreGState()}
+                for stroke in l.strokes{BrushRenderer.draw(stroke,in:ctx,directory:directory)}
                 ctx.endTransparencyLayer()
             }
             ctx.restoreGState()
@@ -60,6 +60,7 @@ enum LayerRenderer {
         let s=l.style;let background=rect.insetBy(dx:-CGFloat(s.backgroundPaddingX),dy:-CGFloat(s.backgroundPaddingY))
         if s.backgroundAlpha>0{UIColor(hex:s.backgroundColor,alpha:CGFloat(s.backgroundAlpha)/255).setFill();UIBezierPath(roundedRect:background,cornerRadius:CGFloat(s.backgroundCornerRadius)).fill()}
         func text(_ color:UIColor?=nil,_ offset:CGPoint = .zero){attributed(l,color:color).draw(with:rect.offsetBy(dx:offset.x,dy:offset.y),options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)}
+        for outline in (s.extraStrokes ?? []).sorted(by:{$0.width>$1.width}) where outline.width>0{let a=NSMutableAttributedString(attributedString:attributed(l,color:.clear));a.addAttributes([.strokeColor:UIColor(hex:outline.color),.strokeWidth:outline.width/max(1,s.fontSize)*100],range:NSRange(location:0,length:a.length));a.draw(with:rect,options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)}
         for depth in stride(from:min(64,s.threeDDepth),through:1,by:-1){text(UIColor(hex:s.threeDColor),CGPoint(x:depth,y:depth))}
         if TextRaster.draw(l,rect:rect,in:c,directory:directory){return}
         if s.shadowRadius>0||s.effectType == .shadow||s.effectType == .neon||s.effectType == .blur {c.setShadow(offset:CGSize(width:s.shadowDx,height:s.shadowDy),blur:CGFloat(s.effectType == .none ? s.shadowRadius:s.effectValue),color:UIColor(hex:s.effectType == .neon ? s.effectColor:s.shadowColor,alpha:CGFloat(s.shadowAlpha)/255).cgColor)}
