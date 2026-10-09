@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Organize unmodified simulator captures and report real test results."""
 import pathlib,json,re,shutil,html,subprocess
-root=pathlib.Path(__file__).resolve().parents[1];build=root/'build';gallery=build/'Screenshots';gallery.mkdir(exist_ok=True)
+root=pathlib.Path(__file__).resolve().parents[1];build=root/'build';gallery=build/'ScreenGallery';gallery.mkdir(exist_ok=True)
 records=[]
 for manifest in (build/'screenshots').rglob('manifest.json'):
  for case in json.loads(manifest.read_text()):

@@ -10,8 +10,8 @@ final class EditorUITests:XCTestCase {
         XCTAssertTrue(app.buttons["tool-text"].waitForExistence(timeout:15));capture("03-editor-long-image");assertLayout()
     }
     func reveal(_ button:XCUIElement,in strip:XCUIElement){
-        for _ in 0..<8{if button.frame.minX>=app.frame.minX && button.frame.maxX<=app.frame.maxX && button.isHittable{return};if button.frame.midX<app.frame.midX{strip.swipeRight()}else{strip.swipeLeft()}}
-        XCTAssertTrue(button.isHittable)
+        for _ in 0..<8{let frame=button.frame;if frame.width>1 && frame.height>1 && frame.minX>=app.frame.minX && frame.maxX<=app.frame.maxX{if button.isHittable{return}};strip.swipeLeft()}
+        XCTFail("Control did not become visible: \(button.identifier)")
     }
     func tool(_ name:String){let button=app.buttons["tool-"+name];reveal(button,in:app.scrollViews["tool-strip"]);button.tap()}
     func assertLayout(){let screen=app.frame;for button in app.buttons.allElementsBoundByIndex where !button.identifier.hasPrefix("tool-") && !button.identifier.hasPrefix("panel-") && button.isHittable {let f=button.frame;XCTAssertLessThanOrEqual(f.width,screen.width+1,button.label);XCTAssertGreaterThanOrEqual(f.minX,screen.minX-1,button.label);XCTAssertLessThanOrEqual(f.maxX,screen.maxX+1,button.label);XCTAssertLessThanOrEqual(f.maxY,screen.maxY+1,button.label)}}
