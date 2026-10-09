@@ -3,6 +3,12 @@ import UIKit
 @testable import CookiesEditor
 
 final class TextStyleTests:XCTestCase {
+    @MainActor func testGradientHandlesBelongToTheTextAndUseSavedEndpoints(){
+        var layer=EditorLayer(kind:.text);layer.frame.x=50;layer.frame.y=60;layer.style.textGradient=["FF0000","0000FF"];layer.style.textGradientPoints=[Point(x:0.2,y:0.3),Point(x:0.8,y:0.7)]
+        let canvas=DocumentCanvas(frame:CGRect(x:0,y:0,width:800,height:600));canvas.gradientMode="text";canvas.update(page:EditorPage(title:"تدرج",width:800,height:600,layers:[layer]),directory:FileManager.default.temporaryDirectory,selected:layer.id,zoom:1)
+        let handles=canvas.subviews.compactMap{$0 as? UIButton}.filter{!$0.isHidden};XCTAssertEqual(handles.count,2);XCTAssertTrue(handles.allSatisfy{$0.accessibilityIdentifier?.hasPrefix("selection-gradient-")==true})
+        let box=LayerRenderer.bounds(layer),first=handles.first{$0.accessibilityIdentifier=="selection-gradient-start"};XCTAssertEqual(first?.center.x ?? 0,50+box.width*0.2,accuracy:0.01);XCTAssertEqual(first?.center.y ?? 0,60+box.height*0.3,accuracy:0.01)
+    }
     func testMeshPaddingIdentityAndResamplingKeepTextCoordinates() {
         var style=TextStyle();style.meshRows=2;style.meshCols=4;style.meshPoints=MeshGeometry.grid(rows:2,cols:4)
         let padded=MeshGeometry.target(x:-0.15,y:1.2,style:style)

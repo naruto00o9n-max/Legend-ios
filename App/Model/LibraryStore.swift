@@ -53,6 +53,9 @@ import SwiftUI
     @Published var drawingFilled=false
     @Published var cleanCandidates:[CleaningCandidate]=[]
     var cleaningGeneration=UUID()
+    var textSelection=NSRange(location:0,length:0)
+    var textSelectionLayer:UUID?
+    @Published var gradientTarget:String?
     @Published var cleanPreviewID:UUID?
     @Published var fillTolerance=12.0
     @Published var smudgeStrength=0.4

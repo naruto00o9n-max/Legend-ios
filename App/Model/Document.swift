@@ -24,6 +24,7 @@ struct TextStyle: Codable, Equatable {
     var shadowColor = "000000"; var shadowRadius = 0.0; var shadowDx = 0.0; var shadowDy = 0.0; var shadowAlpha = 255
     var backgroundColor = "000000"; var backgroundAlpha = 0; var backgroundCornerRadius = 16.0
     var backgroundPaddingX = 12.0; var backgroundPaddingY = 8.0
+    var textGradientPoints:[Point]?;var strokeGradientPoints:[Point]?;var shadowGradientPoints:[Point]?
     var textGradient: [String] = []; var textGradientAngle = 0.0; var textGradientType = 0
     var textGradientStops: [Double] = []; var strokeGradient: [String] = []; var strokeGradientAngle = 0.0
     var strokeGradientStops: [Double] = []; var strokeGradientType = 0; var shadowGradient: [String] = []

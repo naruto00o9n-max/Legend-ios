@@ -10,7 +10,7 @@ extension EditorModel {
             guard let source=UIImage(contentsOfFile:composite.path),let patch=CookiesFillBucket(source,point,color,tolerance),let png=patch.pngData() else{throw ImageFailure.message("تعذر تعبئة المنطقة")}
             let name=UUID().uuidString+".png";try png.write(to:directory.appendingPathComponent(name),options:.atomic);return name
         }
-        guard page==snapshot else{return};checkpoint();var layer=EditorLayer(kind:.image,name:"تعبئة منطقة");layer.imagePath=filename;layer.frame=Box(x:0,y:0,width:Double(page.width),height:Double(page.height));page.layers.append(layer);selected=layer.id;save()
+        guard page==snapshot else{try? FileManager.default.removeItem(at:directory.appendingPathComponent(filename));return};checkpoint();var layer=EditorLayer(kind:.image,name:"تعبئة منطقة");layer.imagePath=filename;layer.frame=Box(x:0,y:0,width:Double(page.width),height:Double(page.height));page.layers.append(layer);selected=layer.id;save()
         }catch{self.error=error.localizedDescription}
     }
 }

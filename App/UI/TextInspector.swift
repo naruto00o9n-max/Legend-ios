@@ -10,11 +10,12 @@ struct TextInspector:View {
     @State private var rangeSize=48.0
     @State private var rangeBold=false
     @State private var rangeFormatting=false
+    @State private var selectedLineOnly=false
     @AppStorage("text-inline-dock") private var docking="bottom"
     var style:TextStyle {model.active?.style ?? TextStyle()}
     func value(_ key:WritableKeyPath<TextStyle,Double>)->Binding<Double>{Binding(get:{style[keyPath:key]},set:{v in model.change{$0.style[keyPath:key]=v}})}
     func flag(_ key:WritableKeyPath<TextStyle,Bool>)->Binding<Bool>{Binding(get:{style[keyPath:key]},set:{v in model.change{$0.style[keyPath:key]=v}})}
-    var body:some View {VStack(spacing:0){HStack{Text(panel.title).font(.system(size:15,weight:.semibold));Spacer();IconButton(icon:"checkmark",title:"تم"){model.save();model.textMaskMode=false;if let close{close()}else{dismiss()}}}.padding(.horizontal,18).frame(height:52)
+    var body:some View {VStack(spacing:0){HStack{Text(panel.title).font(.system(size:15,weight:.semibold));Spacer();IconButton(icon:"checkmark",title:"تم"){model.save();model.gradientTarget=nil;model.textMaskMode=false;if let close{close()}else{dismiss()}}}.padding(.horizontal,18).frame(height:52)
         ScrollView{VStack(alignment:.leading,spacing:18){content}.padding(.horizontal,20).padding(.bottom,24)}.accessibilityIdentifier("text-inspector-scroll")
     }.foregroundStyle(Palette.pale).background(Palette.ink.opacity(0.75)).glass(28).ignoresSafeArea(edges:.bottom).onAppear{model.checkpoint()}.scrollDismissesKeyboard(.interactively)
         .sheet(isPresented:$texturePicker){PhotoLibraryPicker{result in
@@ -23,7 +24,7 @@ struct TextInspector:View {
     }
     @ViewBuilder var content:some View {
         switch panel {
-        case .content:ArabicTextEditor(text:Binding(get:{model.active?.textContent ?? ""},set:{v in model.change{layer in layer.style.spans=TextRanges.adjusted(layer.style.spans,from:layer.textContent,to:v);layer.textContent=v}}),layer:model.active,selectionChanged:{textRange=$0}).frame(minHeight:140).padding(12).glass(16).accessibilityIdentifier("text-input")
+        case .content:ArabicTextEditor(text:Binding(get:{model.active?.textContent ?? ""},set:{v in model.change{layer in layer.style.spans=TextRanges.adjusted(layer.style.spans,from:layer.textContent,to:v);layer.textContent=v}}),layer:model.active,selectionChanged:{textRange=$0;model.textSelection=$0;model.textSelectionLayer=model.selected}).frame(minHeight:140).padding(12).glass(16).accessibilityIdentifier("text-input")
             ScrollView(.horizontal,showsIndicators:false){HStack(spacing:16){Button{UIPasteboard.general.string=model.active?.textContent}label:{Label("نسخ",systemImage:"doc.on.doc")};Button{if let text=UIPasteboard.general.string{model.change{$0.textContent=text;$0.style.spans=[]}}}label:{Label("لصق",systemImage:"doc.on.clipboard")};Button("ABC"){model.change{$0.textContent=$0.textContent.uppercased();$0.style.spans=[]}};Button("abc"){model.change{$0.textContent=$0.textContent.lowercased();$0.style.spans=[]}};Button("ـ"){model.change{layer in let source=layer.textContent as NSString;let range=NSRange(location:min(textRange.location,source.length),length:min(textRange.length,max(0,source.length-textRange.location)));layer.textContent=source.replacingCharacters(in:range,with:"ـ");layer.style.spans=[]}};Button{docking=docking=="bottom" ? "top":"bottom"}label:{Label("إرساء",systemImage:docking=="bottom" ? "arrow.up.to.line":"arrow.down.to.line")}}.font(.system(size:11)).padding(.vertical,4)}
             DisclosureGroup("تنسيق التحديد (\(textRange.length) حرف)",isExpanded:$rangeFormatting){
                 ColorPicker("لون التحديد",selection:$rangeColor,supportsOpacity:false);Toggle("التحديد غامق",isOn:$rangeBold);knob("حجم التحديد",$rangeSize,8...240)
@@ -37,6 +38,7 @@ struct TextInspector:View {
             HStack{Toggle("غامق",isOn:flag(\.isBold));Toggle("مائل",isOn:flag(\.isItalic))}.toggleStyle(.button)
             HStack{Toggle("تسطير",isOn:flag(\.isUnderline));Toggle("شطب",isOn:flag(\.isStrikeThrough))}.toggleStyle(.button)
             Picker("المحاذاة",selection:Binding(get:{style.alignment},set:{v in model.change{$0.style.alignment=v}})){Text("يسار").tag(0);Text("وسط").tag(1);Text("يمين").tag(2);Text("ضبط").tag(3)}.pickerStyle(.segmented)
+            Toggle("تنسيق السطر المحدد فقط",isOn:$selectedLineOnly).font(.system(size:12)).disabled(model.textSelectionLayer != model.selected)
             HStack{Button("تنسيق مربع"){typeset("box")};Button("تنسيق دائري"){typeset("circle")};Button("الكشيدة"){typeset("kashida")}}.font(.system(size:12))
         case .color:
             swatches("لون النص",\.color)
@@ -82,7 +84,16 @@ struct TextInspector:View {
             if !style.texturePath.isEmpty{knob("الحجم أفقيًا",value(\.textureScaleX),0.1...5);knob("الحجم رأسيًا",value(\.textureScaleY),0.1...5);knob("دوران الخامة",value(\.textureRotation),-180...180);knob("إزاحة أفقية",value(\.textureTranslationX),-500...500);knob("إزاحة رأسية",value(\.textureTranslationY),-500...500);Button("إزالة الخامة"){model.change{$0.style.texturePath=""}}}
         }
     }
-    private func typeset(_ mode:String){guard let layer=model.active else{return};let formatter=Typesetter(measure:{Double(($0 as NSString).size(withAttributes:[.font:Fonts.font(layer.style)]).width)});let text=mode=="circle" ? formatter.circle(layer.textContent,width:layer.style.boxWidth,fontSize:layer.style.fontSize):formatter.box(layer.textContent,width:layer.style.boxWidth,tatweel:mode=="kashida");model.checkpoint();model.change{$0.textContent=text;$0.style.spans=[]}}
+    private func typeset(_ mode:String){
+        guard let layer=model.active else{return};let formatter=Typesetter(measure:{Double(($0 as NSString).size(withAttributes:[.font:Fonts.font(layer.style)]).width)})
+        let source=layer.textContent as NSString
+        let range=selectedLineOnly && model.textSelectionLayer==layer.id ? source.lineRange(for:NSRange(location:min(source.length,model.textSelection.location),length:min(model.textSelection.length,max(0,source.length-model.textSelection.location)))):NSRange(location:0,length:source.length)
+        let original=source.substring(with:range)
+        var transformed=mode=="circle" ? formatter.circle(original,width:layer.style.boxWidth,fontSize:layer.style.fontSize):formatter.box(original,width:layer.style.boxWidth,tatweel:mode=="kashida")
+        if selectedLineOnly,original.hasSuffix("\n"),!transformed.hasSuffix("\n"){transformed+="\n"}
+        let text=source.replacingCharacters(in:range,with:transformed);model.checkpoint();model.change{$0.style.spans=TextRanges.adjusted($0.style.spans,from:$0.textContent,to:text);$0.textContent=text}
+    }
+
     func knob(_ label:String,_ source:Binding<Double>,_ range:ClosedRange<Double>)->some View{let binding=Binding<Double>(get:{min(range.upperBound,max(range.lowerBound,source.wrappedValue))},set:{source.wrappedValue=min(range.upperBound,max(range.lowerBound,$0))});return VStack(alignment:.leading,spacing:8){HStack{Text(label).font(.system(size:12));Spacer();TextField(label,value:binding,format:.number.precision(.fractionLength(0...1))).font(.system(size:12,design:.monospaced)).multilineTextAlignment(.trailing).keyboardType(.numbersAndPunctuation).frame(width:70).accessibilityIdentifier("value-\(label)")};Slider(value:binding,in:range).tint(Palette.gold)}.padding(12).glass(16)}
     func swatches(_ label:String,_ key:WritableKeyPath<TextStyle,String>)->some View {VStack(alignment:.leading,spacing:12){Text(label).font(.system(size:12));HStack(spacing:12){ForEach(["FFFFFF","000000","D4AF37","F5DF99","E74646","46A4D8","7957B7"],id:\.self){hex in Button{model.change{$0.style[keyPath:key]=hex}}label:{Circle().fill(Color(uiColor:UIColor(hex:hex))).frame(width:26,height:26).overlay(Circle().stroke(style[keyPath:key]==hex ? Palette.gold:.clear,lineWidth:3))}}}.environment(\.layoutDirection,.leftToRight);ColorPicker("لون مخصص",selection:Binding(get:{Color(uiColor:UIColor(hex:style[keyPath:key]))},set:{v in model.change{$0.style[keyPath:key]=UIColor(v).hex}}),supportsOpacity:false).font(.system(size:12))}.padding(12).glass(16)}
 }

@@ -5,21 +5,23 @@ enum GradientPaint {
         guard !colors.isEmpty else{return []}
         return colors.enumerated().map{index,color in (stops.count==colors.count ? min(1,max(0,stops[index])):Double(index)/Double(max(1,colors.count-1)),color)}.sorted{$0.0<$1.0}
     }
-    static func draw(colors:[String],stops:[Double],angle:Double,type:Int,rect:CGRect,in ctx:CGContext) {
+    static func draw(colors:[String],stops:[Double],angle:Double,type:Int,rect:CGRect,points:[Point]?=nil,in ctx:CGContext) {
         var values=normalized(colors,stops);guard !values.isEmpty else{return};if values.count==1{values.append((1,values[0].1))}
         let locations=values.map{CGFloat($0.0)},cg=values.map{UIColor(hex:$0.1).cgColor}
         guard let gradient=CGGradient(colorsSpace:CGColorSpaceCreateDeviceRGB(),colors:cg as CFArray,locations:locations) else{return}
-        let center=CGPoint(x:rect.midX,y:rect.midY),radians=angle*Double.pi/180
+        let positions=points?.count==2 ? points:nil
+        let customStart=positions.map{CGPoint(x:rect.minX+CGFloat($0[0].x)*rect.width,y:rect.minY+CGFloat($0[0].y)*rect.height)},customEnd=positions.map{CGPoint(x:rect.minX+CGFloat($0[1].x)*rect.width,y:rect.minY+CGFloat($0[1].y)*rect.height)}
+        let center=customStart ?? CGPoint(x:rect.midX,y:rect.midY),radians=customStart != nil ? atan2(Double(customEnd!.y-center.y),Double(customEnd!.x-center.x)):angle*Double.pi/180
         let dx=CGFloat(cos(radians)),dy=CGFloat(sin(radians))
-        let radius=(abs(dx)*rect.width+abs(dy)*rect.height)/2
+        let radius=customEnd.map{hypot($0.x-center.x,$0.y-center.y)} ?? (abs(dx)*rect.width+abs(dy)*rect.height)/2
         switch type {
-        case 1:ctx.drawRadialGradient(gradient,startCenter:center,startRadius:0,endCenter:center,endRadius:max(rect.width,rect.height)/2,options:[.drawsAfterEndLocation])
+        case 1:ctx.drawRadialGradient(gradient,startCenter:center,startRadius:0,endCenter:center,endRadius:customEnd == nil ? max(rect.width,rect.height)/2:max(0.001,radius),options:[.drawsAfterEndLocation])
         case 2:
             ctx.saveGState();ctx.translateBy(x:center.x,y:center.y);ctx.rotate(by:CGFloat(radians));ctx.drawLinearGradient(gradient,start:.zero,end:CGPoint(x:radius,y:0),options:[.drawsAfterEndLocation]);ctx.scaleBy(x:-1,y:1);ctx.drawLinearGradient(gradient,start:.zero,end:CGPoint(x:radius,y:0),options:[.drawsAfterEndLocation]);ctx.restoreGState()
         case 3:
             // Angular gradient: bounded wedges keep memory independent of canvas height.
             for step in 0..<720{let t=Double(step)/720,theta=CGFloat(t*Double.pi*2)+CGFloat(radians),next=theta+CGFloat.pi/360+0.002;let color=sample(t,values);ctx.setFillColor(color.cgColor);ctx.beginPath();ctx.move(to:center);ctx.addArc(center:center,radius:hypot(rect.width,rect.height),startAngle:theta,endAngle:next,clockwise:false);ctx.closePath();ctx.fillPath()}
-        default:ctx.drawLinearGradient(gradient,start:CGPoint(x:center.x-dx*radius,y:center.y-dy*radius),end:CGPoint(x:center.x+dx*radius,y:center.y+dy*radius),options:[.drawsBeforeStartLocation,.drawsAfterEndLocation])
+        default:ctx.drawLinearGradient(gradient,start:customStart ?? CGPoint(x:center.x-dx*radius,y:center.y-dy*radius),end:customEnd ?? CGPoint(x:center.x+dx*radius,y:center.y+dy*radius),options:[.drawsBeforeStartLocation,.drawsAfterEndLocation])
         }
     }
     private static func sample(_ t:Double,_ values:[(Double,String)])->UIColor {

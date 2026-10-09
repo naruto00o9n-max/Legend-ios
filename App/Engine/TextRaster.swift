@@ -24,7 +24,7 @@ enum TextRaster {
             }
             var result=UIGraphicsImageRenderer(size:size,format:format).image{r in
                 let ctx=r.cgContext
-                if s.textGradient.isEmpty && s.texturePath.isEmpty{var fill=layer;fill.style.innerOpacity=1;LayerRenderer.attributed(fill).draw(with:rect.offsetBy(dx:pad,dy:pad),options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)}else{GradientPaint.draw(colors:s.textGradient.isEmpty ? [s.color,s.color]:s.textGradient,stops:s.textGradientStops,angle:s.textGradientAngle,type:s.textGradientType,rect:CGRect(origin:.zero,size:size),in:ctx)}
+                if s.textGradient.isEmpty && s.texturePath.isEmpty{var fill=layer;fill.style.innerOpacity=1;LayerRenderer.attributed(fill).draw(with:rect.offsetBy(dx:pad,dy:pad),options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)}else{GradientPaint.draw(colors:s.textGradient.isEmpty ? [s.color,s.color]:s.textGradient,stops:s.textGradientStops,angle:s.textGradientAngle,type:s.textGradientType,rect:rect.offsetBy(dx:pad,dy:pad),points:s.textGradientPoints,in:ctx)}
                 if !s.texturePath.isEmpty,let texture=ImagePipeline.asset(directory.appendingPathComponent(s.texturePath)){
                     ctx.saveGState();ctx.translateBy(x:size.width/2+CGFloat(s.textureTranslationX),y:size.height/2+CGFloat(s.textureTranslationY));ctx.rotate(by:CGFloat(s.textureRotation)*CGFloat.pi/180);ctx.scaleBy(x:CGFloat(s.textureScaleX),y:CGFloat(s.textureScaleY));texture.drawAsPattern(in:CGRect(x:-size.width*10,y:-size.height*10,width:size.width*20,height:size.height*20));ctx.restoreGState()
                 }
@@ -42,7 +42,7 @@ enum TextRaster {
                         let a=NSMutableAttributedString(attributedString:LayerRenderer.attributed(layer,color:.clear));a.addAttributes([.strokeColor:UIColor.white,.strokeWidth:s.strokeWidth/max(1,s.fontSize)*100],range:NSRange(location:0,length:a.length));a.draw(with:rect.offsetBy(dx:pad,dy:pad),options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)
                     }
                     let colored=UIGraphicsImageRenderer(size:size,format:format).image{output in
-                        GradientPaint.draw(colors:s.strokeGradient.isEmpty ? [s.strokeColor,s.strokeColor]:s.strokeGradient,stops:s.strokeGradientStops,angle:s.strokeGradientAngle,type:s.strokeGradientType,rect:CGRect(origin:.zero,size:size),in:output.cgContext)
+                        GradientPaint.draw(colors:s.strokeGradient.isEmpty ? [s.strokeColor,s.strokeColor]:s.strokeGradient,stops:s.strokeGradientStops,angle:s.strokeGradientAngle,type:s.strokeGradientType,rect:rect.offsetBy(dx:pad,dy:pad),points:s.strokeGradientPoints,in:output.cgContext)
                         outline.draw(at:.zero,blendMode:.destinationIn,alpha:1)
                     };colored.draw(at:.zero)
                 }
@@ -77,7 +77,7 @@ enum TextRaster {
                 if let cg=context.createCGImage(blurred,from:extent){
                     let mask=UIImage(cgImage:cg),foreground=result
                     let shadow=UIGraphicsImageRenderer(size:outputFrame.size,format:format).image{output in
-                        GradientPaint.draw(colors:s.shadowGradient,stops:s.shadowGradientStops,angle:s.shadowGradientAngle,type:s.shadowGradientType,rect:CGRect(origin:.zero,size:outputFrame.size),in:output.cgContext)
+                        GradientPaint.draw(colors:s.shadowGradient,stops:s.shadowGradientStops,angle:s.shadowGradientAngle,type:s.shadowGradientType,rect:CGRect(origin:.zero,size:outputFrame.size),points:s.shadowGradientPoints,in:output.cgContext)
                         let shifted=UIGraphicsImageRenderer(size:outputFrame.size,format:format).image{_ in mask.draw(at:CGPoint(x:s.shadowDx,y:s.shadowDy))}
                         shifted.draw(at:.zero,blendMode:.destinationIn,alpha:CGFloat(s.shadowAlpha)/255)
                     }

@@ -2,6 +2,10 @@ import XCTest
 @testable import CookiesEditor
 
 final class TyperAndInteractionTests:XCTestCase {
+    func testDistributionStartsAtChosenBubbleAndSkipsTitlesAndUsedText(){
+        var chapter=DialogueChapter(title:"فصل",source:"");let first=DialogueBubble(text:"قبل المحددة"),chosen=DialogueBubble(text:"المحددة"),heading=DialogueBubble(text:"عنوان",noPaste:true);var used=DialogueBubble(text:"مستخدمة");used.usedAt=Date();let last=DialogueBubble(text:"الأخيرة");chapter.bubbles=[first,chosen,heading,used,last]
+        XCTAssertEqual(DialogueSequence.next(chapter,from:chosen.id,count:3).map(\.id),[chosen.id,last.id]);XCTAssertEqual(DialogueSequence.next(chapter,from:nil,count:1).map(\.id),[first.id])
+    }
     @MainActor func testDraftAndDeletedTagFormattingSurviveRestart()throws {
         let root=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString);defer{try? FileManager.default.removeItem(at:root)}
         let store=TyperStore(directory:root),tag=try XCTUnwrap(store.state.tags.first)

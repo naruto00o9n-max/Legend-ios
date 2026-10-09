@@ -86,7 +86,7 @@ struct PageOperationSheet:View {
         if operation=="لوحة فارغة" || operation=="تغيير المقاس"{HStack{Text("العرض px");TextField("العرض",value:$width,format:.number).keyboardType(.numberPad)};if operation=="تغيير المقاس"{Picker("طريقة تغيير المقاس",selection:$resizeMode){Text("تحجيم المحتوى والطبقات").tag("scale");Text("مساحة اللوحة فقط").tag("canvas")};Toggle("حفظ النسبة لكل صفحة",isOn:$keepRatio)}}
         if operation=="تقسيم"{Picker("طريقة التقسيم",selection:$splitMode){Text("بالطول").tag("height");Text("بالعدد").tag("count")};if splitMode=="count"{TextField("عدد الأجزاء",value:$splitCount,format:.number).keyboardType(.numberPad)}}
         if (operation=="تقسيم" && splitMode=="height") || operation=="لوحة فارغة" || (operation=="تغيير المقاس" && !keepRatio){HStack{Text(operation=="تقسيم" ? "أقصى طول الجزء px":"الطول px");TextField("الطول",value:$height,format:.number).keyboardType(.numberPad)}}
-        if operation=="لوحة فارغة"{Toggle("خلفية شفافة",isOn:$transparent);ColorPicker("لون الخلفية",selection:$color,supportsOpacity:false)}
+        if operation=="لوحة فارغة"{Menu("مقاسات جاهزة"){Button("مانهوا 800 × 15000"){width=800;height=15000};Button("صفحة 800 × 1200"){width=800;height=1200};Button("مربع 1080 × 1080"){width=1080;height=1080};Button("A4 — 2480 × 3508"){width=2480;height=3508}};Toggle("خلفية شفافة",isOn:$transparent);ColorPicker("لون الخلفية",selection:$color,supportsOpacity:false)}
         if operation=="دمج"{Picker("محاذاة الصور المختلفة العرض",selection:$alignment){Text("يسار").tag(0);Text("وسط").tag(1);Text("يمين").tag(2)};Text("لن تتغير دقة الصور؛ تُدمج بأبعادها وطبقاتها الأصلية.")}
         if busy{ProgressView("جارٍ تنفيذ العملية…");Button("إلغاء العملية"){job?.cancel()}}else{Button("تنفيذ"){run()}.accessibilityIdentifier("chapter-operation-apply")}
     }.interactiveDismissDisabled(busy).navigationTitle(operation).navigationBarTitleDisplayMode(.inline).toolbar{ToolbarItem(placement:.topBarLeading){Button("إغلاق"){if !busy{completed()}}}}.alert("تعذر تعديل الصفحات",isPresented:Binding(get:{failure != nil},set:{if !$0{failure=nil}})){Button("حسنًا"){failure=nil}}message:{Text(failure ?? "")}}}
@@ -103,7 +103,7 @@ struct PageOperationSheet:View {
         }
         var next=item.pages
         if op=="لوحة فارغة"{next+=output.map(\.id)}else if let first=next.firstIndex(where:{ids.contains($0)}){next.removeAll{ids.contains($0)};next.insert(contentsOf:output.map(\.id),at:min(first,next.count))}
-        try library.setPages(next,chapter:chapter);completed()
+        do{try library.setPages(next,chapter:chapter)}catch{for page in output{try? FileManager.default.removeItem(at:library.directory(page.id))};throw error};completed()
     }catch is CancellationError{}catch{failure=error.localizedDescription}}}
 }
 
@@ -114,7 +114,7 @@ struct ChapterReaderView:View {
     @State private var index=0
     @AppStorage("reader-direction") private var readingDirection="rtl"
     var pages:[UUID]{library.chapter(chapter)?.pages ?? []}
-    var body:some View {NavigationStack{Group{if pages.indices.contains(index){ChapterReaderPage(id:pages[index]).id(pages[index])}else{Text("لا توجد صفحات")}}.safeAreaInset(edge:.bottom){HStack{Button{index=max(0,index-1)}label:{Image(systemName:readingDirection=="rtl" ? "chevron.right":"chevron.left")}.disabled(index==0);Spacer();Text("\(index+1) / \(pages.count)").font(.system(size:12));Spacer();Button{index=min(pages.count-1,index+1)}label:{Image(systemName:readingDirection=="rtl" ? "chevron.left":"chevron.right")}.disabled(index>=pages.count-1)}.padding().glass(0)}.toolbar{ToolbarItem(placement:.topBarLeading){Button("إغلاق"){dismiss()}};ToolbarItem(placement:.topBarTrailing){if pages.indices.contains(index){NavigationLink("تعديل"){PageDestination(id:pages[index])}}}}}.foregroundStyle(Palette.pale)}
+    var body:some View {NavigationStack{Group{if pages.indices.contains(index){ChapterReaderPage(id:pages[index]).id(pages[index])}else{Text("لا توجد صفحات")}}.safeAreaInset(edge:.bottom){HStack{Button{index=max(0,index-1)}label:{Image(systemName:readingDirection=="rtl" ? "chevron.right":"chevron.left")}.disabled(index==0);Spacer();Text("\(index+1) / \(pages.count)").font(.system(size:12));Spacer();Button{index=min(pages.count-1,index+1)}label:{Image(systemName:readingDirection=="rtl" ? "chevron.left":"chevron.right")}.disabled(index>=pages.count-1)}.padding().glass(0)}.toolbar{ToolbarItem(placement:.topBarLeading){Button("إغلاق"){dismiss()}};ToolbarItem(placement:.topBarTrailing){if pages.indices.contains(index){NavigationLink("تعديل"){PageDestination(id:pages[index])}}}}}.foregroundStyle(Palette.pale).onAppear{index=ReaderBookmark.index(chapter:chapter,count:pages.count)}.onChange(of:index){_,value in ReaderBookmark.save(index:value,chapter:chapter)}}
 }
 struct ChapterReaderPage:View {
     @EnvironmentObject var library:LibraryStore

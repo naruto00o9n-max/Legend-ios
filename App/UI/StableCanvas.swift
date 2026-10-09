@@ -30,6 +30,7 @@ final class DocumentCanvas: UIView {
     private var sniperZoom:CGFloat=0
     private var pendingInk: [(revision: Int, layer: CAShapeLayer)] = []
     private var strokeCommitRevision: Int?
+    private var patchCommitRevision:Int?
     private var stagedImages: [String: UIImage] = [:]
     private var interaction: LayerInteraction?
     private var drawingInteraction=false
@@ -46,6 +47,7 @@ final class DocumentCanvas: UIView {
     var directory: URL?
     var selected: UUID?
     var zoom: CGFloat = 1
+    var gradientMode:String?
     var deformationMode=false
     var onHandle: ((String) -> Void)?
     override init(frame: CGRect) {
@@ -167,7 +169,7 @@ final class DocumentCanvas: UIView {
                 if requested == self.revision {
                     // Keep the previous contents until its replacement is complete.
                     if let composite {
-                        if let commit = [self.strokeCommitRevision, self.interactionRevision].compactMap({ $0 }).min(), requested >= commit { self.stagedImages[key] = composite }
+                        if let commit = [self.strokeCommitRevision, self.interactionRevision,self.patchCommitRevision].compactMap({ $0 }).min(), requested >= commit { self.stagedImages[key] = composite }
                         else { tile.view.image = composite }
                     }; tile.revision = requested
                 }
@@ -179,7 +181,7 @@ final class DocumentCanvas: UIView {
     }
     private func retireOldDetail() {
         guard !currentKeys.isEmpty, currentKeys.allSatisfy({ tiles[$0]?.revision == revision }) else { return }
-        if let commit = [strokeCommitRevision, interactionRevision].compactMap({ $0 }).min(), revision >= commit {
+        if let commit = [strokeCommitRevision, interactionRevision,patchCommitRevision].compactMap({ $0 }).min(), revision >= commit {
             CATransaction.begin(); CATransaction.setDisableActions(true)
             for (key, image) in stagedImages { tiles[key]?.view.image = image }
             stagedImages.removeAll()
@@ -190,6 +192,7 @@ final class DocumentCanvas: UIView {
                 else if interaction?.phase == .finishing { interaction?.remove(); interaction = nil }
                 interactionRevision = nil
             }
+            if let target=patchCommitRevision,revision>=target{showPatch(nil);patchCommitRevision=nil}
             CATransaction.commit()
         }
         for key in Array(tiles.keys) where !currentKeys.contains(key) { tiles.removeValue(forKey: key)?.view.removeFromSuperview() }
@@ -200,6 +203,14 @@ final class DocumentCanvas: UIView {
             border.path = nil; stem.path = nil; handles.values.forEach { $0.isHidden = true }; return
         }
         let box = LayerRenderer.bounds(item), transform = LayerRenderer.transform(item), size = 32 / max(0.002, zoom)
+        if let target=gradientMode,item.kind == .text{
+            handles.values.forEach{$0.isHidden=true};let values=GradientGeometry.points(item.style,target:target,size:box.size),line=UIBezierPath()
+            for (index,value) in values.enumerated(){let name=index==0 ? "gradient-start":"gradient-end"
+                if handles[name]==nil{let button=UIButton(type:.custom);button.setImage(UIImage(systemName:"circle.lefthalf.filled"),for:.normal);button.backgroundColor=UIColor(white:0.06,alpha:0.94);button.accessibilityIdentifier="selection-"+name;button.accessibilityLabel=index==0 ? "بداية التدرج":"نهاية التدرج";addSubview(button);handles[name]=button}
+                let point=CGPoint(x:value.x*Double(box.width),y:value.y*Double(box.height)).applying(transform);place(name,at:point,size:size*CGFloat(EditorPreferences.handles));if index==0{line.move(to:point)}else{line.addLine(to:point)}
+            };border.path=line.cgPath;border.lineWidth=1/max(0.002,zoom);stem.path=nil;return
+        }
+        for (key,button) in handles where key.hasPrefix("gradient-"){button.isHidden=true}
         if deformationMode,item.kind == .text {
             let s=item.style
             let points=s.isMeshMode && s.meshPoints.count==(s.meshRows+1)*(s.meshCols+1) ? s.meshPoints : (s.perspectivePoints.count==4 ? s.perspectivePoints:[Point(x:0,y:0),Point(x:1,y:0),Point(x:1,y:1),Point(x:0,y:1)])
@@ -282,7 +293,8 @@ final class DocumentCanvas: UIView {
         layer.addSublayer(liveInk); layer.addSublayer(border); layer.addSublayer(stem)
         handles.values.forEach { bringSubviewToFront($0) }
     }
-    func showPatch(_ image:UIImage?,rect:CGRect = .zero){livePatch.isUserInteractionEnabled=false;livePatch.frame=rect;livePatch.image=image;if image != nil{addSubview(livePatch)}}
+    func showPatch(_ image:UIImage?,rect:CGRect = .zero){livePatch.isUserInteractionEnabled=false;livePatch.frame=rect;livePatch.image=image;if image != nil{addSubview(livePatch)}else{livePatch.removeFromSuperview();patchCommitRevision=nil}}
+    func commitPatch(){if livePatch.image != nil{patchCommitRevision=revision+1}}
     func commitLiveStroke() {
         if drawingInteraction{drawingInteraction=false;endLayerInteraction();return}
         let committed = CAShapeLayer(layer: liveInk), target = revision + 1

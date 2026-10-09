@@ -6,9 +6,9 @@ struct GradientPreset:Codable,Identifiable {
     var stroke:[String];var shadow:[String]
     static func catalog()throws->[GradientPreset]{guard let file=Bundle.main.url(forResource:"gradient-presets",withExtension:"json") else{throw ImageFailure.message("تعذر تحميل مكتبة التدرجات")};return try JSONDecoder().decode([GradientPreset].self,from:Data(contentsOf:file))}
     func apply(to style:inout TextStyle,target:String){
-        if target=="all" || target=="text"{style.textGradient=colors;style.textGradientStops=stops;style.textGradientAngle=angle;style.textGradientType=type}
-        if target=="all" || target=="stroke"{style.strokeGradient=target=="all" && !stroke.isEmpty ? stroke:colors;style.strokeGradientStops=style.strokeGradient.count==stops.count ? stops:[];style.strokeGradientAngle=angle;style.strokeGradientType=type;style.strokeWidth=max(2,style.strokeWidth)}
-        if target=="all" || target=="shadow"{style.shadowGradient=target=="all" && !shadow.isEmpty ? shadow:colors;style.shadowGradientStops=style.shadowGradient.count==stops.count ? stops:[];style.shadowGradientAngle=angle;style.shadowGradientType=type;style.shadowRadius=max(4,style.shadowRadius);style.shadowDy=max(3,style.shadowDy)}
+        if target=="all" || target=="text"{style.textGradientPoints=nil;style.textGradient=colors;style.textGradientStops=stops;style.textGradientAngle=angle;style.textGradientType=type}
+        if target=="all" || target=="stroke"{style.strokeGradientPoints=nil;style.strokeGradient=target=="all" && !stroke.isEmpty ? stroke:colors;style.strokeGradientStops=style.strokeGradient.count==stops.count ? stops:[];style.strokeGradientAngle=angle;style.strokeGradientType=type;style.strokeWidth=max(2,style.strokeWidth)}
+        if target=="all" || target=="shadow"{style.shadowGradientPoints=nil;style.shadowGradient=target=="all" && !shadow.isEmpty ? shadow:colors;style.shadowGradientStops=style.shadowGradient.count==stops.count ? stops:[];style.shadowGradientAngle=angle;style.shadowGradientType=type;style.shadowRadius=max(4,style.shadowRadius);style.shadowDy=max(3,style.shadowDy)}
     }
 }
 struct GradientMapView:View {
