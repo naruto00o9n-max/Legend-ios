@@ -7,6 +7,8 @@ enum ProjectArchive {
         let temporary=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString,isDirectory:true)
         try FileManager.default.createDirectory(at:temporary,withIntermediateDirectories:true);defer{try? FileManager.default.removeItem(at:temporary)}
         for url in try FileManager.default.contentsOfDirectory(at:directory,includingPropertiesForKeys:nil) where url.lastPathComponent != page.raw && url.lastPathComponent != "page.json" {try FileManager.default.copyItem(at:url,to:temporary.appendingPathComponent(url.lastPathComponent))}
+        let customFonts=Set(page.layers.map{ $0.style.fontPath })
+        for font in Fonts.userFiles where customFonts.contains(font.lastPathComponent){let folder=temporary.appendingPathComponent("Fonts",isDirectory:true);try FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true);try FileManager.default.copyItem(at:font,to:folder.appendingPathComponent(font.lastPathComponent))}
         try JSONEncoder().encode(page).write(to:temporary.appendingPathComponent("page.json"))
         let output=FileManager.default.temporaryDirectory.appendingPathComponent("Cookies-\(page.id).cookies")
         try? FileManager.default.removeItem(at:output);try FileManager.default.zipItem(at:temporary,to:output,shouldKeepParent:false)
@@ -23,6 +25,9 @@ enum ProjectArchive {
             try FileManager.default.unzipItem(at:input,to:destination)
             var page=try JSONDecoder().decode(EditorPage.self,from:Data(contentsOf:destination.appendingPathComponent("page.json")))
             guard page.source=="source.png",page.raw=="pixels.rgba",page.layers.allSatisfy({l in [l.imagePath,l.style.texturePath].allSatisfy{$0.isEmpty || (!$0.contains("/") && !$0.contains(".."))}}) else{throw ImageFailure.message("مسارات أصول المشروع غير صالحة")}
+            let fontFolder=destination.appendingPathComponent("Fonts",isDirectory:true)
+            for font in (try? FileManager.default.contentsOfDirectory(at:fontFolder,includingPropertiesForKeys:nil)) ?? [] where ["ttf","otf"].contains(font.pathExtension.lowercased()){try FileManager.default.createDirectory(at:Fonts.userDirectory,withIntermediateDirectories:true);let target=Fonts.userDirectory.appendingPathComponent(font.lastPathComponent);if !FileManager.default.fileExists(atPath:target.path){try FileManager.default.copyItem(at:font,to:target)}}
+            Fonts.register()
             page.id=UUID(uuidString:destination.lastPathComponent)!
             var width:Int32=0,height:Int32=0,error=[CChar](repeating:0,count:512)
             guard LIImportPNG(destination.appendingPathComponent(page.source).path,destination.appendingPathComponent(page.raw).path,&width,&height,&error,error.count)==1,Int(width)==page.width,Int(height)==page.height else{throw ImageFailure.message("أبعاد الصورة لا تطابق المشروع")}

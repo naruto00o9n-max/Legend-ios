@@ -1,4 +1,5 @@
 import SwiftUI
+import ImageIO
 
 struct EditorView:View {
     @StateObject var model:EditorModel
@@ -24,7 +25,8 @@ struct EditorView:View {
         .sheet(isPresented:$shapes){ShapeSheet(model:model).presentationDetents([.medium,.large]).presentationBackground(.clear)}
         .sheet(isPresented:$assistant){AssistantView(insert:{text in model.add(.text);model.change{$0.textContent=text}}).presentationDetents([.medium,.large])}
         .sheet(isPresented:$showExport){ExportSheet(model:model).presentationDetents([.height(390)]).presentationBackground(.clear)}
-        .fileImporter(isPresented:$imagePicker,allowedContentTypes:[.image]){result in if case let .success(url)=result {let access=url.startAccessingSecurityScopedResource();defer{if access{url.stopAccessingSecurityScopedResource()}};do{let name=UUID().uuidString+"."+url.pathExtension;try FileManager.default.copyItem(at:url,to:model.directory.appendingPathComponent(name));model.add(.image);model.change{$0.imagePath=name}}catch{model.error=error.localizedDescription}}}
+        .fileImporter(isPresented:$imagePicker,allowedContentTypes:[.image]){result in if case let .success(url)=result {let access=url.startAccessingSecurityScopedResource();defer{if access{url.stopAccessingSecurityScopedResource()}};do{let name=UUID().uuidString+"."+url.pathExtension;try FileManager.default.copyItem(at:url,to:model.directory.appendingPathComponent(name));model.add(.image);let source=CGImageSourceCreateWithURL(url as CFURL,nil),properties=source.flatMap{CGImageSourceCopyPropertiesAtIndex($0,0,nil)} as? [String:Any],width=properties?[kCGImagePropertyPixelWidth as String] as? Double ?? 320,height=properties?[kCGImagePropertyPixelHeight as String] as? Double ?? 320,orientation=properties?[kCGImagePropertyOrientation as String] as? Int ?? 1,rotated=(5...8).contains(orientation)
+            model.change{$0.imagePath=name;let ratio=rotated ? width/max(1,height):height/max(1,width);$0.frame.height=$0.frame.width*ratio}}catch{model.error=error.localizedDescription}}}
         .alert("تعذر إكمال العملية",isPresented:Binding(get:{model.error != nil},set:{if !$0{model.error=nil}})){Button("حسنًا"){model.error=nil}}message:{Text(model.error ?? "")}
         .onDisappear{model.save()}
     }

@@ -21,6 +21,7 @@ enum NetworkPolicy {
     func request(_ path:String,method:String="GET",body:[String:Any]?=nil,authenticated:Bool=false) async throws->Data {
         guard NetworkPolicy.enabled else{throw ImageFailure.message("هذه النسخة تعمل محليًا دون اتصال")}
         guard let config,let url=URL(string:config.url+path) else{throw ImageFailure.message("لم يُجهّز اتصال الخدمة")}
+        if let token=session?.access_token,!path.hasPrefix("/auth/v1/token"),tokenExpiry(token)<Date().timeIntervalSince1970+60{try await refresh()}
         if authenticated&&session==nil{throw ImageFailure.message("سجّل الدخول إلى حسابك أولًا")}
         var r=URLRequest(url:url);r.httpMethod=method;r.timeoutInterval=25;r.setValue(config.key,forHTTPHeaderField:"apikey");r.setValue("Bearer "+(session?.access_token ?? config.key),forHTTPHeaderField:"Authorization");r.setValue("application/json",forHTTPHeaderField:"Content-Type");if let body{r.httpBody=try JSONSerialization.data(withJSONObject:body)}
         let (data,response)=try await URLSession.shared.data(for:r)
@@ -31,6 +32,11 @@ enum NetworkPolicy {
         do{let data=try await request(signup ? "/auth/v1/signup":"/auth/v1/token?grant_type=password",method:"POST",body:["email":email,"password":password])
             if let s=try? JSONDecoder().decode(ServiceSession.self,from:data){store(s);message=nil}else{message="أُرسل تأكيد الحساب إلى بريدك. أكّد البريد ثم سجّل الدخول."}
         }catch{message=error.localizedDescription}
+    }
+    private func tokenExpiry(_ token:String)->Double {
+        let segments=token.split(separator:".");guard segments.count==3 else{return 0}
+        var payload=String(segments[1]).replacingOccurrences(of:"-",with:"+").replacingOccurrences(of:"_",with:"/");payload+=String(repeating:"=",count:(4-payload.count%4)%4)
+        guard let bytes=Data(base64Encoded:payload),let object=try? JSONSerialization.jsonObject(with:bytes) as? [String:Any] else{return 0};return object["exp"] as? Double ?? 0
     }
     private func store(_ session:ServiceSession){self.session=session;Keychain.save("session",data:(try? JSONEncoder().encode(session)) ?? Data())}
     func logout() async {if session != nil{_ = try? await request("/auth/v1/logout",method:"POST",authenticated:true)};session=nil;Keychain.remove("session")}

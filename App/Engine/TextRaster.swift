@@ -28,8 +28,8 @@ enum TextRaster {
                     if s.textGradientType==1{ctx.drawRadialGradient(gradient,startCenter:center,startRadius:0,endCenter:center,endRadius:radius,options:[.drawsBeforeStartLocation,.drawsAfterEndLocation])}
                     else{ctx.drawLinearGradient(gradient,start:CGPoint(x:center.x-cos(angle)*radius,y:center.y-sin(angle)*radius),end:CGPoint(x:center.x+cos(angle)*radius,y:center.y+sin(angle)*radius),options:[.drawsBeforeStartLocation,.drawsAfterEndLocation])}
                 }
-                if !s.texturePath.isEmpty,let texture=UIImage(contentsOfFile:directory.appendingPathComponent(s.texturePath).path){
-                    ctx.saveGState();ctx.translateBy(x:size.width/2+CGFloat(s.textureTranslationX),y:size.height/2+CGFloat(s.textureTranslationY));ctx.rotate(by:CGFloat(s.textureRotation)*CGFloat.pi/180);ctx.scaleBy(x:CGFloat(s.textureScaleX),y:CGFloat(s.textureScaleY));texture.draw(in:CGRect(x:-size.width/2,y:-size.height/2,width:size.width,height:size.height));ctx.restoreGState()
+                if !s.texturePath.isEmpty,let texture=ImagePipeline.asset(directory.appendingPathComponent(s.texturePath)){
+                    ctx.saveGState();ctx.translateBy(x:size.width/2+CGFloat(s.textureTranslationX),y:size.height/2+CGFloat(s.textureTranslationY));ctx.rotate(by:CGFloat(s.textureRotation)*CGFloat.pi/180);ctx.scaleBy(x:CGFloat(s.textureScaleX),y:CGFloat(s.textureScaleY));texture.drawAsPattern(in:CGRect(x:-size.width*10,y:-size.height*10,width:size.width*20,height:size.height*20));ctx.restoreGState()
                 }
                 ctx.setBlendMode(.destinationIn);glyph.draw(at:.zero);ctx.setBlendMode(.normal)
                 if s.strokeWidth>0{let a=NSMutableAttributedString(attributedString:LayerRenderer.attributed(layer,color:.clear));a.addAttributes([.strokeColor:UIColor(hex:s.strokeColor),.strokeWidth:s.strokeWidth/max(1,s.fontSize)*100],range:NSRange(location:0,length:a.length));a.draw(with:rect.offsetBy(dx:pad,dy:pad),options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)}

@@ -30,6 +30,9 @@ jobs:
           .work/pixel-test .work/pixel-fixture
       - name: Verify editor and compact layouts on iPhone simulators
         run: bash scripts/test_simulators.sh
+      - name: Organize actual screen captures and verification results
+        if: always()
+        run: python3 scripts/collect_evidence.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:

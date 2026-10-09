@@ -42,12 +42,12 @@ enum LayerRenderer {
             if l.isMaskEnabled{ctx.addEllipse(in:CGRect(x:l.maskX-l.maskRadius,y:l.maskY-l.maskRadius,width:l.maskRadius*2,height:l.maskRadius*2));ctx.clip()}
             switch l.kind {
             case .text:drawText(l,rect:b,context:ctx,directory:directory)
-            case .image:if let image=UIImage(contentsOfFile:directory.appendingPathComponent(l.imagePath).path){image.draw(in:b)}
+            case .image:if let image=ImagePipeline.asset(directory.appendingPathComponent(l.imagePath)){image.draw(in:b)}
             case .shape:
                 let path=shapePath(l.shape,rect:b);UIColor(hex:l.style.color).setFill();path.fill();if l.style.strokeWidth>0{UIColor(hex:l.style.strokeColor).setStroke();path.lineWidth=CGFloat(l.style.strokeWidth);path.stroke()}
             case .drawing:
                 ctx.beginTransparencyLayer(auxiliaryInfo:nil)
-                for s in l.strokes where !s.points.isEmpty {ctx.saveGState();let path=UIBezierPath();path.move(to:s.points[0].cg);for p in s.points.dropFirst(){path.addLine(to:p.cg)};path.lineCapStyle = .round;path.lineJoinStyle = .round;path.lineWidth=CGFloat(s.width);UIColor(hex:s.color).setStroke();if s.erase{ctx.setBlendMode(.clear)};if s.brush=="neon"{ctx.setShadow(offset:.zero,blur:CGFloat(s.width),color:UIColor(hex:s.color).cgColor)};if s.brush=="water"{ctx.setAlpha(0.25)};path.stroke();ctx.restoreGState()}
+                for s in l.strokes where !s.points.isEmpty {ctx.saveGState();let path=UIBezierPath();path.move(to:s.points[0].cg);for p in s.points.dropFirst(){path.addLine(to:p.cg)};path.lineCapStyle = .round;path.lineJoinStyle = .round;path.lineWidth=CGFloat(s.width);UIColor(hex:s.color).setStroke();if s.erase{ctx.setBlendMode(.clear)};if s.brush=="neon"{ctx.setShadow(offset:.zero,blur:CGFloat(s.width),color:UIColor(hex:s.color).cgColor)};if s.brush=="water"{ctx.setAlpha(0.25)};if s.points.count==1{UIColor(hex:s.color).setFill();UIBezierPath(ovalIn:CGRect(x:s.points[0].x-s.width/2,y:s.points[0].y-s.width/2,width:s.width,height:s.width)).fill()}else{path.stroke()};ctx.restoreGState()}
                 ctx.endTransparencyLayer()
             }
             ctx.restoreGState()

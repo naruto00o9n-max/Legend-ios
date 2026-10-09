@@ -20,3 +20,10 @@ while IFS= read -r TASK_DEVICE || [[ -n "$TASK_DEVICE" ]]; do
   xcrun simctl shutdown "$TASK_DEVICE" || true
   if [[ "$TASK_STATUS" != 0 ]]; then tail -100 "build/test-$TASK_INDEX.log"; exit "$TASK_STATUS"; fi
 done < .work/simulators.txt
+
+TASK_DEVICE=$(tail -1 .work/simulators.txt)
+TASK_STATUS=0
+xcodebuild -project CookiesEditor.xcodeproj -scheme CookiesServices -configuration Debug -destination "platform=iOS Simulator,id=$TASK_DEVICE" -derivedDataPath .work/service-simulator -resultBundlePath build/iPhone-services.xcresult ARCHS=x86_64 ONLY_ACTIVE_ARCH=YES test > build/test-services.log 2>&1 || TASK_STATUS=$?
+xcrun xcresulttool export attachments --path build/iPhone-services.xcresult --output-path build/screenshots/iPhone-services
+xcrun simctl shutdown "$TASK_DEVICE" || true
+if [[ "$TASK_STATUS" != 0 ]]; then tail -100 build/test-services.log; exit "$TASK_STATUS"; fi

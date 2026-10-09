@@ -9,5 +9,11 @@ for TASK_MODE in Offline Services; do
   file "$TASK_APP/CookiesEditor" | tee "build/binary-$TASK_MODE.txt"
   mkdir -p "build/package-$TASK_MODE/Payload"
   ditto "$TASK_APP" "build/package-$TASK_MODE/Payload/CookiesEditor.app"
-  (cd "build/package-$TASK_MODE"; zip -q -r "../../Cookies-Editor-$TASK_MODE-unsigned.ipa" Payload)
+  (cd "build/package-$TASK_MODE"; zip -q -r "../Cookies-Editor-$TASK_MODE-unsigned.ipa" Payload)
+  if codesign -d "$TASK_APP" > "build/signature-$TASK_MODE.txt" 2>&1; then
+    echo "Unexpected signature on unsigned app"; exit 1
+  fi
+  test ! -e "$TASK_APP/embedded.mobileprovision"
+  rm -rf "build/package-$TASK_MODE"
 done
+shasum -a 256 build/*.ipa > build/ipa-sha256.txt

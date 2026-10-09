@@ -123,6 +123,30 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.cookies.editor.uitests
         SWIFT_OBJC_BRIDGING_HEADER: ''
         GENERATE_INFOPLIST_FILE: YES
+  CookiesServicesTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [ServicesTests]
+    dependencies:
+      - target: CookiesServices
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.cookies.editor.servicestests
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/CookiesEditor.app/CookiesEditor
+        BUNDLE_LOADER: $(TEST_HOST)
+        SWIFT_OBJC_BRIDGING_HEADER: ''
+        GENERATE_INFOPLIST_FILE: YES
+  CookiesServicesUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [ServicesUITests]
+    dependencies:
+      - target: CookiesServices
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.cookies.editor.servicesuitests
+        SWIFT_OBJC_BRIDGING_HEADER: ''
+        GENERATE_INFOPLIST_FILE: YES
 schemes:
   CookiesOffline:
     build:
@@ -135,3 +159,5 @@ schemes:
     build:
       targets:
         CookiesServices: all
+    test:
+      targets: [CookiesServicesTests, CookiesServicesUITests]
