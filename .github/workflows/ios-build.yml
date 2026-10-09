@@ -4,6 +4,9 @@ on:
     branches: [main]
     paths-ignore: ['docs/**', 'README.md', 'AGENTS.md']
   workflow_dispatch:
+concurrency:
+  group: cookies-ios-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:

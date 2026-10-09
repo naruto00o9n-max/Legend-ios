@@ -13,6 +13,7 @@ int LIReadTile(const char *raw, int width, int height, int x, int y, int w, int 
 /* Read a source region to ceil(w/sample) * ceil(h/sample) straight RGBA pixels. */
 int LIReadRegion(const char *raw, int width, int height, int x, int y, int w, int h, int sample, uint8_t *rgba);
 void LICompositeRGBA(uint8_t *base, const uint8_t *premultipliedOverlay, size_t pixels);
+void LICompositeBlend(uint8_t *base, const uint8_t *premultipliedOverlay, size_t pixels, int mode);
 typedef struct LIPngWriter LIPngWriter;
 LIPngWriter *LIWriterOpen(const char *original, const char *destination, int width, int height, char *error, size_t capacity);
 int LIWriterRows(LIPngWriter *writer, const uint8_t *rgba, int rows);

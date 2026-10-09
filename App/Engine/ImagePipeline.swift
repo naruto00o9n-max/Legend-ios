@@ -59,14 +59,18 @@ enum ImagePipeline {
         defer{LIWriterClose(writer)}
         for y in stride(from:0,to:page.height,by:256) {
             let rows=min(256,page.height-y);var base=try tile(directory.appendingPathComponent(page.raw),width:page.width,height:page.height,rect:CGRect(x:0,y:y,width:page.width,height:rows))
-            var overlay=[UInt8](repeating:0,count:base.count)
-            let rendered=overlay.withUnsafeMutableBytes{bytes->Bool in
-                guard let ctx=CGContext(data:bytes.baseAddress,width:page.width,height:rows,bitsPerComponent:8,bytesPerRow:page.width*4,space:space,bitmapInfo:CGImageAlphaInfo.premultipliedLast.rawValue) else{return false}
-                ctx.translateBy(x:0,y:CGFloat(rows));ctx.scaleBy(x:1,y:-1);ctx.translateBy(x:0,y:-CGFloat(y))
-                LayerRenderer.draw(page.layers,in:ctx,directory:directory);return true
+            for layer in page.layers where layer.isVisible {
+                var overlay=[UInt8](repeating:0,count:base.count)
+                var isolated=layer;isolated.blend = .normal
+                let rendered=overlay.withUnsafeMutableBytes{bytes->Bool in
+                    guard let ctx=CGContext(data:bytes.baseAddress,width:page.width,height:rows,bitsPerComponent:8,bytesPerRow:page.width*4,space:colorSpace(original),bitmapInfo:CGImageAlphaInfo.premultipliedLast.rawValue) else{return false}
+                    ctx.translateBy(x:0,y:CGFloat(rows));ctx.scaleBy(x:1,y:-1);ctx.translateBy(x:0,y:-CGFloat(y))
+                    LayerRenderer.draw([isolated],in:ctx,directory:directory);return true
+                }
+                guard rendered else{throw ImageFailure.message("تعذر رسم الطبقات")}
+                let mode=Int32(Blend.allCases.firstIndex(of:layer.blend) ?? 0)
+                LICompositeBlend(&base,&overlay,base.count/4,mode)
             }
-            guard rendered else{throw ImageFailure.message("تعذر رسم الطبقات")}
-            LICompositeRGBA(&base,&overlay,base.count/4)
             guard LIWriterRows(writer,&base,Int32(rows))==1 else{throw ImageFailure.message("تعذر كتابة الصورة؛ تحقق من مساحة التخزين")}
         }
         guard LIWriterFinish(writer)==1 else{throw ImageFailure.message("لم يكتمل التصدير")};return output
@@ -82,12 +86,9 @@ enum ImagePipeline {
     static func fixture(root:URL)throws->EditorPage {
         let input=root.appendingPathComponent("الفصل التجريبي.png");var error=[CChar](repeating:0,count:512)
         guard let writer=LIWriterOpen(nil,input.path,800,15000,&error,error.count) else{throw ImageFailure.message("صورة الاختبار")};defer{LIWriterClose(writer)}
-        for y in 0..<15000 {
-            var row=[UInt8](repeating:255,count:800*4)
-            for x in 0..<800 {let inside=x>24&&x<776&&y%750>24&&y%750<610;let c:UInt8=inside ? 24:248;row[x*4]=c;row[x*4+1]=c;row[x*4+2]=inside ? 26:c
-                if inside && x>110&&x<690&&y%750>90&&y%750<400 {row[x*4]=164;row[x*4+1]=135;row[x*4+2]=70}}
-            guard LIWriterRows(writer,&row,1)==1 else{throw ImageFailure.message("صورة الاختبار")}
-        }
+        var band=[UInt8](repeating:255,count:800*750*4)
+        for y in 0..<750 {for x in 0..<800 {let inside=x>24&&x<776&&y>24&&y<610,c:UInt8=inside ? 24:248,offset=(y*800+x)*4;band[offset]=c;band[offset+1]=c;band[offset+2]=inside ? 26:c;if inside && x>110&&x<690&&y>90&&y<400{band[offset]=164;band[offset+1]=135;band[offset+2]=70}}}
+        for _ in 0..<20{guard LIWriterRows(writer,&band,750)==1 else{throw ImageFailure.message("صورة الاختبار")}}
         guard LIWriterFinish(writer)==1 else{throw ImageFailure.message("صورة الاختبار")};return try importImage(input,root:root)
     }
 }

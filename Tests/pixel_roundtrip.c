@@ -23,7 +23,7 @@ int main(int argc,char **argv) {
   fixture(src);assert(LIImportPNG(src,raw,&w,&h,error,sizeof error)==1);assert(w==800&&h==15000);
   FILE *input=fopen(raw,"rb");assert(input);LIPngWriter *writer=LIWriterOpen(src,dst,w,h,error,sizeof error);assert(writer);
   unsigned char row[800*4],overlay[800*4]={0};
-  for(int y=0;y<h;y++){assert(fread(row,4,w,input)==(size_t)w);LICompositeRGBA(row,overlay,w);assert(LIWriterRows(writer,row,1)==1);}
+  for(int y=0;y<h;y++){assert(LIReadRegion(raw,w,h,0,y,w,1,1,row)==1);LICompositeRGBA(row,overlay,w);assert(LIWriterRows(writer,row,1)==1);}
   assert(LIWriterFinish(writer)==1);LIWriterClose(writer);fclose(input);
   assert(LIImportPNG(dst,back,&w,&h,error,sizeof error)==1);assert(w==800&&h==15000);
   FILE *a=fopen(raw,"rb"),*b=fopen(back,"rb");assert(a&&b);unsigned char second[800*4];
@@ -35,6 +35,7 @@ int main(int argc,char **argv) {
   for(int i=36;i<52;i++)assert(region[i]==0xAD);
   unsigned char base[]={12,23,34,0,100,120,140,255},upper[]={0,0,0,0,255,0,0,255};LICompositeRGBA(base,upper,2);
   assert(base[0]==12&&base[1]==23&&base[2]==34&&base[3]==0);assert(base[4]==255&&base[5]==0&&base[6]==0&&base[7]==255);
+  unsigned char multiplyBase[]={200,100,50,255,12,23,34,0},multiplyOverlay[]={128,128,128,255,0,0,0,0};LICompositeBlend(multiplyBase,multiplyOverlay,2,1);assert(multiplyBase[0]==100&&multiplyBase[1]==50&&multiplyBase[2]==25);assert(multiplyBase[4]==12&&multiplyBase[5]==23&&multiplyBase[6]==34);
   puts("PASS: 800 x 15000, all 48,000,000 RGBA bytes unchanged after streaming import/export; edge tile and composite verified.");
   return 0;
 }

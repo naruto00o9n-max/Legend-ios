@@ -5,6 +5,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <limits.h>
+#include <math.h>
 
 typedef struct { char *message; size_t capacity; } LIError;
 static void fail_message(LIError *ctx, const char *message) {
@@ -99,6 +100,22 @@ void LICompositeRGBA(uint8_t *base,const uint8_t *overlay,size_t pixels) {
       b[c]=(uint8_t)(value>255?255:value);
     }
     b[3]=(uint8_t)((alpha+127)/255);
+  }
+}
+
+void LICompositeBlend(uint8_t *base,const uint8_t *overlay,size_t pixels,int mode) {
+  if(mode==0){LICompositeRGBA(base,overlay,pixels);return;}
+  for(size_t i=0;i<pixels;i++) {
+    uint8_t *b=base+i*4;const uint8_t *s=overlay+i*4;
+    if(!s[3])continue;
+    double sa=s[3]/255.0,da=b[3]/255.0,alpha=sa+da*(1-sa);
+    for(int c=0;c<3;c++) {
+      double source=fmin(1,s[c]/(double)s[3]),dest=b[c]/255.0,blend=source;
+      switch(mode){case 1:blend=source*dest;break;case 2:blend=source+dest-source*dest;break;case 3:blend=dest<=0.5?2*source*dest:1-2*(1-source)*(1-dest);break;case 4:blend=fmin(source,dest);break;case 5:blend=fmax(source,dest);break;case 6:blend=fabs(source-dest);break;case 7:blend=fmin(1,source+dest);break;}
+      double color=((1-sa)*da*dest+(1-da)*sa*source+sa*da*blend)/alpha;
+      b[c]=(uint8_t)fmin(255,fmax(0,lround(color*255)));
+    }
+    b[3]=(uint8_t)lround(alpha*255);
   }
 }
 

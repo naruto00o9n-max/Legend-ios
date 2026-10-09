@@ -40,5 +40,8 @@ final class EditorTests:XCTestCase {
         for url in [jpeg,psd]{let source=try XCTUnwrap(CGImageSourceCreateWithURL(url as CFURL,nil));let props=try XCTUnwrap(CGImageSourceCopyPropertiesAtIndex(source,0,nil)) as NSDictionary;XCTAssertEqual(props[kCGImagePropertyPixelWidth] as? Int,800);XCTAssertEqual(props[kCGImagePropertyPixelHeight] as? Int,15000);XCTAssertNotNil(CGImageSourceCreateImageAtIndex(source,0,nil))}
         let attachment=XCTAttachment(contentsOfFile:psd);attachment.name="layered-800x15000.psd";attachment.lifetime = .keepAlways;add(attachment)
     }
-    func testOfflinePolicy(){XCTAssertFalse(NetworkPolicy.enabled)}
+    @MainActor func testOfflinePolicy() async throws {
+        XCTAssertFalse(NetworkPolicy.enabled);let service=ReferenceService();XCTAssertNil(service.config)
+        do {_ = try await service.request("/auth/v1/settings");XCTFail("Offline must reject requests before transport")}catch{XCTAssertTrue(error.localizedDescription.contains("محليًا"))}
+    }
 }

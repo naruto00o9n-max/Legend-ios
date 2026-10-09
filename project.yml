@@ -83,6 +83,7 @@ targets:
       path: .work/Info-Offline.plist
       properties:
         CookiesServicesEnabled: false
+        CFBundleURLTypes: []
   CookiesServices:
     templates: [CookiesBase]
     settings:
