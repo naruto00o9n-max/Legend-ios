@@ -28,16 +28,22 @@ struct EditorView:View {
                     toolButton("square.3.layers.3d","الطبقات",id:"tool-layers"){layers=true}
                 }.padding(.horizontal,8)}.frame(height:68).accessibilityIdentifier("tool-strip")
             }else{
-                ScrollView(.horizontal,showsIndicators:false){HStack(spacing:2){ForEach([Tool.text,.brush,.eraser,.shapes,.cleaner,.eyedropper],id:\.self){tool in toolButton(tool.icon,tool.title,id:"tool-\(tool.rawValue)",selected:model.tool==tool){select(tool)}}
+                ScrollView(.horizontal,showsIndicators:false){HStack(spacing:2){
+                    toolButton(Tool.text.icon,"نص",id:"tool-text"){select(.text)}
+                    toolButton(Tool.brush.icon,"رسم",id:"tool-brush"){select(.brush)}
                     toolButton("photo.badge.plus","صورة",id:"tool-image"){imagePicker=true}
-                    toolButton("square.3.layers.3d","طبقات",id:"tool-layers"){layers=true}
-                    toolButton("text.bubble","المساعد",id:"tool-assistant"){assistant=true}
-                    toolButton("book","القراءة",id:"tool-reader"){reader=true}
+                    toolButton(Tool.shapes.icon,"أشكال",id:"tool-shapes"){select(.shapes)}
+                    Menu{
+                        Button{select(.cleaner)}label:{Label("تنظيف",systemImage:"sparkles")}.accessibilityIdentifier("tool-cleaner")
+                        Button{select(.eyedropper)}label:{Label("قطارة",systemImage:"eyedropper")}.accessibilityIdentifier("tool-eyedropper")
+                        Button{reader=true}label:{Label("القراءة",systemImage:"book")}.accessibilityIdentifier("tool-reader")
+                    }label:{VStack(spacing:6){Image(systemName:"ellipsis").font(.system(size:20));Text("المزيد").font(.system(size:10))}.frame(width:62,height:60)}.accessibilityIdentifier("tool-more")
                 }.padding(.horizontal,8)}.frame(height:68).accessibilityIdentifier("tool-strip")
             }
 
         }.foregroundStyle(Palette.pale).glass(0)}
         .toolbar(.hidden,for:.navigationBar).foregroundStyle(Palette.pale).animation(.easeInOut(duration:0.2),value:model.panel)
+        .overlay(alignment:.trailing){Button{assistant=true}label:{Image("CookiesLogo").resizable().scaledToFit().frame(width:38,height:38).clipShape(Circle()).padding(6).background(Palette.ink.opacity(0.85),in:Circle()).overlay(Circle().stroke(Palette.gold.opacity(0.4),lineWidth:0.8))}.padding(.trailing,12).accessibilityIdentifier("tool-assistant").accessibilityLabel("مساعد الحوارات")}
         .overlay{if model.busy && !showExport{ProgressView("جارٍ معالجة المنطقة…").tint(Palette.gold).padding(20).glass()}}
         .fullScreenCover(isPresented:$reader){ReaderView(model:model)}
         .sheet(isPresented:$brushSettings){BrushSheet(model:model).presentationDetents([.height(300)]).presentationBackground(.clear)}
