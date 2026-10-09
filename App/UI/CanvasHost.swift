@@ -1,8 +1,11 @@
 import SwiftUI
 import UIKit
 
+final class DocumentTiles:CATiledLayer {
+    override class func fadeDuration()->CFTimeInterval {0}
+}
 final class DocumentCanvas:UIView {
-    override class var layerClass:AnyClass {CATiledLayer.self}
+    override class var layerClass:AnyClass {DocumentTiles.self}
     private let stateLock=NSLock()
     private var state:(EditorPage?,URL?,UUID?,CGFloat)=(nil,nil,nil,1)
     var page:EditorPage?{get{stateLock.lock();defer{stateLock.unlock()};return state.0}set{stateLock.lock();state.0=newValue;stateLock.unlock()}}
