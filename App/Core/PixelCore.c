@@ -108,6 +108,18 @@ void LICompositeBlend(uint8_t *base,const uint8_t *overlay,size_t pixels,int mod
   for(size_t i=0;i<pixels;i++) {
     uint8_t *b=base+i*4;const uint8_t *s=overlay+i*4;
     if(!s[3])continue;
+    /* Match Quartz plusLighter / Android PorterDuff ADD: add premultiplied
+       channels and alpha, then convert back to the straight PNG layout. */
+    if(mode==7) {
+      unsigned alpha=s[3]+b[3];if(alpha>255)alpha=255;
+      for(int c=0;c<3;c++) {
+        unsigned premultiplied=s[c]+((unsigned)b[c]*b[3]+127)/255;
+        if(premultiplied>255)premultiplied=255;
+        unsigned value=(premultiplied*255+alpha/2)/alpha;
+        b[c]=(uint8_t)(value>255?255:value);
+      }
+      b[3]=(uint8_t)alpha;continue;
+    }
     double sa=s[3]/255.0,da=b[3]/255.0,alpha=sa+da*(1-sa);
     for(int c=0;c<3;c++) {
       double source=fmin(1,s[c]/(double)s[3]),dest=b[c]/255.0,blend=source;

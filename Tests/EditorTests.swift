@@ -5,6 +5,18 @@ import Combine
 @testable import CookiesEditor
 
 final class EditorTests:XCTestCase {
+    func testAddExportMatchesNativeCanvas() throws {
+        var native=[UInt8](repeating:0,count:4)
+        let rendered=native.withUnsafeMutableBytes{bytes->Bool in
+            guard let context=CGContext(data:bytes.baseAddress,width:1,height:1,bitsPerComponent:8,bytesPerRow:4,space:ImagePipeline.space,bitmapInfo:CGImageAlphaInfo.premultipliedLast.rawValue) else{return false}
+            context.setFillColor(red:0.8,green:0.4,blue:0.2,alpha:1);context.fill(CGRect(x:0,y:0,width:1,height:1))
+            context.setBlendMode(Blend.add.cg);context.setFillColor(red:0.8,green:0.2,blue:0,alpha:0.5);context.fill(CGRect(x:0,y:0,width:1,height:1));return true
+        }
+        XCTAssertTrue(rendered)
+        var base:[UInt8]=[204,102,51,255],overlay:[UInt8]=[102,26,0,128]
+        LICompositeBlend(&base,&overlay,1,Int32(Blend.allCases.firstIndex(of:.add)!))
+        for channel in 0..<4{XCTAssertEqual(Double(base[channel]),Double(native[channel]),accuracy:1,"PNG ADD must match the displayed native layer")}
+    }
     func testLongPNGAndProjectRoundTrip() async throws {
         let root=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString,isDirectory:true);try FileManager.default.createDirectory(at:root,withIntermediateDirectories:true);defer{try? FileManager.default.removeItem(at:root)}
         let page=try ImagePipeline.fixture(root:root),directory=root.appendingPathComponent(page.id.uuidString);XCTAssertEqual(page.width,800);XCTAssertEqual(page.height,15000)

@@ -36,6 +36,7 @@ int main(int argc,char **argv) {
   unsigned char base[]={12,23,34,0,100,120,140,255},upper[]={0,0,0,0,255,0,0,255};LICompositeRGBA(base,upper,2);
   assert(base[0]==12&&base[1]==23&&base[2]==34&&base[3]==0);assert(base[4]==255&&base[5]==0&&base[6]==0&&base[7]==255);
   unsigned char multiplyBase[]={200,100,50,255,12,23,34,0},multiplyOverlay[]={128,128,128,255,0,0,0,0};LICompositeBlend(multiplyBase,multiplyOverlay,2,1);assert(multiplyBase[0]==100&&multiplyBase[1]==50&&multiplyBase[2]==25);assert(multiplyBase[4]==12&&multiplyBase[5]==23&&multiplyBase[6]==34);
+  unsigned char addBase[]={204,102,51,255,80,120,160,64},addOverlay[]={102,26,0,128,20,30,40,64};LICompositeBlend(addBase,addOverlay,2,7);assert(addBase[0]==255&&addBase[1]==128&&addBase[2]==51&&addBase[3]==255);assert(addBase[4]==80&&addBase[5]==120&&addBase[6]==159&&addBase[7]==128);
   puts("PASS: 800 x 15000, all 48,000,000 RGBA bytes unchanged after streaming import/export; edge tile and composite verified.");
   return 0;
 }

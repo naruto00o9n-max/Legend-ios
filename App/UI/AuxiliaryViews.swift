@@ -70,7 +70,7 @@ struct ServiceHub:View {
                     Text((row["description"] ?? row["bio"]) as? String ?? "").font(.system(size:13)).lineSpacing(5)
                     if let email=service.session?.user.email,section=="profile"{Text(email).font(.system(size:12)).foregroundStyle(Palette.quiet)}
                     if let points=row["points"] as? Int{Text("النقاط: \(points)").font(.system(size:12)).foregroundStyle(Palette.gold)}
-                    if let tags=row["tags"] as? [String]{Text(tags.map{"#"+$0}.joined(separator:" ")).font(.system(size:11)).foregroundStyle(Palette.quiet)}
+                    if let tags=row["tags"] as? [String]{Text(tags.map{$0.hasPrefix("#") ? $0:"#"+$0}.joined(separator:" ")).font(.system(size:11)).foregroundStyle(Palette.quiet)}
                 }.frame(maxWidth:.infinity,alignment:.leading).padding(18).glass(20).accessibilityElement(children:.contain).accessibilityIdentifier("community-post-\(index)")
             }
         }.padding(22)}}.foregroundStyle(Palette.pale).task(id:section){await service.fetch(section)}
