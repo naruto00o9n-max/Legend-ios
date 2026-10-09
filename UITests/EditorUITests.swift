@@ -14,7 +14,11 @@ final class EditorUITests:XCTestCase {
         XCTFail("Control did not become visible: \(button.identifier)")
     }
     func tool(_ name:String){if name != "text",app.buttons["text-back"].exists{app.buttons["text-back"].tap()};if !["brush","eraser","layers"].contains(name),app.buttons["brush-back"].exists{app.buttons["brush-back"].tap()};let button=app.buttons["tool-"+name];reveal(button,in:app.scrollViews["tool-strip"]);button.tap()}
-    func assertLayout(){let screen=app.frame;for button in app.buttons.allElementsBoundByIndex where !button.identifier.hasPrefix("tool-") && !button.identifier.hasPrefix("panel-") && button.isHittable {let f=button.frame;XCTAssertLessThanOrEqual(f.width,screen.width+1,button.label);XCTAssertGreaterThanOrEqual(f.minX,screen.minX-1,button.label);XCTAssertLessThanOrEqual(f.maxX,screen.maxX+1,button.label);XCTAssertLessThanOrEqual(f.maxY,screen.maxY+1,button.label)}}
+    func assertLayout(){let screen=app.frame;for button in app.buttons.allElementsBoundByIndex where !button.identifier.hasPrefix("tool-") && !button.identifier.hasPrefix("panel-") && button.isHittable {let f=button.frame;XCTAssertLessThanOrEqual(f.width,screen.width+1,button.label);XCTAssertGreaterThanOrEqual(f.minX,screen.minX-1,button.label);XCTAssertLessThanOrEqual(f.maxX,screen.maxX+1,button.label)
+        // A partially visible card in a vertical ScrollView is intentional.
+        // Overflowing fixed controls must still fail this check.
+        if f.maxY>screen.maxY+1{let identifier=button.identifier.isEmpty ? button.label:button.identifier;XCTAssertTrue(app.scrollViews.containing(.button,identifier:identifier).firstMatch.exists,"Overflow without scrolling: "+button.label)}
+    }}
     func testPhotosImportAndIPadOrientation() {
         start();app.buttons["import-image"].tap()
         // Current Photos uses image elements for assets. Its first collection
