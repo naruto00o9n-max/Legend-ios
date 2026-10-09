@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Download the exact user-provided reference. Never silently upgrade it."""
 import argparse, hashlib, html.parser, pathlib, urllib.parse, urllib.request, zipfile
-FILE_ID = '1b_s5rb0UiZFFg-qdzZERvDgmkxpvwOvB'
-SHA256 = '56ed425f56d0d8614c39ad3e0a50f4eb3528e35676b1f4dc49bbfced4b033e3b'
+FILE_ID = '1BHC9vamSFCd6yxs4J-Vu326M7G_wKo8C'
+SHA256 = 'a3758bcdf50c802c25d9023c90456f6bdde922a94cda08fc3ce737c2a9b29789'
 class Confirmation(html.parser.HTMLParser):
     def __init__(self):
         super().__init__(); self.action = None; self.fields = {}

@@ -1,0 +1,36 @@
+name: Inspect unmodified YTyper 4.5 reference
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/reference-inspection.yml', 'scripts/capture_android_reference.py']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v5
+      - name: Download and verify exact original APK
+        run: python3 scripts/download_reference.py .work/reference.apk
+      - name: Enable emulator hardware acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          target: google_apis
+          arch: x86_64
+          profile: pixel_3a
+          disable-animations: true
+          emulator-options: -no-window -no-audio -no-snapshot -no-boot-anim -gpu swiftshader_indirect -camera-back none
+          script: python3 scripts/capture_android_reference.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ytyper-v45-original-screens
+          path: build/reference/
+          retention-days: 30
