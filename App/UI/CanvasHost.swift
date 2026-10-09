@@ -47,7 +47,7 @@ struct CanvasHost:UIViewRepresentable {
                 return
             }
             if g.state == .began{dragHandle=canvas.handle(at:point);guard let l=(dragHandle != nil ? model.active:hit(point)) else{return};model.selected=l.id;initial=l;model.checkpoint();let b=LayerRenderer.bounds(l),dx=Double(point.x)-l.frame.x-Double(b.width)/2,dy=Double(point.y)-l.frame.y-Double(b.height)/2;rotationStart=atan2(dy,dx);scaleStart=max(1,hypot(dx,dy))}
-            else if g.state == .changed,let initial {let t=g.translation(in:canvas),b=LayerRenderer.bounds(initial);model.change{l in
+            else if g.state == .changed,let initial {let t=g.translation(in:canvas),b=LayerRenderer.bounds(initial);model.change(persist:false){l in
                 let delta=CGSize(width:t.x,height:t.y).applying(CGAffineTransform(rotationAngle:-CGFloat(initial.rotation)*CGFloat.pi/180))
                 switch dragHandle {
                 case "rotate":let angle=atan2(Double(point.y)-initial.frame.y-Double(b.height)/2,Double(point.x)-initial.frame.x-Double(b.width)/2);l.rotation=initial.rotation+(angle-rotationStart)*180/Double.pi

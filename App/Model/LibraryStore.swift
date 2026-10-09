@@ -48,7 +48,7 @@ import SwiftUI
     var directory:URL {library.directory(page.id)}
     var active:EditorLayer? {page.layers.first{$0.id==selected}}
     func checkpoint() {undoStack.append(page.layers);if undoStack.count>60{undoStack.removeFirst()};redoStack=[]}
-    func change(_ body:(inout EditorLayer)->Void) {guard let i=page.layers.firstIndex(where:{$0.id==selected}),!page.layers[i].isLocked else{return};body(&page.layers[i]);page.modified=Date();save()}
+    func change(persist:Bool=true,_ body:(inout EditorLayer)->Void) {guard let i=page.layers.firstIndex(where:{$0.id==selected}),!page.layers[i].isLocked else{return};body(&page.layers[i]);page.modified=Date();if persist{save()}}
     func add(_ kind:LayerKind,shape:Int=0) {
         checkpoint();let center=visibleCenter == .zero ? CGPoint(x:Double(page.width)/2,y:200):visibleCenter
         var l=EditorLayer(kind:kind,name:kind == .text ? "نص جديد":"طبقة \(page.layers.count+1)");l.frame=Box(x:max(0,Double(center.x)-160),y:max(0,Double(center.y)-65),width:min(320,Double(page.width)),height:130);l.style.boxWidth=l.frame.width;l.shape=shape
