@@ -8,7 +8,7 @@ extension EditorModel {
         busy=true;defer{busy=false};let directory=self.directory
         do{let filename=try await BackgroundWork.run{()->String in
             let format=UIGraphicsImageRendererFormat();format.scale=1;format.opaque=false
-            let image=UIGraphicsImageRenderer(size:rect.size,format:format).image{output in output.cgContext.translateBy(x:-rect.minX,y:-rect.minY);LayerRenderer.drawText(layer,rect:bounds,context:output.cgContext,directory:directory)}
+            let image=UIGraphicsImageRenderer(size:rect.size,format:format).image{output in output.cgContext.translateBy(x:-rect.minX,y:-rect.minY);if layer.isMaskEnabled{output.cgContext.addEllipse(in:CGRect(x:layer.maskX-layer.maskRadius,y:layer.maskY-layer.maskRadius,width:layer.maskRadius*2,height:layer.maskRadius*2));output.cgContext.clip()};LayerRenderer.drawText(layer,rect:bounds,context:output.cgContext,directory:directory)}
             guard let png=image.pngData() else{throw ImageFailure.message("تعذر تحويل النص")};let name=UUID().uuidString+".png";try png.write(to:directory.appendingPathComponent(name),options:.atomic);return name
         }
         guard let index=page.layers.firstIndex(where:{$0.id==layer.id}),page.layers[index]==layer else{try? FileManager.default.removeItem(at:directory.appendingPathComponent(filename));return}

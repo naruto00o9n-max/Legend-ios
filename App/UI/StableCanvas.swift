@@ -125,6 +125,7 @@ final class DocumentCanvas: UIView {
         pendingInk.forEach { layer.addSublayer($0.layer) }
         interaction?.bringForward(in: self)
         layer.addSublayer(liveInk);layer.addSublayer(sniperOverlay); layer.addSublayer(border); layer.addSublayer(stem)
+        if livePatch.image != nil{bringSubviewToFront(livePatch)}
         handles.values.forEach { bringSubviewToFront($0) }
     }
     private func loadPreview(_ page: EditorPage, directory: URL, identity: String) {
@@ -291,6 +292,7 @@ final class DocumentCanvas: UIView {
         liveInk.shadowOffset = .zero; liveInk.path = path.cgPath
         pendingInk.forEach { layer.addSublayer($0.layer) }
         layer.addSublayer(liveInk); layer.addSublayer(border); layer.addSublayer(stem)
+        if livePatch.image != nil{bringSubviewToFront(livePatch)}
         handles.values.forEach { bringSubviewToFront($0) }
     }
     func showPatch(_ image:UIImage?,rect:CGRect = .zero){livePatch.isUserInteractionEnabled=false;livePatch.frame=rect;livePatch.image=image;if image != nil{addSubview(livePatch)}else{livePatch.removeFromSuperview();patchCommitRevision=nil}}

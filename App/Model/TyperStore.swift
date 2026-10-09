@@ -100,21 +100,22 @@ private extension String {
 @MainActor final class TyperStore: ObservableObject {
     @Published private(set) var state=TyperState()
     @Published var error: String?
+    private var storageReadable=true
     let directory: URL
     init(directory:URL?=nil) {
         self.directory=directory ?? FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("Cookies/Typer",isDirectory:true)
         if ProcessInfo.processInfo.arguments.contains("-ui-tests"),directory==nil {try? FileManager.default.removeItem(at:self.directory)}
         do {try FileManager.default.createDirectory(at:self.directory,withIntermediateDirectories:true)
             let url=self.directory.appendingPathComponent("chapters.json")
-            if FileManager.default.fileExists(atPath:url.path){state=try JSONDecoder().decode(TyperState.self,from:Data(contentsOf:url))}
+            if let saved=try RecoveryFile.read(TyperState.self,at:url){state=saved.value;if saved.recovered{self.error="استُعيدت آخر نسخة سليمة من بياناتك."}}
             if state.tagSets==nil{let group=DialogueTagSet(title:"افتراضي",tags:state.tags);var next=state;next.tagSets=[group];next.activeTagSet=group.id;try commit(next)}
-        }catch{self.error="تعذر فتح فصول التايبر: "+error.localizedDescription}
+        }catch{storageReadable=false;self.error="تعذر فتح فصول التايبر: "+error.localizedDescription}
     }
     var activeChapter:DialogueChapter? {state.chapters.first{$0.id==state.active}}
     func chapter(_ id:UUID)->DialogueChapter? {state.chapters.first{$0.id==id}}
     func tag(_ id:UUID?)->DialogueTag? {state.tags.first{$0.id==id} ?? state.tagSets?.flatMap(\.tags).first{$0.id==id} ?? state.retiredTags?.first{$0.id==id}}
     var tagSets:[DialogueTagSet]{state.tagSets ?? []}
-    private func commit(_ state:TyperState)throws {var next=state;if let index=next.tagSets?.firstIndex(where:{$0.id==next.activeTagSet}){next.tagSets?[index].tags=next.tags};try JSONEncoder().encode(next).write(to:directory.appendingPathComponent("chapters.json"),options:.atomic);self.state=next}
+    private func commit(_ state:TyperState)throws {guard storageReadable else{throw ImageFailure.message("تعذر قراءة بيانات التايبر؛ احتُفظ بالملف التالف للاستعادة ولم تُستبدل بياناتك")};var next=state;if let index=next.tagSets?.firstIndex(where:{$0.id==next.activeTagSet}){next.tagSets?[index].tags=next.tags};try RecoveryFile.write(next,at:directory.appendingPathComponent("chapters.json"));self.state=next}
     func activate(_ id:UUID)throws {var next=state;next.active=id;try commit(next)}
     @discardableResult func saveChapter(id:UUID?=nil,title:String,source:String,separation:BubbleSeparation,folder:UUID?=nil)throws->UUID {
         var next=state

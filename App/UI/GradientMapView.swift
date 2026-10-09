@@ -13,7 +13,9 @@ struct GradientPreset:Codable,Identifiable {
 }
 struct GradientMapView:View {
     @ObservedObject var model:EditorModel
-    @State private var target="all",category="ALL",query=""
+    @State private var target="all"
+    @State private var category="ALL"
+    @State private var query=""
     @State private var presets:[GradientPreset]=[]
     private let labels=["ALL":"الكل","GOLD":"ذهب","METALLIC":"معدني","NEON":"نيون","DARK":"داكن","OCEAN":"محيط","SUNSET":"غروب","PASTEL":"باستيل","AURA":"هالة","SYSTEM":"نظام","SHOUNEN":"شونين","SHOUJO":"شوجو","WEBTOON":"ويبتون"]
     var body:some View{VStack(alignment:.leading,spacing:14){

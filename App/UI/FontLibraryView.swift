@@ -50,11 +50,7 @@ struct FontLibraryView:View {
         defer{if let archive{try? FileManager.default.removeItem(at:archive)}}
         let candidates: [URL]
         if let archive{candidates=(FileManager.default.enumerator(at:archive,includingPropertiesForKeys:nil)?.allObjects as? [URL] ?? []).filter{["ttf","otf"].contains($0.pathExtension.lowercased())}}else{candidates=[url]}
-        guard !candidates.isEmpty,candidates.count<=200 else{throw ImageFailure.message("الحزمة يجب أن تحتوي من خط واحد إلى 200 خط")}
-        for file in candidates{let size=(try file.resourceValues(forKeys:[.fileSizeKey])).fileSize ?? 0;guard size<=16*1024*1024,let provider=CGDataProvider(url:file as CFURL),CGFont(provider) != nil else{throw ImageFailure.message("خط غير صالح: \(file.lastPathComponent)")}}
-        try FileManager.default.createDirectory(at:Fonts.userDirectory,withIntermediateDirectories:true)
-        var added:[URL]=[]
-        do{for file in candidates{let target=Fonts.userDirectory.appendingPathComponent(file.lastPathComponent);if FileManager.default.fileExists(atPath:target.path){continue};try FileManager.default.copyItem(at:file,to:target);added.append(target);var registrationError:Unmanaged<CFError>?;guard CTFontManagerRegisterFontsForURL(target as CFURL,.process,&registrationError) else{throw ImageFailure.message("تعذر تسجيل \(file.lastPathComponent)؛ قد يكون اسم الخط مكررًا")}}}catch{for file in added{CTFontManagerUnregisterFontsForURL(file as CFURL,.process,nil);try? FileManager.default.removeItem(at:file)};Fonts.register();throw error}
+        try FontPackage.importFiles(candidates)
         if let archive,let data=try? Data(contentsOf:archive.appendingPathComponent("collections.json")),let imported=try? JSONDecoder().decode([String:[String]].self,from:data){let available=Set((Fonts.files+Fonts.otf).map(\.lastPathComponent));for (name,names) in imported{groups[name]=Array(Set((groups[name] ?? [])+names.filter{available.contains($0)})).sorted()};saveGroups()}
         Fonts.register();version+=1
     }

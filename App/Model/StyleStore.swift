@@ -21,6 +21,7 @@ struct StylePackage:Codable {
     @Published var error:String?
     private(set) var copiedStyle:TextStyle?
     private var copiedDirectory:URL?
+    private var storageReadable=true
     let directory:URL
     init(directory:URL?=nil) {
         self.directory=directory ?? FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("Cookies/Styles",isDirectory:true)
@@ -28,12 +29,12 @@ struct StylePackage:Codable {
             if directory==nil,ProcessInfo.processInfo.arguments.contains("-ui-tests"){try? FileManager.default.removeItem(at:self.directory)}
             try FileManager.default.createDirectory(at:self.directory,withIntermediateDirectories:true)
             let file=self.directory.appendingPathComponent("styles.json")
-            if FileManager.default.fileExists(atPath:file.path){styles=try JSONDecoder().decode([SavedTextStyle].self,from:Data(contentsOf:file))}
-        }catch{self.error=error.localizedDescription}
+            if let saved=try RecoveryFile.read([SavedTextStyle].self,at:file){styles=saved.value;if saved.recovered{self.error="استُعيدت آخر نسخة سليمة من بياناتك."}}
+        }catch{storageReadable=false;self.error=error.localizedDescription}
     }
     var groups:[String]{Array(Set(styles.map(\.group))).sorted()}
     private func commit(_ next:[SavedTextStyle])throws {
-        try JSONEncoder().encode(next).write(to:directory.appendingPathComponent("styles.json"),options:.atomic)
+        guard storageReadable else{throw ImageFailure.message("تعذر قراءة الأنماط؛ احتُفظ ببياناتك للاستعادة")};try RecoveryFile.write(next,at:directory.appendingPathComponent("styles.json"))
         styles=next
     }
     @discardableResult func save(title:String,group:String,layer:EditorLayer,from assets:URL,replacing:UUID?=nil)throws->UUID {
@@ -128,11 +129,8 @@ struct StylePackage:Codable {
         guard package.version==1 else{throw ImageFailure.message("إصدار حزمة الأنماط غير مدعوم")}
         for index in package.styles.indices {package.styles[index].id=UUID();package.styles[index].style.texturePath=try ownTexture(package.styles[index].style.texturePath,from:staging)}
         for index in package.tags.indices {package.tags[index].id=UUID();package.tags[index].style.texturePath=try ownTexture(package.tags[index].style.texturePath,from:staging)}
-        for font in (FileManager.default.enumerator(at:staging,includingPropertiesForKeys:nil)?.allObjects as? [URL]) ?? [] where ["ttf","otf"].contains(font.pathExtension.lowercased()) {
-            try FileManager.default.createDirectory(at:Fonts.userDirectory,withIntermediateDirectories:true)
-            let target=Fonts.userDirectory.appendingPathComponent(font.lastPathComponent)
-            if !FileManager.default.fileExists(atPath:target.path){try FileManager.default.copyItem(at:font,to:target)}
-        }
+        let fonts=(FileManager.default.enumerator(at:staging,includingPropertiesForKeys:nil)?.allObjects as? [URL] ?? []).filter{["ttf","otf"].contains($0.pathExtension.lowercased())}
+        if !fonts.isEmpty{try FontPackage.importFiles(fonts)}
         Fonts.register();try commit(package.styles+styles);return package.tags
     }
 }

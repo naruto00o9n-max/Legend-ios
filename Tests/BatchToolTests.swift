@@ -3,14 +3,16 @@ import UIKit
 @testable import CookiesEditor
 
 final class BatchToolTests:XCTestCase {
-    func testEveryBrushPlusTextureIsPackagedAndProducesTintedAlphaStamps()throws {
+    func testReferenceBrushAssetsArePackagedAndUsableTextureProducesTintedAlphaStamps()throws {
         let root=try root();defer{try? FileManager.default.removeItem(at:root)}
         for name in ["censor"]+(1...8).map({"b\($0)"}) {
             let source=try XCTUnwrap(Bundle.main.url(forResource:name,withExtension:"png",subdirectory:"Brushes") ?? Bundle.main.url(forResource:name,withExtension:"png")),asset=root.appendingPathComponent(name+".png");try FileManager.default.copyItem(at:source,to:asset)
             let format=UIGraphicsImageRendererFormat();format.scale=1
             let image=UIGraphicsImageRenderer(size:CGSize(width:100,height:100),format:format).image{out in BrushRenderer.draw(Stroke(points:[Point(x:25,y:50),Point(x:75,y:50)],width:20,color:"FF0000",brush:"texture",texturePath:name+".png"),in:out.cgContext,directory:root)}
             let file=root.appendingPathComponent("test-"+name+".png");try XCTUnwrap(image.pngData()).write(to:file);let bytes=try rgba(file)
-            let visible=stride(from:0,to:bytes.count,by:4).filter{bytes[$0+3]>128};XCTAssertFalse(visible.isEmpty,name)
+            let visible=stride(from:0,to:bytes.count,by:4).filter{bytes[$0+3]>128}
+            if name != "censor"{XCTAssertTrue(visible.isEmpty,"Original APK contains transparent reserved brush slots; UI must not advertise them as functioning presets");continue}
+            XCTAssertFalse(visible.isEmpty,name)
             for i in visible{XCTAssertGreaterThan(bytes[i],230);XCTAssertLessThan(bytes[i+1],15);XCTAssertLessThan(bytes[i+2],15)}
             XCTAssertEqual(bytes[3],0,"Brush texture must not paint the canvas rectangle")
         }
