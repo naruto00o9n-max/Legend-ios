@@ -50,7 +50,10 @@ final class EditorTests:XCTestCase {
         let model=EditorModel(page:EditorPage(title:"صورة متوسطة",width:800,height:600),library:LibraryStore(root:root))
         let coordinator=CanvasHost.Coordinator(model),scroll=UIScrollView(frame:CGRect(x:0,y:0,width:375,height:500)),canvas=DocumentCanvas(frame:CGRect(x:0,y:0,width:800,height:600))
         coordinator.canvas=canvas;coordinator.scroll=scroll;scroll.addSubview(canvas);scroll.contentSize=canvas.bounds.size;scroll.delegate=coordinator;scroll.minimumZoomScale=0.01;scroll.maximumZoomScale=128;scroll.setZoomScale(0.3,animated:false);coordinator.updateCenter()
-        XCTAssertEqual(scroll.contentInset.left,67.5,accuracy:0.1);XCTAssertEqual(scroll.contentInset.top,160,accuracy:0.1);XCTAssertEqual(model.visibleCenter.x,400,accuracy:0.1);XCTAssertEqual(model.visibleCenter.y,300,accuracy:0.1)
+        // UIScrollView rounds offsets to physical display pixels. Measure the
+        // converted document center within one display pixel at this zoom.
+        let pixelInDocument=1/(max(1,scroll.traitCollection.displayScale)*scroll.zoomScale)
+        XCTAssertEqual(scroll.contentInset.left,67.5,accuracy:0.1);XCTAssertEqual(scroll.contentInset.top,160,accuracy:0.1);XCTAssertEqual(model.visibleCenter.x,400,accuracy:pixelInDocument);XCTAssertEqual(model.visibleCenter.y,300,accuracy:pixelInDocument)
         let savedCenter=model.visibleCenter,savedZoom=model.zoom;coordinator.readOnly=true;scroll.setZoomScale(2,animated:false);coordinator.updateCenter();XCTAssertEqual(model.visibleCenter,savedCenter,"Reading has its own viewport");XCTAssertEqual(model.zoom,savedZoom,"Reading must not overwrite editor zoom")
     }
     @MainActor func testGalleryRefreshesAfterEditedThumbnailIsSaved() async throws {

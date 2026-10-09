@@ -20,7 +20,11 @@ while IFS= read -r TASK_DEVICE || [[ -n "$TASK_DEVICE" ]]; do
   TASK_INDEX=$((TASK_INDEX+1))
   if [[ "$TASK_GROUP" == services || "$TASK_SCREEN" == small && "$TASK_INDEX" != 1 || "$TASK_SCREEN" == modern && "$TASK_INDEX" != 2 ]]; then continue; fi
   TASK_STATUS=0
-  xcodebuild -project CookiesEditor.xcodeproj -scheme CookiesOffline -configuration Debug -destination "platform=iOS Simulator,id=$TASK_DEVICE" -derivedDataPath .work/simulator -resultBundlePath "build/iPhone-$TASK_INDEX.xcresult" ARCHS=x86_64 ONLY_ACTIVE_ARCH=YES test > "build/test-$TASK_INDEX.log" 2>&1 || TASK_STATUS=$?
+  xcrun simctl boot "$TASK_DEVICE" || true
+  xcrun simctl bootstatus "$TASK_DEVICE" -b
+  open -a Simulator --args -CurrentDeviceUDID "$TASK_DEVICE"
+  xcodebuild -project CookiesEditor.xcodeproj -scheme CookiesOffline -configuration Debug -destination "platform=iOS Simulator,id=$TASK_DEVICE" -parallel-testing-enabled NO -derivedDataPath .work/simulator -resultBundlePath "build/iPhone-$TASK_INDEX.xcresult" ARCHS=x86_64 ONLY_ACTIVE_ARCH=YES test > "build/test-$TASK_INDEX.log" 2>&1 || TASK_STATUS=$?
+  if [[ "$TASK_STATUS" != 0 ]]; then xcrun xcresulttool export diagnostics --path "build/iPhone-$TASK_INDEX.xcresult" --output-path "build/diagnostics-$TASK_INDEX" || true; fi
   xcrun xcresulttool export attachments --path "build/iPhone-$TASK_INDEX.xcresult" --output-path "build/screenshots/iPhone-$TASK_INDEX"
   xcrun simctl shutdown "$TASK_DEVICE" || true
   if [[ "$TASK_STATUS" != 0 ]]; then tail -100 "build/test-$TASK_INDEX.log"; TASK_OVERALL_STATUS="$TASK_STATUS"; fi
@@ -29,7 +33,11 @@ done < .work/simulators.txt
 if [[ "$TASK_GROUP" == offline ]]; then exit "$TASK_OVERALL_STATUS"; fi
 TASK_DEVICE=$(tail -1 .work/simulators.txt)
 TASK_STATUS=0
-xcodebuild -project CookiesEditor.xcodeproj -scheme CookiesServices -configuration Debug -destination "platform=iOS Simulator,id=$TASK_DEVICE" -derivedDataPath .work/service-simulator -resultBundlePath build/iPhone-services.xcresult ARCHS=x86_64 ONLY_ACTIVE_ARCH=YES test > build/test-services.log 2>&1 || TASK_STATUS=$?
+xcrun simctl boot "$TASK_DEVICE" || true
+xcrun simctl bootstatus "$TASK_DEVICE" -b
+open -a Simulator --args -CurrentDeviceUDID "$TASK_DEVICE"
+xcodebuild -project CookiesEditor.xcodeproj -scheme CookiesServices -configuration Debug -destination "platform=iOS Simulator,id=$TASK_DEVICE" -parallel-testing-enabled NO -derivedDataPath .work/service-simulator -resultBundlePath build/iPhone-services.xcresult ARCHS=x86_64 ONLY_ACTIVE_ARCH=YES test > build/test-services.log 2>&1 || TASK_STATUS=$?
+if [[ "$TASK_STATUS" != 0 ]]; then xcrun xcresulttool export diagnostics --path build/iPhone-services.xcresult --output-path build/diagnostics-services || true; fi
 xcrun xcresulttool export attachments --path build/iPhone-services.xcresult --output-path build/screenshots/iPhone-services
 xcrun simctl shutdown "$TASK_DEVICE" || true
 if [[ "$TASK_STATUS" != 0 ]]; then tail -100 build/test-services.log; TASK_OVERALL_STATUS="$TASK_STATUS"; fi
