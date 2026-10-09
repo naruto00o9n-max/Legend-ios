@@ -1,31 +1,36 @@
-# Cookies Editor iPhone — current scope and evidence
+# Current scope · iPhone and iPad
 
-Native SwiftUI/UIKit app, separate offline and original-service targets. Android development is frozen as requested; its oversized/out-of-screen control feedback was recorded in Legend.
+One application named **Cookies Editor**, bundle `com.cookies.editor.ios`. Earlier Offline/Online targets and IPAs are superseded. Android product development remains frozen. The user's iPad runs iPadOS 18; the exact model is unknown.
 
-## Functional implementation
+## Work in this repair
 
-- Black/gold glass welcome, responsive library, nested folders, import, rename/move, project archive, in-app assistant and reader.
-- Native tiled original-size canvas with one/two-finger interaction and up to 12,800% zoom. Source RGBA is on disk; sampled preview pixels are never used for export.
-- Text, image, shape and drawing layers; ordering, visibility, locking, duplication, opacity, eight blend modes, undo/redo, selection/move/scale/rotation.
-- Original 47 font files plus custom font import. Arabic text, alignment, sizing, spacing, stroke/background/shadow, depth, gradients, texture, perspective, mesh and circular mask.
-- Twenty shape paths translated from the provided APK. Nine named text effects are implemented, but effect pixels have not been certified against the Android renderer.
-- Native OpenCV Telea region cleaning. This uses official iOS OpenCV 4.11.0, whereas the APK includes 4.5.3. Exact cleaner output/performance parity is not certified.
-- Full-dimension PNG export, adjustable-quality JPEG, separate raster layers in PSD, and editable `.cookies` projects. The original APK PSD exporter also writes raster layer imageData rather than editable Photoshop text.
+- Full-screen welcome, account, settings, community and profile destinations; account form centred within the full iPad viewport. White labels/icons on black glass with gold accents. Local editing does not require an account.
+- Native Photos picker for gallery, image layers and textures. Provider files are copied before the callback returns, preserving their representation and original filename. Files is used separately for editable project archives.
+- Persistent image tiles and a small source preview. Source-tile cache, selection controls and viewport updates are separate; a tile retains its previous image until replacement is ready. Changing selection/panning does not invalidate the source. The source on disk is immutable; layer drags persist metadata only when the gesture ends.
+- A compact primary toolbar for text, drawing, image and shape, with supplementary tools in a menu and an in-canvas assistant. It is replaced by icon-based text tools in text mode and drawing tools in brush mode. Text panels overlay the canvas so opening them does not change the image viewport. Arabic input and paragraph rendering use RTL.
+- Text handles follow the recovered 4.5 arrangement: delete, vertical stretch, rotate, horizontal stretch, box width, edit, duplicate, styles and proportional scaling. Perspective and mesh points are still inspector-controlled, not the original on-canvas control workflow.
+- Typed community posts, details and approved comments, plus original vote/comment requests initiated only by an authenticated user's explicit action. Profile reads the original view. These authenticated operations have not been tested with a real account.
 
-## Tests and limits
+## Existing editing engine
 
-The C image-core check verifies every one of the 48,000,000 RGBA bytes of an 800×15000 fixture, including hidden RGB under transparent pixels. Sampled-region guard bytes, blending and sanitizer checks are included. Native XCTest checks original dimensions, unedited byte-identical PNG, text at the bottom of the image, editable archive, JPEG and PSD readability, layers and cleaner output. UI tests use iPhone SE and a modern iPhone and export actual screenshot attachments.
+Nested folders, rename/move/delete, text/image/shape/drawing layers, layer reorder, visibility, lock, opacity, duplication, eight blend modes and undo/redo. The editor can pan/pinch to 12800%, and supports 47 original fonts plus custom TTF/OTF import. In-app dialogue assistant and independent reader viewport remain available.
 
-A successful build is not full YTyper parity. Original CoreText measurement prototype matched 130/235 strict Android fixtures and differed on 105; that baseline is not certification of this app renderer. See the [earlier baseline](https://github.com/naruto00o9n-max/Legend/blob/722718f6e8d8ff8f02337c5bf83a6455d9f4b6a1/docs/font-parity-report.json) and [reference inventory](https://github.com/naruto00o9n-max/Legend/blob/722718f6e8d8ff8f02337c5bf83a6455d9f4b6a1/docs/reference-inventory.json).
+PNG import uses original-size disk RGBA. An 800×15000 page has a 48 MB RGBA backing, in addition to its source and assets. PNG export composes bands at original dimensions and retains the source ICC profile. An unedited PNG is copied byte-for-byte. Preview sampling is never the export source. JPEG is lossy and uses a full ImageIO image in memory. PSD export has separate raster layers; editable `.cookies` archives rebuild their RGBA backing when imported.
 
-Outstanding parity areas include Android project/style format migration, original PSD layer import, the full tag/style management flow, original reader/assistant behavior details, all effect parameters and strict font/effect pixel comparison. PSD imports currently use ImageIO composite pixels. Canvas cropping/resizing and advanced selection operations are not complete. PNG16 is rejected explicitly rather than silently down-converted. JPEG uses lossy compression by design. Real iPhone FPS/memory measurements have not been taken; simulator results do not establish identical Android performance.
+Native OpenCV Telea cleans a limited selected region. Its version differs from the original Android OpenCV, so exact cleaning pixels/performance are unverified. Effects, shape geometry, perspective/mesh and some stored style fields are incomplete or approximate; opening a panel does not certify its original rendering behavior.
 
-## Original services
+## Verification
 
-On 2026-10-09, public client API checks returned HTTP 200 for auth settings, app_config and an approved community post. Signup, email and Google are enabled and new accounts require email confirmation. The offline app rejects network requests before transport and does not bundle the service configuration. The online app supports ordinary email/password signup/login, Supabase web PKCE for Google, session refresh, original profile and community reads. No user session was fabricated and no admin credential is used.
+Actions build a real unsigned arm64 IPA and run native XCTest/UI tests on iPad and iPhone simulators. Test logs and `verification.json` record pass/failure rather than inferring success from compilation. Screenshots are unmodified attachments captured during actual tests. The Photos test must select an actual seeded 800×15000 asset; the canvas test verifies source reads remain stable through selection, panning and text edits. Pixel tests compare 48,000,000 RGBA bytes and original dimensions; native tests cover PNG export, original bytes, bottom-of-image text, archives, JPEG, PSD, fonts, cleaner and undo.
 
-Actual login with the user's account and the Google callback allow-list remain unverified. Drive sync, billing/store/entitlements, original cloud font/style/project flows and notifications have not been ported. An ordinary user account does not provide developer OAuth configuration or iOS purchase setup. The online IPA must not be described as “all original server features working”.
+Physical iPad memory/FPS, iCloud-only assets, HDR/wide-gamut edited pixels, huge image formats beyond the tested fixture and original font/effect pixel parity remain unverified. 16-bit PNG is rejected explicitly. Earlier font measurements differed on 105 of 235 strict Android fixtures; that historical result is not certification of the current renderer.
 
-## Delivery
+## Authentication and server limits
 
-CI compiles real arm64 binaries with code signing disabled, rejects an unexpected signature/provisioning profile, and packages separate offline/online IPAs. `verification.json`, build/test logs, xcresult bundles and a gallery of unmodified screenshots identify what passed or failed. Only passing final builds should be offered as verified development previews.
+Public original-service reads returned HTTP 200 for auth settings, configuration and approved community content. Email and Google are enabled; new email users require confirmation. Email signup includes `full_name`/`display_name`; the app reports actual HTTP/backend errors and stores real sessions in Keychain with refresh handling.
+
+**Successful signup and login have not been demonstrated.** The original Android client uses native Google ID-token exchange, while this iOS client uses web PKCE and `cookies-editor://auth/callback`. An authorize redirect to Google does not establish that the service accepts this return URI. No owner-provided iOS OAuth client or redirect configuration is available. The user's observed final Google server error and failed email signup cannot be declared fixed without a successful account test or diagnostic response. No account/session was fabricated, no administrator endpoint or entitlement bypass was used, and no external test account was created.
+
+## Unfinished parity
+
+Original multi-page/batch projects, tag/style tables and tag-driven dialogue parsing, original project-format migration, PSD layer import, crop/resize, arbitrary text/image erase/restore, SOFT/MARKER brush behavior, blank-canvas UI, drafts/watermarks, web chapter imports, original cloud/font/style/project sync, Store/billing, notifications and gamification are incomplete. Community/profile UI parity has not been visually certified against authenticated original screens. No percentage of parity is asserted.

@@ -1,0 +1,34 @@
+{
+  "reference": "YTyper 4.5",
+  "sha256": "a3758bcdf50c802c25d9023c90456f6bdde922a94cda08fc3ce737c2a9b29789",
+  "font_count": 47,
+  "changed_fonts": [],
+  "abis": [
+    "arm64-v8a",
+    "armeabi-v7a"
+  ],
+  "resources_layouts": 219,
+  "jadx_errors": 305,
+  "note": "Java decompilation incomplete; XML/resources and executable APK are retained. No source-code parity claim.",
+  "original_screen_run": "https://github.com/naruto00o9n-max/Legend-ios/actions/runs/37921756619",
+  "observed_screens": [
+    "Google-only launch",
+    "unauthenticated dashboard",
+    "workspace",
+    "Rewards Protocol",
+    "settings",
+    "blank 800x15000 creation",
+    "project pages",
+    "editor primary tools",
+    "inline text input and keyboard",
+    "nonempty text handles and text toolbar",
+    "layer popup"
+  ],
+  "unobserved_screens": [
+    "authenticated community",
+    "authenticated profile",
+    "store and purchases",
+    "cloud sync"
+  ],
+  "image_import_reference": "Android DocumentsUI selection did not complete; editor captured through original blank document instead. Native Photos import must be verified separately."
+}
