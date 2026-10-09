@@ -73,6 +73,7 @@ struct WebtoonImportView:View {
         if busy{HStack{ProgressView();Text("\(progress) صورة");Button("إلغاء"){task?.cancel()}}.font(.system(size:12)).padding(12)}
         if !failed.isEmpty{Button("إعادة محاولة الصور الفاشلة (\(failed.count))"){download(failed)}.padding(10)}
     }.foregroundStyle(Palette.pale).background(Palette.ink).navigationTitle("سحب الفصل").navigationBarTitleDisplayMode(.inline).toolbar{ToolbarItem(placement:.topBarLeading){Button("إغلاق"){task?.cancel();dismiss()}}}.alert("تعذر سحب الفصل",isPresented:Binding(get:{failure != nil || browser.error != nil},set:{if !$0{failure=nil;browser.error=nil}})){Button("حسنًا"){failure=nil;browser.error=nil}}message:{Text(failure ?? browser.error ?? "")}}
+    }
     func download(_ images:[WebtoonImage]){task=Task{busy=true;progress=0;failed=[];var files:[URL]=[];defer{busy=false;for file in files{try? FileManager.default.removeItem(at:file)}}
         do{for image in images{try Task.checkCancellation();do{files.append(try await browser.download(image));progress+=1}catch is CancellationError{throw CancellationError()}catch{failed.append(image)}}
             guard !files.isEmpty else{throw ImageFailure.message("فشل تنزيل الصور المحددة؛ جرّب فتح الفصل وانتظار تحميله")}
