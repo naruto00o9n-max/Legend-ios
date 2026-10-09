@@ -61,7 +61,8 @@ import SwiftUI
     func redo(){guard let next=redoStack.popLast() else{return};undoStack.append(page.layers);page.layers=next;selected=nil;save()}
     func save(){do{try library.persist(page)}catch{self.error=error.localizedDescription}
         previewTask?.cancel();let snapshot=page,directory=self.directory
-        previewTask=Task {try? await Task.sleep(nanoseconds:500_000_000);guard !Task.isCancelled else{return};try? await Task.detached(priority:.utility){try ImagePipeline.projectThumbnail(snapshot,directory:directory)}.value}
+        let library=self.library
+        previewTask=Task {try? await Task.sleep(nanoseconds:500_000_000);guard !Task.isCancelled else{return};do{try await Task.detached(priority:.utility){try ImagePipeline.projectThumbnail(snapshot,directory:directory)}.value;guard !Task.isCancelled else{return};library.objectWillChange.send()}catch{}}
     }
     func exportPNG() async {await export(format:"PNG")}
     func export(format:String,quality:Double=0.95) async {

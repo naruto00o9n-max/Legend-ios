@@ -1,6 +1,7 @@
 import XCTest
 import UIKit
 import ImageIO
+import Combine
 @testable import CookiesEditor
 
 final class EditorTests:XCTestCase {
@@ -51,5 +52,12 @@ final class EditorTests:XCTestCase {
         coordinator.canvas=canvas;coordinator.scroll=scroll;scroll.addSubview(canvas);scroll.contentSize=canvas.bounds.size;scroll.delegate=coordinator;scroll.minimumZoomScale=0.01;scroll.maximumZoomScale=128;scroll.setZoomScale(0.3,animated:false);coordinator.updateCenter()
         XCTAssertEqual(scroll.contentInset.left,67.5,accuracy:0.1);XCTAssertEqual(scroll.contentInset.top,160,accuracy:0.1);XCTAssertEqual(model.visibleCenter.x,400,accuracy:0.1);XCTAssertEqual(model.visibleCenter.y,300,accuracy:0.1)
         let savedCenter=model.visibleCenter,savedZoom=model.zoom;coordinator.readOnly=true;scroll.setZoomScale(2,animated:false);coordinator.updateCenter();XCTAssertEqual(model.visibleCenter,savedCenter,"Reading has its own viewport");XCTAssertEqual(model.zoom,savedZoom,"Reading must not overwrite editor zoom")
+    }
+    @MainActor func testGalleryRefreshesAfterEditedThumbnailIsSaved() async throws {
+        let root=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString);defer{try? FileManager.default.removeItem(at:root)}
+        let library=LibraryStore(root:root),page=try ImagePipeline.fixture(root:root);library.add(page,parent:nil)
+        let thumbnail=library.directory(page.id).appendingPathComponent("thumbnail.png"),original=try Data(contentsOf:thumbnail),model=EditorModel(page:page,library:library),refreshed=expectation(description:"Gallery observes the completed preview")
+        let subscription=library.objectWillChange.sink{refreshed.fulfill()};defer{subscription.cancel()}
+        model.add(.text);model.change{$0.textContent="كوكيز"};await fulfillment(of:[refreshed],timeout:10);XCTAssertNotEqual(try Data(contentsOf:thumbnail),original)
     }
 }

@@ -2,18 +2,21 @@ import UIKit
 import CoreText
 
 enum Fonts {
+    private static let cache=NSCache<NSString,UIFont>()
     static var userDirectory:URL {FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("Cookies/Fonts",isDirectory:true)}
     static var userFiles:[URL] {(try? FileManager.default.contentsOfDirectory(at:userDirectory,includingPropertiesForKeys:nil)) ?? []}
     static var files:[URL] {(Bundle.main.urls(forResourcesWithExtension:"ttf",subdirectory:"Fonts") ?? [])+userFiles.filter{$0.pathExtension.lowercased()=="ttf"}}
     static var otf:[URL] {(Bundle.main.urls(forResourcesWithExtension:"otf",subdirectory:"Fonts") ?? [])+userFiles.filter{$0.pathExtension.lowercased()=="otf"}}
-    static func register(){for url in files+otf{CTFontManagerRegisterFontsForURL(url as CFURL,.process,nil)}}
+    static func register(){cache.removeAllObjects();for url in files+otf{CTFontManagerRegisterFontsForURL(url as CFURL,.process,nil)}}
     static func font(_ style:TextStyle)->UIFont {
+        let key="\(style.fontPath)|\(style.fontSize)|\(style.isBold)|\(style.isItalic)" as NSString
+        if let cached=cache.object(forKey:key){return cached}
         let path=Bundle.main.url(forResource:style.fontPath,deletingExtension: false)
         let url=path ?? userFiles.first{$0.lastPathComponent==style.fontPath}
-        var f=UIFont.systemFont(ofSize:CGFloat(style.fontSize))
-        if let url,let provider=CGDataProvider(url:url as CFURL),let cg=CGFont(provider),let name=cg.postScriptName,let custom=UIFont(name:name as String,size:CGFloat(style.fontSize)){f=custom}
+        var f=UIFont.systemFont(ofSize:CGFloat(style.fontSize)),loaded=false
+        if let url,let provider=CGDataProvider(url:url as CFURL),let cg=CGFont(provider),let name=cg.postScriptName,let custom=UIFont(name:name as String,size:CGFloat(style.fontSize)){f=custom;loaded=true}
         var traits=UIFontDescriptor.SymbolicTraits();if style.isBold{traits.insert(.traitBold)};if style.isItalic{traits.insert(.traitItalic)}
-        if let d=f.fontDescriptor.withSymbolicTraits(traits){f=UIFont(descriptor:d,size:CGFloat(style.fontSize))};return f
+        if let d=f.fontDescriptor.withSymbolicTraits(traits){f=UIFont(descriptor:d,size:CGFloat(style.fontSize))};if loaded{cache.countLimit=256;cache.setObject(f,forKey:key)};return f
     }
 }
 extension Bundle {func url(forResource name:String,deletingExtension:Bool)->URL?{url(forResource:name,withExtension:nil,subdirectory:"Fonts")}}
