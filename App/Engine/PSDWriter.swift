@@ -13,6 +13,7 @@ enum PSDWriter {
         guard LIImportPNG(composite.path,merged.path,&width,&height,&error,error.count)==1 else{throw ImageFailure.message("تعذر تجهيز PSD")}
         var background=EditorLayer(kind:.image,name:"الصورة الأصلية");background.frame=Box(x:0,y:0,width:Double(page.width),height:Double(page.height))
         var items=[Item(layer:background,rect:CGRect(x:0,y:0,width:page.width,height:page.height),raw:directory.appendingPathComponent(page.raw))]
+        let documentSpace=ImagePipeline.colorSpace(directory.appendingPathComponent(page.source))
         for layer in page.layers {
             let padding=max(4,layer.style.strokeWidth+layer.style.shadowRadius*3+layer.style.effectValue*3+Double(layer.style.threeDDepth))
             let rect=LayerRenderer.bounds(layer).insetBy(dx:-padding,dy:-padding).applying(LayerRenderer.transform(layer)).intersection(CGRect(x:0,y:0,width:page.width,height:page.height)).integral
@@ -20,7 +21,7 @@ enum PSDWriter {
             let raw=work.appendingPathComponent(layer.id.uuidString+".rgba");fm.createFile(atPath:raw.path,contents:nil);let file=try FileHandle(forWritingTo:raw);defer{try? file.close()}
             var copy=layer;copy.isVisible=true;copy.opacity=1;copy.blend = .normal
             for y in stride(from:0,to:Int(rect.height),by:256){let rows=min(256,Int(rect.height)-y);var bytes=[UInt8](repeating:0,count:Int(rect.width)*rows*4)
-                let ok=bytes.withUnsafeMutableBytes{buffer->Bool in guard let ctx=CGContext(data:buffer.baseAddress,width:Int(rect.width),height:rows,bitsPerComponent:8,bytesPerRow:Int(rect.width)*4,space:ImagePipeline.space,bitmapInfo:CGImageAlphaInfo.premultipliedLast.rawValue) else{return false};ctx.translateBy(x:-rect.minX,y:CGFloat(rows)+rect.minY+CGFloat(y));ctx.scaleBy(x:1,y:-1);LayerRenderer.draw([copy],in:ctx,directory:directory);return true}
+                let ok=bytes.withUnsafeMutableBytes{buffer->Bool in guard let ctx=CGContext(data:buffer.baseAddress,width:Int(rect.width),height:rows,bitsPerComponent:8,bytesPerRow:Int(rect.width)*4,space:documentSpace,bitmapInfo:CGImageAlphaInfo.premultipliedLast.rawValue) else{return false};ctx.translateBy(x:-rect.minX,y:CGFloat(rows)+rect.minY+CGFloat(y));ctx.scaleBy(x:1,y:-1);LayerRenderer.draw([copy],in:ctx,directory:directory);return true}
                 guard ok else{throw ImageFailure.message("تعذر رسم طبقة PSD")}
                 for offset in stride(from:0,to:bytes.count,by:4){let alpha=Int(bytes[offset+3]);if alpha>0{for channel in 0..<3{bytes[offset+channel]=UInt8(min(255,(Int(bytes[offset+channel])*255+alpha/2)/alpha))}}}
                 try file.write(contentsOf:Data(bytes))
