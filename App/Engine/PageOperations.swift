@@ -37,8 +37,18 @@ enum PageOperations {
         guard !region.isEmpty,region.width>=1,region.height>=1 else{throw ImageFailure.message("منطقة القص خارج الصورة")}
         let source=root.appendingPathComponent(page.id.uuidString)
         var output=try build(title:page.title,width:Int(region.width),height:Int(region.height),root:root,profile:source.appendingPathComponent(page.source)){y,count in try ImagePipeline.tile(source.appendingPathComponent(page.raw),width:page.width,height:page.height,rect:CGRect(x:region.minX,y:region.minY+CGFloat(y),width:region.width,height:CGFloat(count)))}
-        output.layers=try copyLayers(page.layers,from:source,to:root.appendingPathComponent(output.id.uuidString),offset:CGPoint(x:-region.minX,y:-region.minY))
+        output.baseHidden=page.baseHidden;output.layers=try copyLayers(page.layers,from:source,to:root.appendingPathComponent(output.id.uuidString),offset:CGPoint(x:-region.minX,y:-region.minY))
         try persist(output,root:root);return output
+    }
+    static func canvasResized(_ page:EditorPage,width:Int,height:Int,root:URL)throws->EditorPage {
+        let source=root.appendingPathComponent(page.id.uuidString),dx=(width-page.width)/2,dy=(height-page.height)/2
+        var output=try build(title:page.title,width:width,height:height,root:root,profile:source.appendingPathComponent(page.source)){y,count in
+            var data=[UInt8](repeating:255,count:width*count*4)
+            let sourceX=max(0,-dx),destX=max(0,dx),copyWidth=min(page.width-sourceX,width-destX),sourceY=max(0,y-dy),destY=max(y,dy),copyRows=min(y+count,dy+page.height)-destY
+            if copyWidth>0,copyRows>0{let pixels=try ImagePipeline.tile(source.appendingPathComponent(page.raw),width:page.width,height:page.height,rect:CGRect(x:sourceX,y:sourceY,width:copyWidth,height:copyRows));for row in 0..<copyRows{let start=((destY-y+row)*width+destX)*4;data.replaceSubrange(start..<start+copyWidth*4,with:pixels[row*copyWidth*4..<(row+1)*copyWidth*4])}}
+            return data
+        }
+        output.baseHidden=page.baseHidden;output.layers=try copyLayers(page.layers,from:source,to:root.appendingPathComponent(output.id.uuidString),offset:CGPoint(x:dx,y:dy));try persist(output,root:root);return output
     }
     static func split(_ page:EditorPage,maximumHeight:Int,root:URL)throws->[EditorPage] {
         guard maximumHeight>0 else{throw ImageFailure.message("اكتب طول الجزء")}
@@ -74,7 +84,7 @@ enum PageOperations {
             // The renderer produced premultiplied pixels; libpng expects straight RGBA.
             for i in stride(from:0,to:band.count,by:4){let alpha=Int(band[i+3]);if alpha>0 && alpha<255{for c in 0..<3{band[i+c]=UInt8(min(255,Int(band[i+c])*255/alpha))}}};return band
         }
-        output.layers=try copyLayers(page.layers,from:source,to:root.appendingPathComponent(output.id.uuidString)).map{layer in var next=layer;let b=LayerRenderer.bounds(layer);next.frame.x=(layer.frame.x+Double(b.width)/2)*sx-Double(b.width)/2;next.frame.y=(layer.frame.y+Double(b.height)/2)*sy-Double(b.height)/2;next.scaleX*=sx;next.scaleY*=sy;return next}
+        output.baseHidden=page.baseHidden;output.layers=try copyLayers(page.layers,from:source,to:root.appendingPathComponent(output.id.uuidString)).map{layer in var next=layer;let b=LayerRenderer.bounds(layer);next.frame.x=(layer.frame.x+Double(b.width)/2)*sx-Double(b.width)/2;next.frame.y=(layer.frame.y+Double(b.height)/2)*sy-Double(b.height)/2;next.scaleX*=sx;next.scaleY*=sy;return next}
         try persist(output,root:root);return output
     }
     static func importPDF(_ url:URL,root:URL,scale:Double=2)throws->[EditorPage] {

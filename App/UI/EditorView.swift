@@ -7,6 +7,7 @@ struct EditorView:View {
     @State private var layers=false;@State private var shapes=false;@State private var assistant=false
     @State private var reader=false
     @State private var brushSettings=false
+    @State private var replacingBackground=false
     @State private var showExport=false;@State private var imagePicker=false
     @AppStorage("editor-icon-scale") private var iconScale=1.0
     @AppStorage("editor-toolbar-scale") private var toolbarScale=1.0
@@ -42,13 +43,14 @@ struct EditorView:View {
                     Menu{
                         Button{select(.cleaner)}label:{Label("تنظيف",systemImage:"sparkles")}.accessibilityIdentifier("tool-cleaner")
                         Button{select(.eyedropper)}label:{Label("قطارة",systemImage:"eyedropper")}.accessibilityIdentifier("tool-eyedropper")
+                        Button{replacingBackground=true}label:{Label("استبدال الصورة الأصلية",systemImage:"photo.on.rectangle")}
                         Button{reader=true}label:{Label("القراءة",systemImage:"book")}.accessibilityIdentifier("tool-reader")
                     }label:{VStack(spacing:6){Image(systemName:"ellipsis").font(.system(size:20));Text("المزيد").font(.system(size:10))}.frame(width:62,height:60)}.accessibilityIdentifier("tool-more")
                 }.padding(.horizontal,8)}.frame(height:68*min(1.15,max(0.85,toolbarScale))).accessibilityIdentifier("tool-strip")
             }
 
         }.foregroundStyle(Palette.pale).glass(0)}
-        .toolbar(.hidden,for:.navigationBar).foregroundStyle(Palette.pale).animation(.easeInOut(duration:0.2),value:model.panel)
+        .toolbar(.hidden,for:.navigationBar).foregroundStyle(Palette.pale).animation(EditorPreferences.motion ? .easeInOut(duration:0.2):nil,value:model.panel)
         .overlay(alignment:.trailing){if !assistant{Button{assistant=true;model.panel=nil}label:{Image("CookiesLogo").resizable().scaledToFit().frame(width:38,height:38).clipShape(Circle()).padding(6).background(Palette.ink.opacity(0.85),in:Circle()).overlay(Circle().stroke(Palette.gold.opacity(0.4),lineWidth:0.8))}.padding(.trailing,12).accessibilityIdentifier("tool-assistant").accessibilityLabel("التايبر")}}
         .overlay(alignment:.trailing){if assistant{GeometryReader{g in TyperPanel(model:model,close:{assistant=false},compact:g.size.height<500).frame(width:min(CGFloat(typerWidth),g.size.width-24),height:min(CGFloat(typerHeight),max(160,g.size.height-136))).frame(maxWidth:.infinity,maxHeight:.infinity,alignment:.trailing).padding(.trailing,8)}.transition(.move(edge:.trailing).combined(with:.opacity))}}
         .overlay(alignment:.top){if model.sniperMode{HStack{Image(systemName:"scope");Text("حدد الفقاعات بالترتيب · \(model.sniperTargets.count)").font(.system(size:12));Button("تراجع"){_ = model.sniperTargets.popLast()}.disabled(model.sniperTargets.isEmpty);Button("الفقاعات"){assistant=true};Button("إنهاء"){model.sniperMode=false}}.padding(12).glass(14).padding(.horizontal,12).padding(.top,58)}}
@@ -58,6 +60,7 @@ struct EditorView:View {
         .sheet(isPresented:$layers){LayerSheet(model:model).cookiesInterface().presentationDetents([.medium,.large]).presentationBackground(.clear)}
         .sheet(isPresented:$shapes){ShapeSheet(model:model).cookiesInterface().presentationDetents([.medium,.large]).presentationBackground(.clear)}
         .sheet(isPresented:$showExport){ExportSheet(model:model).cookiesInterface().presentationDetents([.height(390)]).presentationBackground(.clear)}
+        .sheet(isPresented:$replacingBackground){PhotoLibraryPicker{result in switch result{case .failure(let error):model.error=error.localizedDescription;case .success(let urls):if let url=urls.first{Task{defer{try? FileManager.default.removeItem(at:url)};await model.replaceBackground(url)}}}}}
         .sheet(isPresented:$imagePicker){PhotoLibraryPicker{result in
             switch result{case .failure(let error):model.error=error.localizedDescription
             case .success(let urls):if let url=urls.first{defer{try? FileManager.default.removeItem(at:url)};do{

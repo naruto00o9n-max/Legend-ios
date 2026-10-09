@@ -41,12 +41,18 @@ import SwiftUI
     @Published var brushTexture=""
     @Published var drawingShape="free"
     @Published var drawingFilled=false
+    @Published var fillTolerance=12.0
+    @Published var smudgeStrength=0.4
+    @Published var textMaskMode=false
+    @Published var textMaskRestore=false
     @Published var zoom = 1.0
     @Published var error:String?
     @Published var busy = false
     @Published var exported:URL?
     @Published var undoStack:[[EditorLayer]]=[]
     @Published var redoStack:[[EditorLayer]]=[]
+    var undoDocuments:[EditorPage]=[]
+    var redoDocuments:[EditorPage]=[]
     @Published var sniperTargets:[SniperTarget]=[]
     @Published var sniperMode=false
     let library:LibraryStore; var visibleCenter=CGPoint.zero
@@ -76,7 +82,7 @@ import SwiftUI
             if !sniperTargets.contains(where:{hypot($0.point.x-point.x,$0.point.y-point.y)<12}){sniperTargets.append(target)}
         }catch{self.error=error.localizedDescription}
     }
-    func checkpoint() {undoStack.append(page.layers);if undoStack.count>60{undoStack.removeFirst()};redoStack=[]}
+    func checkpoint() {undoStack.append(page.layers);undoDocuments.append(page);if undoStack.count>60{undoStack.removeFirst();undoDocuments.removeFirst()};redoStack=[];redoDocuments=[]}
     func change(persist:Bool=true,_ body:(inout EditorLayer)->Void) {guard let i=page.layers.firstIndex(where:{$0.id==selected}),!page.layers[i].isLocked else{return};body(&page.layers[i]);page.modified=Date();if persist{save()}}
     func add(_ kind:LayerKind,shape:Int=0) {
         checkpoint();let center=visibleCenter == .zero ? CGPoint(x:Double(page.width)/2,y:200):visibleCenter
@@ -86,8 +92,8 @@ import SwiftUI
     }
     func delete() {guard let selected else{return};checkpoint();page.layers.removeAll{$0.id==selected};self.selected=nil;save()}
     func duplicate() {guard var l=active else{return};checkpoint();l.id=UUID();l.frame.x+=20;l.frame.y+=20;page.layers.append(l);selected=l.id;save()}
-    func undo(){guard let previous=undoStack.popLast() else{return};redoStack.append(page.layers);page.layers=previous;selected=nil;save()}
-    func redo(){guard let next=redoStack.popLast() else{return};undoStack.append(page.layers);page.layers=next;selected=nil;save()}
+    func undo(){guard let previous=undoStack.popLast() else{return};redoStack.append(page.layers);redoDocuments.append(page);if let document=undoDocuments.popLast(){page=document}else{page.layers=previous};selected=nil;save()}
+    func redo(){guard let next=redoStack.popLast() else{return};undoStack.append(page.layers);undoDocuments.append(page);if let document=redoDocuments.popLast(){page=document}else{page.layers=next};selected=nil;save()}
     func save(){do{try library.persist(page)}catch{self.error=error.localizedDescription}
         previewTask?.cancel();let snapshot=page,directory=self.directory
         let library=self.library

@@ -8,7 +8,7 @@ enum TextRaster {
     static let context=CIContext(options:[.cacheIntermediates:false])
     static func draw(_ layer:EditorLayer,rect:CGRect,in c:CGContext,directory:URL)->Bool {
         let s=layer.style
-        let advanced = (s.fadeAmount ?? 0)>0 || !s.textGradient.isEmpty || !s.strokeGradient.isEmpty || !s.texturePath.isEmpty || !s.perspectivePoints.isEmpty || s.isMeshMode || s.rotationX != 0 || s.rotationY != 0 || s.effectType == .blur || s.effectType == .fade
+        let advanced = !(layer.textMask ?? []).isEmpty || (s.fadeAmount ?? 0)>0 || !s.textGradient.isEmpty || !s.strokeGradient.isEmpty || !s.texturePath.isEmpty || !s.perspectivePoints.isEmpty || s.isMeshMode || s.rotationX != 0 || s.rotationY != 0 || s.effectType == .blur || s.effectType == .fade
         guard advanced,rect.width*rect.height<4_194_304 else{return false}
         var glyphLayer=layer;glyphLayer.frame.x=0;glyphLayer.frame.y=0;glyphLayer.rotation=0;glyphLayer.scaleX=1;glyphLayer.scaleY=1;glyphLayer.opacity=1;glyphLayer.isLocked=false;glyphLayer.isVisible=true;let key=(directory.path+String(data:(try? JSONEncoder().encode(glyphLayer)) ?? Data(),encoding:.utf8)!) as NSString
         let pad=max(8,CGFloat(s.strokeWidth+s.shadowRadius*3+s.effectValue*3))
@@ -20,6 +20,12 @@ enum TextRaster {
             let glyph=UIGraphicsImageRenderer(size:size,format:format).image{r in
                 let a=NSMutableAttributedString(attributedString:LayerRenderer.attributed(layer,color:.white))
                 a.draw(with:rect.offsetBy(dx:pad,dy:pad),options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)
+                if let strokes=layer.textMask,!strokes.isEmpty{
+                    let mask=UIGraphicsImageRenderer(size:size,format:format).image{output in
+                        UIColor.white.setFill();output.fill(CGRect(origin:.zero,size:size));output.cgContext.translateBy(x:pad,y:pad)
+                        for stroke in strokes{BrushRenderer.draw(stroke,in:output.cgContext,directory:directory)}
+                    };mask.draw(at:.zero,blendMode:.destinationIn,alpha:1)
+                }
             }
             var result=UIGraphicsImageRenderer(size:size,format:format).image{r in
                 let ctx=r.cgContext

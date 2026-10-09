@@ -53,7 +53,7 @@ enum ImagePipeline {
         guard let cg=image(pixels,width:(page.width+sample-1)/sample,height:(visibleHeight+sample-1)/sample,colorSpace:colorSpace(directory.appendingPathComponent(page.source))) else{return}
         let format=UIGraphicsImageRendererFormat();format.scale=1
         let preview=UIGraphicsImageRenderer(size:CGSize(width:cg.width,height:cg.height),format:format).image{renderer in
-            UIImage(cgImage:cg).draw(in:CGRect(x:0,y:0,width:cg.width,height:cg.height));renderer.cgContext.scaleBy(x:1/CGFloat(sample),y:1/CGFloat(sample));LayerRenderer.draw(page.layers,in:renderer.cgContext,directory:directory)
+            if page.baseHidden != true{UIImage(cgImage:cg).draw(in:CGRect(x:0,y:0,width:cg.width,height:cg.height))};renderer.cgContext.scaleBy(x:1/CGFloat(sample),y:1/CGFloat(sample));LayerRenderer.draw(page.layers,in:renderer.cgContext,directory:directory)
         }
         try preview.pngData()?.write(to:directory.appendingPathComponent("thumbnail.png"),options:.atomic)
     }
@@ -64,13 +64,13 @@ enum ImagePipeline {
     static func exportPNG(_ page:EditorPage,directory:URL)throws->URL {
         let output=FileManager.default.temporaryDirectory.appendingPathComponent("Cookies-\(page.id.uuidString)-\(UUID().uuidString).png")
         let original=directory.appendingPathComponent(page.source)
-        if page.layers.allSatisfy({!$0.isVisible}){try FileManager.default.copyItem(at:original,to:output);return output}
+        if page.baseHidden != true && page.layers.allSatisfy({!$0.isVisible}){try FileManager.default.copyItem(at:original,to:output);return output}
         var error=[CChar](repeating:0,count:512)
         guard let writer=LIWriterOpen(original.path,output.path,Int32(page.width),Int32(page.height),&error,error.count) else{throw ImageFailure.message("تعذر بدء التصدير")}
         defer{LIWriterClose(writer)}
         for y in stride(from:0,to:page.height,by:256) {
             try Task.checkCancellation()
-            let rows=min(256,page.height-y);var base=try tile(directory.appendingPathComponent(page.raw),width:page.width,height:page.height,rect:CGRect(x:0,y:y,width:page.width,height:rows))
+            let rows=min(256,page.height-y);var base=page.baseHidden==true ? [UInt8](repeating:0,count:page.width*rows*4):(try tile(directory.appendingPathComponent(page.raw),width:page.width,height:page.height,rect:CGRect(x:0,y:y,width:page.width,height:rows)))
             for layer in page.layers where layer.isVisible {
                 var overlay=[UInt8](repeating:0,count:base.count)
                 var isolated=layer;isolated.blend = .normal

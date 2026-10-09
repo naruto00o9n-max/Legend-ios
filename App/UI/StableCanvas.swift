@@ -30,6 +30,7 @@ final class DocumentCanvas: UIView {
     private var strokeCommitRevision: Int?
     private var stagedImages: [String: UIImage] = [:]
     private var interaction: LayerInteraction?
+    private var drawingInteraction=false
     private var interactionRevision: Int?
     private var renderedLayers: [EditorLayer] = []
     private var handles: [String: UIButton] = [:]
@@ -70,7 +71,7 @@ final class DocumentCanvas: UIView {
     }
     required init?(coder: NSCoder) { fatalError() }
     func update(page: EditorPage, directory: URL, selected: UUID?, zoom: CGFloat) {
-        let identity = directory.path + "/" + page.raw
+        let identity = directory.path + "/" + page.raw + (page.baseHidden==true ? "|hidden":"")
         let sourceChanged = sourceIdentity != identity
         if sourceChanged { interaction?.remove(); interaction = nil; interactionRevision = nil }
         let renderPage = rasterPage(page)
@@ -127,7 +128,7 @@ final class DocumentCanvas: UIView {
             var sample = 1
             while ((page.width + sample - 1) / sample) * ((page.height + sample - 1) / sample) > 1_000_000 { sample *= 2 }
             let rect = CGRect(x: 0, y: 0, width: page.width, height: page.height)
-            let pixels = try? ImagePipeline.tile(directory.appendingPathComponent(page.raw), width: page.width, height: page.height, rect: rect, sample: sample)
+            let pixels:[UInt8]? = page.baseHidden==true ? [UInt8](repeating:0,count:((page.width+sample-1)/sample)*((page.height+sample-1)/sample)*4):(try? ImagePipeline.tile(directory.appendingPathComponent(page.raw), width: page.width, height: page.height, rect: rect, sample: sample))
             let cg = pixels.flatMap { ImagePipeline.image($0, width: (page.width + sample - 1) / sample, height: (page.height + sample - 1) / sample, colorSpace: ImagePipeline.colorSpace(directory.appendingPathComponent(page.source))) }
             DispatchQueue.main.async { guard let self, self.sourceIdentity == identity else { return }; self.preview.image = cg.map { UIImage(cgImage: $0) } }
         }
@@ -141,7 +142,7 @@ final class DocumentCanvas: UIView {
             let cacheKey = (identity + "|" + key) as NSString
             if let cached = cache.object(forKey: cacheKey) { base = cached } else {
                 read = true
-                let pixels = try? ImagePipeline.tile(directory.appendingPathComponent(page.raw), width: page.width, height: page.height, rect: tile.rect, sample: tile.sample)
+                let pixels:[UInt8]? = page.baseHidden==true ? [UInt8](repeating:0,count:((Int(tile.rect.width)+tile.sample-1)/tile.sample)*((Int(tile.rect.height)+tile.sample-1)/tile.sample)*4):(try? ImagePipeline.tile(directory.appendingPathComponent(page.raw), width: page.width, height: page.height, rect: tile.rect, sample: tile.sample))
                 let cg = pixels.flatMap { ImagePipeline.image($0, width: (Int(tile.rect.width) + tile.sample - 1) / tile.sample, height: (Int(tile.rect.height) + tile.sample - 1) / tile.sample, colorSpace: ImagePipeline.colorSpace(directory.appendingPathComponent(page.source))) }
                 base = cg.map { UIImage(cgImage: $0) }
                 if let base { cache.setObject(base, forKey: cacheKey, cost: Int(base.size.width * base.size.height) * 4) }
@@ -255,8 +256,12 @@ final class DocumentCanvas: UIView {
     func showStroke(_ stroke: Stroke?, on page: EditorPage, selected: UUID?) {
         CATransaction.begin(); CATransaction.setDisableActions(true)
         defer { CATransaction.commit() }
-        guard let stroke, let first = stroke.points.first else {
-            liveInk.path = nil; return
+        guard let stroke, !stroke.points.isEmpty else {
+            liveInk.path = nil;if drawingInteraction{update(page:page,directory:directory ?? FileManager.default.temporaryDirectory,selected:selected,zoom:zoom);drawingInteraction=false;endLayerInteraction()};return
+        }
+        if stroke.erase || stroke.brush=="soft" || stroke.brush=="texture" {
+            if !drawingInteraction,interaction==nil,let selected,let directory,visible.width*visible.height<=4_194_304,let preview=LayerInteraction(page:page,selected:selected,directory:directory,drawingViewport:visible.insetBy(dx:-stroke.width,dy:-stroke.width).intersection(CGRect(x:0,y:0,width:page.width,height:page.height))){interaction=preview;preview.attach(to:self);interactionRevision=revision+1;drawingInteraction=true}
+            if drawingInteraction,let index=page.layers.firstIndex(where:{$0.id==selected}),let directory{var live=page;live.layers[index].strokes.append(stroke);update(page:live,directory:directory,selected:selected,zoom:zoom);return}
         }
         let path = BrushRenderer.path(stroke)
         let item = page.layers.first { $0.id == selected }
@@ -276,11 +281,12 @@ final class DocumentCanvas: UIView {
         handles.values.forEach { bringSubviewToFront($0) }
     }
     func commitLiveStroke() {
+        if drawingInteraction{drawingInteraction=false;endLayerInteraction();return}
         let committed = CAShapeLayer(layer: liveInk), target = revision + 1
         layer.addSublayer(committed); pendingInk.append((target, committed)); liveInk.path = nil
         strokeCommitRevision = pendingInk.map(\.revision).min()
     }
-    var liveStrokeVisible: Bool { liveInk.path != nil || !pendingInk.isEmpty }
+    var liveStrokeVisible: Bool { liveInk.path != nil || !pendingInk.isEmpty || drawingInteraction }
     private func rasterPage(_ page: EditorPage) -> EditorPage {
         guard let interaction, interaction.phase != .finishing else { return page }
         var result = page; result.layers.removeAll { interaction.excluded.contains($0.id) }; return result

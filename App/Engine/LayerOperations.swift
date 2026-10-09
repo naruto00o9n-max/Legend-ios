@@ -13,12 +13,12 @@ extension EditorModel {
         let snapshot=page,directory=self.directory
         do{let result=try await BackgroundWork.run{try LayerBitmap.merge(layers,page:snapshot,directory:directory)}
             guard page==snapshot else{return};checkpoint();page.layers.replaceSubrange(first...last,with:[result]);selected=result.id;save()
-        }catch{error=error.localizedDescription}
+        }catch{self.error=error.localizedDescription}
     }
     func flattenLayers() async {
         guard !busy,!page.layers.isEmpty else{return};busy=true;defer{busy=false};let snapshot=page,directory=self.directory
-        do{let file=try await BackgroundWork.run{try ImagePipeline.exportPNG(snapshot,directory:directory)};defer{try? FileManager.default.removeItem(at:file)};guard page==snapshot else{return};let name=UUID().uuidString+".png";try FileManager.default.copyItem(at:file,to:directory.appendingPathComponent(name));checkpoint();var layer=EditorLayer(kind:.image,name:"تسطيح العمل");layer.imagePath=name;layer.frame=Box(x:0,y:0,width:Double(page.width),height:Double(page.height));page.layers=[layer];selected=layer.id;save()
-        }catch{error=error.localizedDescription}
+        do{let file=try await BackgroundWork.run{try ImagePipeline.exportPNG(snapshot,directory:directory)};defer{try? FileManager.default.removeItem(at:file)};guard page==snapshot else{return};let name=UUID().uuidString+".png";try FileManager.default.copyItem(at:file,to:directory.appendingPathComponent(name));checkpoint();var layer=EditorLayer(kind:.image,name:"تسطيح العمل");layer.imagePath=name;layer.frame=Box(x:0,y:0,width:Double(page.width),height:Double(page.height));page.layers=[layer];page.baseHidden=true;selected=layer.id;save()
+        }catch{self.error=error.localizedDescription}
     }
 }
 enum LayerBitmap {

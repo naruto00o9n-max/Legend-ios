@@ -6,6 +6,7 @@ struct ChapterGalleryView:View {
     let id:UUID
     @State private var selection=Set<UUID>()
     @State private var selecting=false
+    @State private var deleting=false
     @State private var photos=false
     @State private var files=false
     @State private var operation:String?
@@ -17,7 +18,7 @@ struct ChapterGalleryView:View {
     @State private var failure:String?
     var chapter:LibraryItem?{library.chapter(id)}
     var ids:[UUID]{chapter?.pages ?? []}
-    var chosen:[UUID]{selection.isEmpty ? ids:ids.filter{selection.contains($0)}}
+    var chosen:[UUID]{selecting ? ids.filter{selection.contains($0)}:ids}
     var body:some View {
         ZStack{Ambient();ScrollView{VStack(alignment:.leading,spacing:16){
             HStack{Text("\(ids.count) صفحة").font(.system(size:12)).foregroundStyle(Palette.quiet);Spacer();if selecting{Button(selection.count==ids.count ? "إلغاء التحديد":"تحديد الكل"){selection=selection.count==ids.count ? []:Set(ids)}};Button(selecting ? "تم":"تحديد"){selecting.toggle();if !selecting{selection=[]}}.accessibilityIdentifier("chapter-select")}
@@ -29,7 +30,7 @@ struct ChapterGalleryView:View {
                 Button{operation="تغيير الأسماء"}label:{Label("تغيير الأسماء",systemImage:"pencil")}.disabled(chosen.isEmpty)
                 Menu("نقل المحدد إلى"){ForEach(library.items.filter{$0.isChapter==true && $0.id != id}){item in Button(item.title){perform{try library.movePages(Set(chosen),from:id,to:item.id);selection=[]}}}}
                 Button{perform{try library.restoreChapter(id)}}label:{Label("استعادة الصفحات قبل آخر عملية",systemImage:"arrow.uturn.backward")}
-                Button(role:.destructive){perform{try library.setPages(ids.filter{!chosen.contains($0)},chapter:id);selection=[]}}label:{Label("حذف المحدد من الفصل",systemImage:"trash")}
+                Button(role:.destructive){deleting=true}label:{Label("حذف المحدد من الفصل",systemImage:"trash")}.disabled(chosen.isEmpty)
             }label:{Image(systemName:"ellipsis.circle")}}
             if ids.isEmpty{ContentUnavailableView("فصل جديد",systemImage:"rectangle.stack",description:Text("أضف صور الفصل أو اسحبه من رابط أو أنشئ لوحة فارغة."))}
             LazyVGrid(columns:[GridItem(.adaptive(minimum:150),spacing:12)],spacing:12){ForEach(Array(ids.enumerated()),id:\.element){index,pageID in
@@ -50,6 +51,7 @@ struct ChapterGalleryView:View {
         .sheet(isPresented:$exporting){ChapterExportSheet(chapter:id,ids:chosen).cookiesInterface()}
         .fullScreenCover(isPresented:$reading){ChapterReaderView(chapter:id).cookiesInterface()}
         .fullScreenCover(isPresented:$browser){WebtoonImportView(chapter:id).cookiesInterface()}
+        .confirmationDialog("إزالة \(chosen.count) صفحة من الفصل؟",isPresented:$deleting,titleVisibility:.visible){Button("إزالة الصفحات",role:.destructive){perform{try library.setPages(ids.filter{!chosen.contains($0)},chapter:id);selection=[]}}}
         .alert("تعذر إكمال العملية",isPresented:Binding(get:{failure != nil},set:{if !$0{failure=nil}})){Button("حسنًا"){failure=nil}}message:{Text(failure ?? "")}
     }
     func card(_ page:UUID,index:Int)->some View {
@@ -69,6 +71,9 @@ struct PageOperationSheet:View {
     @State private var width=800.0
     @State private var height=1500.0
     @State private var keepRatio=true
+    @State private var splitMode="height"
+    @State private var splitCount=2.0
+    @State private var resizeMode="scale"
     @State private var transparent=false
     @State private var color=Color.white
     @State private var name="صفحة"
@@ -78,21 +83,22 @@ struct PageOperationSheet:View {
     @State private var job:Task<Void,Never>?
     var body:some View {NavigationStack{Form{
         if operation=="لوحة فارغة" || operation=="تغيير الأسماء"{TextField("الاسم",text:$name)}
-        if operation=="لوحة فارغة" || operation=="تغيير المقاس"{HStack{Text("العرض px");TextField("العرض",value:$width,format:.number).keyboardType(.numberPad)};if operation=="تغيير المقاس"{Toggle("حفظ النسبة لكل صفحة",isOn:$keepRatio)}}
-        if operation=="تقسيم" || operation=="لوحة فارغة" || (operation=="تغيير المقاس" && !keepRatio){HStack{Text(operation=="تقسيم" ? "أقصى طول الجزء px":"الطول px");TextField("الطول",value:$height,format:.number).keyboardType(.numberPad)}}
+        if operation=="لوحة فارغة" || operation=="تغيير المقاس"{HStack{Text("العرض px");TextField("العرض",value:$width,format:.number).keyboardType(.numberPad)};if operation=="تغيير المقاس"{Picker("طريقة تغيير المقاس",selection:$resizeMode){Text("تحجيم المحتوى والطبقات").tag("scale");Text("مساحة اللوحة فقط").tag("canvas")};Toggle("حفظ النسبة لكل صفحة",isOn:$keepRatio)}}
+        if operation=="تقسيم"{Picker("طريقة التقسيم",selection:$splitMode){Text("بالطول").tag("height");Text("بالعدد").tag("count")};if splitMode=="count"{TextField("عدد الأجزاء",value:$splitCount,format:.number).keyboardType(.numberPad)}}
+        if (operation=="تقسيم" && splitMode=="height") || operation=="لوحة فارغة" || (operation=="تغيير المقاس" && !keepRatio){HStack{Text(operation=="تقسيم" ? "أقصى طول الجزء px":"الطول px");TextField("الطول",value:$height,format:.number).keyboardType(.numberPad)}}
         if operation=="لوحة فارغة"{Toggle("خلفية شفافة",isOn:$transparent);ColorPicker("لون الخلفية",selection:$color,supportsOpacity:false)}
         if operation=="دمج"{Picker("محاذاة الصور المختلفة العرض",selection:$alignment){Text("يسار").tag(0);Text("وسط").tag(1);Text("يمين").tag(2)};Text("لن تتغير دقة الصور؛ تُدمج بأبعادها وطبقاتها الأصلية.")}
         if busy{ProgressView("جارٍ تنفيذ العملية…");Button("إلغاء العملية"){job?.cancel()}}else{Button("تنفيذ"){run()}.accessibilityIdentifier("chapter-operation-apply")}
-    }.navigationTitle(operation).navigationBarTitleDisplayMode(.inline).toolbar{ToolbarItem(placement:.topBarLeading){Button("إغلاق"){if !busy{completed()}}}}.alert("تعذر تعديل الصفحات",isPresented:Binding(get:{failure != nil},set:{if !$0{failure=nil}})){Button("حسنًا"){failure=nil}}message:{Text(failure ?? "")}}}
+    }.interactiveDismissDisabled(busy).navigationTitle(operation).navigationBarTitleDisplayMode(.inline).toolbar{ToolbarItem(placement:.topBarLeading){Button("إغلاق"){if !busy{completed()}}}}.alert("تعذر تعديل الصفحات",isPresented:Binding(get:{failure != nil},set:{if !$0{failure=nil}})){Button("حسنًا"){failure=nil}}message:{Text(failure ?? "")}}}
     func run(){job=Task{busy=true;defer{busy=false};do{
         guard let item=library.chapter(chapter) else{throw ImageFailure.message("الفصل غير موجود")}
         if operation=="تغيير الأسماء"{try library.renamePages(Set(ids),prefix:name,chapter:chapter);completed();return}
-        let pages=try ids.map{try library.load($0)},root=library.root,op=operation,w=Int(width),h=Int(height),ratio=keepRatio,align=alignment,background=UIColor(color).hex,clear=transparent,title=name
+        let pages=try ids.map{try library.load($0)},root=library.root,op=operation,w=Int(width),h=Int(height),ratio=keepRatio,align=alignment,splitByCount=splitMode=="count",parts=max(1,Int(splitCount)),resizing=resizeMode,background=UIColor(color).hex,clear=transparent,title=name
         let output=try await BackgroundWork.run{()->[EditorPage] in
             if op=="لوحة فارغة"{return [try PageOperations.blank(title:title,width:w,height:h,color:background,transparent:clear,root:root)]}
             if op=="دمج"{return [try PageOperations.merged(pages,root:root,alignment:align)]}
             var result:[EditorPage]=[]
-            do{for page in pages{try Task.checkCancellation();if op=="تقسيم"{result+=try PageOperations.split(page,maximumHeight:h,root:root)}else{result.append(try PageOperations.resized(page,width:w,height:ratio ? max(1,Int(Double(page.height)*Double(w)/Double(page.width))):h,root:root))}};return result}
+            do{for page in pages{try Task.checkCancellation();if op=="تقسيم"{result+=try PageOperations.split(page,maximumHeight:splitByCount ? max(1,(page.height+parts-1)/parts):h,root:root)}else{let targetHeight=ratio ? max(1,Int(Double(page.height)*Double(w)/Double(page.width))):h;result.append(try resizing=="canvas" ? PageOperations.canvasResized(page,width:w,height:targetHeight,root:root):PageOperations.resized(page,width:w,height:targetHeight,root:root))}};return result}
             catch{for page in result{try? FileManager.default.removeItem(at:root.appendingPathComponent(page.id.uuidString))};throw error}
         }
         var next=item.pages

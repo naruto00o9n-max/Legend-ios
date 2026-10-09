@@ -44,3 +44,19 @@ NSDictionary<NSString *, id> *CookiesDetectBubble(UIImage *source,CGPoint point)
         return @{ @"pin":@NO, @"x":@(box.x+box.width*0.1), @"y":@(box.y+box.height*0.1), @"width":@(box.width*0.8), @"height":@(box.height*0.8), @"points":points };
     }catch(const cv::Exception &){return nil;}}@catch(NSException *exception){return nil;}
 }
+
+UIImage *CookiesFillBucket(UIImage *source,CGPoint point,UIColor *color,double tolerance) {
+    @try {try {
+        cv::Mat rgba=pixels(source),rgb,mask;
+        int x=(int)point.x,y=(int)point.y;
+        if(x<0||y<0||x>=rgba.cols||y>=rgba.rows)return nil;
+        cv::cvtColor(rgba,rgb,cv::COLOR_RGBA2RGB);
+        mask=cv::Mat::zeros(rgb.rows+2,rgb.cols+2,CV_8UC1);
+        double t=std::max(0.0,std::min(80.0,tolerance));
+        cv::floodFill(rgb,mask,cv::Point(x,y),cv::Scalar(),nullptr,cv::Scalar(t,t,t),cv::Scalar(t,t,t),4|cv::FLOODFILL_MASK_ONLY|(255<<8));
+        CGFloat r=0,g=0,b=0,a=1;[color getRed:&r green:&g blue:&b alpha:&a];
+        cv::Mat patch(rgba.rows,rgba.cols,CV_8UC4,cv::Scalar(0,0,0,0));
+        for(int row=0;row<patch.rows;row++)for(int col=0;col<patch.cols;col++)if(mask.at<unsigned char>(row+1,col+1)){patch.at<cv::Vec4b>(row,col)=cv::Vec4b((unsigned char)(r*255),(unsigned char)(g*255),(unsigned char)(b*255),(unsigned char)(a*255));}
+        NSData *data=[NSData dataWithBytes:patch.data length:patch.total()*4];CGDataProviderRef provider=CGDataProviderCreateWithCFData((__bridge CFDataRef)data);CGColorSpaceRef space=CGColorSpaceCreateDeviceRGB();CGImageRef cg=CGImageCreate(patch.cols,patch.rows,8,32,patch.cols*4,space,kCGImageAlphaLast,provider,NULL,false,kCGRenderingIntentDefault);UIImage *result=[UIImage imageWithCGImage:cg];CGImageRelease(cg);CGColorSpaceRelease(space);CGDataProviderRelease(provider);return result;
+    }catch(const cv::Exception &){return nil;}}@catch(NSException *exception){return nil;}
+}

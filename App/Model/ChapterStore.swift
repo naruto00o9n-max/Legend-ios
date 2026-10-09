@@ -85,6 +85,7 @@ enum ChapterArchive {
     static func importImages(_ url:URL,root:URL)throws->[EditorPage] {
         let access=url.startAccessingSecurityScopedResource();defer{if access{url.stopAccessingSecurityScopedResource()}}
         let folder=try staging(url);defer{try? FileManager.default.removeItem(at:folder)}
+        if let pages=try ReferenceProjectImport.importFolder(folder,root:root){return pages}
         let files=(FileManager.default.enumerator(at:folder,includingPropertiesForKeys:nil)?.allObjects as? [URL] ?? []).filter{["png","jpg","jpeg","heic","webp","cookies"].contains($0.pathExtension.lowercased())}.sorted{$0.path.localizedStandardCompare($1.path) == .orderedAscending}
         guard !files.isEmpty else{throw ImageFailure.message("الأرشيف لا يحتوي صورًا مدعومة")}
         var result:[EditorPage]=[];do{for file in files{try Task.checkCancellation();result.append(try file.pathExtension=="cookies" ? ProjectArchive.importFile(file,root:root):ImagePipeline.importImage(file,root:root))};return result}catch{for page in result{try? FileManager.default.removeItem(at:root.appendingPathComponent(page.id.uuidString))};throw error}

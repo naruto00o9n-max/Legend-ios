@@ -29,9 +29,10 @@ struct CanvasHost:UIViewRepresentable {
             if gesture is UITapGestureRecognizer{var view=touch.view;while let current=view{if current is UIControl{return false};view=current.superview}}
             return true
         }
-        func gestureRecognizerShouldBegin(_ g:UIGestureRecognizer)->Bool{guard g === panGesture else{return true};if model.sniperMode{return false};if [.brush,.eraser,.cleaner].contains(model.tool){return true};return canvas.handle(at:g.location(in:canvas)) != nil || hit(g.location(in:canvas)) != nil}
+        func gestureRecognizerShouldBegin(_ g:UIGestureRecognizer)->Bool{guard g === panGesture else{return true};if model.sniperMode{return false};if model.drawingShape=="fill",model.tool == .brush{return false};if model.textMaskMode,model.active?.kind == .text{return true};if [.brush,.eraser,.cleaner].contains(model.tool){return true};return canvas.handle(at:g.location(in:canvas)) != nil || hit(g.location(in:canvas)) != nil}
         @objc func tap(_ g:UITapGestureRecognizer){let point=g.location(in:canvas);model.visibleCenter=point
             if model.sniperMode{Task{await model.detectSniper(at:point)};return}
+            if model.tool == .brush,model.drawingShape=="fill"{Task{await model.fillBucket(at:point)};return}
             if [.brush,.eraser,.cleaner].contains(model.tool){let dot=Stroke(points:[Point(x:point.x,y:point.y)],width:model.brushWidth,color:model.brushColor,erase:model.tool == .eraser,brush:model.brushStyle,opacity:model.brushOpacity,texturePath:model.brushTexture,shape:model.drawingShape,filled:model.drawingFilled);if model.tool == .cleaner{Task{await model.clean(dot)}}else{if model.active?.kind != .drawing{model.add(.drawing)};model.checkpoint();model.change{$0.strokes.append(dot)}};return}
             if model.tool == .text,hit(point)==nil{model.add(.text)}else if model.tool == .eyedropper{
                 if let bytes=try? ImagePipeline.tile(model.directory.appendingPathComponent(model.page.raw),width:model.page.width,height:model.page.height,rect:CGRect(x:Int(point.x),y:Int(point.y),width:1,height:1)),bytes.count>=4{model.brushColor=String(format:"%02X%02X%02X",bytes[0],bytes[1],bytes[2])}
@@ -39,6 +40,13 @@ struct CanvasHost:UIViewRepresentable {
         }
         @objc func longPress(_ g:UILongPressGestureRecognizer){if g.state == .began,let l=hit(g.location(in:canvas)),l.kind == .text{model.selected=l.id;model.tool = .text;model.panel = .content}}
         @objc func pan(_ g:UIPanGestureRecognizer){let point=g.location(in:canvas)
+            if model.textMaskMode,let active=model.active,active.kind == .text,!active.isLocked{
+                let local=point.applying(LayerRenderer.transform(active).inverted())
+                if g.state == .began{initial=active;model.checkpoint();stroke=Stroke(points:[Point(x:local.x,y:local.y)],width:model.brushWidth,color:"FFFFFF",erase:!model.textMaskRestore);canvas.beginLayerInteraction(active.id)}
+                else if g.state == .changed{stroke?.points.append(Point(x:local.x,y:local.y));if let initial,let stroke{model.change(persist:false){$0.textMask=(initial.textMask ?? [])+[stroke]};canvas.update(page:model.page,directory:model.directory,selected:model.selected,zoom:scroll?.zoomScale ?? 1)}}
+                else if g.state == .ended || g.state == .cancelled{if g.state == .cancelled,let initial{model.change(persist:false){$0.textMask=initial.textMask}};canvas.endLayerInteraction();stroke=nil;initial=nil;model.save()}
+                return
+            }
             if [.brush,.eraser,.cleaner].contains(model.tool){
                 if g.state == .began{
                     if model.tool != .cleaner{if model.active?.kind != .drawing{model.add(.drawing)};model.checkpoint()};stroke=Stroke(points:[Point(x:point.x,y:point.y)],width:model.brushWidth,color:model.tool == .cleaner ? "FFFFFF":model.brushColor,erase:model.tool == .eraser,brush:model.brushStyle,opacity:model.brushOpacity,texturePath:model.brushTexture,shape:model.drawingShape,filled:model.drawingFilled)

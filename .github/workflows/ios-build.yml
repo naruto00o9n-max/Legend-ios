@@ -17,6 +17,14 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - run: brew install xcodegen
+      - uses: actions/cache@v4
+        with:
+          path: |
+            .work/reference.apk
+            .work/opencv-ios.zip
+            App/Core/Vendor
+            App/Resources/cookies-logo.png
+          key: cookies-native-v45-opencv411-${{ hashFiles('scripts/vendor-hashes.json') }}
       - run: python3 scripts/fetch_resources.py
       - run: xcodegen generate
       - run: bash scripts/build_ipas.sh
@@ -42,6 +50,14 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - run: brew install xcodegen
+      - uses: actions/cache@v4
+        with:
+          path: |
+            .work/reference.apk
+            .work/opencv-ios.zip
+            App/Core/Vendor
+            App/Resources/cookies-logo.png
+          key: cookies-native-v45-opencv411-${{ hashFiles('scripts/vendor-hashes.json') }}
       - run: python3 scripts/fetch_resources.py
       - run: xcodegen generate
       - run: bash scripts/test_simulators.sh ${{ matrix.screen }}

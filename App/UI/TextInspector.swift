@@ -62,6 +62,8 @@ struct TextInspector:View {
             knob("شفافية الطبقة",Binding(get:{model.active?.opacity ?? 1},set:{v in model.change{$0.opacity=v}}),0...1)
             Picker("المزج",selection:Binding(get:{model.active?.blend ?? .normal},set:{v in model.change{$0.blend=v}})){ForEach(Blend.allCases,id:\.self){Text($0.title).tag($0)}}.pickerStyle(.menu)
         case .mask:
+            Toggle("مسح حروف النص بالإصبع",isOn:$model.textMaskMode)
+            if model.textMaskMode{Toggle("استرجاع الحروف بدل المسح",isOn:$model.textMaskRestore);knob("حجم قلم القناع",$model.brushWidth,1...160);Button("إعادة القناع كاملًا"){model.checkpoint();model.change{$0.textMask=[]}};Text("ارسم على النص داخل اللوحة؛ استرجاع القناع يعيد الحروف الأصلية فقط.").font(.system(size:12)).foregroundStyle(Palette.quiet)}
             Toggle("تفعيل قناع دائري",isOn:Binding(get:{model.active?.isMaskEnabled ?? false},set:{v in model.change{$0.isMaskEnabled=v}}));knob("نصف القطر",Binding(get:{model.active?.maskRadius ?? 80},set:{v in model.change{$0.maskRadius=v}}),5...400)
             knob("المركز أفقيًا",Binding(get:{model.active?.maskX ?? 0},set:{v in model.change{$0.maskX=v}}),0...500);knob("المركز رأسيًا",Binding(get:{model.active?.maskY ?? 0},set:{v in model.change{$0.maskY=v}}),0...500)
         case .styles:

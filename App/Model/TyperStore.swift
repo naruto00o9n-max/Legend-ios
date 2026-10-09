@@ -178,7 +178,7 @@ private extension String {
         }catch {
             // Keep insertion and progress coherent if the second atomic file
             // cannot be written (for example, device storage is full).
-            try model.library.persist(before);model.page=before;model.selected=nil;_ = model.undoStack.popLast();throw error
+            try model.library.persist(before);model.page=before;model.selected=nil;_ = model.undoStack.popLast();_ = model.undoDocuments.popLast();throw error
         }
     }
 }

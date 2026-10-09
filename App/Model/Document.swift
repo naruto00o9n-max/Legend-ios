@@ -47,11 +47,13 @@ struct EditorLayer: Codable, Equatable, Identifiable {
     var rotation = 0.0; var scaleX = 1.0; var scaleY = 1.0; var opacity = 1.0
     var isVisible = true; var isLocked = false; var blend = Blend.normal
     var textContent = "نص جديد"; var style = TextStyle(); var imagePath = ""; var shape = 0
+    var textMask:[Stroke]?
     var groupID:UUID?;var groupName:String?
     var strokes: [Stroke] = []; var isMaskEnabled = false; var maskX = 0.0; var maskY = 0.0; var maskRadius = 80.0
 }
 struct EditorPage: Codable, Equatable, Identifiable {
     var id = UUID(); var title: String; var width: Int; var height: Int
+    var baseHidden:Bool?
     var source = "source.png"; var raw = "pixels.rgba"; var layers: [EditorLayer] = []; var modified = Date()
 }
 struct LibraryItem: Codable, Equatable, Identifiable {
