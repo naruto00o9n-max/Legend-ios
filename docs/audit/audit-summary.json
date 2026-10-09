@@ -1,0 +1,37 @@
+{
+  "source_commit": "25d6f9f50832f0f1c22e2f49ca878ad520ed126f",
+  "reference_version": "4.5",
+  "comparison_items": 182,
+  "functional_status_counts": {
+    "موجود": 33,
+    "جزئي": 50,
+    "اعتماد خادم": 8,
+    "ناقص": 89,
+    "بديل iOS": 1,
+    "غير متحقق": 1
+  },
+  "not_a_parity_percentage": true,
+  "user_manual_evidence": {
+    "email_password_login": "passed by user",
+    "community_comment": "passed by user",
+    "typer": "passed by user",
+    "sniper": "passed by user",
+    "google": "not tested by user; localhost dependency unresolved"
+  },
+  "ci": {
+    "run": 37951150601,
+    "package": "passed",
+    "iphone_full_suite": {
+      "passed": 27,
+      "failed": 0
+    },
+    "ipad_full_suite": {
+      "passed": 26,
+      "failed": 1,
+      "failure": "fixed-delay cache-read readiness assertion"
+    },
+    "iphone_photos_bytes": 48000000,
+    "iphone_photos_pixels_unchanged": true,
+    "ipad_extra_photos_integrity": "not run after failed full suite"
+  }
+}

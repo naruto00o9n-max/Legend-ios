@@ -1,0 +1,2456 @@
+{
+  "reference_version": "YTyper 4.5",
+  "apk_sha256": "a3758bcdf50c802c25d9023c90456f6bdde922a94cda08fc3ce737c2a9b29789",
+  "all_layout_xml_files": 219,
+  "app_prefixed_layouts": 110,
+  "identified_ui_elements": 1090,
+  "candidate_buttons": 518,
+  "inputs_and_choices": 115,
+  "original_activity_count": 21,
+  "original_service_count": 4,
+  "preference_accessors": 70,
+  "activities": [
+    {
+      "name": "com.oneguystudio.ytyper.ui.dashboard.SplashActivity",
+      "exported": "true",
+      "parent": "",
+      "orientation": "",
+      "source": "decoded/AndroidManifest.xml"
+    },
+    {
+      "name": "com.oneguystudio.ytyper.ui.crash.CrashReportActivity",
+      "exported": "false",
+      "parent": "",
+      "orientation": "",
+      "source": "decoded/AndroidManifest.xml"
+    },
+    {
+      "name": "com.oneguystudio.ytyper.ui.floatingwidget.FolatingWidgetDashboard",
+      "exported": "false",
+      "parent": "com.oneguystudio.ytyper.ui.dashboard.ProjectsActivity",
+      "orientation": "",
+      "source": "decoded/AndroidManifest.xml"
+    },
+    {
+      "name": "com.oneguystudio.ytyper.ui.library.FontLibraryActivity",
+      "exported": "false",
+      "parent": "com.oneguystudio.ytyper.ui.dashboard.ProjectsActivity",
+      "orientation": "",
+      "source": "decoded/AndroidManifest.xml"
+    },
+    {
+      "name": "com.oneguystudio.ytyper.ui.library.ArabicFontsActivity",
+      "exported": "false",
+      "parent": "com.oneguystudio.ytyper.ui.library.FontLibraryActivity",
+      "orientation": "",
+      "source": "decoded/AndroidManifest.xml"
+    },
+    {
+      "name": "com.oneguystudio.ytyper.ui.library.EnglishFontsActivity",
+      "exported": "false",
+      "parent": "com.oneguystudio.ytyper.ui.library.FontLibraryActivity",
+      "orientation": "",
+      "source": "decoded/AndroidManifest.xml"
+    },
+    {
+      "name": "com.oneguystudio.ytyper.ui.library.ImportedFontsActivity",
+      "exported": "false",
+      "parent": "com.oneguystudio.ytyper.ui.library.FontLibraryActivity",
+      "orientation": "",
+      "source": "decoded/AndroidManifest.xml"
+    },
+    {
+      "name": "com.oneguystudio.ytyper.ui.library.ImportedStylesActivity",
+      "exported": "false",
+      "parent": "com.oneguystudio.ytyper.ui.library.FontLibraryActivity",
+      "orientation": "",
+      "source": "decoded/AndroidManifest.xml"
+    },
+    {
+      "name": "com.oneguystudio.ytyper.ui.settings.SettingsActivity",
+      "exported": "false",
+      "parent": "com.oneguystudio.ytyper.ui.dashboard.ProjectsActivity",
+      "orientation": "",
+      "source": "decoded/AndroidManifest.xml"
+    },
+    {
+      "name": "com.oneguystudio.ytyper.ui.store.StoreActivity",
+      "exported": "unspecified",
+      "parent": "",
+      "orientation": "",
+      "source": "decoded/AndroidManifest.xml"
+    },
+    {
+      "name": "com.oneguystudio.ytyper.ui.floatingwidget.CopyActivity",
+      "exported": "unspecified",
+      "parent": "",
+      "orientation": "",
+      "source": "decoded/AndroidManifest.xml"
+    },
+    {
+      "name": "com.oneguystudio.ytyper.ui.dashboard.ProjectsActivity",
+      "exported": "true",
+      "parent": "",
+      "orientation": "portrait",
+      "source": "decoded/AndroidManifest.xml"
+    },
+    {
+      "name": "com.oneguystudio.ytyper.ui.projectsgallery.ProjectGalleryActivity",
+      "exported": "unspecified",
+      "parent": "",
+      "orientation": "",
+      "source": "decoded/AndroidManifest.xml"
+    },
+    {
+      "name": "com.oneguystudio.ytyper.ui.webtoonscraper.WebtoonScraperActivity",
+      "exported": "unspecified",
+      "parent": "",
+      "orientation": "portrait",
+      "source": "decoded/AndroidManifest.xml"
+    },
+    {
+      "name": "com.oneguystudio.ytyper.ui.editor.EditorActivity",
+      "exported": "false",
+      "parent": "",
+      "orientation": "",
+      "source": "decoded/AndroidManifest.xml"
+    },
+    {
+      "name": "com.oneguystudio.ytyper.ui.editor.ReaderActivity",
+      "exported": "unspecified",
+      "parent": "",
+      "orientation": "",
+      "source": "decoded/AndroidManifest.xml"
+    },
+    {
+      "name": "com.oneguystudio.ytyper.ui.editor.ImageCropActivity",
+      "exported": "unspecified",
+      "parent": "",
+      "orientation": "",
+      "source": "decoded/AndroidManifest.xml"
+    },
+    {
+      "name": "com.oneguystudio.ytyper.ui.editor.ExportStudioActivity",
+      "exported": "unspecified",
+      "parent": "",
+      "orientation": "portrait",
+      "source": "decoded/AndroidManifest.xml"
+    },
+    {
+      "name": "com.oneguystudio.ytyper.ui.editor.TagMiniEditorActivity",
+      "exported": "unspecified",
+      "parent": "",
+      "orientation": "portrait",
+      "source": "decoded/AndroidManifest.xml"
+    },
+    {
+      "name": "com.oneguystudio.ytyper.ui.community.CommunityActivity",
+      "exported": "unspecified",
+      "parent": "",
+      "orientation": "portrait",
+      "source": "decoded/AndroidManifest.xml"
+    },
+    {
+      "name": "com.oneguystudio.ytyper.ui.community.CreatePostActivity",
+      "exported": "unspecified",
+      "parent": "",
+      "orientation": "portrait",
+      "source": "decoded/AndroidManifest.xml"
+    }
+  ],
+  "services": [
+    {
+      "name": "com.oneguystudio.ytyper.ui.floatingwidget.FloatingWidgetService",
+      "exported": "false",
+      "parent": "",
+      "orientation": "",
+      "source": "decoded/AndroidManifest.xml"
+    },
+    {
+      "name": "com.oneguystudio.ytyper.ui.webtoonscraper.WebtoonDownloadService",
+      "exported": "false",
+      "parent": "",
+      "orientation": "",
+      "source": "decoded/AndroidManifest.xml"
+    },
+    {
+      "name": "com.oneguystudio.ytyper.ui.projectsgallery.AutoCleanerService",
+      "exported": "false",
+      "parent": "",
+      "orientation": "",
+      "source": "decoded/AndroidManifest.xml"
+    },
+    {
+      "name": "com.oneguystudio.ytyper.utils.MyFirebaseMessagingService",
+      "exported": "true",
+      "parent": "",
+      "orientation": "",
+      "source": "decoded/AndroidManifest.xml"
+    }
+  ],
+  "compose_screen_families": [
+    "CommunityScreenKt",
+    "DailyRewardsScreenKt",
+    "ExportStudioScreenKt",
+    "FontsGridScreenKt",
+    "InviteScreenKt",
+    "LeaderboardScreenKt",
+    "MergeStudioDialogKt",
+    "ProjectGalleryScreenKt",
+    "RadialUnlockDialogKt",
+    "ReaderStudioDialogKt",
+    "StoreScreenKt",
+    "WatermarkStudioDialogKt",
+    "WebtoonScraperScreenKt"
+  ],
+  "layouts": [
+    {
+      "layout": "activity_arabic_fonts",
+      "source": "decoded/res/layout/activity_arabic_fonts.xml",
+      "ids": [
+        "iv_background_wallpaper",
+        "compose_arabic_fonts"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/ActivityArabicFontsBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/library/ArabicFontsActivity.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "activity_community",
+      "source": "decoded/res/layout/activity_community.xml",
+      "ids": [
+        "iv_background_wallpaper",
+        "compose_community"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/ActivityCommunityBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/community/CommunityActivity.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "activity_create_post",
+      "source": "decoded/res/layout/activity_create_post.xml",
+      "ids": [
+        "iv_background_wallpaper",
+        "compose_create_post"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/ActivityCreatePostBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/community/CreatePostActivity.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "activity_editor",
+      "source": "decoded/res/layout/activity_editor.xml",
+      "ids": [
+        "fallbackCanvas",
+        "editorViewPager",
+        "btnTyperToggle",
+        "includedTyperPanel",
+        "topBar",
+        "btnBack",
+        "btnUndo",
+        "btnRedo",
+        "tvProjectName",
+        "btnGrid",
+        "btnSnap",
+        "btnLock",
+        "btnLayers",
+        "btnPinBackground",
+        "btnSettings",
+        "btnSave",
+        "tvSniperCounter",
+        "panelsContainer",
+        "layoutEraserEditor",
+        "layoutOpacityEditor",
+        "layoutFadeEditor",
+        "layoutPerspectiveEditor",
+        "layoutEffectsEditor",
+        "layoutWarpEditor",
+        "layoutTextureEditor",
+        "layout3DEditor",
+        "layoutPositionEditor",
+        "layoutSpacingEditor",
+        "layoutShadowEditor",
+        "layoutBackgroundEditor",
+        "layoutStrokeEditor",
+        "layoutColorPicker",
+        "layoutGradientMapEditor",
+        "layoutTextFormat",
+        "layoutTextLineFormat",
+        "layoutFontPicker",
+        "layoutStylesEditor",
+        "layoutDrawingBrushPanel",
+        "layoutDrawingBrushPlusPanel",
+        "layoutDrawingSmudgePanel",
+        "layoutDrawingColorPanel",
+        "layoutDrawingEraserPanel",
+        "layoutDrawingShapesPanel",
+        "layoutImageAdjustmentsEditor",
+        "layoutImageFiltersEditor",
+        "layoutImageEffectsEditor",
+        "layoutMagicBrushEditor",
+        "layoutInpaintEditor",
+        "layoutInpaintVariationsEditor",
+        "layoutRulerPanel",
+        "cleanerPillWrapper",
+        "toolbarsContainer",
+        "textToolBar",
+        "btnToolStyles",
+        "btnToolFont",
+        "btnToolFormat",
+        "btnToolLineFormat",
+        "btnToolColor",
+        "btnToolGradientMap",
+        "btnToolStroke",
+        "btnToolBackground",
+        "btnToolShadow",
+        "btnToolPosition",
+        "btnToolSpacing",
+        "btnTool3DRotate",
+        "btnToolPerspective",
+        "btnToolEffects",
+        "btnToolWarp",
+        "btnToolTexture",
+        "btnToolEraser",
+        "btnToolOpacity",
+        "btnToolFade",
+        "btnToolRuler",
+        "btnTextToPng",
+        "imageToolBar",
+        "btnImgPosition",
+        "btnImgPerspective",
+        "btnImgOpacity",
+        "btnImgCrop",
+        "btnImgResize",
+        "btnImgAdjust",
+        "btnImgFilter",
+        "btnImgEffects",
+        "btnImgEraser",
+        "btnImgMagicBrush",
+        "shapeToolBar",
+        "btnShapePosition",
+        "btnShapePerspective",
+        "btnShapeOpacity",
+        "btnShapeColor",
+        "btnShapeEraser",
+        "inpaintToolBar",
+        "btnInpaintBrush",
+        "btnInpaintApply",
+        "btnInpaintCancel",
+        "drawingToolBar",
+        "btnDrawingBrush",
+        "btnDrawingBrushPlus",
+        "btnDrawingSmudge",
+        "btnDrawingColor",
+        "btnDrawingEraser",
+        "btnDrawingShapes",
+        "btnDrawingUndo",
+        "btnDrawingDone",
+        "bottomBar",
+        "btnToolText",
+        "btnInlineDrawMode",
+        "btnToolImage",
+        "btnToolImageDrafts",
+        "btnToolShapes",
+        "btnToolOneHandPan",
+        "icToolOneHandPan",
+        "tvToolOneHandPan",
+        "btnToolBgInpaint",
+        "btnReplaceBackground",
+        "btnToolCropBg",
+        "btnToolPasteImage",
+        "btnToolMergeNext",
+        "btnToolSplitPage",
+        "btnToolResizeBg",
+        "btnCanvasBackground",
+        "inlineEditorTouchGuard",
+        "includedInlineEditor",
+        "overlayLoading",
+        "tvLoadingText",
+        "btnCancelAutoCleaner",
+        "brushSizePreviewContainer",
+        "brushSizePreview",
+        "btnFloatingSniperPaste"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/ActivityEditorBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "activity_english_fonts",
+      "source": "decoded/res/layout/activity_english_fonts.xml",
+      "ids": [
+        "iv_background_wallpaper",
+        "compose_english_fonts"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/ActivityEnglishFontsBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/library/EnglishFontsActivity.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "activity_export_studio",
+      "source": "decoded/res/layout/activity_export_studio.xml",
+      "ids": [
+        "rootLayout",
+        "iv_background_wallpaper",
+        "compose_export_studio"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/ActivityExportStudioBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/editor/ExportStudioActivity.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "activity_font_library",
+      "source": "decoded/res/layout/activity_font_library.xml",
+      "ids": [
+        "iv_background_wallpaper",
+        "compose_font_library"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/ActivityFontLibraryBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/library/FontLibraryActivity.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "activity_image_crop",
+      "source": "decoded/res/layout/activity_image_crop.xml",
+      "ids": [
+        "rootLayout",
+        "iv_background_wallpaper",
+        "topBar",
+        "btnCancelCrop",
+        "btnExportForHealing",
+        "btnSliceMode",
+        "btnDoneCrop",
+        "cropImageView",
+        "bottomCropBar",
+        "btnCropFree",
+        "btnCropFull",
+        "btnCropSquare",
+        "btnCropCircle",
+        "btnCrop3x4",
+        "btnCrop4x3",
+        "btnCrop9x16",
+        "btnCrop16x9"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/ActivityImageCropBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "activity_imported_fonts",
+      "source": "decoded/res/layout/activity_imported_fonts.xml",
+      "ids": [
+        "iv_background_wallpaper",
+        "compose_imported_fonts"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/ActivityImportedFontsBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/library/ImportedFontsActivity.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/library/ImportedStylesActivity.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "activity_main",
+      "source": "decoded/res/layout/activity_main.xml",
+      "ids": [
+        "iv_background_wallpaper",
+        "header_layout",
+        "tv_bubble_count",
+        "toolbar_layout",
+        "btn_archive",
+        "btn_paste",
+        "btn_clear",
+        "editor_container",
+        "drafts_scroll",
+        "drafts_container",
+        "frame_layout",
+        "nestedScrollView",
+        "editText",
+        "fast_scroller_thumb",
+        "bottom_container",
+        "btn_settings",
+        "button",
+        "btn_discord"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/ActivityMainBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "activity_project_gallery",
+      "source": "decoded/res/layout/activity_project_gallery.xml",
+      "ids": [
+        "iv_background_wallpaper",
+        "compose_project_gallery"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/ActivityProjectGalleryBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/projectsgallery/ProjectGalleryActivity.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "activity_projects",
+      "source": "decoded/res/layout/activity_projects.xml",
+      "ids": [
+        "iv_background_wallpaper",
+        "compose_projects"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/ActivityProjectsBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/dashboard/ProjectsActivity.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "activity_reader",
+      "source": "decoded/res/layout/activity_reader.xml",
+      "ids": [
+        "rvReader",
+        "btnCloseReader"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/ActivityReaderBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/editor/ReaderActivity.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "activity_settings",
+      "source": "decoded/res/layout/activity_settings.xml",
+      "ids": [
+        "iv_background_wallpaper",
+        "compose_settings"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/ActivitySettingsBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/settings/SettingsActivity.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "activity_store",
+      "source": "decoded/res/layout/activity_store.xml",
+      "ids": [
+        "iv_background_wallpaper",
+        "compose_store"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/ActivityStoreBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/store/StoreActivity.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "activity_tag_mini_editor",
+      "source": "decoded/res/layout/activity_tag_mini_editor.xml",
+      "ids": [
+        "miniEditorCanvas",
+        "topBar",
+        "btnCancelMini",
+        "btnSaveMini",
+        "miniPanelsContainer",
+        "layoutColorPicker",
+        "layoutStrokeEditor",
+        "layoutShadowEditor",
+        "layout3DEditor",
+        "layoutEffectsEditor",
+        "layoutTextureEditor",
+        "layoutTextFormat",
+        "layoutTextLineFormat",
+        "layoutBackgroundEditor",
+        "layoutSpacingEditor",
+        "layoutStylesEditor",
+        "layoutOpacityEditor",
+        "bottomTextTools",
+        "btnToolColorMini",
+        "btnToolStrokeMini",
+        "btnToolShadowMini",
+        "btnTool3DMini",
+        "btnToolEffectsMini",
+        "btnToolTextureMini",
+        "btnToolFormatMini",
+        "btnToolLineFormatMini",
+        "btnToolBgMini",
+        "btnToolSpacingMini",
+        "btnToolStylesMini",
+        "btnToolOpacityMini"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/ActivityTagMiniEditorBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/editor/TagMiniEditorActivity.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "activity_webtoon_scraper",
+      "source": "decoded/res/layout/activity_webtoon_scraper.xml",
+      "ids": [
+        "iv_background_wallpaper",
+        "compose_webtoon_scraper"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/ActivityWebtoonScraperBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/webtoonscraper/WebtoonScraperActivity.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "dialog_add_text",
+      "source": "decoded/res/layout/dialog_add_text.xml",
+      "ids": [
+        "background_dismisser",
+        "editor_container",
+        "btn_cancel",
+        "btn_alignment",
+        "btn_paste",
+        "et_input"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/DialogAddTextBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "dialog_advanced_gradient",
+      "source": "decoded/res/layout/dialog_advanced_gradient.xml",
+      "ids": [
+        "viewGradientPreview",
+        "rvGradientTypes",
+        "btnAngle270",
+        "btnAngle90",
+        "seekGradientCenter",
+        "btnSeekPlus",
+        "btnSeekMinus",
+        "rvGradientPresets",
+        "btnConfirmGradient",
+        "btnCancelGradient",
+        "btnResetGradient"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/DialogAdvancedGradientBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/editor/dialog/AdvancedGradientDialog.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "dialog_batch_rename",
+      "source": "decoded/res/layout/dialog_batch_rename.xml",
+      "ids": [
+        "etPrefix",
+        "etStartNum",
+        "etSuffix",
+        "cbZeroPadding",
+        "tvPreviewText",
+        "btnCancelRename",
+        "btnApplyRename"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/DialogBatchRenameBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "dialog_canvas_background",
+      "source": "decoded/res/layout/dialog_canvas_background.xml",
+      "ids": [
+        "tvTitle",
+        "recyclerOptions",
+        "layoutCustomImage",
+        "btnPickImage",
+        "blurSeekBar",
+        "frameCustomImagePreview"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/DialogCanvasBackgroundBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/editor/dialog/CanvasBackgroundBottomSheet.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "dialog_cloud_manager",
+      "source": "decoded/res/layout/dialog_cloud_manager.xml",
+      "ids": [
+        "tvDialogTitle",
+        "dialogProgressBar",
+        "containerCloudItems",
+        "btnDialogCancel",
+        "btnDialogAction"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/DialogCloudManagerBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/dashboard/e3.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "dialog_color_picker",
+      "source": "decoded/res/layout/dialog_color_picker.xml",
+      "ids": [
+        "btnEyedropper",
+        "btnCancel",
+        "colorPickerView",
+        "viewNewColor",
+        "etHexCode",
+        "recyclerPresets"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/DialogColorPickerBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "dialog_delete_confirm",
+      "source": "decoded/res/layout/dialog_delete_confirm.xml",
+      "ids": [
+        "tv_delete_message",
+        "btn_cancel_delete",
+        "btn_confirm_delete"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/DialogDeleteConfirmBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "dialog_discord_link",
+      "source": "decoded/res/layout/dialog_discord_link.xml",
+      "ids": [
+        "btn_copy_command",
+        "tv_discord_command",
+        "iv_copy_icon",
+        "btn_close_dialog"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/DialogDiscordLinkBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "dialog_font_picker",
+      "source": "decoded/res/layout/dialog_font_picker.xml",
+      "ids": [
+        "tabLayout",
+        "btnPreviewIcon",
+        "btnExpandFonts",
+        "btnAddFont",
+        "searchBarLayout",
+        "etSearchFont",
+        "btnClearSearch",
+        "btnConfirmSearch",
+        "scrollTagsBar",
+        "layoutFontTags",
+        "recyclerFonts"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/DialogFontPickerBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "dialog_glass_input",
+      "source": "decoded/res/layout/dialog_glass_input.xml",
+      "ids": [
+        "tvDialogTitle",
+        "tvDialogMessage",
+        "etDialogInput",
+        "btnDialogCancel",
+        "btnDialogConfirm"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/DialogGlassInputBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/dashboard/h3.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/dashboard/t0.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/editor/dialog/LayersBottomSheet.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "dialog_image_drafts",
+      "source": "decoded/res/layout/dialog_image_drafts.xml",
+      "ids": [
+        "btn_add_draft",
+        "rv_draft_images"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/DialogImageDraftsBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/editor/dialog/ImageDraftsBottomSheet.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "dialog_interactive_gradient",
+      "source": "decoded/res/layout/dialog_interactive_gradient.xml",
+      "ids": [
+        "btnCloseDialog",
+        "gradientSliderView",
+        "btnAddColorNode",
+        "btnEditColorNode",
+        "btnDeleteColorNode"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/DialogInteractiveGradientBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/editor/dialog/InteractiveGradientDialog.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "dialog_language",
+      "source": "decoded/res/layout/dialog_language.xml",
+      "ids": [
+        "btn_lang_en",
+        "btn_lang_ar",
+        "btn_cancel"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/DialogLanguageBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "dialog_layers_glass",
+      "source": "decoded/res/layout/dialog_layers_glass.xml",
+      "ids": [
+        "btnQuickMergeToggle",
+        "llLayerFilters",
+        "chipAll",
+        "chipText",
+        "chipImage",
+        "chipShape",
+        "chipDraw",
+        "rvLayers",
+        "llMergeActionBar",
+        "btnMergeSelectAll",
+        "btnMultiMerge",
+        "btnMultiLock",
+        "btnMultiHide",
+        "btnMultiDelete",
+        "btnMergeCancel"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/DialogLayersGlassBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/editor/dialog/LayersBottomSheet.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "dialog_new_blank_project",
+      "source": "decoded/res/layout/dialog_new_blank_project.xml",
+      "ids": [
+        "etProjectName",
+        "etWidth",
+        "etHeight",
+        "btn1x1",
+        "layoutColorStrip",
+        "btnCancel",
+        "btnCreate"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/DialogNewBlankProjectBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "dialog_page_options",
+      "source": "decoded/res/layout/dialog_page_options.xml",
+      "ids": [
+        "btnOpRename",
+        "btnOpCover",
+        "btnOpSplit",
+        "btnOpDelete"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/DialogPageOptionsBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "dialog_preview_layer",
+      "source": "decoded/res/layout/dialog_preview_layer.xml",
+      "ids": [
+        "tvPreviewTitle",
+        "tvPreviewInfo",
+        "ivPreview",
+        "btnDismissPreview"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/DialogPreviewLayerBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/editor/dialog/LayersBottomSheet.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "dialog_process_pages",
+      "source": "decoded/res/layout/dialog_process_pages.xml",
+      "ids": [
+        "tvDialogTitle",
+        "rgCriteria",
+        "rbByLength",
+        "rbByCount",
+        "tvInputHint",
+        "etTargetValue",
+        "rgSpeedMode",
+        "rbStable",
+        "rbFast",
+        "btnCancel",
+        "btnStart"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/DialogProcessPagesBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "dialog_progress",
+      "source": "decoded/res/layout/dialog_progress.xml",
+      "ids": [
+        "tvProgressTitle",
+        "progressBar",
+        "tvProgressPercent"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/DialogProgressBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "dialog_project_options",
+      "source": "decoded/res/layout/dialog_project_options.xml",
+      "ids": [
+        "btnOpRename",
+        "btnOpExport",
+        "btnOpBackup",
+        "btnOpDelete"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/DialogProjectOptionsBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "dialog_resize_canvas",
+      "source": "decoded/res/layout/dialog_resize_canvas.xml",
+      "ids": [
+        "etWidth",
+        "etHeight",
+        "cbLockRatio",
+        "btnCancel",
+        "btnApply"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/DialogResizeCanvasBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/editor/EditorActivity.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "dialog_save",
+      "source": "decoded/res/layout/dialog_save.xml",
+      "ids": [
+        "et_draft_name",
+        "btn_cancel",
+        "btn_save"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/DialogSaveBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "dialog_shape_picker",
+      "source": "decoded/res/layout/dialog_shape_picker.xml",
+      "ids": [
+        "tvTitle",
+        "recyclerShapes"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/DialogShapePickerBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/editor/dialog/ShapePickerBottomSheet.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "dialog_smart_resize",
+      "source": "decoded/res/layout/dialog_smart_resize.xml",
+      "ids": [
+        "etTargetWidth",
+        "tvResizePreview",
+        "btnCancelResize",
+        "btnStartResize"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/DialogSmartResizeBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "dialog_style_options",
+      "source": "decoded/res/layout/dialog_style_options.xml",
+      "ids": [
+        "tvOptionsTitle",
+        "btnOptRename",
+        "btnOptUpdateFromLayer",
+        "btnOptExport",
+        "btnOptMoveFolder",
+        "btnOptDelete"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/DialogStyleOptionsBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/editor/dialog/TextStylesPanel.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "dialog_tag_font_picker",
+      "source": "decoded/res/layout/dialog_tag_font_picker.xml",
+      "ids": [
+        "btnTabArabic",
+        "btnTabEnglish",
+        "btnTabCustom",
+        "scrollTagsBar",
+        "layoutFontTags",
+        "layoutFontContainer",
+        "btnCancelFont"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/DialogTagFontPickerBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "dialog_tag_quick_link",
+      "source": "decoded/res/layout/dialog_tag_quick_link.xml",
+      "ids": [
+        "ivRealPreview",
+        "tabSavedStyles",
+        "tabManualEdit",
+        "layoutSavedStylesContainer",
+        "layoutTagsFilter",
+        "rvSavedStyles",
+        "layoutManualEditContainer",
+        "btnLaunchMiniEditor",
+        "btnCancelStudio",
+        "btnSaveStudio"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/DialogTagQuickLinkBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/editor/dialog/TagQuickLinkDialog.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "dialog_text_format",
+      "source": "decoded/res/layout/dialog_text_format.xml",
+      "ids": [
+        "btnSizeMinus",
+        "etSize",
+        "btnSizePlus",
+        "btnZoomMinus",
+        "etZoom",
+        "btnZoomPlus",
+        "btnWidthMinus",
+        "etWidth",
+        "btnWidthPlus",
+        "gridAlign",
+        "btnAlignLeft",
+        "btnAlignCenter",
+        "btnAlignRight",
+        "btnAlignJustify",
+        "gridStyle",
+        "btnBold",
+        "btnItalic",
+        "btnUnderline",
+        "btnStrike",
+        "layoutFakeBold",
+        "seekFakeBold",
+        "tvFakeBoldVal"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/DialogTextFormatBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "dialog_text_line_format",
+      "source": "decoded/res/layout/dialog_text_line_format.xml",
+      "ids": [
+        "tvPanelTitle",
+        "btnResetLengths",
+        "layoutKashidaToggle",
+        "switchKashida",
+        "linesContainer"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/DialogTextLineFormatBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "dialog_watermark",
+      "source": "decoded/res/layout/dialog_watermark.xml",
+      "ids": [
+        "ivWatermarkPreview",
+        "btnPickGallery",
+        "btnPickDraft",
+        "etWatermarkCount",
+        "etWatermarkSize",
+        "tvOpacityLabel",
+        "sbWatermarkOpacity",
+        "rgWatermarkPosition",
+        "rbPosLeft",
+        "rbPosRight",
+        "btnCancelWm",
+        "btnStartWm"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/DialogWatermarkBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "dialog_youtube_player",
+      "source": "decoded/res/layout/dialog_youtube_player.xml",
+      "ids": [
+        "btnCloseDialog",
+        "youtubePlayerViewDialog",
+        "tvSpeed",
+        "btnRewind",
+        "btnForward",
+        "btnShare",
+        "btnOpenYoutube"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/DialogYoutubePlayerBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/community/y.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "item_active_effect",
+      "source": "decoded/res/layout/item_active_effect.xml",
+      "ids": [
+        "viewEffectStrip",
+        "tvActiveEffectOrder",
+        "tvActiveEffectName",
+        "switchEffectEnabled",
+        "btnDeleteEffect",
+        "containerEffectParams"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/ItemActiveEffectBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/editor/dialog/ImageEffectsPanel.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "item_cloud_row",
+      "source": "decoded/res/layout/item_cloud_row.xml",
+      "ids": [
+        "ivItemThumbnail",
+        "tvItemName",
+        "tvItemDate",
+        "btnDeleteCloudItem"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/ItemCloudRowBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/dashboard/ProjectsActivity$showElegantCloudProjectsDialog$2.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "item_color_circle",
+      "source": "decoded/res/layout/item_color_circle.xml",
+      "ids": [
+        "viewColor"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/ItemColorCircleBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "item_comment",
+      "source": "decoded/res/layout/item_comment.xml",
+      "ids": [
+        "tvCommentAuthor",
+        "btnTranslateComment",
+        "btnReportComment",
+        "tvCommentContent"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/ItemCommentBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "item_community_post",
+      "source": "decoded/res/layout/item_community_post.xml",
+      "ids": [
+        "tvAuthorName",
+        "tvAdBadge",
+        "btnTranslate",
+        "btnPromote",
+        "btnBump",
+        "btnReport",
+        "tvPostTitle",
+        "tvPostDescription",
+        "imageSliderContainer",
+        "viewPagerImages",
+        "tvImageIndicator",
+        "youtubeContainer",
+        "ivYoutubeThumbnail",
+        "btnYoutubePlay",
+        "inlineYoutubePlayer",
+        "tvPostTag",
+        "btnComments",
+        "btnUpvote",
+        "tvUpvoteCount",
+        "btnDownvote"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/ItemCommunityPostBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "item_custom_font",
+      "source": "decoded/res/layout/item_custom_font.xml",
+      "ids": [
+        "tv_font_preview",
+        "tv_font_name",
+        "tv_font_tags",
+        "btn_font_options"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/ItemCustomFontBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/library/f.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/settings/SettingsFontsController$loadCustomFontsIntoDialog$1.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/settings/j0.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "item_draft_chip",
+      "source": "decoded/res/layout/item_draft_chip.xml",
+      "ids": [
+        "tv_draft_name",
+        "btn_delete_draft"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/ItemDraftChipBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "item_editor_saved_style",
+      "source": "decoded/res/layout/item_editor_saved_style.xml",
+      "ids": [
+        "ivStylePreview",
+        "view_name_bg",
+        "tvStyleName",
+        "btn_favorite_style"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/ItemEditorSavedStyleBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/editor/dialog/TextStylesPanel.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "item_effect_catalog",
+      "source": "decoded/res/layout/item_effect_catalog.xml",
+      "ids": [
+        "tvEffectCatalogIcon",
+        "tvEffectCatalogName",
+        "viewEffectCatalogAdd"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/ItemEffectCatalogBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/editor/dialog/ImageEffectsPanel.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "item_export_page",
+      "source": "decoded/res/layout/item_export_page.xml",
+      "ids": [
+        "ivPageThumbnail",
+        "selectionOverlay",
+        "ivCheck",
+        "tvPageNumber"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/ItemExportPageBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "item_filter_preset",
+      "source": "decoded/res/layout/item_filter_preset.xml",
+      "ids": [
+        "cardThumbnail",
+        "imgThumbnail",
+        "viewBorder",
+        "tvFilterName"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/ItemFilterPresetBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/editor/dialog/ImageFiltersPanel.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "item_folder",
+      "source": "decoded/res/layout/item_folder.xml",
+      "ids": [
+        "iv_folder_icon",
+        "tv_folder_name",
+        "tv_folder_count"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/ItemFolderBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/editor/dialog/FontPickerPanel.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "item_folder_card",
+      "source": "decoded/res/layout/item_folder_card.xml",
+      "ids": [
+        "tv_folder_name",
+        "tv_folder_count"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/ItemFolderCardBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "item_font_grid_card",
+      "source": "decoded/res/layout/item_font_grid_card.xml",
+      "ids": [
+        "tv_font_preview",
+        "tv_font_name"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/ItemFontGridCardBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/editor/dialog/FontPickerPanel.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "item_font_picker_card",
+      "source": "decoded/res/layout/item_font_picker_card.xml",
+      "ids": [
+        "tv_font_preview",
+        "tv_font_name",
+        "btn_favorite_font"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/ItemFontPickerCardBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/editor/dialog/FontPickerPanel.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/library/f.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "item_layer",
+      "source": "decoded/res/layout/item_layer.xml",
+      "ids": [
+        "ivDragHandle",
+        "ivSelectMerge",
+        "divider1",
+        "tvZIndex",
+        "ivThumbnail",
+        "ivLayerType",
+        "tvLayerName",
+        "btnDelete",
+        "btnLock",
+        "btnVisibility"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/ItemLayerBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/editor/dialog/LayersBottomSheet.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "item_line_format_row",
+      "source": "decoded/res/layout/item_line_format_row.xml",
+      "ids": [
+        "wordsContainer",
+        "btnMinus",
+        "seekBarLength",
+        "btnPlus"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/ItemLineFormatRowBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "item_page_glass",
+      "source": "decoded/res/layout/item_page_glass.xml",
+      "ids": [
+        "iv_page_thumb",
+        "tv_page_dimensions",
+        "tv_page_num",
+        "btn_page_options"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/ItemPageGlassBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "item_project_glass",
+      "source": "decoded/res/layout/item_project_glass.xml",
+      "ids": [
+        "iv_project_thumb",
+        "glass_overlay",
+        "tv_project_name",
+        "tv_last_modified",
+        "btn_more_options"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/ItemProjectGlassBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "item_saved_style",
+      "source": "decoded/res/layout/item_saved_style.xml",
+      "ids": [
+        "ivStylePreview",
+        "view",
+        "tvStyleName",
+        "btn_favorite_style"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/ItemSavedStyleBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/editor/dialog/TagQuickLinkDialog.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "item_scraper_image",
+      "source": "decoded/res/layout/item_scraper_image.xml",
+      "ids": [
+        "ivImage",
+        "tvIndex",
+        "tvFormat",
+        "tvDimensions",
+        "vSelectionOverlay",
+        "ivCheck"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/ItemScraperImageBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "item_store_theme_wheel",
+      "source": "decoded/res/layout/item_store_theme_wheel.xml",
+      "ids": [
+        "iv_theme_preview",
+        "view_theme_selected_border",
+        "container_theme_lock",
+        "tv_theme_index",
+        "tv_theme_action_label"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/ItemStoreThemeWheelBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "item_tag_row",
+      "source": "decoded/res/layout/item_tag_row.xml",
+      "ids": [
+        "btn_pick_color",
+        "btn_pick_font",
+        "btn_text_style",
+        "row_label",
+        "row_tag",
+        "btn_delete"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/ItemTagRowBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "item_tool_button",
+      "source": "decoded/res/layout/item_tool_button.xml",
+      "ids": [
+        "toolIcon",
+        "toolText"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/ItemToolButtonBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "item_typer_bubble",
+      "source": "decoded/res/layout/item_typer_bubble.xml",
+      "ids": [
+        "tvBubbleNum",
+        "tvBubbleTag",
+        "tvBubbleText"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/ItemTyperBubbleBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/editor/typer/a0.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "layout_3d_panel",
+      "source": "decoded/res/layout/layout_3d_panel.xml",
+      "ids": [
+        "tvTitle3D",
+        "btnReset3D",
+        "tabLayout3D",
+        "layoutRotate",
+        "tvLabelRotX",
+        "btnMinusRotateX",
+        "seekRotateX",
+        "btnPlusRotateX",
+        "tvRotateX",
+        "tvLabelRotY",
+        "btnMinusRotateY",
+        "seekRotateY",
+        "btnPlusRotateY",
+        "tvRotateY",
+        "tvLabelRotZ",
+        "btnMinusRotateZ",
+        "seekRotateZ",
+        "btnPlusRotateZ",
+        "tvRotateZ",
+        "layoutDepth",
+        "btnEyedropperDepth",
+        "btnOpenPaletteDepth",
+        "recyclerDepthColors",
+        "tvLabelDepth",
+        "btnMinusDepth",
+        "seekDepth",
+        "btnPlusDepth",
+        "tvDepth",
+        "tvLabelAngle",
+        "btnMinusAngle",
+        "seekAngle",
+        "btnPlusAngle",
+        "tvAngle",
+        "tvLabelDarken",
+        "btnMinusDarken",
+        "seekDarken",
+        "btnPlusDarken",
+        "tvDarken"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/Layout3dPanelBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "layout_background_panel",
+      "source": "decoded/res/layout/layout_background_panel.xml",
+      "ids": [
+        "btnRemoveBg",
+        "layoutSolidMode",
+        "btnEyedropper",
+        "btnOpenPalette",
+        "recyclerRecentColors",
+        "btnMinusBgRadius",
+        "seekRadius",
+        "btnPlusBgRadius",
+        "tvRadius",
+        "btnMinusBgWidth",
+        "seekWidth",
+        "btnPlusBgWidth",
+        "tvWidth",
+        "btnMinusBgHeight",
+        "seekHeight",
+        "btnPlusBgHeight",
+        "tvHeight",
+        "btnMinusBgOpacity",
+        "seekOpacity",
+        "btnPlusBgOpacity",
+        "tvOpacity"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/LayoutBackgroundPanelBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "layout_cleaner_pill",
+      "source": "decoded/res/layout/layout_cleaner_pill.xml",
+      "ids": [
+        "cleanerPillRoot",
+        "cleanerPillHandle",
+        "cleanerPill",
+        "btnCleanerBrushMinus",
+        "sbCleanerBrushSize",
+        "tvCleanerBrushSize",
+        "btnCleanerBrushPlus",
+        "btnCleanerUndo",
+        "btnCleanerApply",
+        "btnCleanerCancel"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/LayoutCleanerPillBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "layout_color_panel",
+      "source": "decoded/res/layout/layout_color_panel.xml",
+      "ids": [
+        "tabColorMode",
+        "layoutSolidColor",
+        "btnEyedropper",
+        "btnOpenPalette",
+        "recyclerRecentColors",
+        "layoutGradientMode",
+        "gradientSliderView",
+        "seekGradientAngle",
+        "tvGradientAngle",
+        "btnAdvancedGradient",
+        "btnInteractiveGradient"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/LayoutColorPanelBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "layout_drawing_brush_panel",
+      "source": "decoded/res/layout/layout_drawing_brush_panel.xml",
+      "ids": [
+        "groupDrawingBrushStyle",
+        "rbBrushNormal",
+        "rbBrushSoft",
+        "rbBrushNeon",
+        "rbBrushWater",
+        "rbBrushMarker",
+        "btnMinusBrushSize",
+        "seekBrushSize",
+        "btnPlusBrushSize",
+        "tvBrushSize",
+        "btnMinusBrushOpacity",
+        "seekBrushOpacity",
+        "btnPlusBrushOpacity",
+        "tvBrushOpacity"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/LayoutDrawingBrushPanelBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "layout_drawing_brush_plus_panel",
+      "source": "decoded/res/layout/layout_drawing_brush_plus_panel.xml",
+      "ids": [
+        "layoutBrushPlusTextures",
+        "btnMinusBrushPlusSize",
+        "seekBrushPlusSize",
+        "btnPlusBrushPlusSize",
+        "tvBrushPlusSize",
+        "btnMinusBrushPlusOpacity",
+        "seekBrushPlusOpacity",
+        "btnPlusBrushPlusOpacity",
+        "tvBrushPlusOpacity"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/LayoutDrawingBrushPlusPanelBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "layout_drawing_color_panel",
+      "source": "decoded/res/layout/layout_drawing_color_panel.xml",
+      "ids": [
+        "btnDrawingEyedropper",
+        "btnDrawingOpenPalette",
+        "recyclerDrawingRecentColors"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/LayoutDrawingColorPanelBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "layout_drawing_eraser_panel",
+      "source": "decoded/res/layout/layout_drawing_eraser_panel.xml",
+      "ids": [
+        "btnMinusDrawingEraserSize",
+        "seekDrawingEraserSize",
+        "btnPlusDrawingEraserSize",
+        "tvDrawingEraserSize",
+        "btnDrawingClearCanvas"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/LayoutDrawingEraserPanelBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "layout_drawing_shapes_panel",
+      "source": "decoded/res/layout/layout_drawing_shapes_panel.xml",
+      "ids": [
+        "groupDrawingShapes",
+        "rbShapeFree",
+        "rbShapeRect",
+        "rbShapeCircle",
+        "rbShapeLine",
+        "btnToggleShapeFill"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/LayoutDrawingShapesPanelBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "layout_drawing_smudge_panel",
+      "source": "decoded/res/layout/layout_drawing_smudge_panel.xml",
+      "ids": [
+        "tvSmudgeTitle",
+        "tvSmudgeSizeLabel",
+        "btnMinusSmudgeSize",
+        "seekSmudgeSize",
+        "btnPlusSmudgeSize",
+        "tvSmudgeSize",
+        "tvSmudgeStrengthLabel",
+        "btnMinusSmudgeStrength",
+        "seekSmudgeStrength",
+        "btnPlusSmudgeStrength",
+        "tvSmudgeStrength"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/LayoutDrawingSmudgePanelBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "layout_effects_panel",
+      "source": "decoded/res/layout/layout_effects_panel.xml",
+      "ids": [
+        "btnResetEffect",
+        "groupEffects",
+        "rbNone",
+        "rbBlur",
+        "rbError",
+        "rbGlitch",
+        "rbNeon",
+        "rbSlice",
+        "rbFade",
+        "rbEcho",
+        "rbLiquid",
+        "rbCrimson",
+        "rbAbyssal",
+        "rbPanic",
+        "scrollBlurTypes",
+        "layoutBlurTypes",
+        "layoutEffectControls",
+        "rowValue",
+        "labelValue",
+        "btnMinusEffectValue",
+        "seekEffectValue",
+        "btnPlusEffectValue",
+        "tvEffectValue",
+        "rowAngle",
+        "labelAngle",
+        "btnMinusEffectAngle",
+        "seekEffectAngle",
+        "btnPlusEffectAngle",
+        "tvEffectAngle",
+        "rowDetail",
+        "labelDetail",
+        "btnMinusEffectDetail",
+        "seekEffectDetail",
+        "btnPlusEffectDetail",
+        "tvEffectDetail",
+        "rowColor",
+        "btnEffectEyedropper",
+        "btnEffectPalette",
+        "recyclerEffectColors"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/LayoutEffectsPanelBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "layout_eraser_panel",
+      "source": "decoded/res/layout/layout_eraser_panel.xml",
+      "ids": [
+        "btnClearMask",
+        "cbShowMask",
+        "btnApplyMask",
+        "groupEraserMode",
+        "rbErase",
+        "rbRestore",
+        "btnMinusBrushSize",
+        "seekBrushSize",
+        "btnPlusBrushSize",
+        "tvBrushSize",
+        "btnMinusBrushOpacity",
+        "seekBrushOpacity",
+        "btnPlusBrushOpacity",
+        "tvBrushOpacity"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/LayoutEraserPanelBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "layout_eyedropper_overlay",
+      "source": "decoded/res/layout/layout_eyedropper_overlay.xml",
+      "ids": [
+        "eyedropperRoot",
+        "cardPreview",
+        "viewColorPreview",
+        "viewHandle",
+        "tvInstruction"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/LayoutEyedropperOverlayBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/editor/TagMiniEditorActivity.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/editor/b2.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "layout_fade_panel",
+      "source": "decoded/res/layout/layout_fade_panel.xml",
+      "ids": [
+        "btnMinusFadeRange",
+        "seekFadeRange",
+        "btnPlusFadeRange",
+        "tvFadeRange",
+        "btnMinusFadeAngle",
+        "seekFadeAngle",
+        "btnPlusFadeAngle",
+        "tvFadeAngle"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/LayoutFadePanelBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "layout_floating_widget",
+      "source": "decoded/res/layout/layout_floating_widget.xml",
+      "ids": [
+        "expanded_container",
+        "control_bar",
+        "tv_counter",
+        "btn_format_box",
+        "btn_format_circle",
+        "btn_toggle_slider",
+        "btn_info",
+        "btn_minimize",
+        "btn_close_small",
+        "btn_prev",
+        "content_click_area",
+        "floating_text",
+        "btn_next",
+        "seekbar_nav",
+        "minimized_container",
+        "minimized_bg"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/LayoutFloatingWidgetBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/floatingwidget/FloatingWidgetService.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "layout_gradient_map_panel",
+      "source": "decoded/res/layout/layout_gradient_map_panel.xml",
+      "ids": [
+        "rootGradientMapPanel",
+        "tvGradientMapTitle",
+        "btnReverseGradient",
+        "btnToggle3DDepth",
+        "btnOpenAdvancedGradient",
+        "btnOpenInteractiveGradient",
+        "tabGradientTarget",
+        "layoutCategoriesFilter",
+        "recyclerGradientMaps",
+        "btnMinusAngle",
+        "seekGradientMapAngle",
+        "btnPlusAngle",
+        "tvGradientMapAngle"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/LayoutGradientMapPanelBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "layout_image_adjustments_panel",
+      "source": "decoded/res/layout/layout_image_adjustments_panel.xml",
+      "ids": [
+        "tvTitle",
+        "btnResetAdjustments",
+        "lblBrightness",
+        "btnMinusBrightness",
+        "seekBrightness",
+        "btnPlusBrightness",
+        "tvBrightness",
+        "lblContrast",
+        "btnMinusContrast",
+        "seekContrast",
+        "btnPlusContrast",
+        "tvContrast",
+        "lblSaturation",
+        "btnMinusSaturation",
+        "seekSaturation",
+        "btnPlusSaturation",
+        "tvSaturation",
+        "lblExposure",
+        "btnMinusExposure",
+        "seekExposure",
+        "btnPlusExposure",
+        "tvExposure",
+        "lblTemperature",
+        "btnMinusTemperature",
+        "seekTemperature",
+        "btnPlusTemperature",
+        "tvTemperature",
+        "lblTint",
+        "btnMinusTint",
+        "seekTint",
+        "btnPlusTint",
+        "tvTint",
+        "lblVignette",
+        "btnMinusVignette",
+        "seekVignette",
+        "btnPlusVignette",
+        "tvVignette",
+        "lblShadows",
+        "btnMinusShadows",
+        "seekShadows",
+        "btnPlusShadows",
+        "tvShadows",
+        "lblHighlights",
+        "btnMinusHighlights",
+        "seekHighlights",
+        "btnPlusHighlights",
+        "tvHighlights",
+        "lblHue",
+        "btnMinusHue",
+        "seekHue",
+        "btnPlusHue",
+        "tvHue"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/LayoutImageAdjustmentsPanelBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "layout_image_effects_panel",
+      "source": "decoded/res/layout/layout_image_effects_panel.xml",
+      "ids": [
+        "tvTitle",
+        "btnResetEffect",
+        "recyclerEffectCatalog",
+        "tvEmptyEffects",
+        "recyclerActiveEffects"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/LayoutImageEffectsPanelBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "layout_image_filters_panel",
+      "source": "decoded/res/layout/layout_image_filters_panel.xml",
+      "ids": [
+        "tvTitle",
+        "btnResetFilters",
+        "recyclerFilters",
+        "layoutDuoToneControls",
+        "lblDuoToneColors",
+        "lblColor1",
+        "viewColor1",
+        "lblColor2",
+        "viewColor2"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/LayoutImageFiltersPanelBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "layout_info_popup",
+      "source": "decoded/res/layout/layout_info_popup.xml",
+      "ids": [
+        "tv_info_content"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/LayoutInfoPopupBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/floatingwidget/FloatingWidgetService.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/floatingwidget/g.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "layout_inline_editor",
+      "source": "decoded/res/layout/layout_inline_editor.xml",
+      "ids": [
+        "inlineTextEditorRoot",
+        "btnInlineResizeStart",
+        "btnInlineResizeEnd",
+        "etInlineInput",
+        "llInlineHighlightsLegend",
+        "btnInlineAlignLeft",
+        "btnInlineAlignCenter",
+        "btnInlineAlignRight",
+        "btnInlineAlignJustify",
+        "btnInlineDash",
+        "btnInlineTatweel",
+        "btnInlinePaste",
+        "btnInlineCopy",
+        "btnInlineLastStyle",
+        "btnInlineUppercase",
+        "btnInlineLowercase",
+        "btnInlineMore",
+        "btnInlineDock"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/LayoutInlineEditorBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "layout_inpaint_panel",
+      "source": "decoded/res/layout/layout_inpaint_panel.xml",
+      "ids": [
+        "btnMinusBrushSize",
+        "sbInpaintBrushSize",
+        "btnPlusBrushSize"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/LayoutInpaintPanelBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "layout_inpaint_variations_panel",
+      "source": "decoded/res/layout/layout_inpaint_variations_panel.xml",
+      "ids": [
+        "cardVar1",
+        "ivVar1",
+        "tvVar1",
+        "cardVar2",
+        "ivVar2",
+        "tvVar2",
+        "cardVar3",
+        "ivVar3",
+        "tvVar3",
+        "btnCancelVariations",
+        "btnApplyVariation"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/LayoutInpaintVariationsPanelBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "layout_magic_brush_panel",
+      "source": "decoded/res/layout/layout_magic_brush_panel.xml",
+      "ids": [
+        "tvTitle",
+        "btnToggleMaskPreview",
+        "btnUndoBrush",
+        "btnClearBrush",
+        "groupBrushTypes",
+        "rbBlur",
+        "rbLiquid",
+        "rbPixelate",
+        "rbGrayscale",
+        "rbGlitch",
+        "rbSharpen",
+        "rbDuotone",
+        "lblBrushSize",
+        "btnMinusBrushSize",
+        "seekBrushSize",
+        "btnPlusBrushSize",
+        "tvBrushSize",
+        "lblBrushOpacity",
+        "btnMinusBrushOpacity",
+        "seekBrushOpacity",
+        "btnPlusBrushOpacity",
+        "tvBrushOpacity",
+        "rowBrushParam",
+        "lblBrushParam",
+        "btnMinusBrushParam",
+        "seekBrushParam",
+        "btnPlusBrushParam",
+        "tvBrushParam"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/LayoutMagicBrushPanelBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "layout_opacity_panel",
+      "source": "decoded/res/layout/layout_opacity_panel.xml",
+      "ids": [
+        "switchBlend",
+        "btnMinusOpacity",
+        "seekOpacity",
+        "btnPlusOpacity",
+        "tvOpacity",
+        "layoutInnerOpacity",
+        "btnMinusInnerOpacity",
+        "seekInnerOpacity",
+        "btnPlusInnerOpacity",
+        "tvInnerOpacity"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/LayoutOpacityPanelBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "layout_perspective_panel",
+      "source": "decoded/res/layout/layout_perspective_panel.xml",
+      "ids": [
+        "btnResetPersp",
+        "groupPerspMode",
+        "rbPersp4",
+        "rbPerspMesh",
+        "layoutPerspNormal",
+        "btnPerspUp",
+        "btnPerspLeft",
+        "btnPerspRight",
+        "btnPerspDown",
+        "btnStepMinus",
+        "tvStepCounter",
+        "btnStepPlus",
+        "layoutPerspMesh",
+        "btnMinusMeshCols",
+        "seekMeshCols",
+        "btnPlusMeshCols",
+        "tvMeshCols",
+        "btnMinusMeshRows",
+        "seekMeshRows",
+        "btnPlusMeshRows",
+        "tvMeshRows"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/LayoutPerspectivePanelBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "layout_position_panel",
+      "source": "decoded/res/layout/layout_position_panel.xml",
+      "ids": [
+        "tvTitle",
+        "tvPosX",
+        "tvPosY",
+        "gridAlignment",
+        "btnAlignLeft",
+        "btnAlignTop",
+        "btnAlignCenterH",
+        "btnAlignCenterV",
+        "btnAlignRight",
+        "btnAlignBottom",
+        "gridDpad",
+        "btnMoveUp",
+        "btnMoveLeft",
+        "btnMoveCenter",
+        "btnMoveRight",
+        "btnMoveDown",
+        "btnStepMinus",
+        "tvStepCounter",
+        "btnStepPlus",
+        "btnPreset1",
+        "btnPreset5",
+        "btnPreset10",
+        "btnPreset30",
+        "btnPreset50",
+        "btnFlipX",
+        "btnFlipY"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/LayoutPositionPanelBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "layout_ruler_panel",
+      "source": "decoded/res/layout/layout_ruler_panel.xml",
+      "ids": [
+        "tvTitle",
+        "btnAutoCenter",
+        "tvRulerTop",
+        "tvRulerBottom",
+        "tvRulerLeft",
+        "tvRulerRight",
+        "seekRulerThreshold",
+        "tvRulerThresholdValue"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/LayoutRulerPanelBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "layout_shadow_panel",
+      "source": "decoded/res/layout/layout_shadow_panel.xml",
+      "ids": [
+        "btnRemoveShadow",
+        "tabShadowColorMode",
+        "layoutSolidColor",
+        "btnEyedropper",
+        "btnOpenPalette",
+        "recyclerRecentColors",
+        "layoutGradientMode",
+        "gradientSliderView",
+        "seekGradientAngle",
+        "tvGradientAngle",
+        "btnAdvancedGradient",
+        "btnInteractiveGradient",
+        "btnMinusRadius",
+        "seekRadius",
+        "btnPlusRadius",
+        "tvRadius",
+        "btnMinusThickness",
+        "seekThickness",
+        "btnPlusThickness",
+        "tvThickness",
+        "btnMinusOpacity",
+        "seekOpacity",
+        "btnPlusOpacity",
+        "tvOpacity",
+        "btnShadowUp",
+        "btnShadowDown",
+        "btnShadowLeft",
+        "btnShadowRight"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/LayoutShadowPanelBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "layout_snap_settings",
+      "source": "decoded/res/layout/layout_snap_settings.xml",
+      "ids": [
+        "switch_snap_center_x",
+        "switch_snap_center_y",
+        "switch_snap_layers",
+        "switch_snap_edges",
+        "btn_snap_strength_minus",
+        "tv_snap_strength",
+        "btn_snap_strength_plus"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/LayoutSnapSettingsBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/editor/EditorActivity.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "layout_spacing_panel",
+      "source": "decoded/res/layout/layout_spacing_panel.xml",
+      "ids": [
+        "btnMinusLetterSpace",
+        "seekLetterSpace",
+        "btnPlusLetterSpace",
+        "tvLetterSpace",
+        "btnMinusLineSpace",
+        "seekLineSpace",
+        "btnPlusLineSpace",
+        "tvLineSpace",
+        "btnMinusTashkeelSpace",
+        "seekTashkeelSpace",
+        "btnPlusTashkeelSpace",
+        "tvTashkeelSpace"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/LayoutSpacingPanelBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "layout_stroke_panel",
+      "source": "decoded/res/layout/layout_stroke_panel.xml",
+      "ids": [
+        "btnMinusStrokeWidth",
+        "seekStrokeWidth",
+        "btnPlusStrokeWidth",
+        "tvStrokeWidth",
+        "tabStrokeMode",
+        "layoutSolidMode",
+        "btnEyedropper",
+        "btnOpenPalette",
+        "recyclerRecentColors",
+        "layoutGradientMode",
+        "gradientSliderView",
+        "btnMinusGradientAngle",
+        "seekGradientAngle",
+        "btnPlusGradientAngle",
+        "tvGradientAngle",
+        "btnAdvancedGradient",
+        "btnInteractiveGradient",
+        "layoutShapesMode",
+        "recyclerStrokeShapes"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/LayoutStrokePanelBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "layout_styles_panel",
+      "source": "decoded/res/layout/layout_styles_panel.xml",
+      "ids": [
+        "rootStylesPanel",
+        "tvStylesTitle",
+        "btnImportStyles",
+        "btnToggleFont",
+        "btnSaveCurrentStyle",
+        "etStyleSearch",
+        "layoutFoldersFilter",
+        "layoutTagsFilter",
+        "recyclerStyles"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/LayoutStylesPanelBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "layout_texture_panel",
+      "source": "decoded/res/layout/layout_texture_panel.xml",
+      "ids": [
+        "tvTitle",
+        "btnOpenGallery",
+        "btnRemoveTexture",
+        "btnResetTexture",
+        "recyclerRecentTextures",
+        "tvLabelRotate",
+        "btnMinusTexRotate",
+        "seekTexRotate",
+        "btnPlusTexRotate",
+        "tvTexRotate",
+        "tvLabelScaleX",
+        "btnMinusTexScaleX",
+        "seekTexScaleX",
+        "btnPlusTexScaleX",
+        "tvTexScaleX",
+        "tvLabelScaleY",
+        "btnMinusTexScaleY",
+        "seekTexScaleY",
+        "btnPlusTexScaleY",
+        "tvTexScaleY"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/LayoutTexturePanelBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "layout_tutorial_card_simple",
+      "source": "decoded/res/layout/layout_tutorial_card_simple.xml",
+      "ids": [
+        "tutorial_card",
+        "tut_card_title",
+        "tut_card_desc",
+        "tut_card_btn"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/LayoutTutorialCardSimpleBinding.java",
+        "decompiled/sources/com/oneguystudio/ytyper/ui/floatingwidget/j.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "layout_typer_panel",
+      "source": "decoded/res/layout/layout_typer_panel.xml",
+      "ids": [
+        "panelTyper",
+        "viewDragHandle",
+        "btnFormatSquare",
+        "btnFormatCircle",
+        "btnTyperAddBubble",
+        "layoutTopInfo",
+        "tvTyperBubbleCount",
+        "scrollTagSets",
+        "layoutTagSets",
+        "layoutTyperControls",
+        "btnToolSearch",
+        "btnToolResizeTyper",
+        "etTyperSearch",
+        "scrollTags",
+        "layoutQuickTags",
+        "rvQuickFonts",
+        "rvTyperBubbles",
+        "layoutSecondaryTools",
+        "btnTyperImportFile",
+        "btnTyperClipboard",
+        "btnTyperBoard",
+        "btnTyperClear",
+        "btnFormatAllCaps",
+        "btnQuickFontAdd",
+        "layoutPrimaryActions",
+        "btnToolSniper",
+        "btnTyperPasteToCanvas"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/LayoutTyperPanelBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    },
+    {
+      "layout": "layout_warp_panel",
+      "source": "decoded/res/layout/layout_warp_panel.xml",
+      "ids": [
+        "btnResetWarp",
+        "layoutWarpControls",
+        "rowValue",
+        "labelValue",
+        "btnMinusWarpValue",
+        "seekWarpValue",
+        "btnPlusWarpValue",
+        "tvWarpValue"
+      ],
+      "direct_layout_references": [
+        "decompiled/sources/com/oneguystudio/ytyper/databinding/LayoutWarpPanelBinding.java"
+      ],
+      "runtime_status": "ليس كل Layout شاشة مستقلة أو ميزة نشطة"
+    }
+  ],
+  "limits": [
+    "Resource IDs are exhaustive for selected app-prefixed layouts, not exhaustive for Compose-generated or programmatic UI.",
+    "A resource or decompiled class may be unused or entitlement-dependent.",
+    "JADX reported 305 errors; behavior inventory requires subsequent runtime validation.",
+    "No authenticated original Google account was available in this audit."
+  ]
+}

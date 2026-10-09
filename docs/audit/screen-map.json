@@ -1,0 +1,342 @@
+[
+  {
+    "kind": "Activity",
+    "original": "SplashActivity",
+    "title": "البداية والحساب",
+    "ios": "WelcomeView / AccountView",
+    "feature_ids": "F001 F002 F003 F004 F005",
+    "original_capture": "01-original-launch",
+    "evidence": "decoded/AndroidManifest.xml",
+    "visual_status": "غير مصدقة"
+  },
+  {
+    "kind": "Activity",
+    "original": "CrashReportActivity",
+    "title": "تقرير الانهيار",
+    "ios": "تنبيهات أخطاء فقط",
+    "feature_ids": "F147",
+    "original_capture": "لم توثق لقطة تشغيل لهذه الوجهة",
+    "evidence": "decoded/AndroidManifest.xml",
+    "visual_status": "غير مصدقة"
+  },
+  {
+    "kind": "Activity",
+    "original": "FolatingWidgetDashboard",
+    "title": "لوحة التايبر العائم",
+    "ios": "TyperLibraryView / TyperPanel داخل التطبيق",
+    "feature_ids": "F028 F030 F043",
+    "original_capture": "لم توثق لقطة تشغيل لهذه الوجهة",
+    "evidence": "decoded/AndroidManifest.xml",
+    "visual_status": "غير مصدقة"
+  },
+  {
+    "kind": "Activity",
+    "original": "FontLibraryActivity",
+    "title": "مكتبة الخطوط",
+    "ios": "FontLibraryView قائمة واحدة",
+    "feature_ids": "F060 F084 F085 F086",
+    "original_capture": "screens/23-font-tool",
+    "evidence": "decoded/AndroidManifest.xml",
+    "visual_status": "غير مصدقة"
+  },
+  {
+    "kind": "Activity",
+    "original": "ArabicFontsActivity",
+    "title": "الخطوط العربية",
+    "ios": "لا قسم مستقل",
+    "feature_ids": "F084",
+    "original_capture": "لم توثق لقطة تشغيل لهذه الوجهة",
+    "evidence": "decoded/AndroidManifest.xml",
+    "visual_status": "غير مصدقة"
+  },
+  {
+    "kind": "Activity",
+    "original": "EnglishFontsActivity",
+    "title": "الخطوط الإنجليزية",
+    "ios": "لا قسم مستقل",
+    "feature_ids": "F084",
+    "original_capture": "لم توثق لقطة تشغيل لهذه الوجهة",
+    "evidence": "decoded/AndroidManifest.xml",
+    "visual_status": "غير مصدقة"
+  },
+  {
+    "kind": "Activity",
+    "original": "ImportedFontsActivity",
+    "title": "الخطوط المستوردة",
+    "ios": "استيراد في FontLibraryView؛ إدارة ناقصة",
+    "feature_ids": "F084 F085 F086",
+    "original_capture": "لم توثق لقطة تشغيل لهذه الوجهة",
+    "evidence": "decoded/AndroidManifest.xml",
+    "visual_status": "غير مصدقة"
+  },
+  {
+    "kind": "Activity",
+    "original": "ImportedStylesActivity",
+    "title": "الأنماط المستوردة",
+    "ios": "لا مكتبة أنماط محفوظة",
+    "feature_ids": "F081 F082 F086",
+    "original_capture": "لم توثق لقطة تشغيل لهذه الوجهة",
+    "evidence": "decoded/AndroidManifest.xml",
+    "visual_status": "غير مصدقة"
+  },
+  {
+    "kind": "Activity",
+    "original": "SettingsActivity",
+    "title": "الإعدادات",
+    "ios": "SettingsView / TyperSettingsView",
+    "feature_ids": "F141 F142 F143 F144 F145 F146",
+    "original_capture": "06-settings",
+    "evidence": "decoded/AndroidManifest.xml",
+    "visual_status": "غير مصدقة"
+  },
+  {
+    "kind": "Activity",
+    "original": "StoreActivity",
+    "title": "المتجر",
+    "ios": "غير منفذ",
+    "feature_ids": "F136",
+    "original_capture": "لم توثق لقطة تشغيل لهذه الوجهة",
+    "evidence": "decoded/AndroidManifest.xml",
+    "visual_status": "غير مصدقة"
+  },
+  {
+    "kind": "Activity",
+    "original": "CopyActivity",
+    "title": "نسخ واستقبال نص التايبر",
+    "ios": "حافظة في ChapterSourceView؛ ليس نفس المسار",
+    "feature_ids": "F021 F033 F043",
+    "original_capture": "لم توثق لقطة تشغيل لهذه الوجهة",
+    "evidence": "decoded/AndroidManifest.xml",
+    "visual_status": "غير مصدقة"
+  },
+  {
+    "kind": "Activity",
+    "original": "ProjectsActivity",
+    "title": "لوحة المشاريع والعمل",
+    "ios": "LibraryView",
+    "feature_ids": "F008 F009 F010 F012 F014",
+    "original_capture": "03-projects-unauthenticated؛10-workspace",
+    "evidence": "decoded/AndroidManifest.xml",
+    "visual_status": "غير مصدقة"
+  },
+  {
+    "kind": "Activity",
+    "original": "ProjectGalleryActivity",
+    "title": "معرض صفحات المشروع",
+    "ios": "صور مستقلة ضمن LibraryView",
+    "feature_ids": "F010 F011 F012 F023 F024 F025",
+    "original_capture": "لم توثق لقطة تشغيل لهذه الوجهة",
+    "evidence": "decoded/AndroidManifest.xml",
+    "visual_status": "غير مصدقة"
+  },
+  {
+    "kind": "Activity",
+    "original": "WebtoonScraperActivity",
+    "title": "سحب الفصل",
+    "ios": "غير منفذ",
+    "feature_ids": "F115 F116 F117 F118",
+    "original_capture": "لم توثق لقطة تشغيل لهذه الوجهة",
+    "evidence": "decoded/AndroidManifest.xml",
+    "visual_status": "غير مصدقة"
+  },
+  {
+    "kind": "Activity",
+    "original": "EditorActivity",
+    "title": "المحرر",
+    "ios": "EditorView / StableCanvas / لوحات الأدوات",
+    "feature_ids": "F045 F047 F048 F057 F058 F109 F110",
+    "original_capture": "23-editor-before-text؛24-text-tool؛24-text-handles؛28-editor-header-tools؛29-layers",
+    "evidence": "decoded/AndroidManifest.xml",
+    "visual_status": "غير مصدقة"
+  },
+  {
+    "kind": "Activity",
+    "original": "ReaderActivity",
+    "title": "القارئ",
+    "ios": "ReaderView صورة واحدة",
+    "feature_ids": "F113 F114",
+    "original_capture": "لم توثق لقطة تشغيل لهذه الوجهة",
+    "evidence": "decoded/AndroidManifest.xml",
+    "visual_status": "غير مصدقة"
+  },
+  {
+    "kind": "Activity",
+    "original": "ImageCropActivity",
+    "title": "قص الصورة",
+    "ios": "غير منفذ",
+    "feature_ids": "F089",
+    "original_capture": "لم توثق لقطة تشغيل لهذه الوجهة",
+    "evidence": "decoded/AndroidManifest.xml",
+    "visual_status": "غير مصدقة"
+  },
+  {
+    "kind": "Activity",
+    "original": "ExportStudioActivity",
+    "title": "استوديو التصدير",
+    "ios": "ExportSheet صفحة واحدة",
+    "feature_ids": "F119 F120 F121 F122 F123 F124 F125",
+    "original_capture": "لم توثق لقطة تشغيل لهذه الوجهة",
+    "evidence": "decoded/AndroidManifest.xml",
+    "visual_status": "غير مصدقة"
+  },
+  {
+    "kind": "Activity",
+    "original": "TagMiniEditorActivity",
+    "title": "محرر الوسم",
+    "ios": "TagStyleEditor حقول محدودة",
+    "feature_ids": "F034 F035 F036",
+    "original_capture": "لم توثق لقطة تشغيل لهذه الوجهة",
+    "evidence": "decoded/AndroidManifest.xml",
+    "visual_status": "غير مصدقة"
+  },
+  {
+    "kind": "Activity",
+    "original": "CommunityActivity",
+    "title": "المجتمع",
+    "ios": "CommunityView / PostDetailView",
+    "feature_ids": "F126 F127 F128 F129 F130 F131",
+    "original_capture": "لم توثق لقطة تشغيل لهذه الوجهة",
+    "evidence": "decoded/AndroidManifest.xml",
+    "visual_status": "غير مصدقة"
+  },
+  {
+    "kind": "Activity",
+    "original": "CreatePostActivity",
+    "title": "إنشاء منشور",
+    "ios": "غير منفذ",
+    "feature_ids": "F129",
+    "original_capture": "لم توثق لقطة تشغيل لهذه الوجهة",
+    "evidence": "decoded/AndroidManifest.xml",
+    "visual_status": "غير مصدقة"
+  },
+  {
+    "kind": "Compose؛ قد يكرر Activity",
+    "original": "CommunityScreenKt",
+    "title": "المجتمع",
+    "ios": "CommunityView",
+    "feature_ids": "F126 F127 F128 F129 F130 F131",
+    "original_capture": "يلزم تحقق الحالة الديناميكية",
+    "evidence": "CommunityScreenKt.java",
+    "visual_status": "غير مصدقة"
+  },
+  {
+    "kind": "Compose؛ قد يكرر Activity",
+    "original": "DailyRewardsScreenKt",
+    "title": "المكافآت اليومية",
+    "ios": "غير منفذ",
+    "feature_ids": "F135",
+    "original_capture": "يلزم تحقق الحالة الديناميكية",
+    "evidence": "DailyRewardsScreenKt.java",
+    "visual_status": "غير مصدقة"
+  },
+  {
+    "kind": "Compose؛ قد يكرر Activity",
+    "original": "ExportStudioScreenKt",
+    "title": "استوديو التصدير",
+    "ios": "ExportSheet صفحة واحدة",
+    "feature_ids": "F123 F124",
+    "original_capture": "يلزم تحقق الحالة الديناميكية",
+    "evidence": "ExportStudioScreenKt.java",
+    "visual_status": "غير مصدقة"
+  },
+  {
+    "kind": "Compose؛ قد يكرر Activity",
+    "original": "FontsGridScreenKt",
+    "title": "شبكة الخطوط",
+    "ios": "قائمة واحدة",
+    "feature_ids": "F084 F085",
+    "original_capture": "يلزم تحقق الحالة الديناميكية",
+    "evidence": "FontsGridScreenKt.java",
+    "visual_status": "غير مصدقة"
+  },
+  {
+    "kind": "Compose؛ قد يكرر Activity",
+    "original": "InviteScreenKt",
+    "title": "الدعوات",
+    "ios": "غير منفذ",
+    "feature_ids": "F135",
+    "original_capture": "يلزم تحقق الحالة الديناميكية",
+    "evidence": "InviteScreenKt.java",
+    "visual_status": "غير مصدقة"
+  },
+  {
+    "kind": "Compose؛ قد يكرر Activity",
+    "original": "LeaderboardScreenKt",
+    "title": "المتصدرون",
+    "ios": "غير منفذ",
+    "feature_ids": "F134",
+    "original_capture": "يلزم تحقق الحالة الديناميكية",
+    "evidence": "LeaderboardScreenKt.java",
+    "visual_status": "غير مصدقة"
+  },
+  {
+    "kind": "Compose؛ قد يكرر Activity",
+    "original": "MergeStudioDialogKt",
+    "title": "استوديو الدمج",
+    "ios": "غير منفذ",
+    "feature_ids": "F023",
+    "original_capture": "يلزم تحقق الحالة الديناميكية",
+    "evidence": "MergeStudioDialogKt.java",
+    "visual_status": "غير مصدقة"
+  },
+  {
+    "kind": "Compose؛ قد يكرر Activity",
+    "original": "ProjectGalleryScreenKt",
+    "title": "معرض الصفحات",
+    "ios": "غير منفذ كنموذج فصل",
+    "feature_ids": "F010 F012",
+    "original_capture": "يلزم تحقق الحالة الديناميكية",
+    "evidence": "ProjectGalleryScreenKt.java",
+    "visual_status": "غير مصدقة"
+  },
+  {
+    "kind": "Compose؛ قد يكرر Activity",
+    "original": "RadialUnlockDialogKt",
+    "title": "القائمة الدائرية والاستحقاق",
+    "ios": "غير منفذ",
+    "feature_ids": "F049 F136",
+    "original_capture": "يلزم تحقق الحالة الديناميكية",
+    "evidence": "RadialUnlockDialogKt.java",
+    "visual_status": "غير مصدقة"
+  },
+  {
+    "kind": "Compose؛ قد يكرر Activity",
+    "original": "ReaderStudioDialogKt",
+    "title": "استوديو القارئ",
+    "ios": "صورة واحدة",
+    "feature_ids": "F114",
+    "original_capture": "يلزم تحقق الحالة الديناميكية",
+    "evidence": "ReaderStudioDialogKt.java",
+    "visual_status": "غير مصدقة"
+  },
+  {
+    "kind": "Compose؛ قد يكرر Activity",
+    "original": "StoreScreenKt",
+    "title": "المتجر",
+    "ios": "غير منفذ",
+    "feature_ids": "F136",
+    "original_capture": "يلزم تحقق الحالة الديناميكية",
+    "evidence": "StoreScreenKt.java",
+    "visual_status": "غير مصدقة"
+  },
+  {
+    "kind": "Compose؛ قد يكرر Activity",
+    "original": "WatermarkStudioDialogKt",
+    "title": "استوديو العلامة المائية",
+    "ios": "غير منفذ",
+    "feature_ids": "F026",
+    "original_capture": "يلزم تحقق الحالة الديناميكية",
+    "evidence": "WatermarkStudioDialogKt.java",
+    "visual_status": "غير مصدقة"
+  },
+  {
+    "kind": "Compose؛ قد يكرر Activity",
+    "original": "WebtoonScraperScreenKt",
+    "title": "سحب الفصل",
+    "ios": "غير منفذ",
+    "feature_ids": "F115 F116 F117 F118",
+    "original_capture": "يلزم تحقق الحالة الديناميكية",
+    "evidence": "WebtoonScraperScreenKt.java",
+    "visual_status": "غير مصدقة"
+  }
+]
