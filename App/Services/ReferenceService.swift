@@ -46,7 +46,7 @@ enum NetworkPolicy {
     func fetch(_ section:String) async {
         busy=true;defer{busy=false}
         do{let path:String
-            switch section{case "profile":guard let id=session?.user.id else{throw ImageFailure.message("سجّل الدخول لعرض ملفك")};path="/rest/v1/user_profiles?select=*&id=eq.\(id)";case "community":path="/rest/v1/posts?select=*&status=eq.APPROVED&limit=30";default:path="/rest/v1/app_config?select=*&limit=30"}
+            switch section{case "profile":guard let id=session?.user.id else{throw ImageFailure.message("سجّل الدخول لعرض ملفك")};path="/rest/v1/user_profiles?select=*&id=eq.\(id)";case "community":path="/rest/v1/community_posts?select=*&status=eq.APPROVED&limit=30";default:path="/rest/v1/app_config?select=*&limit=30"}
             rows=(try JSONSerialization.jsonObject(with:try await request(path,authenticated:section=="profile"))) as? [[String:Any]] ?? [];message=nil
         }catch{message=error.localizedDescription;rows=[]}
     }

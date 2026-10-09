@@ -16,7 +16,7 @@ final class DocumentCanvas:UIView {
     override func draw(_ rect:CGRect){let (savedPage,savedDirectory,selected,zoom)=snapshot();guard let page=savedPage,let directory=savedDirectory,let c=UIGraphicsGetCurrentContext() else{return}
         let area=c.boundingBoxOfClipPath.intersection(CGRect(x:0,y:0,width:page.width,height:page.height)).integral;guard !area.isEmpty else{return}
         let factor=max(1,Int(1/max(0.01,abs(c.ctm.a))))
-        if let data=try? ImagePipeline.tile(directory.appendingPathComponent(page.raw),width:page.width,height:page.height,rect:area,sample:factor),let image=ImagePipeline.image(data,width:(Int(area.width)+factor-1)/factor,height:(Int(area.height)+factor-1)/factor){c.saveGState();c.interpolationQuality = factor==1 ? .none:.low;c.translateBy(x:area.minX,y:area.maxY);c.scaleBy(x:1,y:-1);c.draw(image,in:CGRect(origin:.zero,size:area.size));c.restoreGState()}
+        if let data=try? ImagePipeline.tile(directory.appendingPathComponent(page.raw),width:page.width,height:page.height,rect:area,sample:factor),let image=ImagePipeline.image(data,width:(Int(area.width)+factor-1)/factor,height:(Int(area.height)+factor-1)/factor,colorSpace:ImagePipeline.colorSpace(directory.appendingPathComponent(page.source))){c.saveGState();c.interpolationQuality = factor==1 ? .none:.low;c.translateBy(x:area.minX,y:area.maxY);c.scaleBy(x:1,y:-1);c.draw(image,in:CGRect(origin:.zero,size:area.size));c.restoreGState()}
         LayerRenderer.draw(page.layers,in:c,directory:directory)
         if let l=page.layers.first(where:{$0.id==selected}),l.kind != .drawing{
             let b=LayerRenderer.bounds(l);c.saveGState();c.concatenate(LayerRenderer.transform(l));let r=b

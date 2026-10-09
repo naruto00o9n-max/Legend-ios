@@ -19,7 +19,9 @@ enum LayerRenderer {
         let s=l.style,p=NSMutableParagraphStyle();p.alignment=[NSTextAlignment.left,.center,.right,.justified][max(0,min(3,s.alignment))];p.lineSpacing=CGFloat(s.lineSpacing);p.lineBreakMode = .byWordWrapping
         var attributes:[NSAttributedString.Key:Any]=[.font:Fonts.font(s),.foregroundColor:color ?? UIColor(hex:s.color),.paragraphStyle:p,.kern:s.letterSpacing]
         if s.isUnderline{attributes[.underlineStyle]=NSUnderlineStyle.single.rawValue};if s.isStrikeThrough{attributes[.strikethroughStyle]=NSUnderlineStyle.single.rawValue}
-        return NSAttributedString(string:l.textContent,attributes:attributes)
+        let result=NSMutableAttributedString(string:l.textContent,attributes:attributes)
+        for run in s.spans {let range=NSRange(location:max(0,run.start),length:max(0,min(result.length,run.end)-max(0,run.start)));guard range.location+range.length<=result.length else{continue};if let color=run.color{result.addAttribute(.foregroundColor,value:UIColor(hex:color),range:range)};if let size=run.fontSize{var fontStyle=s;fontStyle.fontSize=size;result.addAttribute(.font,value:Fonts.font(fontStyle),range:range)}}
+        return result
     }
     static func bounds(_ l:EditorLayer)->CGRect {
         if l.kind == .text {let b=attributed(l).boundingRect(with:CGSize(width:max(20,l.style.boxWidth),height:100000),options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil);return CGRect(x:0,y:0,width:max(20,l.style.boxWidth),height:max(24,ceil(b.height)))}
@@ -36,7 +38,7 @@ enum LayerRenderer {
             let b=bounds(l);ctx.concatenate(transform(l))
             if l.isMaskEnabled{ctx.addEllipse(in:CGRect(x:l.maskX-l.maskRadius,y:l.maskY-l.maskRadius,width:l.maskRadius*2,height:l.maskRadius*2));ctx.clip()}
             switch l.kind {
-            case .text:drawText(l,rect:b,context:ctx)
+            case .text:drawText(l,rect:b,context:ctx,directory:directory)
             case .image:if let image=UIImage(contentsOfFile:directory.appendingPathComponent(l.imagePath).path){image.draw(in:b)}
             case .shape:
                 let path=shapePath(l.shape,rect:b);UIColor(hex:l.style.color).setFill();path.fill();if l.style.strokeWidth>0{UIColor(hex:l.style.strokeColor).setStroke();path.lineWidth=CGFloat(l.style.strokeWidth);path.stroke()}
@@ -48,11 +50,12 @@ enum LayerRenderer {
             ctx.restoreGState()
         }
     }
-    static func drawText(_ l:EditorLayer,rect:CGRect,context c:CGContext) {
+    static func drawText(_ l:EditorLayer,rect:CGRect,context c:CGContext,directory:URL) {
         let s=l.style;let background=rect.insetBy(dx:-CGFloat(s.backgroundPaddingX),dy:-CGFloat(s.backgroundPaddingY))
         if s.backgroundAlpha>0{UIColor(hex:s.backgroundColor,alpha:CGFloat(s.backgroundAlpha)/255).setFill();UIBezierPath(roundedRect:background,cornerRadius:CGFloat(s.backgroundCornerRadius)).fill()}
         func text(_ color:UIColor?=nil,_ offset:CGPoint = .zero){attributed(l,color:color).draw(with:rect.offsetBy(dx:offset.x,dy:offset.y),options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)}
         for depth in stride(from:min(64,s.threeDDepth),through:1,by:-1){text(UIColor(hex:s.threeDColor),CGPoint(x:depth,y:depth))}
+        if TextRaster.draw(l,rect:rect,in:c,directory:directory){return}
         if s.shadowRadius>0||s.effectType == .shadow||s.effectType == .neon||s.effectType == .blur {c.setShadow(offset:CGSize(width:s.shadowDx,height:s.shadowDy),blur:CGFloat(s.effectType == .none ? s.shadowRadius:s.effectValue),color:UIColor(hex:s.effectType == .neon ? s.effectColor:s.shadowColor,alpha:CGFloat(s.shadowAlpha)/255).cgColor)}
         if s.strokeWidth>0||s.fakeBoldWidth>0 {
             let a=NSMutableAttributedString(attributedString:attributed(l));a.addAttributes([.strokeColor:UIColor(hex:s.strokeColor),.strokeWidth:-max(s.strokeWidth,s.fakeBoldWidth)/max(1,s.fontSize)*100],range:NSRange(location:0,length:a.length));a.draw(with:rect,options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)

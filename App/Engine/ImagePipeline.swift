@@ -8,9 +8,10 @@ enum ImageFailure: LocalizedError {
 }
 enum ImagePipeline {
     static let space=CGColorSpaceCreateDeviceRGB()
-    static func image(_ rgba:[UInt8],width:Int,height:Int)->CGImage? {
+    static func colorSpace(_ source:URL)->CGColorSpace {var count=0;guard let pointer=LICopyPNGProfile(source.path,&count) else{return CGColorSpace(name:CGColorSpace.sRGB) ?? space};defer{LIFreeBuffer(pointer)};return CGColorSpace(iccData:Data(bytes:pointer,count:count) as CFData) ?? space}
+    static func image(_ rgba:[UInt8],width:Int,height:Int,colorSpace:CGColorSpace=space)->CGImage? {
         guard width>0,height>0,let provider=CGDataProvider(data:Data(rgba) as CFData) else{return nil}
-        return CGImage(width:width,height:height,bitsPerComponent:8,bitsPerPixel:32,bytesPerRow:width*4,space:space,bitmapInfo:CGBitmapInfo(rawValue:CGImageAlphaInfo.last.rawValue),provider:provider,decode:nil,shouldInterpolate:false,intent:.defaultIntent)
+        return CGImage(width:width,height:height,bitsPerComponent:8,bitsPerPixel:32,bytesPerRow:width*4,space:colorSpace,bitmapInfo:CGBitmapInfo(rawValue:CGImageAlphaInfo.last.rawValue),provider:provider,decode:nil,shouldInterpolate:false,intent:.defaultIntent)
     }
     static func tile(_ url:URL,width:Int,height:Int,rect:CGRect,sample:Int=1)throws->[UInt8] {
         let x=max(0,Int(rect.minX)),y=max(0,Int(rect.minY)),w=min(width-x,max(1,Int(ceil(rect.width)))),h=min(height-y,max(1,Int(ceil(rect.height))))

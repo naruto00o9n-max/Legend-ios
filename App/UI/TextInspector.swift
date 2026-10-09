@@ -3,12 +3,15 @@ import SwiftUI
 struct TextInspector:View {
     @ObservedObject var model:EditorModel;var panel:Panel
     @Environment(\.dismiss) var dismiss
+    @State private var texturePicker=false
     var style:TextStyle {model.active?.style ?? TextStyle()}
     func value(_ key:WritableKeyPath<TextStyle,Double>)->Binding<Double>{Binding(get:{style[keyPath:key]},set:{v in model.change{$0.style[keyPath:key]=v}})}
     func flag(_ key:WritableKeyPath<TextStyle,Bool>)->Binding<Bool>{Binding(get:{style[keyPath:key]},set:{v in model.change{$0.style[keyPath:key]=v}})}
     var body:some View {VStack(spacing:0){HStack{Text(panel.title).font(.system(size:15,weight:.semibold));Spacer();IconButton(icon:"checkmark",title:"تم"){model.save();dismiss()}}.padding(.horizontal,18).frame(height:52)
         ScrollView{VStack(alignment:.leading,spacing:18){content}.padding(.horizontal,20).padding(.bottom,24)}
-    }.foregroundStyle(Palette.pale).background(Palette.ink.opacity(0.75)).glass(28).ignoresSafeArea(edges:.bottom).onAppear{model.checkpoint()}.scrollDismissesKeyboard(.interactively)}
+    }.foregroundStyle(Palette.pale).background(Palette.ink.opacity(0.75)).glass(28).ignoresSafeArea(edges:.bottom).onAppear{model.checkpoint()}.scrollDismissesKeyboard(.interactively)
+        .fileImporter(isPresented:$texturePicker,allowedContentTypes:[.image]){result in if case let .success(url)=result{let access=url.startAccessingSecurityScopedResource();defer{if access{url.stopAccessingSecurityScopedResource()}};do{let name=UUID().uuidString+"."+url.pathExtension;try FileManager.default.copyItem(at:url,to:model.directory.appendingPathComponent(name));model.change{$0.style.texturePath=name}}catch{model.error=error.localizedDescription}}}
+    }
     @ViewBuilder var content:some View {
         switch panel {
         case .content:TextEditor(text:Binding(get:{model.active?.textContent ?? ""},set:{v in model.change{$0.textContent=v}})).font(.system(size:17)).scrollContentBackground(.hidden).frame(minHeight:140).padding(12).glass(16).accessibilityIdentifier("text-input")
@@ -19,7 +22,10 @@ struct TextInspector:View {
             HStack{Toggle("غامق",isOn:flag(\.isBold));Toggle("مائل",isOn:flag(\.isItalic))}.toggleStyle(.button)
             HStack{Toggle("تسطير",isOn:flag(\.isUnderline));Toggle("شطب",isOn:flag(\.isStrikeThrough))}.toggleStyle(.button)
             Picker("المحاذاة",selection:Binding(get:{style.alignment},set:{v in model.change{$0.style.alignment=v}})){Text("يسار").tag(0);Text("وسط").tag(1);Text("يمين").tag(2);Text("ضبط").tag(3)}.pickerStyle(.segmented)
-        case .color:swatches("لون النص",\.color)
+        case .color:
+            swatches("لون النص",\.color)
+            Toggle("تدرج لوني",isOn:Binding(get:{!style.textGradient.isEmpty},set:{v in model.change{$0.style.textGradient=v ? ["D4AF37","FFFFFF"]:[]}}))
+            if !style.textGradient.isEmpty {ForEach(0..<2,id:\.self){index in ColorPicker(index==0 ? "البداية":"النهاية",selection:Binding(get:{Color(uiColor:UIColor(hex:style.textGradient[index]))},set:{v in model.change{$0.style.textGradient[index]=UIColor(v).hex}}),supportsOpacity:false)};knob("زاوية التدرج",value(\.textGradientAngle),0...360)}
         case .stroke:knob("السماكة",value(\.strokeWidth),0...18);swatches("لون الحدود",\.strokeColor)
         case .background:knob("الشفافية",Binding(get:{Double(style.backgroundAlpha)},set:{v in model.change{$0.style.backgroundAlpha=Int(v)}}),0...255);knob("الاستدارة",value(\.backgroundCornerRadius),0...80);swatches("الخلفية",\.backgroundColor)
         case .shadow:knob("النعومة",value(\.shadowRadius),0...50);knob("أفقي",value(\.shadowDx),-80...80);knob("رأسي",value(\.shadowDy),-80...80);swatches("لون الظل",\.shadowColor)
@@ -40,8 +46,10 @@ struct TextInspector:View {
             knob("المركز أفقيًا",Binding(get:{model.active?.maskX ?? 0},set:{v in model.change{$0.maskX=v}}),0...500);knob("المركز رأسيًا",Binding(get:{model.active?.maskY ?? 0},set:{v in model.change{$0.maskY=v}}),0...500)
         case .styles:
             ForEach(["حوار","عنوان","صراخ","تعليق"],id:\.self){name in Button(name){model.change{l in l.style.strokeWidth=name=="حوار" ? 0:2;l.style.isBold=name=="عنوان"||name=="صراخ";l.style.fontSize=name=="عنوان" ? 72:48;l.style.color=name=="تعليق" ? "D4AF37":"FFFFFF"}}.buttonStyle(GoldButtonStyle())}
-        case .perspective:Text("تحريك زوايا المنظور لم يكتمل نقله بعد؛ لن تُعرض مقابض لا تؤثر في الصورة.").font(.system(size:13)).foregroundStyle(Palette.quiet)
-        case .texture:Text("خامات النص المستوردة لم يكتمل ربطها بمحرك iOS بعد.").font(.system(size:13)).foregroundStyle(Palette.quiet)
+        case .perspective:GeometryInspector(model:model);knob("دوران أفقي ثلاثي الأبعاد",value(\.rotationY),-70...70);knob("دوران رأسي ثلاثي الأبعاد",value(\.rotationX),-70...70)
+        case .texture:
+            Button("استيراد خامة من الصور"){texturePicker=true}.buttonStyle(GoldButtonStyle())
+            if !style.texturePath.isEmpty{knob("الحجم أفقيًا",value(\.textureScaleX),0.1...5);knob("الحجم رأسيًا",value(\.textureScaleY),0.1...5);knob("دوران الخامة",value(\.textureRotation),-180...180);knob("إزاحة أفقية",value(\.textureTranslationX),-500...500);knob("إزاحة رأسية",value(\.textureTranslationY),-500...500);Button("إزالة الخامة"){model.change{$0.style.texturePath=""}}}
         }
     }
     func knob(_ label:String,_ binding:Binding<Double>,_ range:ClosedRange<Double>)->some View{VStack(alignment:.leading,spacing:8){HStack{Text(label).font(.system(size:12));Spacer();TextField(label,value:binding,format:.number.precision(.fractionLength(0...1))).font(.system(size:12,design:.monospaced)).multilineTextAlignment(.trailing).keyboardType(.numbersAndPunctuation).frame(width:70).accessibilityIdentifier("value-\(label)")};Slider(value:binding,in:range).tint(Palette.gold)}.padding(12).glass(16)}
