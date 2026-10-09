@@ -1,0 +1,77 @@
+import Foundation
+import SwiftUI
+
+@MainActor final class LibraryStore: ObservableObject {
+    @Published var items: [LibraryItem] = []
+    @Published var error: String?
+    let root: URL
+    init(root: URL? = nil) {
+        self.root=root ?? FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("Cookies",isDirectory:true)
+        if ProcessInfo.processInfo.arguments.contains("-ui-tests"){try? FileManager.default.removeItem(at:self.root)}
+        try? FileManager.default.createDirectory(at:self.root,withIntermediateDirectories:true)
+        if let data=try? Data(contentsOf:self.root.appendingPathComponent("library.json")),let saved=try? JSONDecoder().decode([LibraryItem].self,from:data){items=saved}
+    }
+    func save() { do {try JSONEncoder().encode(items).write(to:root.appendingPathComponent("library.json"),options:.atomic)}catch{self.error=error.localizedDescription} }
+    func directory(_ page: UUID)->URL {root.appendingPathComponent(page.uuidString,isDirectory:true)}
+    func createFolder(_ name: String,parent:UUID?) {items.append(LibraryItem(parent:parent,title:name,folder:true));save()}
+    func add(_ page:EditorPage,parent:UUID?) {items.append(LibraryItem(id:page.id,parent:parent,title:page.title,folder:false,pages:[page.id]));save()}
+    func load(_ id:UUID)throws->EditorPage {try JSONDecoder().decode(EditorPage.self,from:Data(contentsOf:directory(id).appendingPathComponent("page.json")))}
+    func persist(_ page:EditorPage)throws {try JSONEncoder().encode(page).write(to:directory(page.id).appendingPathComponent("page.json"),options:.atomic)}
+    func remove(_ item:LibraryItem) {for child in items.filter({$0.parent==item.id}){remove(child)};items.removeAll{$0.id==item.id};if !item.folder{try? FileManager.default.removeItem(at:directory(item.id))};save()}
+    func rename(_ item:LibraryItem,to name:String) {if let i=items.firstIndex(where:{$0.id==item.id}){items[i].title=name;save()}}
+    func importImage(_ url:URL,parent:UUID?) async {
+        do {let root=self.root;let page=try await Task.detached(priority:.userInitiated){try ImagePipeline.importImage(url,root:root)}.value;add(page,parent:parent)}catch{self.error=error.localizedDescription}
+    }
+}
+
+@MainActor final class EditorModel:ObservableObject {
+    @Published var page:EditorPage
+    @Published var selected:UUID?
+    @Published var tool:Tool = .move
+    @Published var panel:Panel?
+    @Published var brushWidth = 12.0
+    @Published var brushColor = "D4AF37"
+    @Published var zoom = 1.0
+    @Published var error:String?
+    @Published var busy = false
+    @Published var exported:URL?
+    @Published var undoStack:[[EditorLayer]]=[]
+    @Published var redoStack:[[EditorLayer]]=[]
+    let library:LibraryStore; var visibleCenter=CGPoint.zero
+    init(page:EditorPage,library:LibraryStore){self.page=page;self.library=library}
+    var directory:URL {library.directory(page.id)}
+    var active:EditorLayer? {page.layers.first{$0.id==selected}}
+    func checkpoint() {undoStack.append(page.layers);if undoStack.count>60{undoStack.removeFirst()};redoStack=[]}
+    func change(_ body:(inout EditorLayer)->Void) {guard let i=page.layers.firstIndex(where:{$0.id==selected}),!page.layers[i].isLocked else{return};body(&page.layers[i]);page.modified=Date();save()}
+    func add(_ kind:LayerKind,shape:Int=0) {
+        checkpoint();let center=visibleCenter == .zero ? CGPoint(x:Double(page.width)/2,y:200):visibleCenter
+        var l=EditorLayer(kind:kind,name:kind == .text ? "نص جديد":"طبقة \(page.layers.count+1)");l.frame=Box(x:max(0,Double(center.x)-160),y:max(0,Double(center.y)-65),width:min(320,Double(page.width)),height:130);l.shape=shape
+        if kind == .drawing{l.frame=Box(x:0,y:0,width:Double(page.width),height:Double(page.height))}
+        page.layers.append(l);selected=l.id;save();if kind == .text{panel = .content}
+    }
+    func delete() {guard let selected else{return};checkpoint();page.layers.removeAll{$0.id==selected};self.selected=nil;save()}
+    func duplicate() {guard var l=active else{return};checkpoint();l.id=UUID();l.frame.x+=20;l.frame.y+=20;page.layers.append(l);selected=l.id;save()}
+    func undo(){guard let previous=undoStack.popLast() else{return};redoStack.append(page.layers);page.layers=previous;selected=nil;save()}
+    func redo(){guard let next=redoStack.popLast() else{return};undoStack.append(page.layers);page.layers=next;selected=nil;save()}
+    func save(){do{try library.persist(page)}catch{self.error=error.localizedDescription}}
+    func exportPNG() async {
+        busy=true;defer{busy=false};let page=self.page,directory=self.directory
+        do{exported=try await Task.detached(priority:.userInitiated){try ImagePipeline.exportPNG(page,directory:directory)}.value}catch{self.error=error.localizedDescription}
+    }
+    func clean(_ stroke:Stroke) async {
+        guard !stroke.points.isEmpty else{return};busy=true;defer{busy=false}
+        let xs=stroke.points.map(\.x),ys=stroke.points.map(\.y),padding=stroke.width+20
+        let region=CGRect(x:max(0,(xs.min() ?? 0)-padding),y:max(0,(ys.min() ?? 0)-padding),width:(xs.max() ?? 0)-(xs.min() ?? 0)+padding*2,height:(ys.max() ?? 0)-(ys.min() ?? 0)+padding*2).intersection(CGRect(x:0,y:0,width:page.width,height:page.height)).integral
+        guard region.width*region.height<=4_194_304 else{error="اختر مساحة تنظيف أصغر";return}
+        let page=self.page,directory=self.directory
+        do{let filename=try await Task.detached(priority:.userInitiated){()->String in
+            let rgba=try ImagePipeline.tile(directory.appendingPathComponent(page.raw),width:page.width,height:page.height,rect:region)
+            guard let cg=ImagePipeline.image(rgba,width:Int(region.width),height:Int(region.height)) else{throw ImageFailure.message("تعذر قراءة منطقة التنظيف")}
+            let format=UIGraphicsImageRendererFormat();format.scale=1;format.opaque=true
+            let mask=UIGraphicsImageRenderer(size:region.size,format:format).image{ctx in UIColor.black.setFill();ctx.fill(CGRect(origin:.zero,size:region.size));UIColor.white.setStroke();let path=UIBezierPath();path.lineWidth=CGFloat(stroke.width);path.lineCapStyle = .round;path.move(to:CGPoint(x:stroke.points[0].x-Double(region.minX),y:stroke.points[0].y-Double(region.minY)));for p in stroke.points.dropFirst(){path.addLine(to:CGPoint(x:p.x-Double(region.minX),y:p.y-Double(region.minY)))};path.stroke()}
+            guard let patch=CookiesInpaint(UIImage(cgImage:cg),mask,3),let data=patch.pngData() else{throw ImageFailure.message("تعذر تنظيف المنطقة")};let name=UUID().uuidString+".png";try data.write(to:directory.appendingPathComponent(name));return name
+        }.value
+        checkpoint();var l=EditorLayer(kind:.image,name:"تنظيف ذكي");l.frame=Box(x:region.minX,y:region.minY,width:region.width,height:region.height);l.imagePath=filename;self.page.layers.append(l);selected=l.id;save()
+        }catch{self.error=error.localizedDescription}
+    }
+}

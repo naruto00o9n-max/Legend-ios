@@ -1,0 +1,342 @@
+[
+  {
+    "name": "alignment",
+    "type": "int"
+  },
+  {
+    "name": "backgroundAlpha",
+    "type": "int"
+  },
+  {
+    "name": "backgroundColor",
+    "type": "int"
+  },
+  {
+    "name": "backgroundCornerRadius",
+    "type": "float"
+  },
+  {
+    "name": "backgroundPaddingX",
+    "type": "float"
+  },
+  {
+    "name": "backgroundPaddingY",
+    "type": "float"
+  },
+  {
+    "name": "baseHeight",
+    "type": "float"
+  },
+  {
+    "name": "baseWidth",
+    "type": "float"
+  },
+  {
+    "name": "blurDx",
+    "type": "float"
+  },
+  {
+    "name": "blurDy",
+    "type": "float"
+  },
+  {
+    "name": "blurType",
+    "type": "int"
+  },
+  {
+    "name": "boxWidth",
+    "type": "float"
+  },
+  {
+    "name": "color",
+    "type": "int"
+  },
+  {
+    "name": "customWidth",
+    "type": "Float"
+  },
+  {
+    "name": "effectAngle",
+    "type": "float"
+  },
+  {
+    "name": "effectColor",
+    "type": "int"
+  },
+  {
+    "name": "effectDetail",
+    "type": "float"
+  },
+  {
+    "name": "effectSecondVal",
+    "type": "float"
+  },
+  {
+    "name": "effectThirdVal",
+    "type": "float"
+  },
+  {
+    "name": "effectType",
+    "type": "TextEffect"
+  },
+  {
+    "name": "effectValue",
+    "type": "float"
+  },
+  {
+    "name": "fakeBoldWidth",
+    "type": "float"
+  },
+  {
+    "name": "fontPath",
+    "type": "String"
+  },
+  {
+    "name": "fontSize",
+    "type": "float"
+  },
+  {
+    "name": "id",
+    "type": "String"
+  },
+  {
+    "name": "isBold",
+    "type": "boolean"
+  },
+  {
+    "name": "isItalic",
+    "type": "boolean"
+  },
+  {
+    "name": "isLocked",
+    "type": "boolean"
+  },
+  {
+    "name": "isMaskEnabled",
+    "type": "boolean"
+  },
+  {
+    "name": "isMeshMode",
+    "type": "boolean"
+  },
+  {
+    "name": "isSelected",
+    "type": "boolean"
+  },
+  {
+    "name": "isStrikeThrough",
+    "type": "boolean"
+  },
+  {
+    "name": "isUnderline",
+    "type": "boolean"
+  },
+  {
+    "name": "isVisible",
+    "type": "boolean"
+  },
+  {
+    "name": "layerBlendMode",
+    "type": "LayerBlendMode"
+  },
+  {
+    "name": "layerType",
+    "type": "String"
+  },
+  {
+    "name": "letterSpacing",
+    "type": "float"
+  },
+  {
+    "name": "lineSpacing",
+    "type": "float"
+  },
+  {
+    "name": "maskRadius",
+    "type": "float"
+  },
+  {
+    "name": "maskX",
+    "type": "float"
+  },
+  {
+    "name": "maskY",
+    "type": "float"
+  },
+  {
+    "name": "meshCols",
+    "type": "int"
+  },
+  {
+    "name": "meshPoints",
+    "type": "float[]"
+  },
+  {
+    "name": "meshRows",
+    "type": "int"
+  },
+  {
+    "name": "name",
+    "type": "String"
+  },
+  {
+    "name": "opacity",
+    "type": "int"
+  },
+  {
+    "name": "perspectivePoints",
+    "type": "float[]"
+  },
+  {
+    "name": "rotation",
+    "type": "float"
+  },
+  {
+    "name": "rotationX",
+    "type": "float"
+  },
+  {
+    "name": "rotationY",
+    "type": "float"
+  },
+  {
+    "name": "scaleX",
+    "type": "float"
+  },
+  {
+    "name": "scaleY",
+    "type": "float"
+  },
+  {
+    "name": "shadowAlpha",
+    "type": "int"
+  },
+  {
+    "name": "shadowColor",
+    "type": "int"
+  },
+  {
+    "name": "shadowDx",
+    "type": "float"
+  },
+  {
+    "name": "shadowDy",
+    "type": "float"
+  },
+  {
+    "name": "shadowGradient",
+    "type": "List<Integer>"
+  },
+  {
+    "name": "shadowGradientAngle",
+    "type": "float"
+  },
+  {
+    "name": "shadowGradientStops",
+    "type": "float[]"
+  },
+  {
+    "name": "shadowGradientType",
+    "type": "int"
+  },
+  {
+    "name": "shadowRadius",
+    "type": "float"
+  },
+  {
+    "name": "spans",
+    "type": "List<TextSpan>"
+  },
+  {
+    "name": "strokeColor",
+    "type": "int"
+  },
+  {
+    "name": "strokeGradient",
+    "type": "List<Integer>"
+  },
+  {
+    "name": "strokeGradientAngle",
+    "type": "float"
+  },
+  {
+    "name": "strokeGradientStops",
+    "type": "float[]"
+  },
+  {
+    "name": "strokeGradientType",
+    "type": "int"
+  },
+  {
+    "name": "strokeWidth",
+    "type": "float"
+  },
+  {
+    "name": "textContent",
+    "type": "String"
+  },
+  {
+    "name": "textGradient",
+    "type": "List<Integer>"
+  },
+  {
+    "name": "textGradientAngle",
+    "type": "float"
+  },
+  {
+    "name": "textGradientStops",
+    "type": "float[]"
+  },
+  {
+    "name": "textGradientType",
+    "type": "int"
+  },
+  {
+    "name": "texturePath",
+    "type": "String"
+  },
+  {
+    "name": "textureRotation",
+    "type": "float"
+  },
+  {
+    "name": "textureScaleX",
+    "type": "float"
+  },
+  {
+    "name": "textureScaleY",
+    "type": "float"
+  },
+  {
+    "name": "textureTranslationX",
+    "type": "float"
+  },
+  {
+    "name": "textureTranslationY",
+    "type": "float"
+  },
+  {
+    "name": "threeDColor",
+    "type": "int"
+  },
+  {
+    "name": "threeDDarken",
+    "type": "float"
+  },
+  {
+    "name": "threeDDepth",
+    "type": "int"
+  },
+  {
+    "name": "x",
+    "type": "float"
+  },
+  {
+    "name": "y",
+    "type": "float"
+  },
+  {
+    "name": "zIndex",
+    "type": "int"
+  }
+]

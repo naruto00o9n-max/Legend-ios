@@ -1,0 +1,35 @@
+name: iPhone editor builds and real simulator verification
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['docs/**', 'README.md', 'AGENTS.md']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  ios:
+    runs-on: macos-15
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v5
+      - name: Prepare build tools
+        run: brew install xcodegen
+      - name: Fetch pinned reference assets and OpenCV
+        run: python3 scripts/fetch_resources.py
+      - name: Generate native Xcode project
+        run: xcodegen generate
+      - name: Build real arm64 apps and two unsigned IPAs
+        run: bash scripts/build_ipas.sh
+      - name: Verify pixel core locally
+        run: |
+          clang -O2 -DPNG_ARM_NEON_OPT=0 -I App/Core/Vendor/libpng Tests/pixel_roundtrip.c App/Core/PixelCore.c App/Core/Vendor/libpng/*.c -lz -o .work/pixel-test
+          mkdir -p .work/pixel-fixture
+          .work/pixel-test .work/pixel-fixture
+      - name: Verify editor and compact layouts on iPhone simulators
+        run: bash scripts/test_simulators.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cookies-iphone-build-and-test-evidence
+          path: build/
+          retention-days: 14

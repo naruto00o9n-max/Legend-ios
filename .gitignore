@@ -1,0 +1,14 @@
+.work/
+build/
+DerivedData/
+*.xcodeproj/
+App/Resources/Fonts/*
+App/Resources/ag-psd.bundle.js
+App/Resources/ReferenceService.json
+*.ipa
+*.xcresult/
+*.jks
+*.mobileprovision
+__pycache__/
+App/Resources/cookies-logo.png
+App/Core/Vendor/libpng/*
