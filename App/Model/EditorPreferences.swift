@@ -10,6 +10,7 @@ enum EditorPreferences {
     static var typerScale:Double{number("typer-insert-scale",1,0.5...2)}
     static var handles:Double{number("editor-handle-scale",1,0.8...1.5)}
     static var quality:Double{number("editor-preview-quality",1,0.5...2)}
+    static var smartPosition:Bool{UserDefaults.standard.object(forKey:"editor-smart-position") as? Bool ?? true}
     static var snap:Bool{UserDefaults.standard.bool(forKey:"editor-snap")}
     static var haptics:Bool{UserDefaults.standard.object(forKey:"editor-haptics") as? Bool ?? true}
     static var motion:Bool{!(UserDefaults.standard.bool(forKey:"editor-reduce-motion") || UIAccessibility.isReduceMotionEnabled)}

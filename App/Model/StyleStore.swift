@@ -89,7 +89,9 @@ struct StylePackage:Codable {
         }
         model.checkpoint();model.change{$0.style=next}
     }
-    func copy(_ layer:EditorLayer,from assets:URL) {copiedStyle=layer.style;copiedDirectory=assets}
+    func copy(_ layer:EditorLayer,from assets:URL) {
+        do{var style=layer.style;style.texturePath=try ownTexture(style.texturePath,from:assets);copiedStyle=style;copiedDirectory=directory;error=nil}catch{self.error=error.localizedDescription}
+    }
     func paste(to model:EditorModel)throws {
         guard let style=copiedStyle,let source=copiedDirectory,model.active?.kind == .text else{throw ImageFailure.message("انسخ نمط نص أولًا")}
         var next=try resolved(style,from:source,into:model.directory);next.spans=[]

@@ -63,7 +63,7 @@ enum PageOperations {
         var output=try build(title:first.title+" — مدمج",width:width,height:height,root:root,profile:root.appendingPathComponent(first.id.uuidString).appendingPathComponent(first.source)){y,count in
             var bytes=[UInt8](repeating:255,count:width*count*4)
             for (index,page) in pages.enumerated(){let low=max(y,starts[index]),high=min(y+count,starts[index]+page.height);guard high>low else{continue}
-                let pixels=try ImagePipeline.tile(root.appendingPathComponent(page.id.uuidString).appendingPathComponent(page.raw),width:page.width,height:page.height,rect:CGRect(x:0,y:low-starts[index],width:page.width,height:high-low))
+                let pixels=page.baseHidden==true ? [UInt8](repeating:0,count:page.width*(high-low)*4):try ImagePipeline.tile(root.appendingPathComponent(page.id.uuidString).appendingPathComponent(page.raw),width:page.width,height:page.height,rect:CGRect(x:0,y:low-starts[index],width:page.width,height:high-low))
                 let x=alignment==1 ? (width-page.width)/2 : alignment==2 ? width-page.width:0
                 for row in 0..<(high-low){let dest=((low-y+row)*width+x)*4;bytes.replaceSubrange(dest..<(dest+page.width*4),with:pixels[(row*page.width*4)..<((row+1)*page.width*4)])}
             };return bytes
@@ -94,7 +94,7 @@ enum PageOperations {
         do{for index in 0..<document.pageCount{try Task.checkCancellation();guard let pdf=document.page(at:index) else{throw ImageFailure.message("تعذر فتح صفحة PDF")};let box=pdf.bounds(for:.mediaBox),width=Int(ceil(box.width*scale)),height=Int(ceil(box.height*scale))
             let page=try build(title:url.deletingPathExtension().lastPathComponent+" — \(index+1)",width:width,height:height,root:root){y,count in
                 var bytes=[UInt8](repeating:255,count:width*count*4)
-                let ok=bytes.withUnsafeMutableBytes{data->Bool in guard let c=CGContext(data:data.baseAddress,width:width,height:count,bitsPerComponent:8,bytesPerRow:width*4,space:ImagePipeline.space,bitmapInfo:CGImageAlphaInfo.premultipliedLast.rawValue) else{return false};c.translateBy(x:0,y:CGFloat(height-y));c.scaleBy(x:CGFloat(scale),y:-CGFloat(scale));c.translateBy(x:-box.minX,y:-box.minY);pdf.draw(with:.mediaBox,to:c);return true}
+                let ok=bytes.withUnsafeMutableBytes{data->Bool in guard let c=CGContext(data:data.baseAddress,width:width,height:count,bitsPerComponent:8,bytesPerRow:width*4,space:ImagePipeline.space,bitmapInfo:CGImageAlphaInfo.premultipliedLast.rawValue) else{return false};c.translateBy(x:0,y:CGFloat(height-y));c.scaleBy(x:CGFloat(scale),y:-CGFloat(scale));c.translateBy(x:-box.minX,y:-box.minY);guard let reference=pdf.pageRef else{return false};c.drawPDFPage(reference);return true}
                 guard ok else{throw ImageFailure.message("تعذر تحويل PDF")};return bytes
             };result.append(page)
         };return result}catch{for page in result{try? FileManager.default.removeItem(at:root.appendingPathComponent(page.id.uuidString))};throw error}

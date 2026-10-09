@@ -18,15 +18,20 @@ enum NetworkPolicy {
     @Published var confirmationCooldown:Date?
     @Published var rows:[[String:Any]]=[]
     private var web:ASWebAuthenticationSession?
+    private var refreshFlight:Task<ServiceSession,Error>?
+    private var transport=URLSession.shared
+    private var configured:ReferenceConfig?
+    private var persistAuthentication=true
     override init(){super.init();if NetworkPolicy.enabled,let data=Keychain.read("session"),let saved=try? JSONDecoder().decode(ServiceSession.self,from:data){session=saved}}
-    var config:ReferenceConfig? {guard NetworkPolicy.enabled,let url=Bundle.main.url(forResource:"ReferenceService",withExtension:"json"),let data=try? Data(contentsOf:url) else{return nil};return try? JSONDecoder().decode(ReferenceConfig.self,from:data)}
+    init(configuration:ReferenceConfig,urlSession:URLSession,initialSession:ServiceSession?=nil,persistSession:Bool=false){super.init();configured=configuration;transport=urlSession;session=initialSession;persistAuthentication=persistSession}
+    var config:ReferenceConfig? {if let configured{return configured};guard NetworkPolicy.enabled,let url=Bundle.main.url(forResource:"ReferenceService",withExtension:"json"),let data=try? Data(contentsOf:url) else{return nil};return try? JSONDecoder().decode(ReferenceConfig.self,from:data)}
     func request(_ path:String,method:String="GET",body:[String:Any]?=nil,authenticated:Bool=false) async throws->Data {
-        guard NetworkPolicy.enabled else{throw ImageFailure.message("هذه النسخة تعمل محليًا دون اتصال")}
+        guard configured != nil || NetworkPolicy.enabled else{throw ImageFailure.message("هذه النسخة تعمل محليًا دون اتصال")}
         guard let config,let url=URL(string:config.url+path) else{throw ImageFailure.message("لم يُجهّز اتصال الخدمة")}
-        if let token=session?.access_token,!path.hasPrefix("/auth/v1/token"),tokenExpiry(token)<Date().timeIntervalSince1970+60{try await refresh()}
+        if authenticated,let token=session?.access_token,!path.hasPrefix("/auth/v1/token"),Self.tokenExpiry(token)<Date().timeIntervalSince1970+60{try await refresh()}
         if authenticated&&session==nil{throw ImageFailure.message("سجّل الدخول إلى حسابك أولًا")}
-        var r=URLRequest(url:url);r.httpMethod=method;r.timeoutInterval=25;r.setValue(config.key,forHTTPHeaderField:"apikey");r.setValue("Bearer "+(session?.access_token ?? config.key),forHTTPHeaderField:"Authorization");r.setValue("application/json",forHTTPHeaderField:"Content-Type");if let body{r.httpBody=try JSONSerialization.data(withJSONObject:body)}
-        let (data,response)=try await URLSession.shared.data(for:r)
+        var r=URLRequest(url:url);r.httpMethod=method;r.timeoutInterval=25;r.setValue(config.key,forHTTPHeaderField:"apikey");r.setValue("Bearer "+(session.flatMap{Self.tokenExpiry($0.access_token)>Date().timeIntervalSince1970 ? $0.access_token:nil} ?? config.key),forHTTPHeaderField:"Authorization");r.setValue("application/json",forHTTPHeaderField:"Content-Type");if let body{r.httpBody=try JSONSerialization.data(withJSONObject:body)}
+        let (data,response)=try await transport.data(for:r)
         guard let http=response as? HTTPURLResponse else{throw ImageFailure.message("تعذر قراءة استجابة الخادم")}
         guard (200..<300).contains(http.statusCode) else{
             let json=(try? JSONSerialization.jsonObject(with:data)) as? [String:Any]
@@ -61,14 +66,24 @@ enum NetworkPolicy {
         busy=true;defer{busy=false}
         do{_ = try await request("/auth/v1/resend",method:"POST",body:["type":"signup","email":email]);confirmationEmail=email;confirmationCooldown=Date().addingTimeInterval(60);message="قَبِل الخادم طلب إعادة التأكيد. تحقّق من الوارد والرسائل غير المرغوبة؛ قد يتأخر وصول الرسالة."}catch{message=error.localizedDescription}
     }
-    private func tokenExpiry(_ token:String)->Double {
+    private static func tokenExpiry(_ token:String)->Double {
         let segments=token.split(separator:".");guard segments.count==3 else{return 0}
         var payload=String(segments[1]).replacingOccurrences(of:"-",with:"+").replacingOccurrences(of:"_",with:"/");payload+=String(repeating:"=",count:(4-payload.count%4)%4)
         guard let bytes=Data(base64Encoded:payload),let object=try? JSONSerialization.jsonObject(with:bytes) as? [String:Any] else{return 0};return object["exp"] as? Double ?? 0
     }
-    private func store(_ session:ServiceSession){self.session=session;Keychain.save("session",data:(try? JSONEncoder().encode(session)) ?? Data())}
-    func logout() async {if session != nil{_ = try? await request("/auth/v1/logout",method:"POST",authenticated:true)};session=nil;Keychain.remove("session")}
-    func refresh() async throws{guard let refresh=session?.refresh_token else{return};let d=try await request("/auth/v1/token?grant_type=refresh_token",method:"POST",body:["refresh_token":refresh]);store(try JSONDecoder().decode(ServiceSession.self,from:d))}
+    private func store(_ session:ServiceSession){self.session=session;if persistAuthentication{Keychain.save("session",data:(try? JSONEncoder().encode(session)) ?? Data())}}
+    func logout() async {
+        let token=session?.access_token;refreshFlight?.cancel();refreshFlight=nil;session=nil;if persistAuthentication{Keychain.remove("session")}
+        if let token,let config,let url=URL(string:config.url+"/auth/v1/logout"){var request=URLRequest(url:url);request.httpMethod="POST";request.timeoutInterval=10;request.setValue(config.key,forHTTPHeaderField:"apikey");request.setValue("Bearer "+token,forHTTPHeaderField:"Authorization");_ = try? await transport.data(for:request)}
+    }
+    func refresh() async throws {
+        guard let token=session?.refresh_token else{return}
+        let task:Task<ServiceSession,Error>
+        if let existing=refreshFlight{task=existing}else{task=Task{let bytes=try await self.request("/auth/v1/token?grant_type=refresh_token",method:"POST",body:["refresh_token":token]);return try JSONDecoder().decode(ServiceSession.self,from:bytes)};refreshFlight=task}
+        defer{refreshFlight=nil}
+        let renewed=try await task.value
+        if session?.refresh_token==token{store(renewed)}
+    }
     static func errorMessage(status:Int,code:String,reason:String)->String {
         switch code{case "invalid_credentials":return "البريد أو كلمة المرور غير صحيحة. حساب Google يحتاج الدخول باستخدام Google ما لم تُعيّن له كلمة مرور."
         case "email_not_confirmed":return "أكّد بريدك الإلكتروني من رسالة التأكيد ثم سجّل الدخول. يمكنك استخدام إعادة إرسال التأكيد."

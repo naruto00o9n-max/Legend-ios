@@ -12,7 +12,7 @@ extension LibraryStore {
     }
     func chapter(_ id:UUID)->LibraryItem?{items.first{$0.id==id && $0.isChapter==true}}
     func chapters(containing page:UUID)->[LibraryItem]{items.filter{$0.isChapter==true && $0.pages.contains(page)}}
-    func commitItems(_ next:[LibraryItem])throws {try JSONEncoder().encode(next).write(to:root.appendingPathComponent("library.json"),options:.atomic);items=next}
+    func commitItems(_ next:[LibraryItem])throws {try writeItems(next);items=next}
     func setPages(_ ids:[UUID],chapter id:UUID,keepHistory:Bool=true)throws {
         guard Set(ids).count==ids.count else{throw ImageFailure.message("لا يمكن تكرار الصفحة داخل الفصل")}
         for page in ids{_ = try load(page)}

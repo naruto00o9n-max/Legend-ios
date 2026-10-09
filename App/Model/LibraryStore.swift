@@ -9,14 +9,24 @@ import SwiftUI
         self.root=root ?? FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("Cookies",isDirectory:true)
         if ProcessInfo.processInfo.arguments.contains("-ui-tests"){try? FileManager.default.removeItem(at:self.root)}
         try? FileManager.default.createDirectory(at:self.root,withIntermediateDirectories:true)
-        if let data=try? Data(contentsOf:self.root.appendingPathComponent("library.json")),let saved=try? JSONDecoder().decode([LibraryItem].self,from:data){items=saved}
+        do {
+            if let saved=try RecoveryFile.read([LibraryItem].self,at:self.root.appendingPathComponent("library.json")){items=saved.value;if saved.recovered{error="استُعيد المعرض من آخر نسخة سليمة بعد تعذر قراءة الفهرس."}}
+        }catch{self.error="تعذر قراءة فهرس المعرض. احتُفظ بالملف المتضرر: \(error.localizedDescription)";items=Self.recoverPages(root:self.root)}
     }
-    func save() { do {try JSONEncoder().encode(items).write(to:root.appendingPathComponent("library.json"),options:.atomic)}catch{self.error=error.localizedDescription} }
+    func save() { do {try writeItems(items)}catch{self.error=error.localizedDescription} }
+    func writeItems(_ next:[LibraryItem])throws{try RecoveryFile.write(next,at:root.appendingPathComponent("library.json"))}
+    private static func recoverPages(root:URL)->[LibraryItem]{
+        let folders=(try? FileManager.default.contentsOfDirectory(at:root,includingPropertiesForKeys:nil)) ?? []
+        return folders.compactMap{folder in guard UUID(uuidString:folder.lastPathComponent) != nil,let data=try? Data(contentsOf:folder.appendingPathComponent("page.json")),let page=try? JSONDecoder().decode(EditorPage.self,from:data) else{return nil};return LibraryItem(id:page.id,title:page.title,folder:false,pages:[page.id])}.sorted{$0.title.localizedStandardCompare($1.title) == .orderedAscending}
+    }
     func directory(_ page: UUID)->URL {root.appendingPathComponent(page.uuidString,isDirectory:true)}
     func createFolder(_ name: String,parent:UUID?) {items.append(LibraryItem(parent:parent,title:name,folder:true));save()}
     func add(_ page:EditorPage,parent:UUID?) {if let index=items.firstIndex(where:{$0.id==parent && $0.isChapter==true}){items[index].pages.append(page.id);items[index].modified=Date()}else{items.append(LibraryItem(id:page.id,parent:parent,title:page.title,folder:false,pages:[page.id]))};save()}
-    func load(_ id:UUID)throws->EditorPage {try JSONDecoder().decode(EditorPage.self,from:Data(contentsOf:directory(id).appendingPathComponent("page.json")))}
-    func persist(_ page:EditorPage)throws {try JSONEncoder().encode(page).write(to:directory(page.id).appendingPathComponent("page.json"),options:.atomic)}
+    func load(_ id:UUID)throws->EditorPage {
+        guard let saved=try RecoveryFile.read(EditorPage.self,at:directory(id).appendingPathComponent("page.json")) else{throw ImageFailure.message("ملف الصفحة مفقود")}
+        if saved.recovered{error="استُعيدت الصفحة من آخر حفظ سليم. راجع آخر تعديل قبل المتابعة."};return saved.value
+    }
+    func persist(_ page:EditorPage)throws {try RecoveryFile.write(page,at:directory(page.id).appendingPathComponent("page.json"))}
     func remove(_ item:LibraryItem) {for child in items.filter({$0.parent==item.id}){remove(child)};items.removeAll{$0.id==item.id};if !item.folder{for id in item.pages{try? FileManager.default.removeItem(at:directory(id))}};save()}
     func move(_ item:LibraryItem,parent:UUID?){
         var next=parent,visited=Set<UUID>();while let id=next{guard id != item.id,visited.insert(id).inserted else{error="لا يمكن نقل مجلد داخل نفسه";return};next=items.first{$0.id==id}?.parent}
@@ -65,7 +75,7 @@ import SwiftUI
     var active:EditorLayer? {page.layers.first{$0.id==selected}}
     @discardableResult func insertDialogues(_ values:[(String,TextStyle?)],targets:[SniperTarget]=[])throws->[UUID] {
         let previous=page.layers;var next=page
-        let center=visibleCenter == .zero ? CGPoint(x:Double(page.width)/2,y:200):visibleCenter
+        let center=!EditorPreferences.smartPosition || visibleCenter == .zero ? CGPoint(x:Double(page.width)/2,y:200):visibleCenter
         for (index,value) in values.enumerated() {
             var item=EditorLayer(kind:.text,name:value.0);item.textContent=value.0
             if let style=value.1{item.style=style}
@@ -88,7 +98,7 @@ import SwiftUI
     func checkpoint() {undoStack.append(page.layers);undoDocuments.append(page);if undoStack.count>60{undoStack.removeFirst();undoDocuments.removeFirst()};redoStack=[];redoDocuments=[]}
     func change(persist:Bool=true,_ body:(inout EditorLayer)->Void) {guard let i=page.layers.firstIndex(where:{$0.id==selected}),!page.layers[i].isLocked else{return};body(&page.layers[i]);page.modified=Date();if persist{save()}}
     func add(_ kind:LayerKind,shape:Int=0) {
-        checkpoint();let center=visibleCenter == .zero ? CGPoint(x:Double(page.width)/2,y:200):visibleCenter
+        checkpoint();let center=!EditorPreferences.smartPosition || visibleCenter == .zero ? CGPoint(x:Double(page.width)/2,y:200):visibleCenter
         var l=EditorLayer(kind:kind,name:kind == .text ? "نص جديد":"طبقة \(page.layers.count+1)");l.frame=Box(x:max(0,Double(center.x)-160),y:max(0,Double(center.y)-65),width:min(320,Double(page.width)),height:130);l.style.boxWidth=l.frame.width;l.style.fontSize=UserDefaults.standard.object(forKey:"default-text-size") as? Double ?? 48;l.shape=shape
         if kind == .drawing{l.frame=Box(x:0,y:0,width:Double(page.width),height:Double(page.height))}
         page.layers.append(l);selected=l.id;save();if kind == .text{panel = .content}

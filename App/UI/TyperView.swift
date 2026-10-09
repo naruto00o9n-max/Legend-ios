@@ -10,12 +10,14 @@ struct TyperLibraryView:View {
     @State private var importing=false
     @State private var query=""
     @State private var deletion:DialogueChapter?
+    @State private var draft:DialogueChapter?
     var body:some View {
         NavigationStack {ZStack{Ambient();ScrollView{VStack(alignment:.leading,spacing:18){
             HStack{Brand();Spacer();IconButton(icon:"xmark",title:"إغلاق التايبر"){dismiss()}.accessibilityIdentifier("typer-close")}
             Text("التايبر").font(.system(size:28,weight:.semibold))
             Text("نص الفصل، فقاعاته، وتقدّمك في التحرير.").font(.system(size:13)).foregroundStyle(Palette.quiet)
             HStack{Button{newChapter=true}label:{Label("فصل جديد",systemImage:"plus")}.accessibilityIdentifier("typer-new");Spacer();Button{importing=true}label:{Label("استيراد نص",systemImage:"doc.badge.plus")}.accessibilityIdentifier("typer-import")}.font(.system(size:14,weight:.medium)).padding(16).glass(16)
+            if let drafts=typer.state.drafts,!drafts.isEmpty{DisclosureGroup("المسودات (\(drafts.count))"){ForEach(drafts){item in HStack{Button(item.title.isEmpty ? "مسودة نص":item.title){draft=item};Spacer();Button(role:.destructive){do{try typer.removeDraft(item.id)}catch{typer.error=error.localizedDescription}}label:{Image(systemName:"trash")}}.font(.system(size:12)).padding(10)}}}
             if let deleted=typer.state.deletedChapters,!deleted.isEmpty{DisclosureGroup("المهملات (\(deleted.count))"){ForEach(deleted){chapter in HStack{Text(chapter.title);Spacer();Button("استرجاع"){do{try typer.restore(chapter.id)}catch{typer.error=error.localizedDescription}};Button(role:.destructive){do{try typer.deletePermanently(chapter.id)}catch{typer.error=error.localizedDescription}}label:{Image(systemName:"trash")}}.font(.system(size:12)).padding(10)}}}
             if typer.state.chapters.isEmpty{ContentUnavailableView("أضف نص الفصل",systemImage:"text.bubble",description:Text("اكتب الحوارات أو استورد ملف TXT. كل سطر يصبح فقاعة مستقلة، وتُحفظ الفقاعات المستخدمة لتتبع تقدّمك."))}
             else{TextField("بحث في الفصول",text:$query).padding(14).glass(12)
@@ -26,6 +28,7 @@ struct TyperLibraryView:View {
         }.padding(24).frame(maxWidth:760).frame(maxWidth:.infinity)}}.toolbar(.hidden,for:.navigationBar)
         .fullScreenCover(isPresented:$newChapter){ChapterSourceView(folder:folder)}
         .fullScreenCover(item:$editing){chapter in ChapterSourceView(chapter:chapter,folder:chapter.folder)}
+        .fullScreenCover(item:$draft){chapter in ChapterSourceView(chapter:chapter,folder:chapter.folder,isDraft:true)}
         .fileImporter(isPresented:$importing,allowedContentTypes:[.plainText,.json],allowsMultipleSelection:false){result in do{try typer.importFile(result.get()[0],folder:folder)}catch{typer.error=error.localizedDescription}}
         .alert("حذف الفصل؟",isPresented:Binding(get:{deletion != nil},set:{if !$0{deletion=nil}})){Button("حذف",role:.destructive){if let chapter=deletion{do{try typer.remove(chapter.id)}catch{typer.error=error.localizedDescription}};deletion=nil};Button("إلغاء",role:.cancel){deletion=nil}}message:{Text("سيُحذف النص وتقدّمه من التايبر. تبقى طبقات النص الموجودة في الصور.")}
         }.foregroundStyle(Palette.pale).cookiesInterface().typerErrors(typer)
@@ -36,6 +39,9 @@ struct ChapterSourceView:View {
     @Environment(\.dismiss) private var dismiss
     var chapter:DialogueChapter?
     var folder:UUID?
+    var isDraft=false
+    @State private var draftID=UUID()
+    @State private var saved=false
     @State private var title=""
     @State private var source=""
     @State private var separation=BubbleSeparation.lines
@@ -44,7 +50,7 @@ struct ChapterSourceView:View {
     var count:Int {TranscriptParser.parse(source,separation:separation,tags:typer.state.tags,link:typer.state.linkPrefix).filter{!$0.noPaste}.count}
     var body:some View {
         NavigationStack{ZStack{Ambient();VStack(spacing:14){
-            HStack{IconButton(icon:"xmark",title:"إلغاء"){dismiss()};Spacer();Text(chapter==nil ? "نص فصل جديد":"تحرير نص الفصل").font(.system(size:17,weight:.semibold));Spacer();Button("حفظ"){do{try typer.saveChapter(id:chapter?.id,title:title,source:source,separation:separation,folder:folder);dismiss()}catch{typer.error=error.localizedDescription}}.disabled(count==0).accessibilityIdentifier("typer-save")}.padding(.horizontal,12)
+            HStack{IconButton(icon:"xmark",title:"إلغاء"){do{try persistDraft();dismiss()}catch{typer.error=error.localizedDescription}};Spacer();Text(chapter==nil ? "نص فصل جديد":"تحرير نص الفصل").font(.system(size:17,weight:.semibold));Spacer();Button("حفظ"){do{try typer.saveChapter(id:isDraft ? chapter?.draftSourceID:chapter?.id,title:title,source:source,separation:separation,folder:folder);saved=true;try typer.removeDraft(draftID);dismiss()}catch{typer.error=error.localizedDescription}}.disabled(count==0).accessibilityIdentifier("typer-save")}.padding(.horizontal,12)
             TextField("اسم الفصل",text:$title).font(.system(size:17,weight:.medium)).padding(16).glass(14).accessibilityIdentifier("typer-title")
             Picker("فصل الفقاعات",selection:$separation){ForEach(BubbleSeparation.allCases,id:\.self){mode in Text(mode.title).tag(mode)}}.pickerStyle(.segmented).accessibilityIdentifier("typer-separation")
             ArabicTextEditor(text:$source).padding(12).glass(18).accessibilityIdentifier("typer-source").focused($focused)
@@ -54,8 +60,10 @@ struct ChapterSourceView:View {
             Text("## عنوان · () تفكير · ** مؤثرات · // استمرار الوسم السابق").font(.system(size:11)).foregroundStyle(Palette.quiet)
             if let exporting{ShareLink(item:exporting){Label("مشاركة الملف",systemImage:"square.and.arrow.up")}}
         }.padding(.horizontal,20).padding(.bottom,20).frame(maxWidth:820).frame(maxWidth:.infinity)}.toolbar(.hidden,for:.navigationBar)}.foregroundStyle(Palette.pale).cookiesInterface().typerErrors(typer)
-        .onAppear{if let chapter{title=chapter.title;source=chapter.source;separation=chapter.separation}else{separation=BubbleSeparation(rawValue:UserDefaults.standard.string(forKey:"typer-default-separation") ?? "lines") ?? .lines}}
+        .task(id:title+source+separation.rawValue){guard !source.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty,!saved else{return};do{try await Task.sleep(nanoseconds:400_000_000);try Task.checkCancellation();try persistDraft()}catch is CancellationError{}catch{typer.error=error.localizedDescription}}
+        .onAppear{if let chapter{if isDraft{draftID=chapter.id};title=chapter.title;source=chapter.source;separation=chapter.separation}else{separation=BubbleSeparation(rawValue:UserDefaults.standard.string(forKey:"typer-default-separation") ?? "lines") ?? .lines}}
     }
+    private func persistDraft()throws{guard !source.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty,!saved else{return};var draft=DialogueChapter(title:title,source:source);draft.id=draftID;draft.folder=folder;draft.separation=separation;draft.draftSourceID=isDraft ? chapter?.draftSourceID:chapter?.id;try typer.saveDraft(draft)}
     private func export(plain:Bool){do{guard let chapter else{return};exporting=try typer.export(chapter,plain:plain)}catch{typer.error=error.localizedDescription}}
 }
 

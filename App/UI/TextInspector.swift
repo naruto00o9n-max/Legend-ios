@@ -9,6 +9,8 @@ struct TextInspector:View {
     @State private var rangeColor=Color.white
     @State private var rangeSize=48.0
     @State private var rangeBold=false
+    @State private var rangeFormatting=false
+    @AppStorage("text-inline-dock") private var docking="bottom"
     var style:TextStyle {model.active?.style ?? TextStyle()}
     func value(_ key:WritableKeyPath<TextStyle,Double>)->Binding<Double>{Binding(get:{style[keyPath:key]},set:{v in model.change{$0.style[keyPath:key]=v}})}
     func flag(_ key:WritableKeyPath<TextStyle,Bool>)->Binding<Bool>{Binding(get:{style[keyPath:key]},set:{v in model.change{$0.style[keyPath:key]=v}})}
@@ -21,10 +23,13 @@ struct TextInspector:View {
     }
     @ViewBuilder var content:some View {
         switch panel {
-        case .content:ArabicTextEditor(text:Binding(get:{model.active?.textContent ?? ""},set:{v in model.change{$0.textContent=v}}),layer:model.active,selectionChanged:{textRange=$0}).frame(minHeight:140).padding(12).glass(16).accessibilityIdentifier("text-input")
-            HStack{Text(textRange.length>0 ? "\(textRange.length) حرف محدد":"حدد جزءًا من النص لتنسيقه");Spacer();Button("تنسيق التحديد"){if textRange.length>0{model.change{$0.style.spans.append(TextRun(start:textRange.location,end:textRange.location+textRange.length,color:UIColor(rangeColor).hex,fontSize:rangeSize,isBold:rangeBold))}}}.disabled(textRange.length==0)}.font(.system(size:11))
-            ColorPicker("لون التحديد",selection:$rangeColor,supportsOpacity:false);Toggle("التحديد غامق",isOn:$rangeBold);knob("حجم التحديد",$rangeSize,8...240)
-            Button("مسح تنسيق التحديد"){let start=textRange.location,end=start+textRange.length;model.change{$0.style.spans.removeAll{$0.start<end && $0.end>start}}}.disabled(textRange.length==0)
+        case .content:ArabicTextEditor(text:Binding(get:{model.active?.textContent ?? ""},set:{v in model.change{layer in layer.style.spans=TextRanges.adjusted(layer.style.spans,from:layer.textContent,to:v);layer.textContent=v}}),layer:model.active,selectionChanged:{textRange=$0}).frame(minHeight:140).padding(12).glass(16).accessibilityIdentifier("text-input")
+            ScrollView(.horizontal,showsIndicators:false){HStack(spacing:16){Button{UIPasteboard.general.string=model.active?.textContent}label:{Label("نسخ",systemImage:"doc.on.doc")};Button{if let text=UIPasteboard.general.string{model.change{$0.textContent=text;$0.style.spans=[]}}}label:{Label("لصق",systemImage:"doc.on.clipboard")};Button("ABC"){model.change{$0.textContent=$0.textContent.uppercased();$0.style.spans=[]}};Button("abc"){model.change{$0.textContent=$0.textContent.lowercased();$0.style.spans=[]}};Button("ـ"){model.change{layer in let source=layer.textContent as NSString;let range=NSRange(location:min(textRange.location,source.length),length:min(textRange.length,max(0,source.length-textRange.location)));layer.textContent=source.replacingCharacters(in:range,with:"ـ");layer.style.spans=[]}};Button{docking=docking=="bottom" ? "top":"bottom"}label:{Label("إرساء",systemImage:docking=="bottom" ? "arrow.up.to.line":"arrow.down.to.line")}}.font(.system(size:11)).padding(.vertical,4)}
+            DisclosureGroup("تنسيق التحديد (\(textRange.length) حرف)",isExpanded:$rangeFormatting){
+                ColorPicker("لون التحديد",selection:$rangeColor,supportsOpacity:false);Toggle("التحديد غامق",isOn:$rangeBold);knob("حجم التحديد",$rangeSize,8...240)
+                Button("تطبيق على التحديد"){if textRange.length>0{model.change{$0.style.spans.append(TextRun(start:textRange.location,end:textRange.location+textRange.length,color:UIColor(rangeColor).hex,fontSize:rangeSize,isBold:rangeBold))}}}.disabled(textRange.length==0)
+                Button("مسح تنسيق التحديد"){let start=textRange.location,end=start+textRange.length;model.change{$0.style.spans.removeAll{$0.start<end && $0.end>start}}}.disabled(textRange.length==0)
+            }.font(.system(size:12))
         case .font:
             ForEach((Fonts.files+Fonts.otf).sorted{$0.lastPathComponent<$1.lastPathComponent},id:\.self){url in Button{model.change{$0.style.fontPath=url.lastPathComponent}}label:{HStack{Text("حروف تصنع الحوار").font(Font(Fonts.font({var s=style;s.fontPath=url.lastPathComponent;s.fontSize=20;return s}())));Spacer();if style.fontPath==url.lastPathComponent{Image(systemName:"checkmark")}}.padding(12).glass(14)}}
         case .format:

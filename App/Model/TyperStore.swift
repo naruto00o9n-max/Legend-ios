@@ -34,6 +34,7 @@ struct DialogueChapter: Codable, Equatable, Identifiable {
     var source: String
     var separation = BubbleSeparation.lines
     var bubbles: [DialogueBubble] = []
+    var draftSourceID:UUID?
     var folder: UUID?
     var modified = Date()
     var pasteable: [DialogueBubble] { bubbles.filter { !$0.noPaste } }
@@ -44,6 +45,8 @@ struct TyperState: Codable {
     var active: UUID?
     var tags = DialogueTag.defaults
     var linkPrefix = "//"
+    var drafts:[DialogueChapter]?
+    var retiredTags:[DialogueTag]?
     var tagSets:[DialogueTagSet]?
     var activeTagSet:UUID?
     var deletedChapters:[DialogueChapter]?
@@ -109,7 +112,7 @@ private extension String {
     }
     var activeChapter:DialogueChapter? {state.chapters.first{$0.id==state.active}}
     func chapter(_ id:UUID)->DialogueChapter? {state.chapters.first{$0.id==id}}
-    func tag(_ id:UUID?)->DialogueTag? {state.tags.first{$0.id==id} ?? state.tagSets?.flatMap(\.tags).first{$0.id==id}}
+    func tag(_ id:UUID?)->DialogueTag? {state.tags.first{$0.id==id} ?? state.tagSets?.flatMap(\.tags).first{$0.id==id} ?? state.retiredTags?.first{$0.id==id}}
     var tagSets:[DialogueTagSet]{state.tagSets ?? []}
     private func commit(_ state:TyperState)throws {var next=state;if let index=next.tagSets?.firstIndex(where:{$0.id==next.activeTagSet}){next.tagSets?[index].tags=next.tags};try JSONEncoder().encode(next).write(to:directory.appendingPathComponent("chapters.json"),options:.atomic);self.state=next}
     func activate(_ id:UUID)throws {var next=state;next.active=id;try commit(next)}
@@ -129,7 +132,9 @@ private extension String {
     func createTagSet(title:String,copyActive:Bool)throws{var next=state;let tags=(copyActive ? state.tags:DialogueTag.defaults).map{value in var tag=value;tag.id=UUID();return tag};let group=DialogueTagSet(title:title.isEmpty ? "مجموعة جديدة":title,tags:tags);next.tagSets=(next.tagSets ?? [])+[group];try commit(next);try activateTagSet(group.id)}
     func activateTagSet(_ id:UUID)throws{var next=state;guard let group=next.tagSets?.first(where:{$0.id==id}) else{return};next.tags=group.tags;next.activeTagSet=id;try commit(next)}
     func renameTagSet(_ id:UUID,title:String)throws{var next=state;guard let index=next.tagSets?.firstIndex(where:{$0.id==id}),!title.isEmpty else{return};next.tagSets?[index].title=title;try commit(next)}
-    func removeTagSet(_ id:UUID)throws{guard tagSets.count>1 else{throw ImageFailure.message("احتفظ بمجموعة وسوم واحدة على الأقل")};var next=state;next.tagSets?.removeAll{$0.id==id};if next.activeTagSet==id{next.activeTagSet=next.tagSets?.first?.id;next.tags=next.tagSets?.first?.tags ?? DialogueTag.defaults};try commit(next)}
+    func removeTagSet(_ id:UUID)throws{guard tagSets.count>1 else{throw ImageFailure.message("احتفظ بمجموعة وسوم واحدة على الأقل")};var next=state;if let group=next.tagSets?.first(where:{$0.id==id}){next.retiredTags=(next.retiredTags ?? [])+group.tags};next.tagSets?.removeAll{$0.id==id};if next.activeTagSet==id{next.activeTagSet=next.tagSets?.first?.id;next.tags=next.tagSets?.first?.tags ?? DialogueTag.defaults};try commit(next)}
+    func saveDraft(_ chapter:DialogueChapter)throws{var next=state;if let i=next.drafts?.firstIndex(where:{$0.id==chapter.id}){next.drafts?[i]=chapter}else{next.drafts=(next.drafts ?? [])+[chapter]};try commit(next)}
+    func removeDraft(_ id:UUID)throws{var next=state;next.drafts?.removeAll{$0.id==id};try commit(next)}
     func setQuickFonts(_ fonts:[String])throws{var next=state;next.quickFonts=Array(Set(fonts)).sorted();try commit(next)}
     func setLinkPrefix(_ prefix:String)throws{var next=state;next.linkPrefix=prefix;try commit(next)}
     private func serialized(_ chapter:DialogueChapter)->String{chapter.bubbles.map{bubble in let prefix=tag(bubble.tagID)?.prefix ?? "";return prefix+(prefix.isEmpty ? "":" ")+bubble.text}.joined(separator:chapter.separation == .lines ? "\n":"\n\n")}
@@ -142,7 +147,7 @@ private extension String {
     }
     func reset(_ chapter:UUID)throws {var next=state;guard let c=next.chapters.firstIndex(where:{$0.id==chapter}) else{return};for index in next.chapters[c].bubbles.indices{next.chapters[c].bubbles[index].usedAt=nil;next.chapters[c].bubbles[index].usedOnPage=nil;next.chapters[c].bubbles[index].usedLayer=nil};try commit(next)}
     func saveTag(_ tag:DialogueTag)throws {var next=state;if let i=next.tags.firstIndex(where:{$0.id==tag.id}){next.tags[i]=tag}else{next.tags.append(tag)};try commit(next)}
-    func removeTag(_ id:UUID)throws {var next=state;next.tags.removeAll{$0.id==id};try commit(next)}
+    func removeTag(_ id:UUID)throws {var next=state;if let tag=tag(id){next.retiredTags=(next.retiredTags ?? [])+[tag]};next.tags.removeAll{$0.id==id};try commit(next)}
     func importFile(_ url:URL,folder:UUID?)throws {
         let scoped=url.startAccessingSecurityScopedResource();defer{if scoped{url.stopAccessingSecurityScopedResource()}}
         let bytes=try Data(contentsOf:url)

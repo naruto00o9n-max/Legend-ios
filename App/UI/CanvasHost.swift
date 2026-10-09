@@ -64,8 +64,8 @@ struct CanvasHost:UIViewRepresentable {
                 else if g.state == .ended{if let stroke{if model.tool == .cleaner{canvas.showStroke(nil,on:model.page,selected:model.selected);Task{await model.clean(stroke)}}else{canvas.commitLiveStroke();model.change{$0.strokes.append(stroke)}}};stroke=nil}
                 return
             }
-            if g.state == .began{dragHandle=canvas.handle(at:point);guard let l=(dragHandle != nil ? model.active:hit(point)) else{return};model.selected=l.id;initial=l;model.checkpoint();canvas.beginLayerInteraction(l.id);let b=LayerRenderer.bounds(l),dx=Double(point.x)-l.frame.x-Double(b.width)/2,dy=Double(point.y)-l.frame.y-Double(b.height)/2;rotationStart=atan2(dy,dx);scaleStart=max(1,hypot(dx,dy))}
-            else if g.state == .changed,let initial {let raw=g.translation(in:canvas),speed=CGFloat(dragHandle==nil ? 1:EditorPreferences.handleSpeed),t=CGPoint(x:raw.x*speed,y:raw.y*speed),b=LayerRenderer.bounds(initial);model.change(persist:false){l in
+            if g.state == .began{let translation=g.translation(in:canvas),origin=CGPoint(x:point.x-translation.x,y:point.y-translation.y);dragHandle=canvas.handle(at:origin);guard let l=(dragHandle != nil ? model.active:hit(point)) else{return};model.selected=l.id;initial=l;model.checkpoint();canvas.beginLayerInteraction(l.id);let b=LayerRenderer.bounds(l),dx=Double(origin.x)-l.frame.x-Double(b.width)/2,dy=Double(origin.y)-l.frame.y-Double(b.height)/2;rotationStart=atan2(dy,dx);scaleStart=max(1,hypot(dx,dy))}
+            if (g.state == .changed || g.state == .ended),let initial {let raw=g.translation(in:canvas),speed=CGFloat(dragHandle==nil ? 1:EditorPreferences.handleSpeed),t=CGPoint(x:raw.x*speed,y:raw.y*speed),b=LayerRenderer.bounds(initial);model.change(persist:false){l in
                 if let handle=dragHandle,handle.hasPrefix("deform-"),let index=Int(handle.dropFirst(7)) {
                     let local=point.applying(LayerRenderer.transform(initial).inverted())
                     let p=Point(x:min(2,max(-1,Double(local.x/max(1,b.width)))),y:min(2,max(-1,Double(local.y/max(1,b.height)))))
@@ -85,7 +85,7 @@ struct CanvasHost:UIViewRepresentable {
                     if EditorPreferences.snap{let tolerance=8/max(0.01,model.zoom),w=Double(b.width)*l.scaleX,h=Double(b.height)*l.scaleY;for anchor in [0.0,(Double(model.page.width)-w)/2,Double(model.page.width)-w] where abs(l.frame.x-anchor)<tolerance{l.frame.x=anchor};for anchor in [0.0,(Double(model.page.height)-h)/2,Double(model.page.height)-h] where abs(l.frame.y-anchor)<tolerance{l.frame.y=anchor}}
                 }
             };canvas.update(page:model.page,directory:model.directory,selected:model.selected,zoom:scroll?.zoomScale ?? 1)}
-            else if g.state == .ended || g.state == .cancelled{canvas.endLayerInteraction();initial=nil;dragHandle=nil;model.save()}
+            if g.state == .ended || g.state == .cancelled{canvas.endLayerInteraction();initial=nil;dragHandle=nil;model.save()}
         }
     }
 }
