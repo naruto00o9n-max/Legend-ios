@@ -45,12 +45,12 @@ struct EditorView:View {
         .toolbar(.hidden,for:.navigationBar).foregroundStyle(Palette.pale).animation(.easeInOut(duration:0.2),value:model.panel)
         .overlay(alignment:.trailing){Button{assistant=true}label:{Image("CookiesLogo").resizable().scaledToFit().frame(width:38,height:38).clipShape(Circle()).padding(6).background(Palette.ink.opacity(0.85),in:Circle()).overlay(Circle().stroke(Palette.gold.opacity(0.4),lineWidth:0.8))}.padding(.trailing,12).accessibilityIdentifier("tool-assistant").accessibilityLabel("مساعد الحوارات")}
         .overlay{if model.busy && !showExport{ProgressView("جارٍ معالجة المنطقة…").tint(Palette.gold).padding(20).glass()}}
-        .fullScreenCover(isPresented:$reader){ReaderView(model:model)}
-        .sheet(isPresented:$brushSettings){BrushSheet(model:model).presentationDetents([.height(300)]).presentationBackground(.clear)}
-        .sheet(isPresented:$layers){LayerSheet(model:model).presentationDetents([.medium,.large]).presentationBackground(.clear)}
-        .sheet(isPresented:$shapes){ShapeSheet(model:model).presentationDetents([.medium,.large]).presentationBackground(.clear)}
-        .sheet(isPresented:$assistant){AssistantView(insert:{text in model.add(.text);model.change{$0.textContent=text}}).presentationDetents([.medium,.large])}
-        .sheet(isPresented:$showExport){ExportSheet(model:model).presentationDetents([.height(390)]).presentationBackground(.clear)}
+        .fullScreenCover(isPresented:$reader){ReaderView(model:model).cookiesInterface()}
+        .sheet(isPresented:$brushSettings){BrushSheet(model:model).cookiesInterface().presentationDetents([.height(300)]).presentationBackground(.clear)}
+        .sheet(isPresented:$layers){LayerSheet(model:model).cookiesInterface().presentationDetents([.medium,.large]).presentationBackground(.clear)}
+        .sheet(isPresented:$shapes){ShapeSheet(model:model).cookiesInterface().presentationDetents([.medium,.large]).presentationBackground(.clear)}
+        .sheet(isPresented:$assistant){AssistantView(insert:{text in model.add(.text);model.change{$0.textContent=text}}).cookiesInterface().presentationDetents([.medium,.large])}
+        .sheet(isPresented:$showExport){ExportSheet(model:model).cookiesInterface().presentationDetents([.height(390)]).presentationBackground(.clear)}
         .sheet(isPresented:$imagePicker){PhotoLibraryPicker{result in
             switch result{case .failure(let error):model.error=error.localizedDescription
             case .success(let urls):if let url=urls.first{defer{try? FileManager.default.removeItem(at:url)};do{

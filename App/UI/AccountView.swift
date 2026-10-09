@@ -41,7 +41,7 @@ struct AccountView: View {
                     }.frame(minHeight: geometry.size.height, alignment: .top)
                 }.scrollDismissesKeyboard(.interactively)
             }
-        }.foregroundStyle(Palette.pale).onChange(of: service.session?.user.id) { _, id in if id != nil { dismiss() } }
+        }.foregroundStyle(Palette.pale).onChange(of: service.session?.user.id) { _, id in if id != nil { dismiss() } }.cookiesInterface()
     }
     private func submit() {
         focus = nil

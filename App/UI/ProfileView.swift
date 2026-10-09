@@ -23,7 +23,7 @@ struct ProfileView:View {
             if let profile{HStack(spacing:12){stat("الفقاعات",profile.total_bubbles_typed ?? 0,"text.bubble");stat("النقاط",profile.points ?? 0,"star")};HStack{Label("العضوية",systemImage:"seal");Spacer();Text(profile.subscription_tier ?? "FREE").font(.system(size:12,weight:.semibold))}.font(.system(size:14)).padding(20).glass(20)}
             if let failure{Text(failure).font(.system(size:13)).lineSpacing(5);Button("إعادة المحاولة"){Task{await load()}}}
             Button("تسجيل الخروج"){Task{await service.logout();dismiss()}}.buttonStyle(GoldButtonStyle())
-        }.padding(24).frame(maxWidth:660).frame(maxWidth:.infinity)} }.foregroundStyle(Palette.pale).navigationTitle("الملف الشخصي").navigationBarTitleDisplayMode(.inline).toolbar{ToolbarItem(placement:.topBarLeading){IconButton(icon:"chevron.right",title:"العودة"){dismiss()}}}.task{await load()}.tint(Palette.pale)}
+        }.padding(24).frame(maxWidth:660).frame(maxWidth:.infinity)} }.foregroundStyle(Palette.pale).navigationTitle("الملف الشخصي").navigationBarTitleDisplayMode(.inline).toolbar{ToolbarItem(placement:.topBarLeading){IconButton(icon:"chevron.right",title:"العودة"){dismiss()}}}.task{await load()}.tint(Palette.pale)}.cookiesInterface()
     }
     private func stat(_ title:String,_ value:Int,_ icon:String)->some View {VStack(spacing:12){Image(systemName:icon).font(.system(size:22));Text("\(value)").font(.system(size:28,weight:.semibold,design:.rounded));Text(title).font(.system(size:12)).foregroundStyle(Palette.quiet)}.frame(maxWidth:.infinity).padding(22).glass(20)}
     private func load() async {

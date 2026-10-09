@@ -3,7 +3,7 @@ import XCTest
 final class EditorUITests:XCTestCase {
     var app:XCUIApplication!
     override func setUp(){continueAfterFailure=false;app=XCUIApplication();app.launchArguments=["-ui-tests"];app.launch()}
-    func capture(_ name:String){Thread.sleep(forTimeInterval:0.5);let a=XCTAttachment(screenshot:app.screenshot());a.name=name;a.lifetime = .keepAlways;add(a)}
+    func capture(_ name:String){Thread.sleep(forTimeInterval:0.5);let a=XCTAttachment(screenshot:XCUIScreen.main.screenshot());a.name=name;a.lifetime = .keepAlways;add(a)}
     func start(){let start=app.buttons["welcome-start"];XCTAssertTrue(start.waitForExistence(timeout:15));Thread.sleep(forTimeInterval:0.8);capture("01-welcome");start.tap();if app.buttons["account-skip"].waitForExistence(timeout:3){app.buttons["account-skip"].tap()};XCTAssertTrue(app.buttons["demo-project"].waitForExistence(timeout:8));capture("02-library");assertLayout()}
     func openEditor(){start();app.buttons["demo-project"].tap();let project=app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH 'project-'")).firstMatch;let link=app.otherElements.matching(NSPredicate(format:"identifier BEGINSWITH 'project-'")).firstMatch
         if project.waitForExistence(timeout:30){project.tap()}else{XCTAssertTrue(link.waitForExistence(timeout:30));link.tap()}
@@ -34,12 +34,16 @@ final class EditorUITests:XCTestCase {
         XCTAssertTrue(app.staticTexts["canvas-zoom"].label.contains("800 × 15000"))
         capture("31-photos-import-editor")
         XCUIDevice.shared.orientation = .landscapeLeft
+        let landscape=XCTNSPredicateExpectation(predicate:NSPredicate{_,_ in self.app.frame.width>self.app.frame.height},object:app)
+        XCTAssertEqual(XCTWaiter.wait(for:[landscape],timeout:10),.completed)
         capture("32-ipad-landscape-editor");assertLayout()
         tool("text");XCTAssertTrue(app.textViews["text-input"].waitForExistence(timeout:5));app.buttons["تم"].tap()
         XCTAssertFalse(app.scrollViews["tool-strip"].exists)
         capture("33-landscape-text-handles");assertLayout()
         app.buttons["text-back"].tap();XCTAssertTrue(app.scrollViews["tool-strip"].exists)
         XCUIDevice.shared.orientation = .portrait
+        let portrait=XCTNSPredicateExpectation(predicate:NSPredicate{_,_ in self.app.frame.height>self.app.frame.width},object:app)
+        XCTAssertEqual(XCTWaiter.wait(for:[portrait],timeout:10),.completed)
         capture("34-portrait-return")
     }
     func testTextHandlesKeepImageWhileEditing() {

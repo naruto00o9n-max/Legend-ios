@@ -11,11 +11,21 @@ struct Glass:ViewModifier {
     func body(content:Content)->some View {
         content.background(.ultraThinMaterial,in:RoundedRectangle(cornerRadius:radius,style:.continuous))
             .background(RoundedRectangle(cornerRadius:radius).fill(.black.opacity(0.55)))
-            .overlay(RoundedRectangle(cornerRadius:radius).stroke(LinearGradient(colors:[Palette.pale.opacity(0.36),Palette.gold.opacity(0.06),Palette.gold.opacity(0.2)],startPoint:.topLeading,endPoint:.bottomTrailing),lineWidth:0.6))
+            .overlay(RoundedRectangle(cornerRadius:radius).stroke(LinearGradient(colors:[Palette.pale.opacity(0.36),Palette.gold.opacity(0.06),Palette.gold.opacity(0.2)],startPoint:.topLeading,endPoint:.bottomTrailing),lineWidth:0.6).allowsHitTesting(false))
             .shadow(color:.black.opacity(0.22),radius:16,y:8)
     }
 }
-extension View {func glass(_ radius:CGFloat=22)->some View{modifier(Glass(radius:radius))}}
+struct CookiesInterface: ViewModifier {
+    func body(content: Content) -> some View {
+        content.environment(\.layoutDirection, .rightToLeft)
+            .environment(\.locale, Locale(identifier: "ar"))
+            .preferredColorScheme(.dark).tint(Palette.pale)
+    }
+}
+extension View {
+    func glass(_ radius:CGFloat=22)->some View{modifier(Glass(radius:radius))}
+    func cookiesInterface()->some View{modifier(CookiesInterface())}
+}
 struct GoldButtonStyle:ButtonStyle {
     var primary=false
     func makeBody(configuration:Configuration)->some View {

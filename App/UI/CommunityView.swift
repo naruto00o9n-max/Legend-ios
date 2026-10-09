@@ -46,7 +46,7 @@ struct ServiceHub: View {
             .toolbar{ToolbarItem(placement:.topBarLeading){IconButton(icon:"chevron.right",title:"العودة"){dismiss()}};ToolbarItem(placement:.topBarTrailing){IconButton(icon:"person.crop.circle",title:"حسابي"){if service.session==nil{account=true}else{profile=true}}}}
             .foregroundStyle(Palette.pale).task{await load()}
             .fullScreenCover(isPresented:$account){AccountView()}.fullScreenCover(isPresented:$profile){ProfileView()}
-        }.tint(Palette.pale)
+        }.cookiesInterface()
     }
     private func load() async {
         loading=true;defer{loading=false}
@@ -88,7 +88,7 @@ struct CommunityDetail: View {
                 Button("إرسال التعليق"){Task{await submit()}}.buttonStyle(GoldButtonStyle(primary:true)).disabled(busy || reply.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty)
             }
             if let info{Text(info).font(.system(size:12)).lineSpacing(5).textSelection(.enabled)}
-        }.padding(24).frame(maxWidth:760).frame(maxWidth:.infinity) } }.navigationTitle("المنشور").navigationBarTitleDisplayMode(.inline).foregroundStyle(Palette.pale).task{await loadComments()}.fullScreenCover(isPresented:$account){AccountView()}
+        }.padding(24).frame(maxWidth:760).frame(maxWidth:.infinity) } }.navigationTitle("المنشور").navigationBarTitleDisplayMode(.inline).foregroundStyle(Palette.pale).task{await loadComments()}.fullScreenCover(isPresented:$account){AccountView()}.cookiesInterface()
     }
     private func loadComments() async {
         guard UUID(uuidString:post.id) != nil else{return}

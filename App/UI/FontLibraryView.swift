@@ -18,6 +18,6 @@ struct FontLibraryView:View {
             do {let url=try result.get(),access=url.startAccessingSecurityScopedResource();defer{if access{url.stopAccessingSecurityScopedResource()}};try FileManager.default.createDirectory(at:Fonts.userDirectory,withIntermediateDirectories:true);let target=Fonts.userDirectory.appendingPathComponent(url.lastPathComponent);guard !FileManager.default.fileExists(atPath:target.path) else{throw ImageFailure.message("الخط موجود بالفعل")};try FileManager.default.copyItem(at:url,to:target);var cfError:Unmanaged<CFError>?;guard CTFontManagerRegisterFontsForURL(target as CFURL,.process,&cfError) else{try? FileManager.default.removeItem(at:target);throw ImageFailure.message("ملف الخط غير صالح أو اسمه مسجل بالفعل")};version+=1
             }catch{self.error=error.localizedDescription}
         }
-        .alert("تعذر استيراد الخط",isPresented:Binding(get:{error != nil},set:{if !$0{error=nil}})){Button("حسنًا"){error=nil}}message:{Text(error ?? "")}
+        .alert("تعذر استيراد الخط",isPresented:Binding(get:{error != nil},set:{if !$0{error=nil}})){Button("حسنًا"){error=nil}}message:{Text(error ?? "")}.cookiesInterface()
     }
 }
