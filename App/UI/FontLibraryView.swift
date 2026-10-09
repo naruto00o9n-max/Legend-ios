@@ -9,7 +9,7 @@ struct FontLibraryView:View {
     @State private var error:String?
     var body:some View {
         ZStack {Ambient();VStack(spacing:12){
-            HStack{Text("مكتبة الخطوط").font(.system(size:21,weight:.semibold));Spacer();IconButton(icon:"plus",title:"استيراد خط"){picker=true};IconButton(icon:"xmark",title:"إغلاق"){dismiss()}}.padding(.horizontal,20)
+            HStack{Text("مكتبة الخطوط").font(.system(size:21,weight:.semibold));Spacer();IconButton(icon:"plus",title:"استيراد خط"){picker=true};IconButton(icon:"xmark",title:"إغلاق"){dismiss()}.accessibilityIdentifier("font-close")}.padding(.horizontal,20)
             List {ForEach(Fonts.files+Fonts.otf,id:\.self){url in
                 VStack(alignment:.leading,spacing:8){Text(url.lastPathComponent).font(.system(size:10,design:.monospaced)).foregroundStyle(Palette.quiet).lineLimit(1);Text("كلمات تُقرأ كما تريد").font(Font(Fonts.font({var style=TextStyle();style.fontPath=url.lastPathComponent;style.fontSize=22;return style}())))}.padding(.vertical,8).listRowBackground(Color.clear)
             }}.id(version).scrollContentBackground(.hidden).listStyle(.plain)

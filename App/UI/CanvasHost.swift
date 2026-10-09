@@ -44,7 +44,7 @@ struct CanvasHost:UIViewRepresentable {
         let longPress=UILongPressGestureRecognizer(target:context.coordinator,action:#selector(Coordinator.longPress(_:)));canvas.addGestureRecognizer(longPress)
         return s
     }
-    func updateUIView(_ s:UIScrollView,context:Context){let c=context.coordinator;c.model=model;c.canvas.update(page:model.page,directory:model.directory,selected:readOnly ? nil:model.selected,zoom:s.zoomScale);s.panGestureRecognizer.minimumNumberOfTouches=[Tool.brush,.eraser,.cleaner].contains(model.tool) ? 2:1
+    func updateUIView(_ s:UIScrollView,context:Context){let c=context.coordinator;c.model=model;c.canvas.update(page:model.page,directory:model.directory,selected:readOnly ? nil:model.selected,zoom:s.zoomScale);s.accessibilityValue="\(model.page.layers.count) طبقات، \(model.page.layers.reduce(0){$0+$1.strokes.count}) خطوط رسم";s.panGestureRecognizer.minimumNumberOfTouches=[Tool.brush,.eraser,.cleaner].contains(model.tool) ? 2:1
         if !c.fitted{s.layoutIfNeeded();DispatchQueue.main.async{guard !c.fitted,s.bounds.width>0 else{return};let full=min(s.bounds.width/CGFloat(model.page.width),s.bounds.height/CGFloat(model.page.height));s.minimumZoomScale=max(0.002,full/4);let reading=s.bounds.width/CGFloat(model.page.width);s.setZoomScale(reading,animated:false);c.fitted=true;c.updateCenter()}}
     }
     class Coordinator:NSObject,UIScrollViewDelegate,UIGestureRecognizerDelegate {
