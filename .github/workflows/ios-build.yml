@@ -10,9 +10,10 @@ concurrency:
 permissions:
   contents: read
 jobs:
-  ios:
+  packages:
+    name: Two unsigned arm64 IPAs and PNG integrity
     runs-on: macos-15-intel
-    timeout-minutes: 55
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v5
       - name: Prepare build tools
@@ -23,19 +24,58 @@ jobs:
         run: xcodegen generate
       - name: Build real arm64 apps and two unsigned IPAs
         run: bash scripts/build_ipas.sh
-      - name: Verify pixel core locally
+      - name: Verify full-dimension pixel core
         run: |
           clang -O2 -DPNG_ARM_NEON_OPT=0 -I App/Core/Vendor/libpng Tests/pixel_roundtrip.c App/Core/PixelCore.c App/Core/Vendor/libpng/*.c -lz -o .work/pixel-test
           mkdir -p .work/pixel-fixture
           .work/pixel-test .work/pixel-fixture
-      - name: Verify editor and compact layouts on iPhone simulators
-        run: bash scripts/test_simulators.sh
-      - name: Organize actual screen captures and verification results
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cookies-iphone-unsigned-ipas
+          path: build/
+          retention-days: 14
+  offline-tests:
+    name: Offline editor on ${{ matrix.screen }} iPhone
+    strategy:
+      fail-fast: false
+      matrix:
+        screen: [small, modern]
+    runs-on: macos-15-intel
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+      - run: brew install xcodegen
+      - run: python3 scripts/fetch_resources.py
+      - run: xcodegen generate
+      - name: Verify editor and actual compact interfaces
+        run: bash scripts/test_simulators.sh offline ${{ matrix.screen }}
+      - name: Collect original screenshots and test results
         if: always()
         run: python3 scripts/collect_evidence.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: cookies-iphone-build-and-test-evidence
+          name: cookies-iphone-evidence-${{ matrix.screen }}
+          path: build/
+          retention-days: 14
+  services-tests:
+    name: Original service client and actual account interfaces
+    runs-on: macos-15-intel
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - run: brew install xcodegen
+      - run: python3 scripts/fetch_resources.py
+      - run: xcodegen generate
+      - name: Verify original public API and connected screens
+        run: bash scripts/test_simulators.sh services modern
+      - name: Collect original screenshots and test results
+        if: always()
+        run: python3 scripts/collect_evidence.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cookies-iphone-services-evidence
           path: build/
           retention-days: 14
