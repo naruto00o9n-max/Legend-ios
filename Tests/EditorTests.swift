@@ -44,4 +44,11 @@ final class EditorTests:XCTestCase {
         XCTAssertFalse(NetworkPolicy.enabled);let service=ReferenceService();XCTAssertNil(service.config)
         do {_ = try await service.request("/auth/v1/settings");XCTFail("Offline must reject requests before transport")}catch{XCTAssertTrue(error.localizedDescription.contains("محليًا"))}
     }
+    @MainActor func testSmallCanvasIsCenteredWhileZoomedOut() throws {
+        let root=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString);defer{try? FileManager.default.removeItem(at:root)}
+        let model=EditorModel(page:EditorPage(title:"صورة متوسطة",width:800,height:600),library:LibraryStore(root:root))
+        let coordinator=CanvasHost.Coordinator(model),scroll=UIScrollView(frame:CGRect(x:0,y:0,width:375,height:500)),canvas=DocumentCanvas(frame:CGRect(x:0,y:0,width:800,height:600))
+        coordinator.canvas=canvas;coordinator.scroll=scroll;scroll.addSubview(canvas);scroll.contentSize=canvas.bounds.size;scroll.delegate=coordinator;scroll.minimumZoomScale=0.01;scroll.maximumZoomScale=128;scroll.setZoomScale(0.3,animated:false);coordinator.updateCenter()
+        XCTAssertEqual(scroll.contentInset.left,67.5,accuracy:0.1);XCTAssertEqual(scroll.contentInset.top,160,accuracy:0.1);XCTAssertEqual(model.visibleCenter.x,400,accuracy:0.1);XCTAssertEqual(model.visibleCenter.y,300,accuracy:0.1)
+    }
 }
