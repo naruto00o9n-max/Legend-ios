@@ -14,16 +14,17 @@ import SwiftUI
     func save() { do {try JSONEncoder().encode(items).write(to:root.appendingPathComponent("library.json"),options:.atomic)}catch{self.error=error.localizedDescription} }
     func directory(_ page: UUID)->URL {root.appendingPathComponent(page.uuidString,isDirectory:true)}
     func createFolder(_ name: String,parent:UUID?) {items.append(LibraryItem(parent:parent,title:name,folder:true));save()}
-    func add(_ page:EditorPage,parent:UUID?) {items.append(LibraryItem(id:page.id,parent:parent,title:page.title,folder:false,pages:[page.id]));save()}
+    func add(_ page:EditorPage,parent:UUID?) {if let index=items.firstIndex(where:{$0.id==parent && $0.isChapter==true}){items[index].pages.append(page.id);items[index].modified=Date()}else{items.append(LibraryItem(id:page.id,parent:parent,title:page.title,folder:false,pages:[page.id]))};save()}
     func load(_ id:UUID)throws->EditorPage {try JSONDecoder().decode(EditorPage.self,from:Data(contentsOf:directory(id).appendingPathComponent("page.json")))}
     func persist(_ page:EditorPage)throws {try JSONEncoder().encode(page).write(to:directory(page.id).appendingPathComponent("page.json"),options:.atomic)}
-    func remove(_ item:LibraryItem) {for child in items.filter({$0.parent==item.id}){remove(child)};items.removeAll{$0.id==item.id};if !item.folder{try? FileManager.default.removeItem(at:directory(item.id))};save()}
+    func remove(_ item:LibraryItem) {for child in items.filter({$0.parent==item.id}){remove(child)};items.removeAll{$0.id==item.id};if !item.folder{for id in item.pages{try? FileManager.default.removeItem(at:directory(id))}};save()}
     func move(_ item:LibraryItem,parent:UUID?){
         var next=parent,visited=Set<UUID>();while let id=next{guard id != item.id,visited.insert(id).inserted else{error="لا يمكن نقل مجلد داخل نفسه";return};next=items.first{$0.id==id}?.parent}
         if let index=items.firstIndex(where:{$0.id==item.id}){items[index].parent=parent;save()}
     }
-    func rename(_ item:LibraryItem,to name:String) {if let i=items.firstIndex(where:{$0.id==item.id}){do{if !item.folder{var page=try load(item.id);page.title=name;try persist(page)};items[i].title=name;save()}catch{self.error=error.localizedDescription}}}
+    func rename(_ item:LibraryItem,to name:String) {if let i=items.firstIndex(where:{$0.id==item.id}){do{if !item.folder,item.isChapter != true{var page=try load(item.id);page.title=name;try persist(page)};items[i].title=name;save()}catch{self.error=error.localizedDescription}}}
     func importImage(_ url:URL,parent:UUID?) async {
+        if ["pdf","zip","cookieschapter"].contains(url.pathExtension.lowercased()) {do{let id=try createChapter(url.deletingPathExtension().lastPathComponent,parent:parent);try await importPages([url],chapter:id)}catch{self.error=error.localizedDescription};return}
         do {let root=self.root;let page=try await Task.detached(priority:.userInitiated){try url.pathExtension.lowercased()=="cookies" ? ProjectArchive.importFile(url,root:root):ImagePipeline.importImage(url,root:root)}.value;add(page,parent:parent)}catch{self.error=error.localizedDescription}
     }
 }

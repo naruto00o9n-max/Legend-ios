@@ -52,6 +52,7 @@ struct EditorPage: Codable, Equatable, Identifiable {
 }
 struct LibraryItem: Codable, Equatable, Identifiable {
     var id = UUID(); var parent: UUID?; var title: String; var folder: Bool; var pages: [UUID] = []; var modified = Date()
+    var isChapter:Bool?;var cover:UUID?
 }
 enum Tool: String, CaseIterable {
     case move, text, brush, eraser, shapes, layers, cleaner, eyedropper
