@@ -34,6 +34,24 @@ final class DocumentCanvas: UIView {
     private var stagedImages: [String: UIImage] = [:]
     private var interaction: LayerInteraction?
     private var drawingInteraction=false
+    private var softwareStroke=false
+    private let inkWorker=DispatchQueue(label:"cookies.canvas.live-composite",qos:.userInteractive)
+    private var inkGeneration=UUID()
+    private var inkRendering=false
+    private var latestInk:(EditorPage,URL,CGRect,Int)?
+    private var softwareCommitRevision:Int?
+    private func renderLatestInk(){
+        guard !inkRendering,let input=latestInk else{return};latestInk=nil;inkRendering=true;let generation=inkGeneration
+        inkWorker.async{[weak self] in
+            let image=(try? ImagePipeline.compositeRegion(input.0,directory:input.1,rect:input.2,sample:input.3)).map{UIImage(cgImage:$0)}
+            DispatchQueue.main.async{[weak self] in guard let self else{return};self.inkRendering=false
+                if self.inkGeneration==generation{
+                    if let image,!(self.softwareCommitRevision.map{self.revision >= $0 && self.visibleTilesReady} ?? false){self.showPatch(image,rect:input.2);if let target=self.softwareCommitRevision{self.patchCommitRevision=target}}
+                    self.renderLatestInk()
+                }else{self.renderLatestInk()}
+            }
+        }
+    }
     private var interactionRevision: Int?
     private var renderedLayers: [EditorLayer] = []
     private var handles: [String: UIButton] = [:]
@@ -271,11 +289,15 @@ final class DocumentCanvas: UIView {
         CATransaction.begin(); CATransaction.setDisableActions(true)
         defer { CATransaction.commit() }
         guard let stroke, !stroke.points.isEmpty else {
-            liveInk.path = nil;if drawingInteraction{update(page:page,directory:directory ?? FileManager.default.temporaryDirectory,selected:selected,zoom:zoom);drawingInteraction=false;endLayerInteraction()};return
+            liveInk.path = nil;if softwareStroke{softwareStroke=false;inkGeneration=UUID();latestInk=nil;softwareCommitRevision=nil;showPatch(nil)};if drawingInteraction{update(page:page,directory:directory ?? FileManager.default.temporaryDirectory,selected:selected,zoom:zoom);drawingInteraction=false;endLayerInteraction()};return
         }
         if stroke.erase || stroke.brush=="soft" || stroke.brush=="texture" {
             if !drawingInteraction,interaction==nil,let selected,let directory,visible.width*visible.height<=4_194_304,let preview=LayerInteraction(page:page,selected:selected,directory:directory,drawingViewport:visible.insetBy(dx:-stroke.width,dy:-stroke.width).intersection(CGRect(x:0,y:0,width:page.width,height:page.height))){interaction=preview;preview.attach(to:self);interactionRevision=revision+1;drawingInteraction=true}
             if drawingInteraction,let index=page.layers.firstIndex(where:{$0.id==selected}),let directory{var live=page;live.layers[index].strokes.append(stroke);update(page:live,directory:directory,selected:selected,zoom:zoom);return}
+            if let index=page.layers.firstIndex(where:{$0.id==selected}),let directory{
+                let region=visible.insetBy(dx:-stroke.width,dy:-stroke.width).integral.intersection(CGRect(x:0,y:0,width:page.width,height:page.height))
+                if region.width>0,region.height>0{if !softwareStroke{softwareStroke=true;softwareCommitRevision=nil;inkGeneration=UUID()};var live=page;live.layers[index].strokes.append(stroke);let sample=max(1,Int(ceil(sqrt(region.width*region.height/1_048_576))));latestInk=(live,directory,region,sample);liveInk.path=nil;renderLatestInk();return}
+            }
         }
         let path = BrushRenderer.path(stroke)
         let item = page.layers.first { $0.id == selected }
@@ -298,12 +320,14 @@ final class DocumentCanvas: UIView {
     func showPatch(_ image:UIImage?,rect:CGRect = .zero){livePatch.isUserInteractionEnabled=false;livePatch.frame=rect;livePatch.image=image;if image != nil{addSubview(livePatch)}else{livePatch.removeFromSuperview();patchCommitRevision=nil}}
     func commitPatch(){if livePatch.image != nil{patchCommitRevision=revision+1}}
     func commitLiveStroke() {
+        if softwareStroke{softwareCommitRevision=revision+1;patchCommitRevision=revision+1;softwareStroke=false;return}
         if drawingInteraction{drawingInteraction=false;endLayerInteraction();return}
         let committed = CAShapeLayer(layer: liveInk), target = revision + 1
         layer.addSublayer(committed); pendingInk.append((target, committed)); liveInk.path = nil
         strokeCommitRevision = pendingInk.map(\.revision).min()
     }
-    var liveStrokeVisible: Bool { liveInk.path != nil || !pendingInk.isEmpty || drawingInteraction }
+    var liveCompositeImage:UIImage?{livePatch.image}
+    var liveStrokeVisible: Bool { liveInk.path != nil || !pendingInk.isEmpty || drawingInteraction || softwareStroke }
     private func rasterPage(_ page: EditorPage) -> EditorPage {
         guard let interaction, interaction.phase != .finishing else { return page }
         var result = page; result.layers.removeAll { interaction.excluded.contains($0.id) }; return result

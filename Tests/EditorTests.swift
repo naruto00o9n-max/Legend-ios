@@ -105,4 +105,17 @@ final class EditorTests:XCTestCase {
         let subscription=library.objectWillChange.sink{refreshed.fulfill()};defer{subscription.cancel()}
         model.add(.text);model.change{$0.textContent="كوكيز"};await fulfillment(of:[refreshed],timeout:10);XCTAssertNotEqual(try Data(contentsOf:thumbnail),original)
     }
+    @MainActor func testComplexBlendEraserShowsActualCompositeBeforeFingerRelease()async throws {
+        let root=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString);try FileManager.default.createDirectory(at:root,withIntermediateDirectories:true);defer{try? FileManager.default.removeItem(at:root)}
+        var page=try PageOperations.blank(title:"محو حي",width:128,height:128,color:"FFFFFF",transparent:false,root:root)
+        var drawing=EditorLayer(kind:.drawing);drawing.frame=Box(x:0,y:0,width:128,height:128);drawing.blend = .multiply;drawing.strokes=[Stroke(points:[Point(x:20,y:64),Point(x:108,y:64)],width:40,color:"FF0000")];page.layers=[drawing]
+        let canvas=DocumentCanvas(frame:CGRect(x:0,y:0,width:128,height:128));canvas.update(page:page,directory:root.appendingPathComponent(page.id.uuidString),selected:drawing.id,zoom:1);canvas.refreshVisible(CGRect(x:0,y:0,width:128,height:128))
+        canvas.showStroke(Stroke(points:[Point(x:64,y:50),Point(x:64,y:78)],width:30,color:"FFFFFF",erase:true),on:page,selected:drawing.id)
+        for _ in 0..<100{if canvas.liveCompositeImage != nil{break};try await Task.sleep(nanoseconds:20_000_000)}
+        let image=try XCTUnwrap(canvas.liveCompositeImage),cg=try XCTUnwrap(image.cgImage);var pixel=[UInt8](repeating:0,count:4)
+        pixel.withUnsafeMutableBytes{buffer in let c=CGContext(data:buffer.baseAddress,width:1,height:1,bitsPerComponent:8,bytesPerRow:4,space:ImagePipeline.space,bitmapInfo:CGImageAlphaInfo.premultipliedLast.rawValue)!;c.draw(cg,in:CGRect(x:-64,y:-64,width:128,height:128))}
+        XCTAssertGreaterThan(pixel[1],240,"Erasure must reveal white beneath the red drawing while the touch is still active")
+        canvas.showStroke(nil,on:page,selected:drawing.id);XCTAssertNil(canvas.liveCompositeImage)
+    }
+
 }
