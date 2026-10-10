@@ -1,4 +1,5 @@
 import XCTest
+import UIKit
 @testable import CookiesEditor
 
 final class ReferenceProjectTests:XCTestCase {
@@ -20,6 +21,24 @@ final class ReferenceProjectTests:XCTestCase {
         XCTAssertEqual(try Data(contentsOf:directory.appendingPathComponent(page.raw)).count,1080*1920*4)
         let exported=try ImagePipeline.exportPNG(page,directory:directory);XCTAssertEqual(try Data(contentsOf:exported),image)
     }
+    func testActualAndroidTextKeepsCenterAutomaticWidthAndTransparentBackground()throws {
+        let root=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer{try? FileManager.default.removeItem(at:root)}
+        let original=root.appendingPathComponent("original"),output=root.appendingPathComponent("imported")
+        for path in [original.appendingPathComponent("pages"),original.appendingPathComponent("assets"),output]{try FileManager.default.createDirectory(at:path,withIntermediateDirectories:true)}
+        try Data(Self.metadata.utf8).write(to:original.appendingPathComponent("project_meta.json"))
+        try Data(Self.textPage.utf8).write(to:original.appendingPathComponent("pages/e77dd769-1198-4dec-a9e0-798d04bb5cb1.json"))
+        try XCTUnwrap(Data(base64Encoded:Self.image,options:.ignoreUnknownCharacters)).write(to:original.appendingPathComponent("assets/bg_e77dd769-1198-4dec-a9e0-798d04bb5cb1.jpg"))
+        let page=try XCTUnwrap(ReferenceProjectImport.importFolder(original,root:output)?.first),layer=try XCTUnwrap(page.layers.first)
+        XCTAssertEqual(page.layers.count,1);XCTAssertEqual(layer.textContent,"Cookies test");XCTAssertEqual(layer.style.backgroundAlpha,0);XCTAssertEqual(layer.style.fontSize,100)
+        XCTAssertGreaterThanOrEqual(layer.style.boxWidth,573);XCTAssertEqual(layer.style.lineHeightMultiple,1);XCTAssertEqual(layer.style.lineSpacing,0)
+        let bounds=LayerRenderer.bounds(layer),center=CGPoint(x:bounds.midX,y:bounds.midY).applying(LayerRenderer.transform(layer))
+        XCTAssertEqual(center.x,540.0072,accuracy:0.0001);XCTAssertEqual(center.y,960.0129,accuracy:0.0001);XCTAssertEqual(layer.scaleX,3.4034066,accuracy:0.000001)
+        let reloaded=try JSONDecoder().decode(EditorPage.self,from:Data(contentsOf:output.appendingPathComponent(page.id.uuidString).appendingPathComponent("page.json")));XCTAssertEqual(reloaded.layers,page.layers)
+    }
+    private static let textPage = #"""
+{"canvasConfig":{"backgroundColor":0,"backgroundImagePath":"/data/user/0/com.oneguystudio.ytyper/files/projects/d51656e2-4c23-4e36-95da-e5780168e148/assets/bg_e77dd769-1198-4dec-a9e0-798d04bb5cb1.jpg","height":1920,"width":1080},"historyIndex":0,"id":"e77dd769-1198-4dec-a9e0-798d04bb5cb1","layers":[{"alignment":1,"backgroundAlpha":255,"backgroundColor":0,"backgroundCornerRadius":0.0,"backgroundPaddingX":20.0,"backgroundPaddingY":10.0,"baseHeight":134.0,"baseWidth":573.0,"blurDx":0.0,"blurDy":0.0,"blurType":0,"boxWidth":-1.0,"color":-1,"effectAngle":0.0,"effectColor":-16711681,"effectDetail":0.0,"effectSecondVal":0.0,"effectThirdVal":50.0,"effectType":"NONE","effectValue":0.0,"extraStrokes":[],"fadeAngle":0.0,"fadeValue":0.0,"fakeBoldWidth":0.0,"fontSize":100.0,"id":"07dbfa31-f573-43ea-aaaf-87f4c0ded866","innerOpacity":255,"isBold":false,"isFadeEnabled":false,"isItalic":false,"isKashidaEnabled":true,"isLocked":false,"isMaskEnabled":false,"isMeshMode":false,"isSelected":true,"isStrikeThrough":false,"isUnderline":false,"isVisible":true,"isWarpEnabled":false,"layerBlendMode":"NORMAL","layerType":"TEXT","letterSpacing":0.0,"lineSpacing":1.0,"maskRadius":50.0,"maskX":50.0,"maskY":50.0,"meshCols":2,"meshRows":2,"name":"Text Layer","opacity":255,"rotation":0.0,"rotationX":0.0,"rotationY":0.0,"scaleX":3.4034066,"scaleY":3.4034066,"shadowAlpha":255,"shadowColor":-16777216,"shadowDx":0.0,"shadowDy":0.0,"shadowGradient":[],"shadowGradientAngle":90.0,"shadowGradientType":0,"shadowRadius":0.0,"shadowThickness":0.0,"spans":[],"strokeColor":-16777216,"strokeGradient":[],"strokeGradientAngle":90.0,"strokeGradientType":0,"strokeShape":0,"strokeWidth":10.0,"tashkeelOffset":0.0,"textContent":"Cookies test","textGradient":[],"textGradientAngle":90.0,"textGradientType":0,"textureRotation":0.0,"textureScaleX":1.0,"textureScaleY":1.0,"textureTranslationX":0.0,"textureTranslationY":0.0,"threeDAngle":45.0,"threeDColor":-7829368,"threeDDarken":0.0,"threeDDepth":0,"warpValue":150.0,"x":540.0072,"y":960.0129,"zIndex":1,"magicBrushColor":-65536,"magicBrushOpacity":128,"magicBrushSecondVal":15.0,"magicBrushSize":40.0,"magicBrushType":"BLUR","updateVersion":0}]}
+"""#
     private static let metadata = #"""
 {"coverThumbnailPath":"/data/user/0/com.oneguystudio.ytyper/files/projects/d51656e2-4c23-4e36-95da-e5780168e148/thumbnails/thumb_e77dd769-1198-4dec-a9e0-798d04bb5cb1.png","id":"d51656e2-4c23-4e36-95da-e5780168e148","isPinned":false,"lastModified":1791604582849,"lastOpened":1791604583266,"name":"Untitled Project","pageCount":1,"pages":[{"addedTime":1791604582849,"id":"e77dd769-1198-4dec-a9e0-798d04bb5cb1","orderIndex":0,"originalName":"blank_1791604557852.png","projectId":"d51656e2-4c23-4e36-95da-e5780168e148","thumbnailPath":"/data/user/0/com.oneguystudio.ytyper/files/projects/d51656e2-4c23-4e36-95da-e5780168e148/thumbnails/thumb_e77dd769-1198-4dec-a9e0-798d04bb5cb1.png"}],"projectFolderPath":"/data/user/0/com.oneguystudio.ytyper/files/projects/d51656e2-4c23-4e36-95da-e5780168e148"}
 """#

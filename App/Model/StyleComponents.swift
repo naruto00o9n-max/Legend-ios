@@ -6,7 +6,7 @@ enum StyleComponent:String,CaseIterable,Identifiable {
     var title:String{switch self{case .font:"الخط وحجمه";case .paragraph:"المحاذاة والتباعد";case .fill:"لون النص وتدرجه";case .outline:"الحدود";case .shadow:"الظل";case .background:"الخلفية";case .effects:"التأثيرات والأبعاد";case .texture:"الخامة";case .geometry:"المنظور والشبكة"}}
     var keys:[String]{switch self{
     case .font:["fontPath","fontSize","isBold","isItalic","isUnderline","isStrikeThrough","fakeBoldWidth","tashkeelOffset"]
-    case .paragraph:["alignment","letterSpacing","lineSpacing"]
+    case .paragraph:["alignment","letterSpacing","lineSpacing","lineHeightMultiple"]
     case .fill:["color","textGradient","textGradientAngle","textGradientType","textGradientStops","textGradientPoints","innerOpacity"]
     case .outline:["strokeColor","strokeWidth","strokeGradient","strokeGradientAngle","strokeGradientStops","strokeGradientType","strokeGradientPoints","extraStrokes"]
     case .shadow:["shadowColor","shadowRadius","shadowDx","shadowDy","shadowAlpha","shadowGradient","shadowGradientAngle","shadowGradientStops","shadowGradientType","shadowGradientPoints"]

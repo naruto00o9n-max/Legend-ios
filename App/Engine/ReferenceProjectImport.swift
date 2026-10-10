@@ -30,11 +30,16 @@ enum ReferenceProjectImport {
                 let kind=(row["layerType"] as? String ?? "").lowercased(),name=row["name"] as? String ?? "طبقة مستوردة"
                 var layer:EditorLayer
                 if kind.contains("text"){layer=EditorLayer(kind:.text,name:name);layer.textContent=row["textContent"] as? String ?? "";layer.style=try ReferenceStyleImport.decode(JSONSerialization.data(withJSONObject:[row]))[0].style
+                    if (row["boxWidth"] as? Double ?? -1)<=0{layer.style.boxWidth=max(layer.style.boxWidth,ceil(LayerRenderer.attributed(layer).size().width)+1)}
                     if let font=row["fontPath"] as? String,!font.isEmpty{if let input=try? asset(font){fonts.insert(input)}else if !(Fonts.files+Fonts.otf).contains(where:{$0.lastPathComponent==(font as NSString).lastPathComponent}){throw ImageFailure.message("خط المشروع مفقود: "+(font as NSString).lastPathComponent)}}
                     if let texture=row["texturePath"] as? String,!texture.isEmpty{layer.style.texturePath=try copy(texture)}
                 }else if kind.contains("image") || kind.contains("drawing") || kind.contains("shape"),let path=row["imagePath"] as? String,!path.isEmpty{layer=EditorLayer(kind:.image,name:name);layer.imagePath=try copy(path)}
                 else{throw ImageFailure.message("الطبقة \(name) لا تملك بيانات يمكن ترحيلها بأمان؛ بقي الأرشيف الأصلي دون تغيير")}
-                layer.frame=Box(x:row["x"] as? Double ?? 0,y:row["y"] as? Double ?? 0,width:row["baseWidth"] as? Double ?? layer.style.boxWidth,height:row["baseHeight"] as? Double ?? 100)
+                layer.frame=Box(x:0,y:0,width:row["baseWidth"] as? Double ?? layer.style.boxWidth,height:row["baseHeight"] as? Double ?? 100)
+                let bounds=LayerRenderer.bounds(layer)
+                // Android layer x/y locate its center; Cookies stores the unscaled top-left.
+                layer.frame.x=(row["x"] as? Double ?? 0)-Double(bounds.width)/2
+                layer.frame.y=(row["y"] as? Double ?? 0)-Double(bounds.height)/2
                 layer.rotation=row["rotation"] as? Double ?? 0;layer.scaleX=row["scaleX"] as? Double ?? 1;layer.scaleY=row["scaleY"] as? Double ?? 1;layer.opacity=(row["opacity"] as? Double ?? 255)/255;layer.isLocked=row["isLocked"] as? Bool ?? false;layer.isVisible=row["isVisible"] as? Bool ?? true
                 if let mode=row["layerBlendMode"] as? String{guard let blend=Blend(rawValue:mode.lowercased()) else{throw ImageFailure.message("وضع مزج غير مدعوم: "+mode)};layer.blend=blend}
                 layer.isMaskEnabled=row["isMaskEnabled"] as? Bool ?? false;layer.maskX=row["maskX"] as? Double ?? 0;layer.maskY=row["maskY"] as? Double ?? 0;layer.maskRadius=row["maskRadius"] as? Double ?? 80

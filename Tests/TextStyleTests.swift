@@ -148,4 +148,11 @@ final class TextStyleTests:XCTestCase {
         XCTAssertEqual(LayerRenderer.attributed(layer).attribute(.foregroundColor,at:1,effectiveRange:nil) as? UIColor,UIColor(hex:"FF0000"))
     }
 
+    func testAndroidSpacingUnitsAndARGBTransparencyAreNotFlattened()throws {
+        let row:[String:Any]=["fontSize":40,"lineSpacing":1.5,"letterSpacing":0.1,"backgroundColor":0,"backgroundAlpha":255,"color":-1,"innerOpacity":128,"boxWidth":-1]
+        let style=try ReferenceStyleImport.decode(JSONSerialization.data(withJSONObject:[row]))[0].style
+        XCTAssertEqual(style.letterSpacing,4);XCTAssertEqual(style.lineSpacing,0);XCTAssertEqual(style.lineHeightMultiple,1.5);XCTAssertEqual(style.backgroundAlpha,0);XCTAssertGreaterThan(style.boxWidth,0)
+        var layer=EditorLayer(kind:.text);layer.style=style;let paragraph=try XCTUnwrap(LayerRenderer.attributed(layer).attribute(.paragraphStyle,at:0,effectiveRange:nil) as? NSParagraphStyle);XCTAssertEqual(paragraph.lineHeightMultiple,1.5)
+    }
+
 }

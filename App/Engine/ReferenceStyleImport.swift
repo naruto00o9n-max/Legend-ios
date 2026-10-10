@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 /// Reads the documented JSON fields of the Android SavedTextStyle export.
 /// Unsupported original effects remain tracked in the parity ledger.
@@ -19,10 +20,18 @@ enum ReferenceStyleImport {
                 else{dictionary[key]=value}
             }
             if let path=row["fontPath"] as? String,!path.isEmpty{dictionary["fontPath"]=(path as NSString).lastPathComponent}
+            else{dictionary["fontPath"]=""}
             var style=try JSONDecoder().decode(TextStyle.self,from:JSONSerialization.data(withJSONObject:dictionary))
             guard !style.isMeshMode || MeshGeometry.valid(style) else{throw ImageFailure.message("شبكة تشويه النمط غير صالحة أو تتجاوز 8×8")}
             if let opacity=row["innerOpacity"] as? Double{style.innerOpacity=min(1,max(0,opacity/255))}
             if row["isFadeEnabled"] as? Bool==true{style.fadeAmount=min(1,max(0,(row["fadeValue"] as? Double ?? 0)/100));style.fadeAngle=row["fadeAngle"] as? Double}
+            // Android stores line spacing as a multiplier and letter spacing in em.
+            if let spacing=row["lineSpacing"] as? Double{style.lineSpacing=0;style.lineHeightMultiple=min(10,max(0.1,spacing))}
+            if let spacing=row["letterSpacing"] as? Double{style.letterSpacing=spacing*style.fontSize}
+            if style.boxWidth<=0{style.boxWidth=max(20,row["baseWidth"] as? Double ?? 320)}
+            if let alpha=argbAlpha(row["backgroundColor"]){style.backgroundAlpha=Int((Double(style.backgroundAlpha)*alpha).rounded())}
+            if let alpha=argbAlpha(row["shadowColor"]){style.shadowAlpha=Int((Double(style.shadowAlpha)*alpha).rounded())}
+            if let alpha=argbAlpha(row["color"]){style.innerOpacity=(style.innerOpacity ?? 1)*alpha}
             if let outlines=row["extraStrokes"] as? [[String:Any]]{style.extraStrokes=try outlines.map{outline in
                 guard (outline["strokeShape"] as? Int ?? 0)==0 else{throw ImageFailure.message("شكل الحد الإضافي غير مدعوم بعد؛ احتُفظ بالملف دون تغييره")}
                 return ExtraOutline(width:(outline["strokeWidth"] as? Double) ?? (outline["width"] as? Double) ?? 0,color:color(outline["strokeColor"] ?? outline["color"] ?? 0),gradient:(outline["strokeGradient"] as? [Any])?.map{color($0)},stops:outline["strokeGradientStops"] as? [Double],angle:outline["strokeGradientAngle"] as? Double,gradientType:outline["strokeGradientType"] as? Int)
@@ -30,5 +39,6 @@ enum ReferenceStyleImport {
             return SavedTextStyle(title:(row["name"] as? String) ?? "نمط مستورد",group:(row["folder"] as? String) ?? "أنماط تايبر",style:style)
         }
     }
+    private static func argbAlpha(_ value:Any?)->Double?{guard let number=value as? NSNumber else{return nil};return Double(UInt32(truncatingIfNeeded:number.int64Value)>>24)/255}
     private static func color(_ value:Any)->String{if let text=value as? String{return text.replacingOccurrences(of:"#",with:"")};let n=(value as? NSNumber)?.int64Value ?? 0;return String(format:"%06X",UInt32(truncatingIfNeeded:n)&0xFFFFFF)}
 }
