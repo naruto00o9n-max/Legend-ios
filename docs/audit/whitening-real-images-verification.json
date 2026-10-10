@@ -1,0 +1,827 @@
+{
+  "source_commit": "ffd16de6c3ddaa8bc3f147370b450129e8e622d9",
+  "run": 38069447206,
+  "engine": {
+    "ipad": {
+      "artifact": 11676685889,
+      "editor_core_passed": 87,
+      "service_mock_passed": 6,
+      "sniper_whitening_passed": 13,
+      "failed": [],
+      "passed_cases": [
+        [
+          "-[CookiesTests.BatchToolTests testCleanerPreviewDoesNotCommitBeforeAcceptAndCanCancel]",
+          "0.110"
+        ],
+        [
+          "-[CookiesTests.BatchToolTests testFillBucketStopsAtClosedBoundary]",
+          "0.008"
+        ],
+        [
+          "-[CookiesTests.BatchToolTests testFilteredReorderingKeepsOtherLayerTypesAtTheirPositions]",
+          "0.061"
+        ],
+        [
+          "-[CookiesTests.BatchToolTests testGroupedLayersMoveTogetherAndUndoAsOneEdit]",
+          "0.143"
+        ],
+        [
+          "-[CookiesTests.BatchToolTests testLockedLayerHasNoEditableHandlesAndCannotBeDeleted]",
+          "1.051"
+        ],
+        [
+          "-[CookiesTests.BatchToolTests testNonUniformGroupResizePreservesRotatedPeerAffineCorners]",
+          "0.468"
+        ],
+        [
+          "-[CookiesTests.BatchToolTests testNormalMergeAndTransparentFlattenRetainCompositeAndUndo]",
+          "0.185"
+        ],
+        [
+          "-[CookiesTests.BatchToolTests testReferenceBrushAssetsArePackagedAndUsableTextureProducesTintedAlphaStamps]",
+          "1.041"
+        ],
+        [
+          "-[CookiesTests.BubbleLayoutTests testArabicFitsChosenBoundsWithoutChangingColorOrFont]",
+          "4.253"
+        ],
+        [
+          "-[CookiesTests.BubbleLayoutTests testComplexBlendGestureShowsIntermediateFrameBeforeCommit]",
+          "0.111"
+        ],
+        [
+          "-[CookiesTests.BubbleLayoutTests testEvenAndOddSymmetricProfilesPreserveEveryWord]",
+          "0.006"
+        ],
+        [
+          "-[CookiesTests.BubbleLayoutTests testFittedTyperInsertionMarksOnlyInsertedBubbleAndKeepsStyle]",
+          "1.614"
+        ],
+        [
+          "-[CookiesTests.BubbleLayoutTests testGestureDraftDoesNotPublishEveryPoint]",
+          "0.042"
+        ],
+        [
+          "-[CookiesTests.ChapterTests testChapterOrderCoverHistoryAndArchiveSurviveRestart]",
+          "0.355"
+        ],
+        [
+          "-[CookiesTests.ChapterTests testNonUniformCanvasResizePreservesRotatedLayerWorldCorners]",
+          "0.055"
+        ],
+        [
+          "-[CookiesTests.ChapterTests testPDFTopAndBottomDoNotFlipAndPageCountIsPreserved]",
+          "0.068"
+        ],
+        [
+          "-[CookiesTests.ChapterTests testSplitMergeKeepsEverySourceByteAndLayerCoordinates]",
+          "0.168"
+        ],
+        [
+          "-[CookiesTests.DiagnosticReportsTests testReportsStayLocalBoundedAndCanBeRemoved]",
+          "0.080"
+        ],
+        [
+          "-[CookiesTests.EditorTests testAddExportMatchesNativeCanvas]",
+          "0.003"
+        ],
+        [
+          "-[CookiesTests.EditorTests testCanvasKeepsPixelsWhenSelectionOrViewportChanges]",
+          "3.079"
+        ],
+        [
+          "-[CookiesTests.EditorTests testComplexBlendEraserShowsActualCompositeBeforeFingerRelease]",
+          "0.068"
+        ],
+        [
+          "-[CookiesTests.EditorTests testGalleryRefreshesAfterEditedThumbnailIsSaved]",
+          "1.755"
+        ],
+        [
+          "-[CookiesTests.EditorTests testLongPNGAndProjectRoundTrip]",
+          "4.048"
+        ],
+        [
+          "-[CookiesTests.EditorTests testOriginalFontsAndNativeCleaner]",
+          "0.068"
+        ],
+        [
+          "-[CookiesTests.EditorTests testPhotoProviderFileSurvivesCallbackAndKeepsOriginalBytes]",
+          "0.142"
+        ],
+        [
+          "-[CookiesTests.EditorTests testProjectArchiveJPEGAndPSD]",
+          "43.526"
+        ],
+        [
+          "-[CookiesTests.EditorTests testSmallCanvasIsCenteredWhileZoomedOut]",
+          "0.024"
+        ],
+        [
+          "-[CookiesTests.EditorTests testUndoAndLayerTransforms]",
+          "1.203"
+        ],
+        [
+          "-[CookiesTests.EditorTests testUnifiedApplicationIdentity]",
+          "0.014"
+        ],
+        [
+          "-[CookiesTests.FontPackageTests testReimportingBundledFontIsIdempotentAndInvalidPackageCopiesNothing]",
+          "0.159"
+        ],
+        [
+          "-[CookiesTests.ImageImportTests testJPEGEXIFRotationKeepsFullDimensionsAndTopBottomContent]",
+          "0.032"
+        ],
+        [
+          "-[CookiesTests.ImageImportTests testTransparentPNGIsCopiedByteForByteAndExportedWithoutReencoding]",
+          "0.177"
+        ],
+        [
+          "-[CookiesTests.RecoveryTests testBrokenCurrentDocumentRecoversValidatedPreviousAndPreservesDamagedBytes]",
+          "0.011"
+        ],
+        [
+          "-[CookiesTests.RecoveryTests testCorruptTyperWithoutBackupCannotOverwriteUserData]",
+          "0.010"
+        ],
+        [
+          "-[CookiesTests.RecoveryTests testFailedLibraryIndexWriteNeverDeletesProjectOrChangesVisibleFolders]",
+          "0.032"
+        ],
+        [
+          "-[CookiesTests.RecoveryTests testInvalidCurrentDoesNotOverwriteLastGoodBackup]",
+          "0.039"
+        ],
+        [
+          "-[CookiesTests.RecoveryTests testTyperRestoresPreviousDraftAfterCorruption]",
+          "0.028"
+        ],
+        [
+          "-[CookiesTests.ReferenceProjectTests testActualAndroidBlankProjectPreservesDimensionsAndSourceBytes]",
+          "0.226"
+        ],
+        [
+          "-[CookiesTests.ReferenceProjectTests testActualAndroidTextKeepsCenterAutomaticWidthAndTransparentBackground]",
+          "0.207"
+        ],
+        [
+          "-[CookiesTests.SniperWorkflowTests testConcaveOutlineCannotPutTextAcrossGapOrBorder]",
+          "0.003"
+        ],
+        [
+          "-[CookiesTests.SniperWorkflowTests testDecoratedColoredBubbleWithoutLocalizedTextIsRejected]",
+          "0.008"
+        ],
+        [
+          "-[CookiesTests.SniperWorkflowTests testEveryFormattedArabicLineFitsItsActualContourBand]",
+          "1.078"
+        ],
+        [
+          "-[CookiesTests.SniperWorkflowTests testGradientTextIsInpaintedWithoutFillingWholeBubble]",
+          "0.042"
+        ],
+        [
+          "-[CookiesTests.SniperWorkflowTests testMultiBubblePreviewDoesNotCommitUntilAcceptedAndUndoRestoresAll]",
+          "0.035"
+        ],
+        [
+          "-[CookiesTests.SniperWorkflowTests testRealColoredOutlinedTextIsRemovedWithExplicitReview]",
+          "1.594"
+        ],
+        [
+          "-[CookiesTests.SniperWorkflowTests testRealImportedManhwaWhiteningPipelineAndExport]",
+          "0.846"
+        ],
+        [
+          "-[CookiesTests.SniperWorkflowTests testRealMangaVerticalTextLeavesContourUnchanged]",
+          "0.056"
+        ],
+        [
+          "-[CookiesTests.SniperWorkflowTests testRealManhwaArabicShadowIsRemovedWithoutChangingBubbleBorder]",
+          "0.875"
+        ],
+        [
+          "-[CookiesTests.SniperWorkflowTests testRealScreamBubblePreservesHandlesAndOutsideArt]",
+          "0.591"
+        ],
+        [
+          "-[CookiesTests.SniperWorkflowTests testRGBAImageRejectsIncompatibleGrayProfileWithoutLosingPixels]",
+          "0.003"
+        ],
+        [
+          "-[CookiesTests.SniperWorkflowTests testTextOnlyWhiteningLeavesBorderAndDecorationTransparent]",
+          "0.010"
+        ],
+        [
+          "-[CookiesTests.SniperWorkflowTests testWhiteningReadsOriginalPixelsAndUndoExportsOriginalFile]",
+          "0.165"
+        ],
+        [
+          "-[CookiesTests.StorageAndInteractionTests testCacheCleaningCannotDestroyPixelsWhenOriginalIsCorrupt]",
+          "0.084"
+        ],
+        [
+          "-[CookiesTests.StorageAndInteractionTests testEyedropperSamplesCompositedPixelsForBrushAndSelectedText]",
+          "0.035"
+        ],
+        [
+          "-[CookiesTests.StorageAndInteractionTests testFoldersAreRestoredWithoutUnselectedProjectMetadata]",
+          "0.039"
+        ],
+        [
+          "-[CookiesTests.StorageAndInteractionTests testFullResetRemovesRealLocalDataPreferencesAndSession]",
+          "0.431"
+        ],
+        [
+          "-[CookiesTests.StorageAndInteractionTests testInlineTextAlwaysWhiteWithoutChangingLayerColorsOrFont]",
+          "0.007"
+        ],
+        [
+          "-[CookiesTests.StorageAndInteractionTests testInterruptedRestoreRollsBackBeforeLibraryLoads]",
+          "0.017"
+        ],
+        [
+          "-[CookiesTests.StorageAndInteractionTests testSelectiveBackupRestorePreservesUnselectedProjectsAndRebuildsExactPixels]",
+          "0.201"
+        ],
+        [
+          "-[CookiesTests.StorageAndInteractionTests testTamperedBackupFailsBeforeReplacingLocalData]",
+          "0.063"
+        ],
+        [
+          "-[CookiesTests.StorageAndInteractionTests testTextOutsideImageRemainsInHitRegion]",
+          "0.012"
+        ],
+        [
+          "-[CookiesTests.TextStyleTests testAndroidExtraStrokeKeepsItsOwnGradientAndUnsupportedEffectsAreExplicit]",
+          "0.007"
+        ],
+        [
+          "-[CookiesTests.TextStyleTests testAndroidSpacingUnitsAndARGBTransparencyAreNotFlattened]",
+          "0.004"
+        ],
+        [
+          "-[CookiesTests.TextStyleTests testAndroidStyleSchemaPreservesColorsStopsAndDeformation]",
+          "0.008"
+        ],
+        [
+          "-[CookiesTests.TextStyleTests testGradientCatalogTargetsTheGlyphOutlineAndShadowIndependently]",
+          "0.009"
+        ],
+        [
+          "-[CookiesTests.TextStyleTests testGradientHandlesBelongToTheTextAndUseSavedEndpoints]",
+          "0.043"
+        ],
+        [
+          "-[CookiesTests.TextStyleTests testGradientPreservesGlyphAlphaAndEmptyLetterHoles]",
+          "0.414"
+        ],
+        [
+          "-[CookiesTests.TextStyleTests testHomographyPaddingKeepsIdentityAndTranslatedTextCoordinates]",
+          "0.003"
+        ],
+        [
+          "-[CookiesTests.TextStyleTests testInlinePasteAndCaseConversionPreserveOtherTextAndItsFormatting]",
+          "0.003"
+        ],
+        [
+          "-[CookiesTests.TextStyleTests testInvalidImportedMeshNeverIndexesMissingPointsOrOverflowsDimensions]",
+          "0.003"
+        ],
+        [
+          "-[CookiesTests.TextStyleTests testMeshPaddingIdentityAndResamplingKeepTextCoordinates]",
+          "0.002"
+        ],
+        [
+          "-[CookiesTests.TextStyleTests testOutlineKeepsPixelWidthAcrossDifferentFontSizesAndMaskIgnoresSpanColor]",
+          "0.004"
+        ],
+        [
+          "-[CookiesTests.TextStyleTests testPerspectiveUsesCanvasHandlesInsteadOfAnIndependentRectangle]",
+          "0.012"
+        ],
+        [
+          "-[CookiesTests.TextStyleTests testRasterConversionPreservesRotatedScaledDeformedTextAndUndo]",
+          "0.751"
+        ],
+        [
+          "-[CookiesTests.TextStyleTests testRichRangeTracksInsertionAndDeletionBeforeArabicText]",
+          "0.003"
+        ],
+        [
+          "-[CookiesTests.TextStyleTests testSavedStyleSurvivesProjectRemovalAndKeepsTextAndPosition]",
+          "1.227"
+        ],
+        [
+          "-[CookiesTests.TextStyleTests testSelectiveStylePasteKeepsUnselectedFontGeometryAndRichSpans]",
+          "0.011"
+        ],
+        [
+          "-[CookiesTests.TextStyleTests testSpanBoldOverridesOnlySelectedUTF16Range]",
+          "0.019"
+        ],
+        [
+          "-[CookiesTests.TextStyleTests testTextMaskDraftCancelAndApplyAreAtomicAndUndoable]",
+          "0.072"
+        ],
+        [
+          "-[CookiesTests.TyperAndInteractionTests testChapterInsertionSavesRealTextLayerAndUsedBubble]",
+          "1.304"
+        ],
+        [
+          "-[CookiesTests.TyperAndInteractionTests testDistributionStartsAtChosenBubbleAndSkipsTitlesAndUsedText]",
+          "0.003"
+        ],
+        [
+          "-[CookiesTests.TyperAndInteractionTests testDraftAndDeletedTagFormattingSurviveRestart]",
+          "0.033"
+        ],
+        [
+          "-[CookiesTests.TyperAndInteractionTests testLiveDrawingIsVisibleBeforeCommitWithoutRecomposingTiles]",
+          "3.243"
+        ],
+        [
+          "-[CookiesTests.TyperAndInteractionTests testSniperDetectsClosedBubbleAndFallsBackToPin]",
+          "0.062"
+        ],
+        [
+          "-[CookiesTests.TyperAndInteractionTests testTagGroupsBubbleOrderAndTrashPersistWithoutLosingProgress]",
+          "0.135"
+        ],
+        [
+          "-[CookiesTests.TyperAndInteractionTests testTextTransformsReuseRasterAndKeepForegroundOrder]",
+          "2.947"
+        ],
+        [
+          "-[CookiesTests.TyperAndInteractionTests testTranscriptIdentityAndProgressSurviveRestart]",
+          "0.023"
+        ],
+        [
+          "-[CookiesServicesTests.ServiceTests testAuthenticationErrorsRemainSpecific]",
+          "0.008"
+        ],
+        [
+          "-[CookiesServicesTests.ServiceTests testSignupResponseDoesNotClaimEmailDelivery]",
+          "0.016"
+        ],
+        [
+          "-[CookiesServicesTests.SessionRefreshTests testConcurrentAuthenticatedReadsRefreshOnceAndUseRenewedToken]",
+          "0.058"
+        ],
+        [
+          "-[CookiesServicesTests.SessionRefreshTests testPermanentReadTimeoutIsBoundedAndCancellationNeverRetries]",
+          "0.014"
+        ],
+        [
+          "-[CookiesServicesTests.SessionRefreshTests testPublicReadDoesNotRefreshExpiredSessionAndLogoutClearsIt]",
+          "0.006"
+        ],
+        [
+          "-[CookiesServicesTests.SessionRefreshTests testTransientReadRetriesOnceButSignupNeverRepeats]",
+          "0.021"
+        ]
+      ]
+    },
+    "iphone": {
+      "artifact": 11676178266,
+      "editor_core_passed": 87,
+      "service_mock_passed": 6,
+      "sniper_whitening_passed": 13,
+      "failed": [],
+      "passed_cases": [
+        [
+          "-[CookiesTests.BatchToolTests testCleanerPreviewDoesNotCommitBeforeAcceptAndCanCancel]",
+          "0.141"
+        ],
+        [
+          "-[CookiesTests.BatchToolTests testFillBucketStopsAtClosedBoundary]",
+          "0.029"
+        ],
+        [
+          "-[CookiesTests.BatchToolTests testFilteredReorderingKeepsOtherLayerTypesAtTheirPositions]",
+          "0.067"
+        ],
+        [
+          "-[CookiesTests.BatchToolTests testGroupedLayersMoveTogetherAndUndoAsOneEdit]",
+          "0.283"
+        ],
+        [
+          "-[CookiesTests.BatchToolTests testLockedLayerHasNoEditableHandlesAndCannotBeDeleted]",
+          "0.191"
+        ],
+        [
+          "-[CookiesTests.BatchToolTests testNonUniformGroupResizePreservesRotatedPeerAffineCorners]",
+          "0.848"
+        ],
+        [
+          "-[CookiesTests.BatchToolTests testNormalMergeAndTransparentFlattenRetainCompositeAndUndo]",
+          "0.198"
+        ],
+        [
+          "-[CookiesTests.BatchToolTests testReferenceBrushAssetsArePackagedAndUsableTextureProducesTintedAlphaStamps]",
+          "2.086"
+        ],
+        [
+          "-[CookiesTests.BubbleLayoutTests testArabicFitsChosenBoundsWithoutChangingColorOrFont]",
+          "4.230"
+        ],
+        [
+          "-[CookiesTests.BubbleLayoutTests testComplexBlendGestureShowsIntermediateFrameBeforeCommit]",
+          "0.092"
+        ],
+        [
+          "-[CookiesTests.BubbleLayoutTests testEvenAndOddSymmetricProfilesPreserveEveryWord]",
+          "0.005"
+        ],
+        [
+          "-[CookiesTests.BubbleLayoutTests testFittedTyperInsertionMarksOnlyInsertedBubbleAndKeepsStyle]",
+          "2.097"
+        ],
+        [
+          "-[CookiesTests.BubbleLayoutTests testGestureDraftDoesNotPublishEveryPoint]",
+          "0.012"
+        ],
+        [
+          "-[CookiesTests.ChapterTests testChapterOrderCoverHistoryAndArchiveSurviveRestart]",
+          "0.357"
+        ],
+        [
+          "-[CookiesTests.ChapterTests testNonUniformCanvasResizePreservesRotatedLayerWorldCorners]",
+          "0.055"
+        ],
+        [
+          "-[CookiesTests.ChapterTests testPDFTopAndBottomDoNotFlipAndPageCountIsPreserved]",
+          "0.778"
+        ],
+        [
+          "-[CookiesTests.ChapterTests testSplitMergeKeepsEverySourceByteAndLayerCoordinates]",
+          "0.116"
+        ],
+        [
+          "-[CookiesTests.DiagnosticReportsTests testReportsStayLocalBoundedAndCanBeRemoved]",
+          "0.067"
+        ],
+        [
+          "-[CookiesTests.EditorTests testAddExportMatchesNativeCanvas]",
+          "0.003"
+        ],
+        [
+          "-[CookiesTests.EditorTests testCanvasKeepsPixelsWhenSelectionOrViewportChanges]",
+          "3.230"
+        ],
+        [
+          "-[CookiesTests.EditorTests testComplexBlendEraserShowsActualCompositeBeforeFingerRelease]",
+          "0.069"
+        ],
+        [
+          "-[CookiesTests.EditorTests testGalleryRefreshesAfterEditedThumbnailIsSaved]",
+          "1.996"
+        ],
+        [
+          "-[CookiesTests.EditorTests testLongPNGAndProjectRoundTrip]",
+          "4.704"
+        ],
+        [
+          "-[CookiesTests.EditorTests testOriginalFontsAndNativeCleaner]",
+          "2.867"
+        ],
+        [
+          "-[CookiesTests.EditorTests testPhotoProviderFileSurvivesCallbackAndKeepsOriginalBytes]",
+          "0.124"
+        ],
+        [
+          "-[CookiesTests.EditorTests testProjectArchiveJPEGAndPSD]",
+          "64.522"
+        ],
+        [
+          "-[CookiesTests.EditorTests testSmallCanvasIsCenteredWhileZoomedOut]",
+          "0.016"
+        ],
+        [
+          "-[CookiesTests.EditorTests testUndoAndLayerTransforms]",
+          "1.649"
+        ],
+        [
+          "-[CookiesTests.EditorTests testUnifiedApplicationIdentity]",
+          "0.019"
+        ],
+        [
+          "-[CookiesTests.FontPackageTests testReimportingBundledFontIsIdempotentAndInvalidPackageCopiesNothing]",
+          "0.213"
+        ],
+        [
+          "-[CookiesTests.ImageImportTests testJPEGEXIFRotationKeepsFullDimensionsAndTopBottomContent]",
+          "0.020"
+        ],
+        [
+          "-[CookiesTests.ImageImportTests testTransparentPNGIsCopiedByteForByteAndExportedWithoutReencoding]",
+          "0.084"
+        ],
+        [
+          "-[CookiesTests.RecoveryTests testBrokenCurrentDocumentRecoversValidatedPreviousAndPreservesDamagedBytes]",
+          "0.011"
+        ],
+        [
+          "-[CookiesTests.RecoveryTests testCorruptTyperWithoutBackupCannotOverwriteUserData]",
+          "0.009"
+        ],
+        [
+          "-[CookiesTests.RecoveryTests testFailedLibraryIndexWriteNeverDeletesProjectOrChangesVisibleFolders]",
+          "0.031"
+        ],
+        [
+          "-[CookiesTests.RecoveryTests testInvalidCurrentDoesNotOverwriteLastGoodBackup]",
+          "0.015"
+        ],
+        [
+          "-[CookiesTests.RecoveryTests testTyperRestoresPreviousDraftAfterCorruption]",
+          "0.029"
+        ],
+        [
+          "-[CookiesTests.ReferenceProjectTests testActualAndroidBlankProjectPreservesDimensionsAndSourceBytes]",
+          "0.268"
+        ],
+        [
+          "-[CookiesTests.ReferenceProjectTests testActualAndroidTextKeepsCenterAutomaticWidthAndTransparentBackground]",
+          "0.287"
+        ],
+        [
+          "-[CookiesTests.SniperWorkflowTests testConcaveOutlineCannotPutTextAcrossGapOrBorder]",
+          "0.005"
+        ],
+        [
+          "-[CookiesTests.SniperWorkflowTests testDecoratedColoredBubbleWithoutLocalizedTextIsRejected]",
+          "0.008"
+        ],
+        [
+          "-[CookiesTests.SniperWorkflowTests testEveryFormattedArabicLineFitsItsActualContourBand]",
+          "1.555"
+        ],
+        [
+          "-[CookiesTests.SniperWorkflowTests testGradientTextIsInpaintedWithoutFillingWholeBubble]",
+          "0.076"
+        ],
+        [
+          "-[CookiesTests.SniperWorkflowTests testMultiBubblePreviewDoesNotCommitUntilAcceptedAndUndoRestoresAll]",
+          "0.066"
+        ],
+        [
+          "-[CookiesTests.SniperWorkflowTests testRealColoredOutlinedTextIsRemovedWithExplicitReview]",
+          "0.854"
+        ],
+        [
+          "-[CookiesTests.SniperWorkflowTests testRealImportedManhwaWhiteningPipelineAndExport]",
+          "0.929"
+        ],
+        [
+          "-[CookiesTests.SniperWorkflowTests testRealMangaVerticalTextLeavesContourUnchanged]",
+          "0.080"
+        ],
+        [
+          "-[CookiesTests.SniperWorkflowTests testRealManhwaArabicShadowIsRemovedWithoutChangingBubbleBorder]",
+          "1.357"
+        ],
+        [
+          "-[CookiesTests.SniperWorkflowTests testRealScreamBubblePreservesHandlesAndOutsideArt]",
+          "0.579"
+        ],
+        [
+          "-[CookiesTests.SniperWorkflowTests testRGBAImageRejectsIncompatibleGrayProfileWithoutLosingPixels]",
+          "0.035"
+        ],
+        [
+          "-[CookiesTests.SniperWorkflowTests testTextOnlyWhiteningLeavesBorderAndDecorationTransparent]",
+          "0.072"
+        ],
+        [
+          "-[CookiesTests.SniperWorkflowTests testWhiteningReadsOriginalPixelsAndUndoExportsOriginalFile]",
+          "0.121"
+        ],
+        [
+          "-[CookiesTests.StorageAndInteractionTests testCacheCleaningCannotDestroyPixelsWhenOriginalIsCorrupt]",
+          "0.024"
+        ],
+        [
+          "-[CookiesTests.StorageAndInteractionTests testEyedropperSamplesCompositedPixelsForBrushAndSelectedText]",
+          "0.026"
+        ],
+        [
+          "-[CookiesTests.StorageAndInteractionTests testFoldersAreRestoredWithoutUnselectedProjectMetadata]",
+          "0.026"
+        ],
+        [
+          "-[CookiesTests.StorageAndInteractionTests testFullResetRemovesRealLocalDataPreferencesAndSession]",
+          "0.293"
+        ],
+        [
+          "-[CookiesTests.StorageAndInteractionTests testInlineTextAlwaysWhiteWithoutChangingLayerColorsOrFont]",
+          "0.005"
+        ],
+        [
+          "-[CookiesTests.StorageAndInteractionTests testInterruptedRestoreRollsBackBeforeLibraryLoads]",
+          "0.011"
+        ],
+        [
+          "-[CookiesTests.StorageAndInteractionTests testSelectiveBackupRestorePreservesUnselectedProjectsAndRebuildsExactPixels]",
+          "0.104"
+        ],
+        [
+          "-[CookiesTests.StorageAndInteractionTests testTamperedBackupFailsBeforeReplacingLocalData]",
+          "0.049"
+        ],
+        [
+          "-[CookiesTests.StorageAndInteractionTests testTextOutsideImageRemainsInHitRegion]",
+          "0.007"
+        ],
+        [
+          "-[CookiesTests.TextStyleTests testAndroidExtraStrokeKeepsItsOwnGradientAndUnsupportedEffectsAreExplicit]",
+          "0.014"
+        ],
+        [
+          "-[CookiesTests.TextStyleTests testAndroidSpacingUnitsAndARGBTransparencyAreNotFlattened]",
+          "0.003"
+        ],
+        [
+          "-[CookiesTests.TextStyleTests testAndroidStyleSchemaPreservesColorsStopsAndDeformation]",
+          "0.005"
+        ],
+        [
+          "-[CookiesTests.TextStyleTests testGradientCatalogTargetsTheGlyphOutlineAndShadowIndependently]",
+          "0.008"
+        ],
+        [
+          "-[CookiesTests.TextStyleTests testGradientHandlesBelongToTheTextAndUseSavedEndpoints]",
+          "0.013"
+        ],
+        [
+          "-[CookiesTests.TextStyleTests testGradientPreservesGlyphAlphaAndEmptyLetterHoles]",
+          "0.504"
+        ],
+        [
+          "-[CookiesTests.TextStyleTests testHomographyPaddingKeepsIdentityAndTranslatedTextCoordinates]",
+          "0.004"
+        ],
+        [
+          "-[CookiesTests.TextStyleTests testInlinePasteAndCaseConversionPreserveOtherTextAndItsFormatting]",
+          "0.004"
+        ],
+        [
+          "-[CookiesTests.TextStyleTests testInvalidImportedMeshNeverIndexesMissingPointsOrOverflowsDimensions]",
+          "0.007"
+        ],
+        [
+          "-[CookiesTests.TextStyleTests testMeshPaddingIdentityAndResamplingKeepTextCoordinates]",
+          "0.008"
+        ],
+        [
+          "-[CookiesTests.TextStyleTests testOutlineKeepsPixelWidthAcrossDifferentFontSizesAndMaskIgnoresSpanColor]",
+          "0.006"
+        ],
+        [
+          "-[CookiesTests.TextStyleTests testPerspectiveUsesCanvasHandlesInsteadOfAnIndependentRectangle]",
+          "0.009"
+        ],
+        [
+          "-[CookiesTests.TextStyleTests testRasterConversionPreservesRotatedScaledDeformedTextAndUndo]",
+          "0.814"
+        ],
+        [
+          "-[CookiesTests.TextStyleTests testRichRangeTracksInsertionAndDeletionBeforeArabicText]",
+          "0.002"
+        ],
+        [
+          "-[CookiesTests.TextStyleTests testSavedStyleSurvivesProjectRemovalAndKeepsTextAndPosition]",
+          "1.550"
+        ],
+        [
+          "-[CookiesTests.TextStyleTests testSelectiveStylePasteKeepsUnselectedFontGeometryAndRichSpans]",
+          "0.019"
+        ],
+        [
+          "-[CookiesTests.TextStyleTests testSpanBoldOverridesOnlySelectedUTF16Range]",
+          "0.011"
+        ],
+        [
+          "-[CookiesTests.TextStyleTests testTextMaskDraftCancelAndApplyAreAtomicAndUndoable]",
+          "0.087"
+        ],
+        [
+          "-[CookiesTests.TyperAndInteractionTests testChapterInsertionSavesRealTextLayerAndUsedBubble]",
+          "1.534"
+        ],
+        [
+          "-[CookiesTests.TyperAndInteractionTests testDistributionStartsAtChosenBubbleAndSkipsTitlesAndUsedText]",
+          "0.011"
+        ],
+        [
+          "-[CookiesTests.TyperAndInteractionTests testDraftAndDeletedTagFormattingSurviveRestart]",
+          "0.035"
+        ],
+        [
+          "-[CookiesTests.TyperAndInteractionTests testLiveDrawingIsVisibleBeforeCommitWithoutRecomposingTiles]",
+          "3.596"
+        ],
+        [
+          "-[CookiesTests.TyperAndInteractionTests testSniperDetectsClosedBubbleAndFallsBackToPin]",
+          "0.046"
+        ],
+        [
+          "-[CookiesTests.TyperAndInteractionTests testTagGroupsBubbleOrderAndTrashPersistWithoutLosingProgress]",
+          "0.084"
+        ],
+        [
+          "-[CookiesTests.TyperAndInteractionTests testTextTransformsReuseRasterAndKeepForegroundOrder]",
+          "3.404"
+        ],
+        [
+          "-[CookiesTests.TyperAndInteractionTests testTranscriptIdentityAndProgressSurviveRestart]",
+          "0.029"
+        ],
+        [
+          "-[CookiesServicesTests.ServiceTests testAuthenticationErrorsRemainSpecific]",
+          "0.010"
+        ],
+        [
+          "-[CookiesServicesTests.ServiceTests testSignupResponseDoesNotClaimEmailDelivery]",
+          "0.011"
+        ],
+        [
+          "-[CookiesServicesTests.SessionRefreshTests testConcurrentAuthenticatedReadsRefreshOnceAndUseRenewedToken]",
+          "0.028"
+        ],
+        [
+          "-[CookiesServicesTests.SessionRefreshTests testPermanentReadTimeoutIsBoundedAndCancellationNeverRetries]",
+          "0.038"
+        ],
+        [
+          "-[CookiesServicesTests.SessionRefreshTests testPublicReadDoesNotRefreshExpiredSessionAndLogoutClearsIt]",
+          "0.025"
+        ],
+        [
+          "-[CookiesServicesTests.SessionRefreshTests testTransientReadRetriesOnceButSignupNeverRepeats]",
+          "0.008"
+        ]
+      ]
+    }
+  },
+  "ipa": {
+    "source_commit": "ffd16de6c3ddaa8bc3f147370b450129e8e622d9",
+    "workflow_run": 38069447206,
+    "artifact": 11675589937,
+    "path": "/workspace/Cookies-Editor-Whitening-ffd16de-unsigned.ipa",
+    "size": 14423479,
+    "sha256": "67f18068fcb7f8aacccd1b3376186f5c3585eb2a5b92979b88d331c5fd4958be",
+    "architecture": "arm64",
+    "code_signature_command": false,
+    "code_signature_directory": false,
+    "embedded_mobileprovision": false,
+    "display_name": "Cookies Editor",
+    "minimum_os": "17.0",
+    "embedded_source_commit": null
+  },
+  "cpp_reference_tests": {
+    "source_commit": "ffd16de6c3ddaa8bc3f147370b450129e8e622d9",
+    "implementation": "C++ body extracted verbatim from App/Core/Cleaner.mm; Objective-C geometry converted to equivalent OpenCV rects; Linux OpenCV 4.10",
+    "native_ios_integration": false,
+    "cases": [
+      {
+        "case": "arabic-shadow-localized",
+        "seconds": 0.343,
+        "mask_pixels": 71895,
+        "outside_mask_exact": true,
+        "residual_ink": 0
+      },
+      {
+        "case": "arabic-shadow-fallback",
+        "seconds": 0.201,
+        "mask_pixels": 70542,
+        "outside_mask_exact": true,
+        "residual_ink": 0
+      },
+      {
+        "case": "arabic-scream",
+        "seconds": 0.232,
+        "mask_pixels": 49654,
+        "outside_mask_exact": true,
+        "residual_ink": 0
+      },
+      {
+        "case": "japanese-vertical",
+        "seconds": 0.087,
+        "mask_pixels": 4862,
+        "outside_mask_exact": true,
+        "residual_ink": 0
+      },
+      {
+        "case": "yellow-outlined",
+        "seconds": 0.172,
+        "mask_pixels": 46947,
+        "outside_mask_exact": true,
+        "residual_dark_ink": 0,
+        "residual_white_outline": 0
+      }
+    ]
+  },
+  "separate_ui_and_external_service_gates": "in_progress_at_record_time"
+}
