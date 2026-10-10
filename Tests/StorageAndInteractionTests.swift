@@ -51,7 +51,7 @@ final class StorageAndInteractionTests:XCTestCase {
         var page=EditorPage(title:"test",width:80,height:150),layer=EditorLayer(kind:.text,name:"outside");layer.textContent="Outside";layer.frame=Box(x:110,y:20,width:120,height:50);layer.style.boxWidth=120;layer.style.fontSize=20;page.layers=[layer]
         let canvas=DocumentCanvas(frame:CGRect(x:0,y:0,width:80,height:150));canvas.page=page;canvas.selected=layer.id;canvas.updateSelection()
         XCTAssertTrue(canvas.point(inside:CGPoint(x:120,y:30),with:nil),"Text remains selectable on black workspace")
-        XCTAssertFalse(canvas.point(inside:CGPoint(x:1000,y:1000),with:nil))
+        XCTAssertFalse(canvas.point(inside:CGPoint(x:1000,y:1000),with:nil));let viewport=CanvasViewport(frame:CGRect(x:0,y:0,width:300,height:300));viewport.addSubview(canvas);XCTAssertTrue(viewport.hitTest(CGPoint(x:120,y:30),with:nil)?.isDescendant(of:canvas)==true,"Viewport routes touches beyond image bounds")
     }
     func testInterruptedRestoreRollsBackBeforeLibraryLoads()throws {
         let fm=FileManager.default,parent=fm.temporaryDirectory.appendingPathComponent(UUID().uuidString),root=parent.appendingPathComponent("Cookies"),rollback=parent.appendingPathComponent(".cookies-rollback-test"),staging=parent.appendingPathComponent(".cookies-restore-test")
@@ -79,6 +79,14 @@ final class StorageAndInteractionTests:XCTestCase {
         UserDefaults.standard.set(true,forKey:"welcome-complete");UserDefaults.standard.set(["saved.ttf"],forKey:"fontFavorites");Keychain.save("session",data:Data("test-session".utf8))
         try AppStorageManager.resetLocalData()
         XCTAssertFalse(fm.fileExists(atPath:root.appendingPathComponent("reset-test.txt").path));XCTAssertNil(UserDefaults.standard.object(forKey:"welcome-complete"));XCTAssertNil(UserDefaults.standard.object(forKey:"fontFavorites"));XCTAssertNil(Keychain.read("session"));XCTAssertEqual(AppStorageManager.usage().rebuildable,0)
+    }
+
+    @MainActor func testEyedropperSamplesCompositedPixelsForBrushAndSelectedText()throws {
+        let fm=FileManager.default,root=fm.temporaryDirectory.appendingPathComponent(UUID().uuidString);defer{try? fm.removeItem(at:root)}
+        var page=try fixture(root,title:"red source"),text=EditorLayer(kind:.text,name:"text");text.frame=Box(x:150,y:150,width:100,height:60);text.style.color="000000";page.layers=[text]
+        let model=EditorModel(page:page,library:LibraryStore(root:root));model.selected=text.id;model.tool = .eyedropper
+        let coordinator=CanvasHost.Coordinator(model);coordinator.canvas=DocumentCanvas(frame:CGRect(x:0,y:0,width:80,height:150));coordinator.sampleColor(at:CGPoint(x:20,y:20))
+        XCTAssertEqual(model.brushColor,"FF0000");XCTAssertEqual(model.active?.style.color,"FF0000");XCTAssertEqual(model.undoStack.count,1)
     }
 
 }

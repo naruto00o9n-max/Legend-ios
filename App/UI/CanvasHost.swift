@@ -8,7 +8,7 @@ struct CanvasHost:UIViewRepresentable {
     func makeUIView(context:Context)->UIScrollView {
         let s=CanvasViewport();context.coordinator.readOnly=readOnly;s.backgroundColor=UIColor(hex:"080808");s.delegate=context.coordinator;s.bouncesZoom=true;s.showsVerticalScrollIndicator=false;s.showsHorizontalScrollIndicator=false;s.maximumZoomScale=128;s.contentInsetAdjustmentBehavior = .never;s.accessibilityIdentifier="canvas-scroll"
         let canvas=DocumentCanvas(frame:CGRect(x:0,y:0,width:model.page.width,height:model.page.height));s.addSubview(canvas);context.coordinator.canvas=canvas;context.coordinator.scroll=s;canvas.onHandle={ [weak coordinator=context.coordinator] name in guard let c=coordinator else{return};switch name{case "delete":c.model.delete();case "duplicate":c.model.duplicate();case "edit":c.model.tool = .text;c.model.panel = .content;case "styles":c.model.tool = .text;c.model.panel = .styles;default:break}}
-        s.onViewportSizeChange = { [weak coordinator=context.coordinator] in guard let coordinator,coordinator.fitted else{return};coordinator.updateCenter() }
+        s.onViewportSizeChange = { [weak coordinator=context.coordinator] in guard let coordinator,coordinator.fitted else{return};coordinator.updateCenter(recenter:true) }
         if readOnly{return s}
         let tap=UITapGestureRecognizer(target:context.coordinator,action:#selector(Coordinator.tap(_:)));tap.delegate=context.coordinator;s.addGestureRecognizer(tap)
         let double=UITapGestureRecognizer(target:context.coordinator,action:#selector(Coordinator.doubleTap(_:)));double.numberOfTapsRequired=2;double.delegate=context.coordinator;s.addGestureRecognizer(double)
@@ -19,15 +19,25 @@ struct CanvasHost:UIViewRepresentable {
         func updateUIView(_ s:UIScrollView,context:Context){let c=context.coordinator;c.model=model;if let viewport=s as? CanvasViewport{viewport.showBrushSize(model.brushSizePreview ? CGFloat(model.brushWidth)*s.zoomScale:nil)};c.canvas.gradientMode=readOnly ? nil:model.gradientTarget;c.canvas.deformationMode = !readOnly && model.panel == .perspective;c.canvas.update(page:model.canvasPage,directory:model.directory,selected:readOnly ? nil:model.selected,zoom:s.zoomScale);c.canvas.showSniper(readOnly ? []:model.sniperTargets);s.accessibilityValue="\(model.page.layers.count) طبقات، \(model.page.layers.reduce(0){$0+$1.strokes.count}) خطوط رسم، الحجم \(String(format:"%.2f",model.active?.scaleX ?? 1))";s.panGestureRecognizer.minimumNumberOfTouches=(!readOnly && [Tool.brush,.eraser,.cleaner].contains(model.tool)) ? 2:1
         if !c.fitted{s.layoutIfNeeded();DispatchQueue.main.async{guard !c.fitted,s.bounds.width>0,s.bounds.height>0 else{return};let full=min(s.bounds.width/CGFloat(model.page.width),s.bounds.height/CGFloat(model.page.height));s.minimumZoomScale=max(0.002,full/4);let reading=s.bounds.width/CGFloat(model.page.width)*0.96;s.setZoomScale(reading,animated:false);c.fitted=true
             if c.readOnly,let saved=ReaderBookmark.viewport(page:c.model.page.id){s.setZoomScale(CGFloat(min(128,max(Double(s.minimumZoomScale),saved.zoom))),animated:false);s.setContentOffset(CGPoint(x:max(0,CGFloat(saved.x)*s.zoomScale-s.bounds.width/2),y:max(0,CGFloat(saved.y)*s.zoomScale-s.bounds.height/2)),animated:false)}
-            c.updateCenter()}}else{c.updateCenter()}
+            c.updateCenter(recenter:true)}}else{c.updateCenter()}
     }
     class Coordinator:NSObject,UIScrollViewDelegate,UIGestureRecognizerDelegate {
         var model:EditorModel;var canvas:DocumentCanvas!;weak var scroll:UIScrollView?;weak var panGesture:UIPanGestureRecognizer?;var fitted=false;var readOnly=false;var centering=false;var initial:EditorLayer?;var groupInitial:[EditorLayer]=[];var dragHandle:String?;var touchedHandle:String?;var touchOrigin:CGPoint?;var rotationStart=0.0;var scaleStart=1.0;var stroke:Stroke?;var smudge:SmudgeSession?
         init(_ model:EditorModel){self.model=model}
         func viewForZooming(in scrollView:UIScrollView)->UIView?{canvas}
-        func scrollViewDidZoom(_ s:UIScrollView){if !readOnly{model.zoom=Double(s.zoomScale)};canvas.zoom=s.zoomScale;canvas.updateSelection();updateCenter()}
+        func scrollViewDidZoom(_ s:UIScrollView){if !readOnly{model.zoom=Double(s.zoomScale)};canvas.zoom=s.zoomScale;canvas.updateSelection();updateCenter(recenter:true)}
         func scrollViewDidScroll(_ s:UIScrollView){removeTextPrompt();updateCenter()}
-        func updateCenter(){guard let s=scroll,!centering else{return};centering=true;defer{centering=false};let horizontal=max(0,(s.bounds.width-canvas.frame.width)/2),vertical=max(0,(s.bounds.height-canvas.frame.height)/2);let insets=UIEdgeInsets(top:vertical,left:horizontal,bottom:vertical,right:horizontal);if s.contentInset != insets{s.contentInset=insets};var offset=s.contentOffset;if horizontal>0{offset.x = -horizontal};if vertical>0{offset.y = -vertical};if offset != s.contentOffset{s.contentOffset=offset};if !readOnly{model.visibleCenter=canvas.convert(CGPoint(x:s.bounds.midX,y:s.bounds.midY),from:s)};canvas.refreshVisible(canvas.convert(s.bounds,from:s));if readOnly,fitted{let center=canvas.convert(CGPoint(x:s.bounds.midX,y:s.bounds.midY),from:s);ReaderBookmark.save(ReaderViewport(x:Double(center.x),y:Double(center.y),zoom:Double(s.zoomScale)),page:model.page.id)}}
+        func updateCenter(recenter:Bool=false){
+            guard let s=scroll,!centering else{return};centering=true;defer{centering=false}
+            let horizontal=max(0,(s.bounds.width-canvas.frame.width)/2),vertical=max(0,(s.bounds.height-canvas.frame.height)/2),margin:CGFloat=readOnly ? 0:96
+            let insets=UIEdgeInsets(top:max(margin,vertical),left:max(margin,horizontal),bottom:max(margin,vertical),right:max(margin,horizontal))
+            if s.contentInset != insets{s.contentInset=insets}
+            if recenter{var offset=s.contentOffset;if horizontal>0{offset.x = -horizontal};if vertical>0{offset.y = -vertical};if offset != s.contentOffset{s.contentOffset=offset}}
+            if !readOnly{model.visibleCenter=canvas.convert(CGPoint(x:s.bounds.midX,y:s.bounds.midY),from:s)}
+            canvas.refreshVisible(canvas.convert(s.bounds,from:s))
+            if readOnly,fitted{let center=canvas.convert(CGPoint(x:s.bounds.midX,y:s.bounds.midY),from:s);ReaderBookmark.save(ReaderViewport(x:Double(center.x),y:Double(center.y),zoom:Double(s.zoomScale)),page:model.page.id)}
+        }
+
         func hit(_ point:CGPoint)->EditorLayer?{model.page.layers.reversed().first{l in guard l.isVisible,!l.isLocked,l.kind != .drawing else{return false};let b=LayerRenderer.bounds(l);return b.insetBy(dx:-18/max(0.01,model.zoom),dy:-36/max(0.01,model.zoom)).contains(point.applying(LayerRenderer.transform(l).inverted()))}}
         func gestureRecognizer(_ gesture:UIGestureRecognizer,shouldReceive touch:UITouch)->Bool {
             if gesture === panGesture{touchOrigin=touch.location(in:canvas);touchedHandle=canvas.handle(at:touchOrigin!);var view=touch.view;while let current=view{if let id=current.accessibilityIdentifier,id.hasPrefix("selection-"){touchedHandle=String(id.dropFirst(10));break};view=current.superview}}
