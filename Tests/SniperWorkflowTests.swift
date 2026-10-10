@@ -78,6 +78,79 @@ final class SniperWorkflowTests:XCTestCase {
         model.undo();let exported=try ImagePipeline.exportPNG(model.page,directory:model.directory);defer{try? FileManager.default.removeItem(at:exported)}
         XCTAssertEqual(try Data(contentsOf:exported),original)
     }
+    func testRealManhwaArabicShadowIsRemovedWithoutChangingBubbleBorder()throws{
+        let image=try fixture("manhwa-shadow"),polygon=shadowOutline().map{NSValue(cgPoint:$0)}
+        // This reference contains one connected Arabic word with an 18-pixel
+        // gray shadow. Localization and fallback must both remove the fringe.
+        for rectangles in [[],[NSValue(cgRect:CGRect(x:195,y:427,width:680,height:200))]] {
+            let result=try XCTUnwrap(CookiesWhitenBubble(image,polygon,rectangles)),patch=try XCTUnwrap((result["patch"] as? UIImage)?.cgImage)
+            let input=try pixels(try XCTUnwrap(image.cgImage)),output=try pixels(patch),width=patch.width
+            var remnants=0,originalInk=0
+            for y in 427..<627{for x in 195..<875{let i=(y*width+x)*4
+                if min(input[i],input[i+1],input[i+2])<245{originalInk+=1}
+                let r=output[i+3]==255 ? output[i]:input[i],g=output[i+3]==255 ? output[i+1]:input[i+1],b=output[i+3]==255 ? output[i+2]:input[i+2]
+                if min(r,g,b)<245{remnants+=1}
+            }}
+            XCTAssertGreaterThan(originalInk,40_000);XCTAssertEqual(remnants,0,"Outlined/shadowed Arabic must not retain gray letter pixels")
+            XCTAssertEqual(output[(325*width+108)*4+3],0,"Original decorative frame is protected")
+            XCTAssertEqual(output[(810*width+810)*4+3],0,"Notebook artwork is protected")
+            let attachment=XCTAttachment(image:try composite(image,patch));attachment.name="whitening-real-arabic-shadow-after";attachment.lifetime = .keepAlways;add(attachment)
+        }
+    }
+    func testRealScreamBubblePreservesHandlesAndOutsideArt()throws{
+        let image=try fixture("manhwa-scream")
+        let outline=[CGPoint(x:105,y:100),CGPoint(x:735,y:100),CGPoint(x:735,y:450),CGPoint(x:105,y:450)].map{NSValue(cgPoint:$0)}
+        let result=try XCTUnwrap(CookiesWhitenBubble(image,outline,[NSValue(cgRect:CGRect(x:174,y:280,width:500,height:145))])),patch=try XCTUnwrap((result["patch"] as? UIImage)?.cgImage),output=try pixels(patch),input=try pixels(try XCTUnwrap(image.cgImage))
+        var residual=0
+        for y in 282..<423{for x in 179..<670{let i=(y*patch.width+x)*4;let value=output[i+3]==255 ? output[i]:input[i];if value<230{residual+=1}}}
+        XCTAssertEqual(residual,0);XCTAssertEqual(output[(540*patch.width+564)*4+3],0)
+    }
+    func testRealColoredOutlinedTextIsRemovedWithExplicitReview()throws{
+        let original=try fixture("colored-dialogue"),crop=try XCTUnwrap(original.cgImage?.cropping(to:CGRect(x:1980,y:825,width:310,height:610))),image=UIImage(cgImage:crop)
+        let points=[CGPoint(x:182,y:58),CGPoint(x:264,y:146),CGPoint(x:295,y:273),CGPoint(x:286,y:427),CGPoint(x:245,y:513),CGPoint(x:175,y:573),CGPoint(x:126,y:578),CGPoint(x:116,y:550),CGPoint(x:90,y:517),CGPoint(x:69,y:458),CGPoint(x:45,y:436),CGPoint(x:38,y:392),CGPoint(x:40,y:256),CGPoint(x:61,y:165),CGPoint(x:98,y:103)].map{NSValue(cgPoint:$0)}
+        let result=try XCTUnwrap(CookiesWhitenBubble(image,points,[NSValue(cgRect:CGRect(x:108,y:130,width:130,height:390))])),patch=try XCTUnwrap((result["patch"] as? UIImage)?.cgImage),output=try pixels(patch),input=try pixels(crop)
+        XCTAssertFalse(result["flat"] as? Bool ?? true);XCTAssertTrue(result["reviewRequired"] as? Bool ?? false)
+        var dark=0,whiteOutline=0
+        for y in 150..<510{for x in 130..<230{let i=(y*310+x)*4;let r=output[i+3]==255 ? output[i]:input[i],g=output[i+3]==255 ? output[i+1]:input[i+1],b=output[i+3]==255 ? output[i+2]:input[i+2];if max(r,g,b)<160{dark+=1};if min(r,g,b)>245{whiteOutline+=1}}}
+        XCTAssertEqual(dark,0);XCTAssertEqual(whiteOutline,0);XCTAssertEqual(output[(300*310+296)*4+3],0)
+        let attachment=XCTAttachment(image:try composite(image,patch));attachment.name="whitening-real-yellow-outlined-after";attachment.lifetime = .keepAlways;add(attachment)
+    }
+    func testRealMangaVerticalTextLeavesContourUnchanged()throws{
+        let original=try fixture("manga-page"),crop=try XCTUnwrap(original.cgImage?.cropping(to:CGRect(x:65,y:70,width:145,height:195))),image=UIImage(cgImage:crop)
+        let points=(0..<64).map{i -> NSValue in let angle=Double(i)*2*Double.pi/64;return NSValue(cgPoint:CGPoint(x:64+58*cos(angle),y:92+86*sin(angle)))}
+        let result=try XCTUnwrap(CookiesWhitenBubble(image,points,[NSValue(cgRect:CGRect(x:36,y:47,width:63,height:115))])),patch=try XCTUnwrap((result["patch"] as? UIImage)?.cgImage),output=try pixels(patch),input=try pixels(crop)
+        var before=0,after=0
+        for y in 47..<163{for x in 36..<99{let i=(y*145+x)*4;if input[i]<220{before+=1};if (output[i+3]==255 ? output[i]:input[i])<220{after+=1}}}
+        XCTAssertGreaterThan(before,300);XCTAssertEqual(after,0);XCTAssertEqual(output[(90*145+5)*4+3],0)
+    }
+    func testRGBAImageRejectsIncompatibleGrayProfileWithoutLosingPixels()throws{
+        let bytes:[UInt8]=[0,0,0,255,255,255,255,255]
+        let image=try XCTUnwrap(ImagePipeline.image(bytes,width:2,height:1,colorSpace:CGColorSpaceCreateDeviceGray()))
+        XCTAssertEqual(image.colorSpace?.model,.rgb);XCTAssertNotNil(UIImage(cgImage:image).pngData())
+    }
+    @MainActor func testRealImportedManhwaWhiteningPipelineAndExport()async throws{
+        let root=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString);defer{try? FileManager.default.removeItem(at:root)}
+        let library=LibraryStore(root:root),image=try fixture("manhwa-shadow"),url=root.appendingPathComponent("shadow.png");try XCTUnwrap(image.pngData()).write(to:url)
+        let page=try ImagePipeline.importImage(url,root:root),model=EditorModel(page:page,library:library)
+        let target=SniperTarget(bounds:Box(x:220,y:330,width:560,height:390),outline:shadowOutline().map{Point(x:$0.x,y:$0.y)},point:Point(x:500,y:400))
+        // Exercise raw-tile decoding, Vision localization, patch persistence,
+        // preview, commit and final PNG export rather than only native masks.
+        model.sniperTargets=[target];await model.whitenSniperTargets();XCTAssertNil(model.error);XCTAssertEqual(model.cleanCandidates.count,1)
+        model.acceptCleaning();XCTAssertEqual(model.page.layers.count,1)
+        let output=try ImagePipeline.exportPNG(model.page,directory:model.directory);defer{try? FileManager.default.removeItem(at:output)}
+        let exported=try XCTUnwrap(UIImage(contentsOfFile:output.path)?.cgImage),data=try pixels(exported)
+        var remnants=0;for y in 427..<627{for x in 195..<875{let i=(y*exported.width+x)*4;if min(data[i],data[i+1],data[i+2])<245{remnants+=1}}}
+        XCTAssertEqual(remnants,0);XCTAssertEqual(exported.width,page.width);XCTAssertEqual(exported.height,page.height)
+    }
+    private func fixture(_ name:String)throws->UIImage{
+        let url=try XCTUnwrap(Bundle(for:Self.self).url(forResource:name,withExtension:"png",subdirectory:"WhiteningFixtures"))
+        return try XCTUnwrap(UIImage(contentsOfFile:url.path))
+    }
+    private func shadowOutline()->[CGPoint]{[CGPoint(x:108,y:346),CGPoint(x:198,y:324),CGPoint(x:613,y:185),CGPoint(x:648,y:217),CGPoint(x:887,y:186),CGPoint(x:906,y:769),CGPoint(x:777,y:758),CGPoint(x:652,y:785),CGPoint(x:125,y:851)]}
+    private func composite(_ image:UIImage,_ patch:CGImage)throws->UIImage{
+        let format=UIGraphicsImageRendererFormat();format.scale=1;format.opaque=true
+        return UIGraphicsImageRenderer(size:image.size,format:format).image{_ in image.draw(at:.zero);UIImage(cgImage:patch).draw(at:.zero)}
+    }
     private func pixels(_ image:CGImage)throws->[UInt8]{
         var bytes=[UInt8](repeating:0,count:image.width*image.height*4)
         try bytes.withUnsafeMutableBytes{pointer in let context=try XCTUnwrap(CGContext(data:pointer.baseAddress,width:image.width,height:image.height,bitsPerComponent:8,bytesPerRow:image.width*4,space:CGColorSpaceCreateDeviceRGB(),bitmapInfo:CGImageAlphaInfo.premultipliedLast.rawValue));context.draw(image,in:CGRect(x:0,y:0,width:image.width,height:image.height))}

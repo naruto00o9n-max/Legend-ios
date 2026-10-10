@@ -112,6 +112,10 @@ targets:
     - path: Tests
       excludes:
       - pixel_roundtrip.c
+      - WhiteningFixtures
+    - path: Tests/WhiteningFixtures
+      type: folder
+      buildPhase: resources
   CookiesUITests:
     type: bundle.ui-testing
     platform: iOS

@@ -12,3 +12,5 @@ App/Resources/ReferenceService.json
 __pycache__/
 App/Resources/cookies-logo.png
 App/Core/Vendor/libpng/*
+
+Tests/WhiteningFixtures/

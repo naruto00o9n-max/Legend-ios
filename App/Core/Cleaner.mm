@@ -81,10 +81,11 @@ NSDictionary<NSString *, id> *CookiesWhitenBubble(UIImage *source,NSArray<NSValu
         cv::Rect box=cv::boundingRect(polygon)&cv::Rect(0,0,rgb.cols,rgb.rows);
         if(box.width<24||box.height<24)return nil;
         cv::Mat inside=cv::Mat::zeros(rgb.size(),CV_8UC1);std::vector<std::vector<cv::Point>> polygons{polygon};cv::fillPoly(inside,polygons,cv::Scalar(255));
-        int margin=std::max(3,std::min(20,(int)(std::min(box.width,box.height)*0.05)));
+        // Protect a narrow contour band, rather than discarding five percent
+        // of every bubble: small bubbles also need their edge-adjacent glyphs.
+        int margin=std::max(3,std::min(12,(int)(std::min(box.width,box.height)*0.025)));
         cv::erode(inside,inside,cv::getStructuringElement(cv::MORPH_ELLIPSE,cv::Size(2*margin+1,2*margin+1)));
         int innerCount=cv::countNonZero(inside);if(innerCount<200)return nil;
-        // Dominant local background, computed inside the protected contour only.
         std::vector<int> histogram(4096,0);int peak=0;
         for(int y=0;y<rgb.rows;y++)for(int x=0;x<rgb.cols;x++)if(inside.at<unsigned char>(y,x)){
             auto p=rgb.at<cv::Vec3b>(y,x);int bin=(p[0]>>4)*256+(p[1]>>4)*16+(p[2]>>4);if(++histogram[bin]>histogram[peak])peak=bin;
@@ -93,60 +94,89 @@ NSDictionary<NSString *, id> *CookiesWhitenBubble(UIImage *source,NSArray<NSValu
         for(int y=0;y<rgb.rows;y++)for(int x=0;x<rgb.cols;x++)if(inside.at<unsigned char>(y,x)){
             auto p=rgb.at<cv::Vec3b>(y,x);int bin=(p[0]>>4)*256+(p[1]>>4)*16+(p[2]>>4);if(bin==peak){sum+=cv::Vec3d(p[0],p[1],p[2]);samples++;}
         }
-        if(!samples)return nil;cv::Vec3b background((unsigned char)std::round(sum[0]/samples),(unsigned char)std::round(sum[1]/samples),(unsigned char)std::round(sum[2]/samples));
-        cv::Mat contrast=cv::Mat::zeros(rgb.size(),CV_8UC1),ocr=cv::Mat::zeros(rgb.size(),CV_8UC1);int near=0;
-        for(NSValue *value in textRects){CGRect r=value.CGRectValue;cv::Rect rect((int)std::floor(r.origin.x)-2,(int)std::floor(r.origin.y)-2,(int)std::ceil(r.size.width)+4,(int)std::ceil(r.size.height)+4);rect&=cv::Rect(0,0,rgb.cols,rgb.rows);if(rect.area()>0)ocr(rect).setTo(255);}
+        if(!samples)return nil;
+        cv::Vec3b background((unsigned char)std::round(sum[0]/samples),(unsigned char)std::round(sum[1]/samples),(unsigned char)std::round(sum[2]/samples));
+        cv::Mat delta=cv::Mat::zeros(rgb.size(),CV_8UC1),ocr=cv::Mat::zeros(rgb.size(),CV_8UC1);int near=0;
+        double smallestText=std::min(box.width,box.height);
+        for(NSValue *value in textRects){CGRect r=value.CGRectValue;
+            if(!std::isfinite(r.origin.x)||!std::isfinite(r.origin.y)||!std::isfinite(r.size.width)||!std::isfinite(r.size.height)||r.size.width<=0||r.size.height<=0)continue;
+            smallestText=std::min(smallestText,(double)std::min(r.size.width,r.size.height));
+            int pad=std::max(3,std::min(12,(int)(std::min(r.size.width,r.size.height)*0.12)));
+            cv::Rect rect((int)std::floor(r.origin.x)-pad,(int)std::floor(r.origin.y)-pad,(int)std::ceil(r.size.width)+2*pad,(int)std::ceil(r.size.height)+2*pad);
+            rect&=cv::Rect(0,0,rgb.cols,rgb.rows);if(rect.area()>0)ocr(rect).setTo(255);
+        }
         bool localized=cv::countNonZero(ocr)>0;
         for(int y=0;y<rgb.rows;y++)for(int x=0;x<rgb.cols;x++){
-            auto p=rgb.at<cv::Vec3b>(y,x);int delta=std::max({abs(p[0]-background[0]),abs(p[1]-background[1]),abs(p[2]-background[2])});
-            if(inside.at<unsigned char>(y,x)&&delta<=12)near++;
-            if(delta>=35)contrast.at<unsigned char>(y,x)=255;
+            auto p=rgb.at<cv::Vec3b>(y,x);int d=std::max({abs(p[0]-background[0]),abs(p[1]-background[1]),abs(p[2]-background[2])});
+            delta.at<unsigned char>(y,x)=(unsigned char)d;if(inside.at<unsigned char>(y,x)&&d<=12)near++;
         }
-        double flatRatio=(double)near/innerCount;
         int backgroundSamples=0,uniformSamples=0;
         if(localized){for(int y=0;y<rgb.rows;y++)for(int x=0;x<rgb.cols;x++)if(inside.at<unsigned char>(y,x)&&!ocr.at<unsigned char>(y,x)){
-            auto p=rgb.at<cv::Vec3b>(y,x);int delta=std::max({abs(p[0]-background[0]),abs(p[1]-background[1]),abs(p[2]-background[2])});backgroundSamples++;if(delta<=12)uniformSamples++;
+            backgroundSamples++;if(delta.at<unsigned char>(y,x)<=12)uniformSamples++;
         }}
-        bool flat=localized ? backgroundSamples>=innerCount*0.20&&(double)uniformSamples/backgroundSamples>=0.97:flatRatio>=0.80;
-        if(localized&&!flat){
-            // Local color contrast separates ink from slow gradients and multiple
-            // background colors; it never treats a whole colored region as text.
-            cv::Mat smooth;cv::GaussianBlur(rgb,smooth,cv::Size(31,31),0);
-            for(int y=0;y<rgb.rows;y++)for(int x=0;x<rgb.cols;x++){
-                auto p=rgb.at<cv::Vec3b>(y,x),b=smooth.at<cv::Vec3b>(y,x);int delta=std::max({abs(p[0]-b[0]),abs(p[1]-b[1]),abs(p[2]-b[2])});contrast.at<unsigned char>(y,x)=delta>=24 ? 255:0;
-            }
-            cv::morphologyEx(contrast,contrast,cv::MORPH_CLOSE,cv::getStructuringElement(cv::MORPH_ELLIPSE,cv::Size(3,3)));
-        }
+        bool flat=localized ? backgroundSamples>=innerCount*0.20&&(double)uniformSamples/backgroundSamples>=0.97:(double)near/innerCount>=0.80;
         bool white=background[0]>=235&&background[1]>=235&&background[2]>=235;
-        // Without text localization, colored/complex art is left untouched.
         if(!localized&&(!flat||!white))return nil;
-        cv::Mat labels,stats,centroids;int count=cv::connectedComponentsWithStats(contrast,labels,stats,centroids,8,CV_32S);
-        cv::Mat mask=cv::Mat::zeros(rgb.size(),CV_8UC1);std::vector<int> accepted;
-        for(int i=1;i<count;i++){
-            int area=stats.at<int>(i,cv::CC_STAT_AREA),w=stats.at<int>(i,cv::CC_STAT_WIDTH),h=stats.at<int>(i,cv::CC_STAT_HEIGHT);
-            if(area<2||area>innerCount*0.06||w>box.width*0.70||h>box.height*0.40)continue;
-            cv::Rect r(stats.at<int>(i,cv::CC_STAT_LEFT),stats.at<int>(i,cv::CC_STAT_TOP),w,h);
-            bool safe=true;int evidence=0;
-            for(int y=r.y;y<r.y+r.height&&safe;y++)for(int x=r.x;x<r.x+r.width;x++)if(labels.at<int>(y,x)==i){if(!inside.at<unsigned char>(y,x)){safe=false;break;}if(ocr.at<unsigned char>(y,x))evidence++;}
-            if(!safe||(localized&&evidence<area*0.65))continue;
-            accepted.push_back(i);
-        }
-        if(!localized&&accepted.size()>2048)return nil; // Bound fallback work on noisy scans.
-        // Fallback requires a cluster of at least three similarly sized glyphs.
-        for(int i:accepted){
-            bool use=localized;
-            if(!use){int neighbors=0;double cy=centroids.at<double>(i,1),cx=centroids.at<double>(i,0);int h=stats.at<int>(i,cv::CC_STAT_HEIGHT);
-                for(int j:accepted){int otherH=stats.at<int>(j,cv::CC_STAT_HEIGHT);double dy=abs(centroids.at<double>(j,1)-cy),dx=abs(centroids.at<double>(j,0)-cx);
-                    if(otherH>=h*0.45&&otherH<=h*2.2&&((dy<=std::max(h,otherH)*0.6&&dx<=box.width*0.75)||(dx<=std::max(h,otherH)*0.6&&dy<=box.height*0.75))){neighbors++;if(neighbors>=3)break;}
-                }use=neighbors>=3;
+        std::vector<cv::Mat> contrasts;
+        if(localized&&!flat){
+            cv::Mat smooth,dark=cv::Mat::zeros(rgb.size(),CV_8UC1),light=dark.clone();cv::GaussianBlur(rgb,smooth,cv::Size(31,31),0);
+            // Keep positive and negative contrast separate. Absolute contrast
+            // joins dark letters to bright halos and rejects whole text lines.
+            for(int y=0;y<rgb.rows;y++)for(int x=0;x<rgb.cols;x++){
+                auto p=rgb.at<cv::Vec3b>(y,x),b=smooth.at<cv::Vec3b>(y,x);
+                int negative=std::max({(int)b[0]-p[0],(int)b[1]-p[1],(int)b[2]-p[2]});
+                int positive=std::max({(int)p[0]-b[0],(int)p[1]-b[1],(int)p[2]-b[2]});
+                dark.at<unsigned char>(y,x)=negative>=20?255:0;light.at<unsigned char>(y,x)=positive>=20?255:0;
             }
-            if(use){cv::Rect r(stats.at<int>(i,cv::CC_STAT_LEFT),stats.at<int>(i,cv::CC_STAT_TOP),stats.at<int>(i,cv::CC_STAT_WIDTH),stats.at<int>(i,cv::CC_STAT_HEIGHT));for(int y=r.y;y<r.y+r.height;y++)for(int x=r.x;x<r.x+r.width;x++)if(labels.at<int>(y,x)==i)mask.at<unsigned char>(y,x)=255;}
+            contrasts={dark,light};
+        }else{cv::Mat ink;cv::compare(delta,24,ink,cv::CMP_GE);contrasts.push_back(ink);}
+        cv::Mat mask=cv::Mat::zeros(rgb.size(),CV_8UC1);std::vector<int> heights;
+        for(const cv::Mat &contrast:contrasts){
+            cv::Mat labels,stats,centroids;int count=cv::connectedComponentsWithStats(contrast,labels,stats,centroids,8,CV_32S);
+            std::vector<int> accepted;
+            for(int i=1;i<count;i++){
+                int area=stats.at<int>(i,cv::CC_STAT_AREA),w=stats.at<int>(i,cv::CC_STAT_WIDTH),h=stats.at<int>(i,cv::CC_STAT_HEIGHT);
+                // Arabic words and outlined letters may be one connected shape.
+                if(area<3||area>innerCount*(localized?0.30:0.20)||w>box.width*0.90||h>box.height*0.70)continue;
+                cv::Rect r(stats.at<int>(i,cv::CC_STAT_LEFT),stats.at<int>(i,cv::CC_STAT_TOP),w,h);
+                bool safe=true;int evidence=0;
+                for(int y=r.y;y<r.y+r.height&&safe;y++)for(int x=r.x;x<r.x+r.width;x++)if(labels.at<int>(y,x)==i){if(!inside.at<unsigned char>(y,x)){safe=false;break;}if(ocr.at<unsigned char>(y,x))evidence++;}
+                if(!safe||(localized&&evidence<area*0.65))continue;accepted.push_back(i);
+            }
+            if(!localized&&accepted.size()>2048)return nil;
+            for(int i:accepted){
+                bool use=localized;
+                if(!use){int neighbors=0;double cy=centroids.at<double>(i,1),cx=centroids.at<double>(i,0);int h=stats.at<int>(i,cv::CC_STAT_HEIGHT),w=stats.at<int>(i,cv::CC_STAT_WIDTH);
+                    for(int j:accepted){int otherH=stats.at<int>(j,cv::CC_STAT_HEIGHT),otherW=stats.at<int>(j,cv::CC_STAT_WIDTH);double dy=abs(centroids.at<double>(j,1)-cy),dx=abs(centroids.at<double>(j,0)-cx);
+                        if(otherH>=h*0.30&&otherH<=h*3.5&&((dy<=std::max(h,otherH)*0.8&&dx<=box.width*0.85)||(dx<=std::max(w,otherW)*0.8&&dy<=box.height*0.85))){neighbors++;if(neighbors>=2)break;}
+                    }use=neighbors>=2;
+                }
+                if(use){heights.push_back(stats.at<int>(i,cv::CC_STAT_HEIGHT));cv::Rect r(stats.at<int>(i,cv::CC_STAT_LEFT),stats.at<int>(i,cv::CC_STAT_TOP),stats.at<int>(i,cv::CC_STAT_WIDTH),stats.at<int>(i,cv::CC_STAT_HEIGHT));for(int y=r.y;y<r.y+r.height;y++)for(int x=r.x;x<r.x+r.width;x++)if(labels.at<int>(y,x)==i)mask.at<unsigned char>(y,x)=255;}
+            }
         }
-        cv::dilate(mask,mask,cv::getStructuringElement(cv::MORPH_ELLIPSE,cv::Size(3,3)));cv::bitwise_and(mask,inside,mask);
-        int removed=cv::countNonZero(mask);if(removed<6||removed>innerCount*0.30)return nil;
+        int spread=2;if(!heights.empty()){std::sort(heights.begin(),heights.end());double median=heights[heights.size()/2];if(heights.size()%2==0)median=(median+heights[heights.size()/2-1])/2;spread=std::max(2,std::min(18,(int)std::round(median*0.16)));}
+        if(flat){
+            // Follow weak antialiasing, stroke and shadow pixels connected to
+            // validated glyphs. Never grow weak contrast throughout the bubble.
+            cv::Mat envelope,weak,labels,stats,centroids;
+            cv::dilate(mask,envelope,cv::getStructuringElement(cv::MORPH_ELLIPSE,cv::Size(2*spread+1,2*spread+1)));
+            cv::compare(delta,3,weak,cv::CMP_GE);cv::bitwise_and(weak,envelope,weak);cv::bitwise_and(weak,inside,weak);
+            int count=cv::connectedComponentsWithStats(weak,labels,stats,centroids,8,CV_32S);std::vector<bool> seeded(count,false);
+            for(int y=0;y<mask.rows;y++)for(int x=0;x<mask.cols;x++)if(mask.at<unsigned char>(y,x))seeded[labels.at<int>(y,x)]=true;
+            for(int y=0;y<mask.rows;y++)for(int x=0;x<mask.cols;x++){int label=labels.at<int>(y,x);mask.at<unsigned char>(y,x)=label>0&&seeded[label]?255:0;}
+        }
+        if(flat&&localized){
+            // On a verified uniform background, remove weak disconnected dots
+            // and compression fringes inside detected text boxes as well.
+            cv::Mat fringe;cv::compare(delta,3,fringe,cv::CMP_GE);cv::bitwise_and(fringe,ocr,fringe);cv::bitwise_and(fringe,inside,fringe);cv::bitwise_or(mask,fringe,mask);
+        }
+        int radius=flat?2:std::max(3,std::min(12,(int)std::round(smallestText*0.075)));
+        cv::dilate(mask,mask,cv::getStructuringElement(cv::MORPH_ELLIPSE,cv::Size(2*radius+1,2*radius+1)));cv::bitwise_and(mask,inside,mask);
+        if(!flat){std::vector<std::vector<cv::Point>> contours;cv::findContours(mask.clone(),contours,cv::RETR_EXTERNAL,cv::CHAIN_APPROX_SIMPLE);cv::drawContours(mask,contours,-1,cv::Scalar(255),cv::FILLED);cv::bitwise_and(mask,inside,mask);}
+        int removed=cv::countNonZero(mask);if(removed<6||removed>innerCount*0.55)return nil;
         cv::Mat cleaned,patch;
         if(flat){cleaned=rgb.clone();cleaned.setTo(cv::Scalar(background[0],background[1],background[2]),mask);}
-        else{cv::inpaint(rgb,mask,cleaned,3,cv::INPAINT_TELEA);}
+        else{cv::inpaint(rgb,mask,cleaned,5,cv::INPAINT_TELEA);}
         cv::cvtColor(cleaned,patch,cv::COLOR_RGB2RGBA);
         for(int y=0;y<patch.rows;y++)for(int x=0;x<patch.cols;x++)patch.at<cv::Vec4b>(y,x)[3]=mask.at<unsigned char>(y,x);
         return @{@"patch":patchImage(patch),@"removedPixels":@(removed),@"flat":@(flat),@"localized":@(localized),@"reviewRequired":@(!flat||!localized)};

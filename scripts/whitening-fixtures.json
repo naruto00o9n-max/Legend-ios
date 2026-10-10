@@ -1,0 +1,30 @@
+[
+  {
+    "name": "manhwa-shadow",
+    "url": "https://xbrpvumrwhbarxuksddt.supabase.co/storage/v1/object/public/community_media/4e58f8d8-cddf-479a-a6dd-f37798111e2c.webp",
+    "sha256": "baabb1d413b95f265b8f09cd62e47b1b087c666b004c842acb8f5b3c45959d87",
+    "format": "webp",
+    "source": "Public YTyper community media; test reference only, artwork rights retained by its author."
+  },
+  {
+    "name": "manhwa-scream",
+    "url": "https://xbrpvumrwhbarxuksddt.supabase.co/storage/v1/object/public/community_media/1410a06b-b409-403a-aca6-200f722867ca.webp",
+    "sha256": "1ef40ea4f2c37a80b1c8565cdcb094f9af8bce6ded25a3b2455777bc6beed888",
+    "format": "webp",
+    "source": "Public YTyper community media; test reference only, artwork rights retained by its author."
+  },
+  {
+    "name": "manga-page",
+    "url": "https://raw.githubusercontent.com/dmMaze/comic-text-detector/master/data/examples/AisazuNihaIrarenai-003.jpg",
+    "sha256": "1e69adb2d183ba31defd0c2c9752de90074957b1f0a0137afb435c78639b9253",
+    "format": "jpg",
+    "source": "Public OCR/translation demonstration; fetched for regression tests only; no artwork license implied."
+  },
+  {
+    "name": "colored-dialogue",
+    "url": "https://user-images.githubusercontent.com/31543482/232264684-5a7bcf8e-707b-4925-86b0-4212382f1680.png",
+    "sha256": "7c4a55d231a22ebf7fc56a30e3bd117b731dd019631f3ae8876d1cacaa18ac20",
+    "format": "png",
+    "source": "Public OCR/translation demonstration; fetched for regression tests only; no artwork license implied."
+  }
+]

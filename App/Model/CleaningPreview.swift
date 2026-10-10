@@ -41,13 +41,13 @@ extension EditorModel {
         busy=true;defer{busy=false};discardCleaning();let generation=cleaningGeneration
         do{
             let candidate=try await BackgroundWork.run{()->CleaningCandidate in
-                var results:[BubbleWhiteningResult]=[],skipped=0
+                var results:[BubbleWhiteningResult]=[],skipped=0,firstFailure:String?
                 do{
                     for target in targets{
                         try Task.checkCancellation()
-                        do{results.append(try autoreleasepool{try BubbleWhitening.prepare(page:snapshot,directory:directory,target:target)})}catch{skipped+=1}
+                        do{results.append(try autoreleasepool{try BubbleWhitening.prepare(page:snapshot,directory:directory,target:target)})}catch{skipped+=1;if firstFailure==nil{firstFailure=error.localizedDescription}}
                     }
-                    guard let first=results.first else{throw ImageFailure.message("تعذر فصل نص الفقاعات المحددة بأمان. أعد تحديد داخل الفقاعة أو استخدم فرشاة التنظيف.")}
+                    guard let first=results.first else{throw ImageFailure.message(firstFailure ?? "تعذر فصل نص الفقاعات المحددة بأمان. أعد تحديد داخل الفقاعة أو استخدم فرشاة التنظيف.")}
                     let review=results.filter(\.reviewRequired).count
                     var detail="أزيل النص المكتشف داخل \(results.count) فقاعة. الصورة الأصلية محفوظة، والحدود خارج القناع لم تُعدّل."
                     if skipped>0{detail += " تُركت \(skipped) فقاعة دون تعديل لعدم وضوح النص أو المحيط."}

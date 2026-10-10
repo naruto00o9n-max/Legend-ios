@@ -2,7 +2,7 @@ name: Cookies Editor iPad repair and unsigned IPA
 on:
   push:
     branches: [main]
-    paths: ['App/**', 'Tests/**', 'UITests/**', 'ServicesTests/**', 'ServicesUITests/**', 'project.yml', 'scripts/build_ipas.sh', 'scripts/test_simulators.sh', '.github/workflows/ios-build.yml']
+    paths: ['App/**', 'Tests/**', 'UITests/**', 'ServicesTests/**', 'ServicesUITests/**', 'project.yml', 'scripts/build_ipas.sh', 'scripts/test_simulators.sh', 'scripts/fetch_whitening_fixtures.py', 'scripts/whitening-fixtures.json', '.github/workflows/ios-build.yml']
   workflow_dispatch:
 concurrency:
   group: cookies-ios-${{ github.ref }}
@@ -47,6 +47,7 @@ jobs:
             App/Resources/cookies-logo.png
           key: cookies-native-v45-opencv411-${{ hashFiles('scripts/vendor-hashes.json') }}
       - run: python3 scripts/fetch_resources.py
+      - run: python3 scripts/fetch_whitening_fixtures.py
       - run: xcodegen generate
       - run: bash scripts/build_ipas.sh
       - name: Verify original dimensions and untouched source pixels
@@ -68,7 +69,7 @@ jobs:
       matrix:
         screen: [ipad, iphone]
     runs-on: macos-15-intel
-    timeout-minutes: 45
+    timeout-minutes: 65
     steps:
       - uses: actions/checkout@v5
       - run: brew install xcodegen
@@ -81,8 +82,20 @@ jobs:
             App/Resources/cookies-logo.png
           key: cookies-native-v45-opencv411-${{ hashFiles('scripts/vendor-hashes.json') }}
       - run: python3 scripts/fetch_resources.py
+      - run: python3 scripts/fetch_whitening_fixtures.py
       - run: xcodegen generate
-      - run: bash scripts/test_simulators.sh ${{ matrix.screen }}
+      - name: Native engine and real whitening regressions
+        run: bash scripts/test_simulators.sh ${{ matrix.screen }} core
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cookies-editor-engine-${{ matrix.screen }}
+          path: |
+            build/test-*-core.log
+            build/whitening-*/
+          retention-days: 30
+      - name: Interfaces, Photos and services
+        run: bash scripts/test_simulators.sh ${{ matrix.screen }} ui
       - run: python3 scripts/collect_evidence.py
         if: always()
       - uses: actions/upload-artifact@v4

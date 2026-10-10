@@ -28,10 +28,10 @@ enum ImagePipeline {
     private static let assetLock=NSLock()
     static func asset(_ url:URL)->UIImage? {assetLock.lock();defer{assetLock.unlock()};if let image=assets.object(forKey:url.path as NSString){return image};guard let image=UIImage(contentsOfFile:url.path) else{return nil};assets.totalCostLimit=64*1024*1024;assets.setObject(image,forKey:url.path as NSString,cost:Int(image.size.width*image.size.height)*4);return image}
     static let spaces=NSCache<NSString,CGColorSpace>()
-    static func colorSpace(_ source:URL)->CGColorSpace {if let cached=spaces.object(forKey:source.path as NSString){return cached};var count=0;guard let pointer=LICopyPNGProfile(source.path,&count) else{return CGColorSpace(name:CGColorSpace.sRGB) ?? space};defer{LIFreeBuffer(pointer)};let result=CGColorSpace(iccData:Data(bytes:pointer,count:count) as CFData) ?? space;spaces.setObject(result,forKey:source.path as NSString);return result}
+    static func colorSpace(_ source:URL)->CGColorSpace {if let cached=spaces.object(forKey:source.path as NSString){return cached};var count=0;guard let pointer=LICopyPNGProfile(source.path,&count) else{return CGColorSpace(name:CGColorSpace.sRGB) ?? space};defer{LIFreeBuffer(pointer)};let result=CGColorSpace(iccData:Data(bytes:pointer,count:count) as CFData).flatMap{$0.model == .rgb ? $0:nil} ?? (CGColorSpace(name:CGColorSpace.sRGB) ?? space);spaces.setObject(result,forKey:source.path as NSString);return result}
     static func image(_ rgba:[UInt8],width:Int,height:Int,colorSpace:CGColorSpace=space)->CGImage? {
         guard width>0,height>0,let provider=CGDataProvider(data:Data(rgba) as CFData) else{return nil}
-        return CGImage(width:width,height:height,bitsPerComponent:8,bitsPerPixel:32,bytesPerRow:width*4,space:colorSpace,bitmapInfo:CGBitmapInfo(rawValue:CGImageAlphaInfo.last.rawValue),provider:provider,decode:nil,shouldInterpolate:false,intent:.defaultIntent)
+        return CGImage(width:width,height:height,bitsPerComponent:8,bitsPerPixel:32,bytesPerRow:width*4,space:colorSpace.model == .rgb ? colorSpace:space,bitmapInfo:CGBitmapInfo(rawValue:CGImageAlphaInfo.last.rawValue),provider:provider,decode:nil,shouldInterpolate:false,intent:.defaultIntent)
     }
     static func tile(_ url:URL,width:Int,height:Int,rect:CGRect,sample:Int=1)throws->[UInt8] {
         try ensureDecoded(url,width:width,height:height)

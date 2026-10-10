@@ -2,6 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 TASK_SCREEN="${1:-ipad}"
+TASK_STAGE="${2:-ui}"
 mkdir -p build/screenshots .work
 xcrun simctl list devices available -j > .work/devices.json
 python3 - "$TASK_SCREEN" <<'PYDEV'
@@ -18,6 +19,13 @@ TASK_DEVICE=$(cat .work/simulator-id)
 xcrun simctl boot "$TASK_DEVICE" || true
 xcrun simctl bootstatus "$TASK_DEVICE" -b
 open -a Simulator --args -CurrentDeviceUDID "$TASK_DEVICE"
+if [[ "$TASK_STAGE" == core ]]; then
+  TASK_STATUS=0
+  xcodebuild -project CookiesEditor.xcodeproj -scheme CookiesEditor -configuration Debug -destination "platform=iOS Simulator,id=$TASK_DEVICE" -parallel-testing-enabled NO -derivedDataPath .work/simulator -resultBundlePath "build/$TASK_SCREEN-core.xcresult" -only-testing:CookiesTests -only-testing:CookiesServicesTests -skip-testing:CookiesServicesTests/ServiceTests/testOriginalPublicAPIFromNativeClient ARCHS=x86_64 ONLY_ACTIVE_ARCH=YES test > "build/test-$TASK_SCREEN-core.log" 2>&1 || TASK_STATUS=$?
+  rg -n "\.swift:[0-9]+: error:|Test Case .* failed|Executed .* failures" "build/test-$TASK_SCREEN-core.log" | tail -35 || true
+  xcrun xcresulttool export attachments --path "build/$TASK_SCREEN-core.xcresult" --output-path "build/whitening-$TASK_SCREEN" || true
+  exit "$TASK_STATUS"
+fi
 # Seed the actual Photos library; the picker test must import this asset.
 python3 - <<'PYFIX'
 import struct,zlib,pathlib
@@ -29,7 +37,7 @@ pathlib.Path('.work/Photos-800x15000.png').write_bytes(png)
 PYFIX
 xcrun simctl addmedia "$TASK_DEVICE" .work/Photos-800x15000.png
 TASK_STATUS=0
-xcodebuild -project CookiesEditor.xcodeproj -scheme CookiesEditor -configuration Debug -destination "platform=iOS Simulator,id=$TASK_DEVICE" -parallel-testing-enabled NO -derivedDataPath .work/simulator -resultBundlePath "build/$TASK_SCREEN.xcresult" -skip-testing:CookiesServicesTests/ServiceTests/testOriginalPublicAPIFromNativeClient -skip-testing:CookiesServicesUITests ARCHS=x86_64 ONLY_ACTIVE_ARCH=YES test > "build/test-$TASK_SCREEN.log" 2>&1 || TASK_STATUS=$?
+xcodebuild -project CookiesEditor.xcodeproj -scheme CookiesEditor -configuration Debug -destination "platform=iOS Simulator,id=$TASK_DEVICE" -parallel-testing-enabled NO -derivedDataPath .work/simulator -resultBundlePath "build/$TASK_SCREEN.xcresult" -only-testing:CookiesUITests ARCHS=x86_64 ONLY_ACTIVE_ARCH=YES test > "build/test-$TASK_SCREEN.log" 2>&1 || TASK_STATUS=$?
 if [[ "$TASK_STATUS" == 0 ]]; then
   # The full suite relaunches and clears test projects. Run Photos once last,
   # then inspect the real application container before another test resets it.
