@@ -5,7 +5,8 @@ final class EditorUITests:XCTestCase {
     override func setUp(){continueAfterFailure=false;app=XCUIApplication();app.launchArguments=["-ui-tests"];app.launch()}
     func capture(_ name:String){Thread.sleep(forTimeInterval:0.5);let a=XCTAttachment(screenshot:XCUIScreen.main.screenshot());a.name=name;a.lifetime = .keepAlways;add(a)}
     func start(){let start=app.buttons["welcome-start"];XCTAssertTrue(start.waitForExistence(timeout:15));Thread.sleep(forTimeInterval:0.8);capture("01-welcome");start.tap();if app.buttons["account-skip"].waitForExistence(timeout:3){app.buttons["account-skip"].tap()};XCTAssertTrue(app.buttons["demo-project"].waitForExistence(timeout:8));capture("02-library");assertLayout()}
-    func openEditor(){start();app.buttons["demo-project"].tap();let project=app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH 'project-'")).firstMatch;let link=app.otherElements.matching(NSPredicate(format:"identifier BEGINSWITH 'project-'")).firstMatch
+    func openEditor(){start();openDemoFromLibrary()}
+    func openDemoFromLibrary(){app.buttons["demo-project"].tap();let project=app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH 'project-'")).firstMatch;let link=app.otherElements.matching(NSPredicate(format:"identifier BEGINSWITH 'project-'")).firstMatch
         if project.waitForExistence(timeout:30){project.tap()}else{XCTAssertTrue(link.waitForExistence(timeout:30));link.tap()}
         XCTAssertTrue(app.buttons["tool-text"].waitForExistence(timeout:15));capture("03-editor-long-image");assertLayout()
     }
@@ -127,6 +128,11 @@ final class EditorUITests:XCTestCase {
     }
     func testRealStorageScreenShowsProjectsAndSelection() {
         start();app.buttons["settings"].tap();let storage=app.buttons["settings-storage"];for _ in 0..<4 where !storage.isHittable{app.swipeUp()};storage.tap();XCTAssertTrue(app.staticTexts["storage-total"].waitForExistence(timeout:10));XCTAssertTrue(app.buttons["storage-clear-cache"].exists);XCTAssertTrue(app.buttons["storage-backup-selected"].exists);capture("fix-storage-backup-selection");assertLayout()
+    }
+
+    func testTextTapSuggestionRequiresExplicitConfirmation() {
+        start();app.buttons["settings"].tap();app.buttons["settings-workspace"].tap();let toggle=app.switches["setting-tap-text"];for _ in 0..<5 where !toggle.isHittable{app.swipeUp()};XCTAssertTrue(toggle.exists);toggle.tap();app.buttons["workspace-settings-close"].tap();app.buttons["settings-close"].tap();openDemoFromLibrary()
+        let canvas=app.scrollViews["canvas-scroll"];canvas.coordinate(withNormalizedOffset:CGVector(dx:0.45,dy:0.3)).tap();let confirm=app.buttons["canvas-add-text-confirm"];XCTAssertTrue(confirm.waitForExistence(timeout:5));XCTAssertTrue((canvas.value as? String ?? "").hasPrefix("0 طبقات"));capture("fix-text-add-confirmation");confirm.tap();XCTAssertTrue(app.textViews["text-input"].waitForExistence(timeout:5));XCTAssertTrue((canvas.value as? String ?? "").hasPrefix("1 طبقات"));XCTAssertFalse(confirm.exists)
     }
 
 }

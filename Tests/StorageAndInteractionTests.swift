@@ -53,4 +53,32 @@ final class StorageAndInteractionTests:XCTestCase {
         XCTAssertTrue(canvas.point(inside:CGPoint(x:120,y:30),with:nil),"Text remains selectable on black workspace")
         XCTAssertFalse(canvas.point(inside:CGPoint(x:1000,y:1000),with:nil))
     }
+    func testInterruptedRestoreRollsBackBeforeLibraryLoads()throws {
+        let fm=FileManager.default,parent=fm.temporaryDirectory.appendingPathComponent(UUID().uuidString),root=parent.appendingPathComponent("Cookies"),rollback=parent.appendingPathComponent(".cookies-rollback-test"),staging=parent.appendingPathComponent(".cookies-restore-test")
+        defer{try? fm.removeItem(at:parent)}
+        for folder in [root,rollback,staging]{try fm.createDirectory(at:folder,withIntermediateDirectories:true)}
+        let original=Data("original index".utf8);try original.write(to:rollback.appendingPathComponent("library.json"));try Data("partial new index".utf8).write(to:root.appendingPathComponent("library.json"));try Data("new".utf8).write(to:root.appendingPathComponent("new.ttf"))
+        let journal:[String:Any]=["paths":["library.json","new.ttf"],"existed":["library.json"],"rollback":rollback.lastPathComponent,"staging":staging.lastPathComponent]
+        try JSONSerialization.data(withJSONObject:journal).write(to:parent.appendingPathComponent(".cookies-transaction-Cookies.json"))
+        try AppStorageManager.recoverInterruptedRestore(at:root)
+        XCTAssertEqual(try Data(contentsOf:root.appendingPathComponent("library.json")),original);XCTAssertFalse(fm.fileExists(atPath:root.appendingPathComponent("new.ttf").path));XCTAssertFalse(fm.fileExists(atPath:rollback.path))
+    }
+    func testFoldersAreRestoredWithoutUnselectedProjectMetadata()throws {
+        let fm=FileManager.default,parent=fm.temporaryDirectory.appendingPathComponent(UUID().uuidString),root=parent.appendingPathComponent("input"),target=parent.appendingPathComponent("output");defer{try? fm.removeItem(at:parent)}
+        try fm.createDirectory(at:root,withIntermediateDirectories:true)
+        let folder=LibraryItem(title:"empty folder",folder:true),privateItem=LibraryItem(title:"unselected private title",folder:false)
+        try JSONEncoder().encode([folder,privateItem]).write(to:root.appendingPathComponent("library.json"))
+        let file=try AppStorageManager.createBackup(selected:["gallery"],at:root);defer{try? fm.removeItem(at:file)}
+        XCTAssertEqual(try AppStorageManager.inspect(file).library.map(\.title),[folder.title]);_ = try AppStorageManager.restore(file,selected:["gallery"],at:target);XCTAssertEqual(try AppStorageManager.library(at:target).map(\.id),[folder.id])
+    }
+
+    @MainActor func testFullResetRemovesRealLocalDataPreferencesAndSession()throws {
+        let fm=FileManager.default,root=AppStorageManager.root
+        try fm.createDirectory(at:root,withIntermediateDirectories:true)
+        try Data("private project".utf8).write(to:root.appendingPathComponent("reset-test.txt"))
+        UserDefaults.standard.set(true,forKey:"welcome-complete");UserDefaults.standard.set(["saved.ttf"],forKey:"fontFavorites");Keychain.save("session",data:Data("test-session".utf8))
+        try AppStorageManager.resetLocalData()
+        XCTAssertFalse(fm.fileExists(atPath:root.appendingPathComponent("reset-test.txt").path));XCTAssertNil(UserDefaults.standard.object(forKey:"welcome-complete"));XCTAssertNil(UserDefaults.standard.object(forKey:"fontFavorites"));XCTAssertNil(Keychain.read("session"));XCTAssertEqual(AppStorageManager.usage().rebuildable,0)
+    }
+
 }

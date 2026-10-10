@@ -17,5 +17,5 @@ enum EditorPreferences {
     static var motion:Bool{!(UserDefaults.standard.bool(forKey:"editor-reduce-motion") || UIAccessibility.isReduceMotionEnabled)}
     static var cleanRadius:Double{number("editor-clean-radius",3,1...12)}
     static func feedback(){if haptics{UISelectionFeedbackGenerator().selectionChanged()}}
-    static func reset(){for key in ["editor-icon-scale","editor-toolbar-scale","editor-label-scale","editor-handle-scale","editor-preview-quality","editor-snap","editor-haptics","editor-reduce-motion","editor-clean-radius","reader-direction","editor-handle-speed","typer-insert-scale","editor-double-tap","editor-smart-position","text-inline-dock","editor-panel-density"]{UserDefaults.standard.removeObject(forKey:key)}}
+    static func reset(){for key in ["editor-tap-add-text","editor-icon-scale","editor-toolbar-scale","editor-label-scale","editor-handle-scale","editor-preview-quality","editor-snap","editor-haptics","editor-reduce-motion","editor-clean-radius","reader-direction","editor-handle-speed","typer-insert-scale","editor-double-tap","editor-smart-position","text-inline-dock","editor-panel-density"]{UserDefaults.standard.removeObject(forKey:key)}}
 }

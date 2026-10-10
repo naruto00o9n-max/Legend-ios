@@ -7,7 +7,7 @@ for manifest in (build/'screenshots').rglob('manifest.json'):
  for case in json.loads(manifest.read_text()):
   for asset in case.get('attachments',[]):
    name=asset.get('suggestedHumanReadableName','')
-   if not name.endswith('.png') or not re.match(r'^(\d\d-|inspector-|cleaner-|batch-)',name):continue
+   if not name.endswith('.png') or not re.match(r'^(\d\d-|inspector-|cleaner-|batch-|fix-)',name):continue
    label=re.split(r'_\d+_',name)[0];device=asset.get('deviceName','iPhone');folder=gallery/device;folder.mkdir(exist_ok=True)
    source=manifest.parent/asset['exportedFileName'];target=folder/(label+'.png')
    if target.exists():continue

@@ -22,6 +22,7 @@ enum NetworkPolicy {
     private var transport=URLSession.shared
     private var configured:ReferenceConfig?
     private var persistAuthentication=true
+    private var invalidated=false
     override init(){super.init();if NetworkPolicy.enabled,let data=Keychain.read("session"),let saved=try? JSONDecoder().decode(ServiceSession.self,from:data){session=saved}}
     init(configuration:ReferenceConfig,urlSession:URLSession,initialSession:ServiceSession?=nil,persistSession:Bool=false){super.init();configured=configuration;transport=urlSession;session=initialSession;persistAuthentication=persistSession}
     var config:ReferenceConfig? {if let configured{return configured};guard NetworkPolicy.enabled,let url=Bundle.main.url(forResource:"ReferenceService",withExtension:"json"),let data=try? Data(contentsOf:url) else{return nil};return try? JSONDecoder().decode(ReferenceConfig.self,from:data)}
@@ -84,7 +85,10 @@ enum NetworkPolicy {
         var payload=String(segments[1]).replacingOccurrences(of:"-",with:"+").replacingOccurrences(of:"_",with:"/");payload+=String(repeating:"=",count:(4-payload.count%4)%4)
         guard let bytes=Data(base64Encoded:payload),let object=try? JSONSerialization.jsonObject(with:bytes) as? [String:Any] else{return 0};return object["exp"] as? Double ?? 0
     }
-    private func store(_ session:ServiceSession){self.session=session;if persistAuthentication{Keychain.save("session",data:(try? JSONEncoder().encode(session)) ?? Data())}}
+    private func store(_ session:ServiceSession){guard !invalidated else{return};self.session=session;if persistAuthentication{Keychain.save("session",data:(try? JSONEncoder().encode(session)) ?? Data())}}
+    /// Permanently retire this instance when the app's local data is reset.
+    /// A late OAuth/refresh response must not recreate a deleted Keychain session.
+    func discardLocalSession(){invalidated=true;persistAuthentication=false;refreshFlight?.cancel();refreshFlight=nil;web?.cancel();web=nil;session=nil;rows=[];Keychain.remove("session")}
     func logout() async {
         let token=session?.access_token;refreshFlight?.cancel();refreshFlight=nil;session=nil;if persistAuthentication{Keychain.remove("session")}
         if let token,let config,let url=URL(string:config.url+"/auth/v1/logout"){var request=URLRequest(url:url);request.httpMethod="POST";request.timeoutInterval=10;request.setValue(config.key,forHTTPHeaderField:"apikey");request.setValue("Bearer "+token,forHTTPHeaderField:"Authorization");_ = try? await transport.data(for:request)}

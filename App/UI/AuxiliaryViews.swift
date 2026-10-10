@@ -13,7 +13,7 @@ struct LayerSheet:View {
     private var layers:[EditorLayer]{model.page.layers.reversed().filter{filter=="all" || $0.kind.rawValue==filter}}
     var body:some View {VStack(spacing:0){header;filters;if multiple{operations};layerList;opacity}
         .foregroundStyle(Palette.pale).background(Palette.ink.opacity(0.85)).glass(24)
-        .sheet(item:$preview){layer in LayerThumbnail(layer:layer,directory:model.directory,previewSize:512).frame(maxWidth:.infinity,maxHeight:.infinity).padding(24).background(Palette.ink)}
+        .sheet(item:$preview){layer in ExpandedLayerPreview(layer:layer,directory:model.directory)}
         .alert("مجموعة طبقات",isPresented:$grouping){TextField("اسم المجموعة",text:$groupName);Button("حفظ"){model.groupLayers(selection,name:groupName.isEmpty ? "مجموعة":groupName)};Button("إلغاء",role:.cancel){}}
         .alert("تسطيح العمل؟",isPresented:$flattening){Button("تسطيح"){Task{await model.flattenLayers()}};Button("إلغاء",role:.cancel){}}message:{Text("تتحول الصورة والطبقات إلى طبقة صورة واحدة. التراجع يعيد الطبقات القابلة للتعديل.")}
     }
@@ -39,9 +39,10 @@ struct LayerThumbnail: View {
     let layer:EditorLayer
     let directory:URL
     var previewSize:CGFloat=48
+    var previewBackground="checker"
     @State private var image:UIImage?
     var body:some View { ZStack {
-        Canvas{context,size in let cell:CGFloat=previewSize>48 ? 20:8;for y in 0..<Int(ceil(size.height/cell)){for x in 0..<Int(ceil(size.width/cell)){context.fill(Path(CGRect(x:CGFloat(x)*cell,y:CGFloat(y)*cell,width:cell,height:cell)),with:.color(Color(white:(x+y)%2==0 ? 0.78:0.58)))}}}.allowsHitTesting(false)
+        Canvas{context,size in let cell:CGFloat=previewSize>48 ? 20:8;for y in 0..<Int(ceil(size.height/cell)){for x in 0..<Int(ceil(size.width/cell)){context.fill(Path(CGRect(x:CGFloat(x)*cell,y:CGFloat(y)*cell,width:cell,height:cell)),with:.color(Color(white:previewBackground=="dark" ? 0.05:previewBackground=="light" ? 0.96:(x+y)%2==0 ? 0.78:0.58)))}}}.allowsHitTesting(false)
         if let image{Image(uiImage:image).resizable().scaledToFit()}
     }.task(id:layer){var item=layer;item.frame.x=0;item.frame.y=0;item.rotation=0;item.scaleX=1;item.scaleY=1;item.shearX=nil;item.opacity=1
         let snapshot=item,directory=self.directory,previewSize=self.previewSize
@@ -93,7 +94,7 @@ struct SettingsView: View {
         NavigationStack { ZStack {Ambient();ScrollView {VStack(alignment:.leading,spacing:24) {
             Button{if service.session==nil{account=true}else{profile=true}}label:{HStack(spacing:16){Image(systemName:"person.crop.circle").font(.system(size:42,weight:.ultraLight));VStack(alignment:.leading,spacing:7){Text(service.session==nil ? "تسجيل الدخول":"الملف الشخصي").font(.system(size:17,weight:.semibold));Text(service.session?.user.email ?? "حسابك وأعمالك في مكان واحد").font(.system(size:12)).foregroundStyle(Palette.quiet).lineLimit(1)};Spacer();Image(systemName:"chevron.left").font(.system(size:12))}.padding(22).glass(22)}.buttonStyle(.plain)
             Text("مساحة العمل").font(.system(size:12,weight:.medium)).foregroundStyle(Palette.quiet)
-            VStack(spacing:0){row("مساحة العمل والمقاسات","slider.horizontal.3"){workspaceSettings=true};Divider().padding(.horizontal,20);row("مكتبة الخطوط","textformat.alt"){fonts=true}.accessibilityIdentifier("settings-font-library");Divider().padding(.horizontal,20);row("المجتمع","person.2"){hub=true}.accessibilityIdentifier("settings-community");Divider().padding(.horizontal,20);row("فصول التايبر","text.bubble"){typerLibrary=true};Divider().padding(.horizontal,20);row("إعدادات التايبر والوسوم","tag"){typerSettings=true}.accessibilityIdentifier("settings-typer");Divider().padding(.horizontal,20);row("المساحة والنسخ الاحتياطي","externaldrive"){storage=true}.accessibilityIdentifier("settings-storage");Divider().padding(.horizontal,20);row("تقارير الأعطال","doc.text.magnifyingglass"){diagnostics=true}.accessibilityIdentifier("settings-diagnostics")}
+            VStack(spacing:0){row("مساحة العمل والمقاسات","slider.horizontal.3"){workspaceSettings=true}.accessibilityIdentifier("settings-workspace");Divider().padding(.horizontal,20);row("مكتبة الخطوط","textformat.alt"){fonts=true}.accessibilityIdentifier("settings-font-library");Divider().padding(.horizontal,20);row("المجتمع","person.2"){hub=true}.accessibilityIdentifier("settings-community");Divider().padding(.horizontal,20);row("فصول التايبر","text.bubble"){typerLibrary=true};Divider().padding(.horizontal,20);row("إعدادات التايبر والوسوم","tag"){typerSettings=true}.accessibilityIdentifier("settings-typer");Divider().padding(.horizontal,20);row("المساحة والنسخ الاحتياطي","externaldrive"){storage=true}.accessibilityIdentifier("settings-storage");Divider().padding(.horizontal,20);row("تقارير الأعطال","doc.text.magnifyingglass"){diagnostics=true}.accessibilityIdentifier("settings-diagnostics")}
                 .glass(20)
             VStack(alignment:.leading,spacing:12){HStack{Image(systemName:"photo");Text("الصورة الأصلية").font(.system(size:15,weight:.medium))};Text("تُحفظ أبعاد صورك عند التصدير إلى PNG. احفظ ملف المشروع للاحتفاظ بالنصوص والطبقات القابلة للتعديل.").font(.system(size:12)).foregroundStyle(Palette.quiet).lineSpacing(6)}.padding(20).glass(20)
             HStack{Brand();Spacer();Text("iPhone · iPad").font(.system(size:11)).foregroundStyle(Palette.quiet)}.padding(.top,12)
@@ -116,7 +117,7 @@ struct BrushSheet:View {
             if model.drawingShape=="fill"{Text("تسامح اللون: \(Int(model.fillTolerance))").font(.system(size:12));Slider(value:$model.fillTolerance,in:0...80)}
             Toggle("تعبئة الشكل",isOn:$model.drawingFilled).disabled(!["rectangle","ellipse"].contains(model.drawingShape))
             ColorPicker("لون الرسم",selection:Binding(get:{Color(uiColor:UIColor(hex:model.brushColor))},set:{model.brushColor=UIColor($0).hex}),supportsOpacity:false)
-            Text("الحجم: \(Int(model.brushWidth)) بكسل").font(.system(size:12));Slider(value:$model.brushWidth,in:1...160)
+            Text("الحجم: \(Int(model.brushWidth)) بكسل").font(.system(size:12));Slider(value:$model.brushWidth,in:1...160,onEditingChanged:{model.brushSizePreview=$0});ZStack{Color.clear.frame(height:82);Circle().stroke(.white,lineWidth:1.5).frame(width:min(76,model.brushWidth),height:min(76,model.brushWidth));Text("\(Int(model.brushWidth)) px").font(.system(size:10,design:.monospaced)).offset(y:34)}
             Text("شفافية الضربة: \(Int(model.brushOpacity*100))%").font(.system(size:12));Slider(value:$model.brushOpacity,in:0...1)
             Button("مسح طبقة الرسم",role:.destructive){if model.active?.kind == .drawing{model.checkpoint();model.change{$0.strokes=[]}}}.disabled(model.active?.kind != .drawing)
         }.padding(20)}
@@ -129,4 +130,12 @@ struct ReaderView:View {
     @ObservedObject var model:EditorModel
     @Environment(\.dismiss) var dismiss
     var body:some View {CanvasHost(model:model,readOnly:true).ignoresSafeArea(edges:.bottom).background(Palette.ink).safeAreaInset(edge:.top,spacing:0){HStack{Text(model.page.title).font(.system(size:13)).lineLimit(1);Spacer();IconButton(icon:"xmark",title:"إغلاق القراءة"){dismiss()}}.padding(.horizontal,14).foregroundStyle(Palette.pale).glass(0)}}
+}
+
+struct ExpandedLayerPreview:View {
+    let layer:EditorLayer
+    let directory:URL
+    @Environment(\.dismiss) private var dismiss
+    @State private var background="checker"
+    var body:some View{NavigationStack{VStack(spacing:18){Picker("خلفية المعاينة",selection:$background){Text("شفافية").tag("checker");Text("فاتح").tag("light");Text("داكن").tag("dark")}.pickerStyle(.segmented);GeometryReader{geometry in LayerThumbnail(layer:layer,directory:directory,previewSize:min(768,max(48,min(geometry.size.width,geometry.size.height))),previewBackground:background).frame(maxWidth:.infinity,maxHeight:.infinity)};Text("الخلفية للمعاينة فقط؛ لا تتغير شفافية الطبقة أو ألوانها.").font(.footnote).foregroundStyle(Palette.quiet)}.padding(20).background(Palette.ink).navigationTitle("معاينة الطبقة").navigationBarTitleDisplayMode(.inline).toolbar{ToolbarItem(placement:.topBarLeading){Button("تم"){dismiss()}}}}.cookiesInterface()}
 }

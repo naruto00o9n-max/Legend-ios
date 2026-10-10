@@ -24,8 +24,9 @@ struct EditorView:View {
             if model.tool == .text {
                 ScrollView(.horizontal,showsIndicators:false){HStack(spacing:2){
                     toolButton("chevron.right","رجوع",id:"text-back"){model.panel=nil;model.gradientTarget=nil;model.tool = .move}
+                    if model.active?.kind == .text{toolButton(Panel.styles.icon,Panel.styles.title,id:"panel-styles",selected:model.panel == .styles){model.panel=model.panel == .styles ? nil:.styles}}
                     toolButton("plus","إضافة نص",id:"text-add"){model.add(.text)}
-                    if model.active?.kind == .text{ForEach([Panel.styles]+Panel.allCases.filter{$0 != .styles}){panel in toolButton(panel.icon,panel.title,id:"panel-\(panel.rawValue)",selected:model.panel==panel){model.panel = model.panel==panel ? nil:panel}}}
+                    if model.active?.kind == .text{ForEach(Panel.allCases.filter{$0 != .styles}){panel in toolButton(panel.icon,panel.title,id:"panel-\(panel.rawValue)",selected:model.panel==panel){model.panel = model.panel==panel ? nil:panel}}}
                 }.padding(.horizontal,8)}.frame(height:68*min(1.15,max(0.85,toolbarScale))).accessibilityIdentifier("panel-strip")
             }else if [.brush,.eraser].contains(model.tool){
                 ScrollView(.horizontal,showsIndicators:false){HStack(spacing:2){

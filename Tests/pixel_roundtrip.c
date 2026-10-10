@@ -20,7 +20,7 @@ static void fixture(const char *path) {
 int main(int argc,char **argv) {
   assert(argc==2);char src[1024],raw[1024],dst[1024],back[1024],error[512]={0};int w,h;
   snprintf(src,sizeof src,"%s/source.png",argv[1]);snprintf(raw,sizeof raw,"%s/source.rgba",argv[1]);snprintf(dst,sizeof dst,"%s/export.png",argv[1]);snprintf(back,sizeof back,"%s/export.rgba",argv[1]);
-  fixture(src);assert(LIImportPNG(src,raw,&w,&h,error,sizeof error)==1);assert(w==800&&h==15000);
+  fixture(src);assert(LIValidatePNG(src,800,15000)==1);assert(LIImportPNG(src,raw,&w,&h,error,sizeof error)==1);assert(w==800&&h==15000);
   FILE *input=fopen(raw,"rb");assert(input);LIPngWriter *writer=LIWriterOpen(src,dst,w,h,error,sizeof error);assert(writer);
   unsigned char row[800*4],overlay[800*4]={0};
   for(int y=0;y<h;y++){assert(LIReadRegion(raw,w,h,0,y,w,1,1,row)==1);LICompositeRGBA(row,overlay,w);assert(LIWriterRows(writer,row,1)==1);}

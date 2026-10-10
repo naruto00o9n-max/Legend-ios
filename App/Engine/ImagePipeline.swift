@@ -20,7 +20,9 @@ enum ImagePipeline {
         var w:Int32=0,h:Int32=0,error=[CChar](repeating:0,count:512)
         guard LIImportPNG(directory.appendingPathComponent(page.source).path,temporary.path,&w,&h,&error,error.count)==1,Int(w)==width,Int(h)==height else{throw ImageFailure.message("تعذر إعادة قراءة الصورة الأصلية؛ لم تُغيّر بياناتها")}
         try FileManager.default.moveItem(at:temporary,to:url)
+        excludeDecodedFromSystemBackup(url)
     }
+    static func excludeDecodedFromSystemBackup(_ input:URL){var url=input,values=URLResourceValues();values.isExcludedFromBackup=true;try? url.setResourceValues(values)}
     static func clearMemoryCaches(){assets.removeAllObjects();spaces.removeAllObjects()}
     private static let assets=NSCache<NSString,UIImage>()
     private static let assetLock=NSLock()
@@ -58,6 +60,7 @@ enum ImagePipeline {
             }
             var w:Int32=0,h:Int32=0,error=[CChar](repeating:0,count:512)
             guard LIImportPNG(source.path,directory.appendingPathComponent(page.raw).path,&w,&h,&error,error.count)==1 else{throw ImageFailure.message(String(cString:error).contains("16-bit") ? "صور PNG ذات 16 بت تحتاج نسخة 8 بت؛ لم تُخفض دقتها تلقائيًا.":"تعذر قراءة الصورة: \(String(cString:error))")}
+            excludeDecodedFromSystemBackup(directory.appendingPathComponent(page.raw))
             page.width=Int(w);page.height=Int(h);try JSONEncoder().encode(page).write(to:directory.appendingPathComponent("page.json"),options:.atomic)
             try? projectThumbnail(page,directory:directory);return page
         }catch{try? FileManager.default.removeItem(at:directory);throw error}

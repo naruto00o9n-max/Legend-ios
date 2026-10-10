@@ -12,6 +12,7 @@ enum PSDWriter {
         let merged=work.appendingPathComponent("merged.rgba");var width:Int32=0,height:Int32=0,error=[CChar](repeating:0,count:512)
         guard LIImportPNG(composite.path,merged.path,&width,&height,&error,error.count)==1 else{throw ImageFailure.message("تعذر تجهيز PSD")}
         var background=EditorLayer(kind:.image,name:"الصورة الأصلية");background.isVisible=page.baseHidden != true;background.frame=Box(x:0,y:0,width:Double(page.width),height:Double(page.height))
+        try ImagePipeline.ensureDecoded(directory.appendingPathComponent(page.raw),width:page.width,height:page.height)
         var items=[Item(layer:background,rect:CGRect(x:0,y:0,width:page.width,height:page.height),raw:directory.appendingPathComponent(page.raw))]
         let documentSpace=ImagePipeline.colorSpace(directory.appendingPathComponent(page.source))
         for layer in page.layers {

@@ -1,7 +1,9 @@
 import SwiftUI
 import UniformTypeIdentifiers
+import CoreText
 
 struct StorageManagementView:View {
+    @EnvironmentObject private var service:ReferenceService
     @Environment(\.dismiss) private var dismiss
     @State private var usage=StorageUsage()
     @State private var choices:[BackupUnit]=[]
@@ -29,7 +31,7 @@ struct StorageManagementView:View {
     }.padding(22).frame(maxWidth:760).frame(maxWidth:.infinity)}}.foregroundStyle(.white).navigationTitle("المساحة والنسخ الاحتياطي").navigationBarTitleDisplayMode(.inline).toolbar{ToolbarItem(placement:.topBarLeading){Button("تم"){dismiss()}.disabled(busy)}}
         .disabled(busy).overlay{if busy{ZStack{Color.black.opacity(0.55).ignoresSafeArea();ProgressView("جارٍ معالجة بياناتك…").padding(26).glass(20)}}}
         .fileImporter(isPresented:$importing,allowedContentTypes:[UTType(filenameExtension:"cookiesbackup") ?? .data,.zip]){result in do{let url=try result.get(),access=url.startAccessingSecurityScopedResource();defer{if access{url.stopAccessingSecurityScopedResource()}};let copied=FileManager.default.temporaryDirectory.appendingPathComponent("Restore-\(UUID()).cookiesbackup");try FileManager.default.copyItem(at:url,to:copied);load(copied)}catch{message=error.localizedDescription}}
-        .confirmationDialog(confirmation=="reset" ? "حذف كل البيانات وتسجيل الخروج؟":confirmation=="restore" ? "استبدال البيانات المحددة بالنسخة؟":"تنظيف الملفات القابلة لإعادة البناء؟",isPresented:$confirming,titleVisibility:.visible){Button(confirmation=="reset" ? "حذف جميع البيانات":confirmation=="restore" ? "استعادة المحدد":"تنظيف",role:confirmation=="reset" ? .destructive:nil){perform()};Button("إلغاء",role:.cancel){}}message:{Text(confirmation=="reset" ? "ستُحذف المشاريع والخطوط والأنماط والفصول والإعدادات والجلسة المحلية. النسخ المحفوظة خارج التطبيق وحسابك على الخادم تبقى.":"لن تتغير الصور الأصلية عند تنظيف الملفات المؤقتة.")}
+        .confirmationDialog(confirmation=="reset" ? "حذف كل البيانات وتسجيل الخروج؟":confirmation=="restore" ? "استبدال البيانات المحددة بالنسخة؟":"تنظيف الملفات القابلة لإعادة البناء؟",isPresented:$confirming,titleVisibility:.visible){Button(confirmation=="reset" ? "حذف جميع البيانات":confirmation=="restore" ? "استعادة المحدد":"تنظيف",role:confirmation=="reset" ? .destructive:nil){perform()};Button("إلغاء",role:.cancel){}}message:{Text(confirmation=="reset" ? "ستُحذف المشاريع والخطوط والأنماط والفصول والإعدادات والجلسة المحلية. النسخ المحفوظة خارج التطبيق وحسابك على الخادم تبقى.":"لن تتغير الصور الأصلية. سيُحذف أي ملف نسخة احتياطية مؤقت لم تحفظه خارج التطبيق.")}
         .alert("إدارة البيانات",isPresented:Binding(get:{message != nil},set:{if !$0{message=nil}})){Button("حسنًا"){message=nil}}message:{Text(message ?? "")}.task{refresh()}.cookiesInterface()}
     }
     private func amount(_ name:String,_ value:Int64)->some View{HStack{Text(name).font(.system(size:13));Spacer();Text(bytes(value)).font(.system(size:12,design:.monospaced)).foregroundStyle(Palette.quiet)}}
@@ -37,8 +39,8 @@ struct StorageManagementView:View {
     private func load(_ file:URL){busy=true;Task{defer{busy=false};do{let manifest=try await Task.detached{try AppStorageManager.inspect(file)}.value;restoreFile=file;choices=manifest.units;selection=Set(choices.map(\.id))}catch{try? FileManager.default.removeItem(at:file);message=error.localizedDescription}}}
     private func backup(){busy=true;let selected=selection;let settings:Data;do{settings=try AppStorageManager.settingsData()}catch{busy=false;message=error.localizedDescription;return};Task{defer{busy=false};do{archive=try await Task.detached{try AppStorageManager.createBackup(selected:selected,settings:settings)}.value;usage=AppStorageManager.usage()}catch{message=error.localizedDescription}}}
     private func perform(){busy=true;let action=confirmation,selected=selection,file=restoreFile;Task{defer{busy=false};do{
-        if action=="reset"{try AppStorageManager.resetLocalData();ImagePipeline.clearMemoryCaches();dismiss();NotificationCenter.default.post(name:AppStorageManager.reset,object:nil)}
-        else if action=="restore",let file{let settings=try await Task.detached{try AppStorageManager.restore(file,selected:selected)}.value;if let settings{for (key,value) in settings{UserDefaults.standard.set(value,forKey:key)}};Fonts.register();ImagePipeline.clearMemoryCaches();dismiss();NotificationCenter.default.post(name:AppStorageManager.changed,object:nil)}
-        else{try await Task.detached{try AppStorageManager.cleanCaches()}.value;ImagePipeline.clearMemoryCaches();archive=nil;usage=AppStorageManager.usage();message="نُظفت الملفات المؤقتة. مشاريعك وأصولها وطبقاتها محفوظة."}
+        if action=="reset"{service.discardLocalSession();try AppStorageManager.resetLocalData();ImagePipeline.clearMemoryCaches();dismiss();NotificationCenter.default.post(name:AppStorageManager.reset,object:nil)}
+        else if action=="restore",let file{for font in Fonts.userFiles{CTFontManagerUnregisterFontsForURL(font as CFURL,.process,nil)};defer{Fonts.register()};let settings=try await Task.detached{try AppStorageManager.restore(file,selected:selected)}.value;if let settings{for (key,value) in settings{UserDefaults.standard.set(value,forKey:key)}};Fonts.register();ImagePipeline.clearMemoryCaches();dismiss();NotificationCenter.default.post(name:AppStorageManager.changed,object:nil)}
+        else{restoreFile=nil;try await Task.detached{try AppStorageManager.cleanCaches()}.value;ImagePipeline.clearMemoryCaches();archive=nil;refresh();usage=AppStorageManager.usage();message="نُظفت الملفات المؤقتة. مشاريعك وأصولها وطبقاتها محفوظة."}
     }catch{message=error.localizedDescription}}}
 }

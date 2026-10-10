@@ -11,7 +11,7 @@ struct DiagnosticReport:Identifiable {
 /// Store only OS diagnostic payloads, locally. No account, text or project content is added.
 struct DiagnosticReports {
     var directory:URL
-    init(directory:URL?=nil){self.directory=directory ?? FileManager.default.urls(for:.applicationSupportDirectory,in:.userDomainMask)[0].appendingPathComponent("Cookies/Diagnostics",isDirectory:true)}
+    init(directory:URL?=nil){self.directory=directory ?? FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("Cookies/Diagnostics",isDirectory:true)}
     func record(_ payload:Data)throws {
         guard payload.count<=4*1024*1024,try JSONSerialization.jsonObject(with:payload) is [String:Any] else{throw ImageFailure.message("تقرير التشخيص غير صالح")}
         try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
