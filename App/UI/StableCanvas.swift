@@ -346,10 +346,25 @@ final class DocumentCanvas: UIView {
     }
     @discardableResult func beginLayerInteraction(_ id: UUID) -> Bool {
         guard let page, let directory, interaction == nil,
-              let preview = LayerInteraction(page: page, selected: id, directory: directory,screenScale:zoom*traitCollection.displayScale) else { return false }
+              let preview = LayerInteraction(page: page, selected: id, directory: directory,drawingViewport:visible.insetBy(dx:-128,dy:-128).intersection(bounds),screenScale:zoom*traitCollection.displayScale) else { return false }
         interaction = preview; preview.attach(to: self); interactionRevision = revision + 1
         update(page: page, directory: directory, selected: selected, zoom: zoom)
         return true
+    }
+    /// A blend stack may not be representable by independent normal sprites.
+    /// Keep its source tiles stable and publish each completed region immediately,
+    /// even if a newer touch is already waiting, instead of discarding every frame.
+    func previewGesture(page:EditorPage,directory:URL,selected:UUID?,zoom:CGFloat){
+        if interaction != nil{update(page:page,directory:directory,selected:selected,zoom:zoom);return}
+        self.page=page;self.directory=directory;self.selected=selected;self.zoom=zoom;updateSelection()
+        let area=visible.integral.intersection(bounds)
+        guard !area.isEmpty,!area.isNull else{return}
+        let sample=max(1,Int(ceil(sqrt(area.width*area.height/1_048_576))))
+        softwareCommitRevision=nil;latestInk=(page,directory,area,sample);renderLatestInk()
+    }
+    func finishGesture(page:EditorPage,directory:URL,selected:UUID?,zoom:CGFloat){
+        inkGeneration=UUID();latestInk=nil;if page.layers==renderedLayers{showPatch(nil)}else{commitPatch()}
+        update(page:page,directory:directory,selected:selected,zoom:zoom);endLayerInteraction()
     }
     func endLayerInteraction() {
         guard let interaction, let page, let directory else { return }

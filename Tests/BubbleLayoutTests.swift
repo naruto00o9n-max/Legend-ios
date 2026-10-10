@@ -41,4 +41,21 @@ final class BubbleLayoutTests:XCTestCase {
         XCTAssertEqual(model.active?.style.fontPath,typer.tag(bubble.tagID)?.style.fontPath)
         let reopened=TyperStore(directory:typer.directory);XCTAssertEqual(reopened.activeChapter?.usedCount,1)
     }
+    @MainActor func testComplexBlendGestureShowsIntermediateFrameBeforeCommit()async throws {
+        let root=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString);defer{try? FileManager.default.removeItem(at:root)}
+        var page=try PageOperationsFixture(root:root)
+        var shape=EditorLayer(kind:.shape);shape.frame=Box(x:10,y:10,width:40,height:40);shape.style.color="FF0000";shape.blend = .multiply;page.layers=[shape]
+        let directory=root.appendingPathComponent(page.id.uuidString),canvas=DocumentCanvas(frame:CGRect(x:0,y:0,width:128,height:128))
+        canvas.update(page:page,directory:directory,selected:shape.id,zoom:1);canvas.refreshVisible(canvas.bounds)
+        XCTAssertFalse(canvas.beginLayerInteraction(shape.id));let revision=canvas.revision
+        page.layers[0].frame.x=60;canvas.previewGesture(page:page,directory:directory,selected:shape.id,zoom:1)
+        for _ in 0..<100{if canvas.liveCompositeImage != nil{break};try await Task.sleep(nanoseconds:20_000_000)}
+        XCTAssertNotNil(canvas.liveCompositeImage,"Complex blending must be visible while a gesture remains active")
+        XCTAssertEqual(canvas.revision,revision,"Live gestures do not invalidate committed source tiles")
+        canvas.finishGesture(page:page,directory:directory,selected:shape.id,zoom:1);XCTAssertGreaterThan(canvas.revision,revision)
+    }
+    private func PageOperationsFixture(root:URL)throws->EditorPage {
+        try PageOperations.blank(title:"blend",width:128,height:128,color:"FFFFFF",transparent:false,root:root)
+    }
+
 }
