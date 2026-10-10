@@ -57,6 +57,7 @@ if [[ "$TASK_SERVICE_STATUS" != 0 ]]; then
 fi
 if [[ "$TASK_STATUS" != 0 ]]; then
   xcrun xcresulttool export diagnostics --path "build/$TASK_SCREEN.xcresult" --output-path "build/diagnostics-$TASK_SCREEN" || true
+  rg -n "\.swift:[0-9]+: error:|Test Case .* failed|Executed .* failures" "build/test-$TASK_SCREEN.log" | tail -35 || true
   tail -100 "build/test-$TASK_SCREEN.log"
 fi
 xcrun xcresulttool export attachments --path "build/$TASK_SCREEN.xcresult" --output-path "build/screenshots/$TASK_SCREEN" || true

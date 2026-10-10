@@ -88,6 +88,15 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
+          name: cookies-editor-verification-${{ matrix.screen }}
+          path: |
+            build/test-*.log
+            build/gates-*.json
+            build/photos-integrity-*.json
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
           name: cookies-editor-evidence-${{ matrix.screen }}
           path: build/
           retention-days: 30

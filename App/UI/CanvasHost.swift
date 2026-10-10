@@ -8,7 +8,7 @@ struct CanvasHost:UIViewRepresentable {
     func makeCoordinator()->Coordinator {Coordinator(model)}
     func makeUIView(context:Context)->UIScrollView {
         let s=CanvasViewport();context.coordinator.readOnly=readOnly;s.backgroundColor=UIColor(hex:"080808");s.delegate=context.coordinator;s.bouncesZoom=true;s.showsVerticalScrollIndicator=false;s.showsHorizontalScrollIndicator=false;s.maximumZoomScale=128;s.contentInsetAdjustmentBehavior = .never;s.accessibilityIdentifier="canvas-scroll"
-        let canvas=DocumentCanvas(frame:CGRect(x:0,y:0,width:model.page.width,height:model.page.height));s.addSubview(canvas);context.coordinator.canvas=canvas;context.coordinator.scroll=s;canvas.onHandle={ [weak coordinator=context.coordinator] name in guard let c=coordinator else{return};switch name{case "delete":c.model.delete();case "duplicate":c.model.duplicate();case "edit":c.model.tool = .text;c.model.panel = .content;case "styles":c.model.tool = .text;c.model.panel = .styles;default:break}}
+        let canvas=DocumentCanvas(frame:CGRect(x:0,y:0,width:model.page.width,height:model.page.height));s.addSubview(canvas);context.coordinator.canvas=canvas;context.coordinator.scroll=s;canvas.onHandle={ [weak coordinator=context.coordinator] name in guard let c=coordinator,!c.model.busy,c.model.cleanCandidates.isEmpty else{return};switch name{case "delete":c.model.delete();case "duplicate":c.model.duplicate();case "edit":c.model.tool = .text;c.model.panel = .content;case "styles":c.model.tool = .text;c.model.panel = .styles;default:break}}
         s.onViewportSizeChange = { [weak coordinator=context.coordinator] in guard let coordinator,coordinator.fitted else{return};coordinator.updateCenter(recenter:true) }
         if readOnly{return s}
         let tap=UITapGestureRecognizer(target:context.coordinator,action:#selector(Coordinator.tap(_:)));tap.delegate=context.coordinator;s.addGestureRecognizer(tap)
@@ -49,9 +49,10 @@ struct CanvasHost:UIViewRepresentable {
             if gesture is UITapGestureRecognizer{var view=touch.view;while let current=view{if current is UIControl{return false};view=current.superview}}
             return true
         }
-        func gestureRecognizerShouldBegin(_ g:UIGestureRecognizer)->Bool{if g is UILongPressGestureRecognizer{return canvas.handle(at:g.location(in:canvas))==nil && canvas.bounds.contains(g.location(in:canvas))};guard g === panGesture else{return true};if model.bubbleShape != nil{return true};if model.sniperMode{return false};if model.drawingShape=="fill",model.tool == .brush{return false};if model.textMaskMode,model.active?.kind == .text{return true};if [.brush,.eraser,.cleaner].contains(model.tool){return true};let point=g.location(in:canvas),translation=(g as? UIPanGestureRecognizer)?.translation(in:canvas) ?? .zero,origin=touchOrigin ?? CGPoint(x:point.x-translation.x,y:point.y-translation.y);return touchedHandle != nil || canvas.handle(at:origin) != nil || hit(origin) != nil}
+        func gestureRecognizerShouldBegin(_ g:UIGestureRecognizer)->Bool{if model.busy || !model.cleanCandidates.isEmpty{return false};if g is UILongPressGestureRecognizer{return canvas.handle(at:g.location(in:canvas))==nil && canvas.bounds.contains(g.location(in:canvas))};guard g === panGesture else{return true};if model.bubbleShape != nil{return true};if model.sniperMode{return false};if model.drawingShape=="fill",model.tool == .brush{return false};if model.textMaskMode,model.active?.kind == .text{return true};if [.brush,.eraser,.cleaner].contains(model.tool){return true};let point=g.location(in:canvas),translation=(g as? UIPanGestureRecognizer)?.translation(in:canvas) ?? .zero,origin=touchOrigin ?? CGPoint(x:point.x-translation.x,y:point.y-translation.y);return touchedHandle != nil || canvas.handle(at:origin) != nil || hit(origin) != nil}
         @objc func tap(_ g:UITapGestureRecognizer){let point=g.location(in:canvas);model.visibleCenter=point
             if model.bubbleShape != nil{return}
+            guard !model.busy,model.cleanCandidates.isEmpty else{return}
             if model.sniperMode{Task{await model.detectSniper(at:point)};return}
             if model.textMaskMode,let active=model.active,active.kind == .text,!active.isLocked{let local=point.applying(LayerRenderer.transform(active).inverted());let dot=Stroke(points:[Point(x:local.x,y:local.y)],width:model.brushWidth,color:"FFFFFF",erase:!model.textMaskRestore);model.checkpoint();model.change{$0.textMask=($0.textMask ?? [])+[dot]};return}
             if model.tool == .brush,model.drawingShape=="fill"{Task{await model.fillBucket(at:point)};return}
@@ -83,7 +84,7 @@ struct CanvasHost:UIViewRepresentable {
         @objc func pan(_ g:UIPanGestureRecognizer){let point=g.location(in:canvas)
             removeTextPrompt()
             if let shape=model.bubbleShape {
-                if g.state == .began{bubbleOrigin=point}
+                if g.state == .began{bubbleOrigin=touchOrigin ?? point}
                 if let origin=bubbleOrigin {
                     let rect=CGRect(x:min(origin.x,point.x),y:min(origin.y,point.y),width:abs(point.x-origin.x),height:abs(point.y-origin.y))
                     canvas.showBubbleFrame(rect,shape:shape)

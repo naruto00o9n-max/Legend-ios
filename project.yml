@@ -52,6 +52,7 @@ targetTemplates:
     - sdk: CoreMedia.framework
     - sdk: CoreVideo.framework
     - sdk: CoreImage.framework
+    - sdk: Vision.framework
     - sdk: ImageIO.framework
     - sdk: libz.tbd
     - sdk: libc++.tbd

@@ -11,17 +11,22 @@ struct BubbleLayoutRequest {var bounds:CGRect;var shape:BubbleShape;var margin:D
 /// No spaces or Kashida are inserted: Arabic shaping and word order remain intact.
 enum BubbleLayout {
     static func lines(_ text:String,count:Int,width:Double,shape:BubbleShape,measure:(String)->Double)->[String]? {
-        let words=text.split(whereSeparator:{$0.isWhitespace}).map(String.init),n=words.count
-        guard count>0,count<=n,n<=256 else{return nil}
+        let widths=(0..<count).map { row -> Double in
+            let distance=abs(Double(row)-Double(count-1)/2)/max(1,Double(count-1)/2)
+            return width*((shape == .box || shape == .system) ? 1:1-0.32*distance*distance)
+        }
+        return lines(text,widths:widths,measure:measure)
+    }
+    static func lines(_ text:String,widths available:[Double],measure:(String)->Double)->[String]? {
+        let words=text.split(whereSeparator:{$0.isWhitespace}).map(String.init),n=words.count,count=available.count
+        guard count>0,count<=n,n<=256,available.allSatisfy({$0>0}) else{return nil}
         var costs=Array(repeating:Array(repeating:Double.infinity,count:n+1),count:count+1)
         var previous=Array(repeating:Array(repeating:-1,count:n+1),count:count+1)
         var widths:[String:Double]=[:]
         func metric(_ value:String)->Double{if let v=widths[value]{return v};let v=measure(value);widths[value]=v;return v}
         costs[0][0]=0
         for row in 0..<count {
-            let distance=abs(Double(row)-Double(count-1)/2)/max(1,Double(count-1)/2)
-            let ratio=(shape == .box || shape == .system) ? 1:1-0.32*distance*distance
-            let target=width*ratio
+            let target=available[row]
             for start in 0..<n where costs[row][start].isFinite {
                 var line=""
                 for end in start..<n {

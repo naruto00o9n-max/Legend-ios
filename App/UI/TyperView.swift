@@ -101,7 +101,7 @@ struct TyperPanel:View {
                 if !compact{HStack{Button{library=true}label:{Image(systemName:"doc.badge.plus")}.accessibilityLabel("تحرير أو استيراد الفصل");Spacer();Button{uppercase.toggle()}label:{Image(systemName:"textformat.abc")}.accessibilityLabel("تحويل إلى أحرف كبيرة");Spacer();Button{reset=true}label:{Image(systemName:"arrow.counterclockwise")}.accessibilityLabel("إعادة تعيين الفقاعات المستخدمة")}.font(.system(size:17)).padding(.horizontal,22).frame(height:40)}
                 HStack{Button{editing=DialogueBubble(text:"",tagID:typer.state.tags.first?.id)}label:{Image(systemName:"plus.bubble")};Spacer();Picker("تنسيق الإدراج",selection:$textFormat){Text("كما هو").tag("");Text("مربع").tag("box");Text("دائرة").tag("circle")}.pickerStyle(.menu)}.font(.system(size:11)).padding(.horizontal,14)
                 if let cursor=insertionCursor,let bubble=chapter.bubbles.first(where:{$0.id==cursor}){HStack{Text("بدء التوزيع: "+bubble.text).lineLimit(1);Spacer();Button("مسح"){insertionCursor=nil}}.font(.system(size:10)).padding(.horizontal,14)}
-                HStack(spacing:8){Button{model.sniperMode.toggle();model.tool = .move;model.panel=nil;close()}label:{Label("القنص",systemImage:"scope")}.font(.system(size:12)).padding(.horizontal,12).frame(height:42).glass(12).accessibilityIdentifier("typer-sniper")
+                HStack(spacing:8){Button{model.bubbleShape=nil;model.sniperMode.toggle();model.tool = .move;model.panel=nil;close()}label:{Label("القنص",systemImage:"scope")}.font(.system(size:12)).padding(.horizontal,12).frame(height:42).glass(12).accessibilityIdentifier("typer-sniper")
                     Button{let count=max(1,model.sniperTargets.count);let next=DialogueSequence.next(chapter,from:insertionCursor,count:count);insert(next,chapter:chapter.id)}label:{Label(model.sniperTargets.isEmpty ? "الفقاعة التالية":"إدراج \(model.sniperTargets.count) أهداف",systemImage:"text.badge.plus")}.buttonStyle(GoldButtonStyle(primary:true)).disabled(chapter.pasteable.allSatisfy(\.used)).accessibilityIdentifier("typer-next")
                 }.padding(12)
             }else{VStack(spacing:16){Image(systemName:"doc.text").font(.system(size:30,weight:.light));Text("أضف ملف الفصل أو اكتب النص، ثم اختر أي فقاعة لإدراجها في الصورة.").font(.system(size:12)).multilineTextAlignment(.center).foregroundStyle(Palette.quiet);Button("إضافة نص الفصل"){library=true}.buttonStyle(GoldButtonStyle(primary:true))}.padding(20).frame(maxHeight:.infinity)}
@@ -112,10 +112,22 @@ struct TyperPanel:View {
         .typerErrors(typer).onChange(of:typer.state.active){_,_ in insertionCursor=nil}
     }
     private func insert(_ bubbles:[DialogueBubble],chapter:UUID){
-        do {let remaining=Array(bubbles.filter{!$0.noPaste}.prefix(model.sniperTargets.isEmpty ? bubbles.count:model.sniperTargets.count))
-            var values=remaining;if uppercase{for i in values.indices{values[i].text=values[i].text.uppercased()}}
-            try typer.place(values,chapter:chapter,model:model,targets:model.sniperTargets,overrideTag:overrideTag,font:quickFont,format:textFormat,styleAssets:styles.directory);model.sniperTargets=[];model.sniperMode=false
-        }catch{typer.error=error.localizedDescription}
+        guard !model.busy else{return}
+        let remaining=Array(bubbles.filter{!$0.noPaste}.prefix(model.sniperTargets.isEmpty ? bubbles.count:model.sniperTargets.count))
+        var values=remaining;if uppercase{for i in values.indices{values[i].text=values[i].text.uppercased()}}
+        let targets=model.sniperTargets,before=model.page
+        let tag=overrideTag,font=quickFont,format=textFormat
+        var inputs:[EditorLayer]=[]
+        for bubble in values{let previous=typer.tag(bubble.tagID);var layer=EditorLayer(kind:.text);layer.textContent=bubble.text;layer.style=(typer.tag(tag) ?? typer.state.tags.first{$0.prefix==previous?.prefix} ?? previous)?.style ?? TextStyle();if let font{layer.style.fontPath=font};inputs.append(layer)}
+        model.busy=true
+        Task{defer{model.busy=false};do{
+            let prepared=try await BackgroundWork.run{try inputs.enumerated().map{index,layer in
+                targets.indices.contains(index) ? try SniperDetector.fitted(layer,to:targets[index]):layer
+            }}
+            guard model.page==before,model.sniperTargets==targets,typer.activeChapter?.id==chapter else{throw ImageFailure.message("تغيرت الصفحة أو أهداف القنص؛ أعد المحاولة")}
+            try typer.place(values,chapter:chapter,model:model,targets:targets,overrideTag:tag,font:font,format:targets.isEmpty ? format:"",styleAssets:styles.directory,preparedLayouts:targets.isEmpty ? []:prepared)
+            model.sniperTargets=[];model.sniperMode=false
+        }catch{typer.error=error.localizedDescription}}
     }
     private func move(_ id:UUID,by delta:Int,in chapter:DialogueChapter){var ids=chapter.bubbles.map(\.id);guard let index=ids.firstIndex(of:id),ids.indices.contains(index+delta) else{return};ids.swapAt(index,index+delta);do{try typer.reorderBubbles(ids,in:chapter.id)}catch{typer.error=error.localizedDescription}}
 }

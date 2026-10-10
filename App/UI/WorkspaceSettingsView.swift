@@ -29,6 +29,6 @@ struct WorkspaceSettingsView:View {
         Section("التنظيف الذكي"){scale("نصف قطر إعادة البناء",$cleaner,1...12)}
         Section("الحركة والاستجابة"){Toggle("استجابة اللمس",isOn:$haptics);Toggle("تقليل الحركة",isOn:$reduced);Text("يُحترم إعداد تقليل الحركة في iPadOS أيضًا.").font(.system(size:12))}
         Button("استعادة الإعدادات الافتراضية"){density=1;icons=1;toolbar=1;labels=1;handles=1;handleSpeed=1;typerScale=1;doubleTap="edit";quality=1;smartPosition=true;tapText=false;snap=false;haptics=true;reduced=false;cleaner=3;direction="rtl"}
-    }.navigationTitle("مساحة العمل").navigationBarTitleDisplayMode(.inline).toolbar{ToolbarItem(placement:.topBarLeading){Button("تم"){dismiss()}.accessibilityIdentifier("workspace-settings-close")}}}.cookiesInterface()}
+    }.accessibilityIdentifier("workspace-settings-form").navigationTitle("مساحة العمل").navigationBarTitleDisplayMode(.inline).toolbar{ToolbarItem(placement:.topBarLeading){Button("تم"){dismiss()}.accessibilityIdentifier("workspace-settings-close")}}}.cookiesInterface()}
     private func scale(_ name:String,_ binding:Binding<Double>,_ range:ClosedRange<Double>)->some View{VStack{HStack{Text(name);Spacer();Text(binding.wrappedValue,format:.number.precision(.fractionLength(1)))};Slider(value:binding,in:range)}}
 }

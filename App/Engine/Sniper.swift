@@ -17,14 +17,9 @@ enum SniperDetector {
         let outline=((result["points"] as? [[NSNumber]]) ?? []).compactMap{pair -> Point? in guard pair.count==2 else{return nil};return Point(x:pair[0].doubleValue+area.minX,y:pair[1].doubleValue+area.minY)}
         return SniperTarget(bounds:Box(x:number("x")+area.minX,y:number("y")+area.minY,width:number("width"),height:number("height")),outline:outline,pin:pin,point:Point(x:point.x,y:point.y))
     }
-    static func fitted(_ layer:EditorLayer,to target:SniperTarget)->EditorLayer {
+    static func fitted(_ layer:EditorLayer,to target:SniperTarget)throws->EditorLayer {
         var result=layer
         if target.pin {let rect=LayerRenderer.bounds(result);result.frame.x=target.point.x-rect.width/2;result.frame.y=target.point.y-rect.height/2;return result}
-        result.style.boxWidth=max(20,target.bounds.width);result.frame.width=result.style.boxWidth
-        // Fit native Arabic shaping by measurement; never shrink the source.
-        var low=8.0,high=max(8,layer.style.fontSize)
-        for _ in 0..<12 {let mid=(low+high)/2;result.style.fontSize=mid;if LayerRenderer.bounds(result).height<=target.bounds.height {low=mid}else{high=mid}}
-        result.style.fontSize=low;let rect=LayerRenderer.bounds(result)
-        result.frame.x=target.bounds.x;result.frame.y=target.bounds.y+(target.bounds.height-rect.height)/2;return result
+        return try ContourTypesetter.fit(layer,to:target)
     }
 }

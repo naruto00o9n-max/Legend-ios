@@ -164,7 +164,7 @@ private extension String {
         let url=FileManager.default.temporaryDirectory.appendingPathComponent("Cookies-Chapter-\(chapter.id.uuidString)."+(plain ? "txt":"json"))
         try (plain ? Data(chapter.source.utf8):JSONEncoder().encode(chapter)).write(to:url,options:.atomic);return url
     }
-    func place(_ bubbles:[DialogueBubble],chapter:UUID,model:EditorModel,targets:[SniperTarget]=[],overrideTag:UUID?=nil,font:String?=nil,format:String="",styleAssets:URL?=nil,bubbleLayout:BubbleLayoutRequest?=nil,preparedLayout:EditorLayer?=nil)throws {
+    func place(_ bubbles:[DialogueBubble],chapter:UUID,model:EditorModel,targets:[SniperTarget]=[],overrideTag:UUID?=nil,font:String?=nil,format:String="",styleAssets:URL?=nil,bubbleLayout:BubbleLayoutRequest?=nil,preparedLayout:EditorLayer?=nil,preparedLayouts:[EditorLayer]=[])throws {
         guard !bubbles.isEmpty else{return}
         let before=model.page
         let assets=styleAssets ?? directory.deletingLastPathComponent().appendingPathComponent("Styles")
@@ -176,7 +176,7 @@ private extension String {
             let text=format=="box" ? formatter.box(bubble.text,width:style.boxWidth,tatweel:true):format=="circle" ? formatter.circle(bubble.text,width:style.boxWidth,fontSize:style.fontSize):bubble.text
             return (text,style)
         }
-        let layers=try model.insertDialogues(values,targets:targets,bubbleLayout:bubbleLayout,preparedLayout:preparedLayout)
+        let layers=try model.insertDialogues(values,targets:targets,bubbleLayout:bubbleLayout,preparedLayout:preparedLayout,preparedLayouts:preparedLayouts)
         do {
             var next=state;guard let c=next.chapters.firstIndex(where:{$0.id==chapter}) else{throw ImageFailure.message("لم يعد الفصل موجودًا")}
             for (bubble,layer) in zip(bubbles,layers) {if let i=next.chapters[c].bubbles.firstIndex(where:{$0.id==bubble.id}){next.chapters[c].bubbles[i].usedAt=Date();next.chapters[c].bubbles[i].usedOnPage=model.page.id;next.chapters[c].bubbles[i].usedLayer=layer}}
