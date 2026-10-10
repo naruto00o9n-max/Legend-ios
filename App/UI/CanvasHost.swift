@@ -6,8 +6,9 @@ struct CanvasHost:UIViewRepresentable {
     var readOnly=false
     func makeCoordinator()->Coordinator {Coordinator(model)}
     func makeUIView(context:Context)->UIScrollView {
-        let s=UIScrollView();context.coordinator.readOnly=readOnly;s.backgroundColor=UIColor(hex:"080808");s.delegate=context.coordinator;s.bouncesZoom=true;s.showsVerticalScrollIndicator=false;s.showsHorizontalScrollIndicator=false;s.maximumZoomScale=128;s.contentInsetAdjustmentBehavior = .never;s.accessibilityIdentifier="canvas-scroll"
+        let s=CanvasViewport();context.coordinator.readOnly=readOnly;s.backgroundColor=UIColor(hex:"080808");s.delegate=context.coordinator;s.bouncesZoom=true;s.showsVerticalScrollIndicator=false;s.showsHorizontalScrollIndicator=false;s.maximumZoomScale=128;s.contentInsetAdjustmentBehavior = .never;s.accessibilityIdentifier="canvas-scroll"
         let canvas=DocumentCanvas(frame:CGRect(x:0,y:0,width:model.page.width,height:model.page.height));s.addSubview(canvas);context.coordinator.canvas=canvas;context.coordinator.scroll=s;canvas.onHandle={ [weak coordinator=context.coordinator] name in guard let c=coordinator else{return};switch name{case "delete":c.model.delete();case "duplicate":c.model.duplicate();case "edit":c.model.tool = .text;c.model.panel = .content;case "styles":c.model.tool = .text;c.model.panel = .styles;default:break}}
+        s.onViewportSizeChange = { [weak coordinator=context.coordinator] in guard let coordinator,coordinator.fitted else{return};coordinator.updateCenter() }
         if readOnly{return s}
         let tap=UITapGestureRecognizer(target:context.coordinator,action:#selector(Coordinator.tap(_:)));tap.delegate=context.coordinator;canvas.addGestureRecognizer(tap)
         let double=UITapGestureRecognizer(target:context.coordinator,action:#selector(Coordinator.doubleTap(_:)));double.numberOfTapsRequired=2;double.delegate=context.coordinator;canvas.addGestureRecognizer(double)
@@ -97,5 +98,18 @@ struct CanvasHost:UIViewRepresentable {
             };if dragHandle==nil || ["resize","rotate","scale-x","scale-y"].contains(dragHandle ?? ""){model.transformGroupPeers(from:initial,baseline:groupInitial)};canvas.update(page:model.page,directory:model.directory,selected:model.selected,zoom:scroll?.zoomScale ?? 1)}
             if g.state == .ended || g.state == .cancelled{canvas.endLayerInteraction();initial=nil;groupInitial=[];dragHandle=nil;touchedHandle=nil;touchOrigin=nil;model.save()}
         }
+    }
+}
+
+/// Rotation and keyboard layout can resize a viewport without scrolling it.
+/// Refresh document-space insertion coordinates and visible tiles in that case.
+final class CanvasViewport:UIScrollView {
+    var onViewportSizeChange:(()->Void)?
+    private var previousSize:CGSize = .zero
+    override func layoutSubviews(){
+        super.layoutSubviews()
+        guard bounds.width>0,bounds.height>0,bounds.size != previousSize else{return}
+        previousSize=bounds.size
+        onViewportSizeChange?()
     }
 }

@@ -29,7 +29,7 @@ pathlib.Path('.work/Photos-800x15000.png').write_bytes(png)
 PYFIX
 xcrun simctl addmedia "$TASK_DEVICE" .work/Photos-800x15000.png
 TASK_STATUS=0
-xcodebuild -project CookiesEditor.xcodeproj -scheme CookiesEditor -configuration Debug -destination "platform=iOS Simulator,id=$TASK_DEVICE" -parallel-testing-enabled NO -derivedDataPath .work/simulator -resultBundlePath "build/$TASK_SCREEN.xcresult" ARCHS=x86_64 ONLY_ACTIVE_ARCH=YES test > "build/test-$TASK_SCREEN.log" 2>&1 || TASK_STATUS=$?
+xcodebuild -project CookiesEditor.xcodeproj -scheme CookiesEditor -configuration Debug -destination "platform=iOS Simulator,id=$TASK_DEVICE" -parallel-testing-enabled NO -derivedDataPath .work/simulator -resultBundlePath "build/$TASK_SCREEN.xcresult" -skip-testing:CookiesServicesTests/ServiceTests/testOriginalPublicAPIFromNativeClient -skip-testing:CookiesServicesUITests ARCHS=x86_64 ONLY_ACTIVE_ARCH=YES test > "build/test-$TASK_SCREEN.log" 2>&1 || TASK_STATUS=$?
 if [[ "$TASK_STATUS" == 0 ]]; then
   # The full suite relaunches and clears test projects. Run Photos once last,
   # then inspect the real application container before another test resets it.
@@ -39,6 +39,21 @@ if [[ "$TASK_STATUS" == 0 ]]; then
     python3 scripts/verify_photos_import.py "$TASK_CONTAINER/Documents/Cookies" "build/photos-integrity-$TASK_SCREEN.json" || TASK_STATUS=$?
   fi
   xcrun xcresulttool export attachments --path "build/$TASK_SCREEN-photos.xcresult" --output-path "build/screenshots/$TASK_SCREEN-photos" || true
+fi
+TASK_LOCAL_STATUS=$TASK_STATUS
+# A third-party service outage must not prevent inspecting local Photos bytes.
+# Keep both real service tests as separate mandatory gates; report their failure.
+TASK_SERVICE_STATUS=0
+xcodebuild -project CookiesEditor.xcodeproj -scheme CookiesEditor -configuration Debug -destination "platform=iOS Simulator,id=$TASK_DEVICE" -parallel-testing-enabled NO -derivedDataPath .work/simulator -resultBundlePath "build/$TASK_SCREEN-services.xcresult" -only-testing:CookiesServicesTests/ServiceTests/testOriginalPublicAPIFromNativeClient -only-testing:CookiesServicesUITests ARCHS=x86_64 ONLY_ACTIVE_ARCH=YES test-without-building > "build/test-$TASK_SCREEN-services.log" 2>&1 || TASK_SERVICE_STATUS=$?
+xcrun xcresulttool export attachments --path "build/$TASK_SCREEN-services.xcresult" --output-path "build/screenshots/$TASK_SCREEN-services" || true
+python3 - "$TASK_SCREEN" "$TASK_LOCAL_STATUS" "$TASK_SERVICE_STATUS" <<'PYGATES'
+import json,pathlib,sys
+screen,local,services=sys.argv[1:]
+pathlib.Path('build/gates-'+screen+'.json').write_text(json.dumps({'local_editor_and_photos_exit_code':int(local),'real_external_services_exit_code':int(services),'external_failure_does_not_discard_local_evidence':True},indent=2)+'\n')
+PYGATES
+if [[ "$TASK_SERVICE_STATUS" != 0 ]]; then
+  TASK_STATUS=$TASK_SERVICE_STATUS
+  tail -100 "build/test-$TASK_SCREEN-services.log"
 fi
 if [[ "$TASK_STATUS" != 0 ]]; then
   xcrun xcresulttool export diagnostics --path "build/$TASK_SCREEN.xcresult" --output-path "build/diagnostics-$TASK_SCREEN" || true

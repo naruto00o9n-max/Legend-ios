@@ -39,6 +39,9 @@ final class EditorUITests:XCTestCase {
         capture("32-ipad-landscape-editor");assertLayout()
         tool("text");XCTAssertTrue(app.textViews["text-input"].waitForExistence(timeout:5));app.buttons["تم"].tap()
         XCTAssertFalse(app.scrollViews["tool-strip"].exists)
+        let landscapeHandle=app.buttons["selection-resize"]
+        XCTAssertTrue(landscapeHandle.isHittable,"New text must stay editable after rotation")
+        XCTAssertTrue(app.scrollViews["canvas-scroll"].frame.contains(landscapeHandle.frame),"The resize handle must stay inside the landscape canvas, clear of the tool strip")
         capture("33-landscape-text-handles");assertLayout()
         app.buttons["text-back"].tap();XCTAssertTrue(app.scrollViews["tool-strip"].exists)
         XCUIDevice.shared.orientation = .portrait
