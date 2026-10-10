@@ -131,7 +131,7 @@ final class EditorUITests:XCTestCase {
     }
 
     func testTextTapSuggestionRequiresExplicitConfirmation() {
-        start();app.buttons["settings"].tap();app.buttons["settings-workspace"].tap();XCTAssertTrue(app.buttons["workspace-settings-close"].waitForExistence(timeout:5));let toggle=app.switches["setting-tap-text"];let form=app.descendants(matching:.any)["workspace-settings-form"];for _ in 0..<10 where !toggle.isHittable{form.swipeUp()};XCTAssertTrue(toggle.waitForExistence(timeout:5));toggle.tap();app.buttons["workspace-settings-close"].tap();app.buttons["settings-close"].tap();openDemoFromLibrary()
+        start();app.buttons["settings"].tap();app.buttons["settings-workspace"].tap();XCTAssertTrue(app.buttons["workspace-settings-close"].waitForExistence(timeout:5));let toggle=app.descendants(matching:.any).matching(identifier:"setting-tap-text").firstMatch;let form=app.descendants(matching:.any)["workspace-settings-form"];for _ in 0..<10 where !toggle.isHittable{form.swipeUp()};XCTAssertTrue(toggle.waitForExistence(timeout:5));toggle.tap();app.buttons["workspace-settings-close"].tap();app.buttons["settings-close"].tap();openDemoFromLibrary()
         let canvas=app.scrollViews["canvas-scroll"];canvas.coordinate(withNormalizedOffset:CGVector(dx:0.45,dy:0.3)).tap();let confirm=app.buttons["canvas-add-text-confirm"];XCTAssertTrue(confirm.waitForExistence(timeout:5));XCTAssertTrue((canvas.value as? String ?? "").hasPrefix("0 طبقات"));capture("fix-text-add-confirmation");confirm.tap();XCTAssertTrue(app.textViews["text-input"].waitForExistence(timeout:5));XCTAssertTrue((canvas.value as? String ?? "").hasPrefix("1 طبقات"));XCTAssertFalse(confirm.exists)
     }
 

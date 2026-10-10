@@ -88,6 +88,8 @@ import SwiftUI
     @Published var sniperTargets:[SniperTarget]=[]
     @Published var sniperMode=false
     @Published var bubbleShape:BubbleShape?
+    @Published var typerOverrideTag:UUID?
+    @Published var typerQuickFont:String?
     @Published var requestTyper=false
     let library:LibraryStore; var visibleCenter=CGPoint.zero
     private var previewTask:Task<Void,Never>?

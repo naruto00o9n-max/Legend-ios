@@ -102,7 +102,21 @@ NSDictionary<NSString *, id> *CookiesWhitenBubble(UIImage *source,NSArray<NSValu
             if(inside.at<unsigned char>(y,x)&&delta<=12)near++;
             if(delta>=35)contrast.at<unsigned char>(y,x)=255;
         }
-        double flatRatio=(double)near/innerCount;bool flat=flatRatio>=0.80;
+        double flatRatio=(double)near/innerCount;
+        int backgroundSamples=0,uniformSamples=0;
+        if(localized){for(int y=0;y<rgb.rows;y++)for(int x=0;x<rgb.cols;x++)if(inside.at<unsigned char>(y,x)&&!ocr.at<unsigned char>(y,x)){
+            auto p=rgb.at<cv::Vec3b>(y,x);int delta=std::max({abs(p[0]-background[0]),abs(p[1]-background[1]),abs(p[2]-background[2])});backgroundSamples++;if(delta<=12)uniformSamples++;
+        }}
+        bool flat=localized ? backgroundSamples>=innerCount*0.20&&(double)uniformSamples/backgroundSamples>=0.97:flatRatio>=0.80;
+        if(localized&&!flat){
+            // Local color contrast separates ink from slow gradients and multiple
+            // background colors; it never treats a whole colored region as text.
+            cv::Mat smooth;cv::GaussianBlur(rgb,smooth,cv::Size(31,31),0);
+            for(int y=0;y<rgb.rows;y++)for(int x=0;x<rgb.cols;x++){
+                auto p=rgb.at<cv::Vec3b>(y,x),b=smooth.at<cv::Vec3b>(y,x);int delta=std::max({abs(p[0]-b[0]),abs(p[1]-b[1]),abs(p[2]-b[2])});contrast.at<unsigned char>(y,x)=delta>=24 ? 255:0;
+            }
+            cv::morphologyEx(contrast,contrast,cv::MORPH_CLOSE,cv::getStructuringElement(cv::MORPH_ELLIPSE,cv::Size(3,3)));
+        }
         bool white=background[0]>=235&&background[1]>=235&&background[2]>=235;
         // Without text localization, colored/complex art is left untouched.
         if(!localized&&(!flat||!white))return nil;

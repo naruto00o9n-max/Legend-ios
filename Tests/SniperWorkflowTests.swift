@@ -41,6 +41,19 @@ final class SniperWorkflowTests:XCTestCase {
         let polygon=[CGPoint(x:5,y:5),CGPoint(x:115,y:5),CGPoint(x:115,y:115),CGPoint(x:5,y:115)].map{NSValue(cgPoint:$0)}
         XCTAssertNil(CookiesWhitenBubble(image,polygon,[]))
     }
+    func testGradientTextIsInpaintedWithoutFillingWholeBubble()throws{
+        let format=UIGraphicsImageRendererFormat();format.scale=1;format.opaque=true
+        let image=UIGraphicsImageRenderer(size:CGSize(width:220,height:180),format:format).image{c in
+            for y in 0..<180{UIColor(red:CGFloat(0.3+Double(y)/450),green:0.6,blue:0.9,alpha:1).setFill();c.fill(CGRect(x:0,y:y,width:220,height:1))}
+            UIColor.black.setFill();for x in [60,85,110,135]{c.fill(CGRect(x:x,y:75,width:10,height:22))}
+        }
+        let polygon=[CGPoint(x:10,y:10),CGPoint(x:210,y:10),CGPoint(x:210,y:170),CGPoint(x:10,y:170)].map{NSValue(cgPoint:$0)}
+        let result=try XCTUnwrap(CookiesWhitenBubble(image,polygon,[NSValue(cgRect:CGRect(x:58,y:73,width:90,height:26))]) as? [String:Any])
+        XCTAssertFalse(result["flat"] as? Bool ?? true);XCTAssertTrue(result["reviewRequired"] as? Bool ?? false)
+        let patch=try XCTUnwrap((result["patch"] as? UIImage)?.cgImage),bytes=try pixels(patch)
+        XCTAssertGreaterThan((result["removedPixels"] as? NSNumber)?.intValue ?? 0,20)
+        XCTAssertEqual(bytes[(40*220+40)*4+3],0);XCTAssertEqual(bytes[(10*220+100)*4+3],0)
+    }
     @MainActor func testMultiBubblePreviewDoesNotCommitUntilAcceptedAndUndoRestoresAll()throws{
         let root=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString);defer{try? FileManager.default.removeItem(at:root)}
         let page=try PageOperations.blank(title:"preview",width:100,height:100,color:"FFFFFF",transparent:false,root:root),model=EditorModel(page:page,library:LibraryStore(root:root))

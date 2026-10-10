@@ -80,8 +80,8 @@ struct TyperPanel:View {
     @State private var library=false
     @State private var reset=false
     @State private var uppercase=false
-    @State private var overrideTag:UUID?
-    @State private var quickFont:String?
+    private var overrideTag:UUID?{get{model.typerOverrideTag} nonmutating set{model.typerOverrideTag=newValue}}
+    private var quickFont:String?{get{model.typerQuickFont} nonmutating set{model.typerQuickFont=newValue}}
     @State private var textFormat=""
     @State private var editing:DialogueBubble?
     @State private var insertionCursor:UUID?
