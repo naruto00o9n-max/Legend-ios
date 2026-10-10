@@ -87,7 +87,7 @@ struct WebtoonImportView:View {
     func download(_ images:[WebtoonImage],retrying:Bool=false){
         if !retrying{discardDownloads();batch=images}
         task=Task{busy=true;progress=pendingFiles.count;failed=[]
-            do{for image in images{try Task.checkCancellation();do{let file=try await browser.download(image);try Task.checkCancellation();pendingFiles[image.id]=file;progress+=1}catch is CancellationError{throw CancellationError()}catch{failed.append(image)}}
+            do{for image in images{try Task.checkCancellation();do{let file=try await browser.download(image);if Task.isCancelled{try? FileManager.default.removeItem(at:file);throw CancellationError()};pendingFiles[image.id]=file;progress+=1}catch is CancellationError{throw CancellationError()}catch{failed.append(image)}}
                 busy=false
                 if failed.isEmpty{await commitDownloads()}else{failure="تعذر تنزيل \(failed.count) صورة. احتُفظ بالصور الناجحة مؤقتًا؛ أعد المحاولة للحفاظ على ترتيب الفصل، أو اختر استيراد الناجح فقط."}
             }catch is CancellationError{busy=false;discardDownloads()}catch{busy=false;failure=error.localizedDescription}

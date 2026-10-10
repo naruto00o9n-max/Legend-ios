@@ -1,15 +1,32 @@
 import UIKit
 
 enum TextVisualBounds {
+    static func padding(_ style:TextStyle,minimum:Double=16)->Double {
+        let extraWidth:Double=(style.extraStrokes ?? []).map(\.width).max() ?? 0
+        let outline:Double=max(style.strokeWidth,extraWidth)
+        let offset:Double=max(abs(style.shadowDx),abs(style.shadowDy))
+        let shadow:Double=style.shadowRadius*3+offset
+        let effect:Double=style.effectValue*3+Double(style.threeDDepth)
+        let background:Double=max(style.backgroundPaddingX,style.backgroundPaddingY)
+        return max(minimum,outline+shadow+effect+background)
+    }
     static func rect(_ layer:EditorLayer)->CGRect {
         let style=layer.style,base=LayerRenderer.bounds(layer)
-        let pad=max(16,max(style.strokeWidth,(style.extraStrokes ?? []).map(\.width).max() ?? 0)+style.shadowRadius*3+max(abs(style.shadowDx),abs(style.shadowDy))+style.effectValue*3+Double(style.threeDDepth)+max(style.backgroundPaddingX,style.backgroundPaddingY))
-        var result=base.insetBy(dx:-pad,dy:-pad)
+        let pad:Double=padding(style),width:Double=Double(base.width),height:Double=Double(base.height)
+        var result: CGRect=base.insetBy(dx:-CGFloat(pad),dy:-CGFloat(pad))
+        guard width>0,height>0 else{return result.integral}
         if style.isMeshMode {
-            for x in [-pad/Double(base.width),1+pad/Double(base.width)]{for y in [-pad/Double(base.height),1+pad/Double(base.height)]{let p=MeshGeometry.target(x:x,y:y,style:style);if p.x.isFinite,p.y.isFinite{result=result.union(CGRect(x:p.x*Double(base.width),y:p.y*Double(base.height),width:1,height:1))}}}
-            for p in style.meshPoints{result=result.union(CGRect(x:p.x*Double(base.width)-pad,y:p.y*Double(base.height)-pad,width:pad*2,height:pad*2))}
-        }else if let points=PerspectiveGeometry.extended(PerspectiveGeometry.corners(style),width:Double(base.width),height:Double(base.height),padding:pad){
-            for p in points where p.x.isFinite && p.y.isFinite{result=result.union(CGRect(x:p.x*Double(base.width),y:p.y*Double(base.height),width:1,height:1))}
+            let xs:[Double]=[-pad/width,1+pad/width]
+            let ys:[Double]=[-pad/height,1+pad/height]
+            for x in xs{for y in ys{
+                let p=MeshGeometry.target(x:x,y:y,style:style)
+                if p.x.isFinite,p.y.isFinite{result=result.union(CGRect(x:p.x*width,y:p.y*height,width:1,height:1))}
+            }}
+            for p in style.meshPoints where p.x.isFinite && p.y.isFinite{
+                result=result.union(CGRect(x:p.x*width-pad,y:p.y*height-pad,width:pad*2,height:pad*2))
+            }
+        }else if let points=PerspectiveGeometry.extended(PerspectiveGeometry.corners(style),width:width,height:height,padding:pad){
+            for p in points where p.x.isFinite && p.y.isFinite{result=result.union(CGRect(x:p.x*width,y:p.y*height,width:1,height:1))}
         }
         return result.integral
     }

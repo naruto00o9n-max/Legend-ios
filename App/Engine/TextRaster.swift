@@ -11,7 +11,7 @@ enum TextRaster {
         let advanced = !s.shadowGradient.isEmpty || !(s.extraStrokes ?? []).isEmpty || !(layer.textMask ?? []).isEmpty || (s.fadeAmount ?? 0)>0 || !s.textGradient.isEmpty || !s.strokeGradient.isEmpty || !s.texturePath.isEmpty || !s.perspectivePoints.isEmpty || s.isMeshMode || s.rotationX != 0 || s.rotationY != 0 || s.effectType == .blur || s.effectType == .fade
         guard advanced,rect.width*rect.height<4_194_304 else{return false}
         var glyphLayer=layer;glyphLayer.frame.x=0;glyphLayer.frame.y=0;glyphLayer.rotation=0;glyphLayer.scaleX=1;glyphLayer.scaleY=1;glyphLayer.opacity=1;glyphLayer.isLocked=false;glyphLayer.isVisible=true;let key=(directory.path+String(data:(try? JSONEncoder().encode(glyphLayer)) ?? Data(),encoding:.utf8)!) as NSString
-        let pad=max(8,CGFloat(max(s.strokeWidth,(s.extraStrokes ?? []).map(\.width).max() ?? 0)+s.shadowRadius*3+max(abs(s.shadowDx),abs(s.shadowDy))+s.effectValue*3+Double(s.threeDDepth)))
+        let pad=CGFloat(TextVisualBounds.padding(s,minimum:8))
         let size=CGSize(width:ceil(rect.width+pad*2),height:ceil(rect.height+pad*2))
         let raster:Raster
         if let cached=cache.object(forKey:key){raster=cached}else{
