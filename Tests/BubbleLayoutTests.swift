@@ -5,8 +5,7 @@ import Combine
 
 final class BubbleLayoutTests:XCTestCase {
     func testEvenAndOddSymmetricProfilesPreserveEveryWord()throws {
-        let text=Array(repeating:"word",count:12).joined(separator:" ")
-        for count in [4,5]{let lines=try XCTUnwrap(BubbleLayout.lines(text,count:count,width:Double(count==4 ? 21:16),shape:.oval,measure:{Double($0.count)}))
+        for count in [4,5]{let text=Array(repeating:"word",count:count==4 ? 10:13).joined(separator:" ");let lines=try XCTUnwrap(BubbleLayout.lines(text,count:count,width:Double(count==4 ? 18:16),shape:.oval,measure:{Double($0.count)}))
             XCTAssertEqual(lines.count,count);XCTAssertEqual(lines.joined(separator:" "),text)
             let widths=lines.map(\.count),middle=count/2
             XCTAssertGreaterThanOrEqual(widths[middle],widths[0]);XCTAssertLessThanOrEqual(abs(widths[0]-widths[count-1]),5)

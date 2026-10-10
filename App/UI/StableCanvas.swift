@@ -302,10 +302,12 @@ final class DocumentCanvas: UIView {
             liveInk.path = nil;if softwareStroke{softwareStroke=false;inkGeneration=UUID();latestInk=nil;softwareCommitRevision=nil;showPatch(nil)};if drawingInteraction{update(page:page,directory:directory ?? FileManager.default.temporaryDirectory,selected:selected,zoom:zoom);drawingInteraction=false;endLayerInteraction()};return
         }
         if stroke.erase || stroke.brush=="soft" || stroke.brush=="texture" {
-            if !drawingInteraction,interaction==nil,let selected,let directory,visible.width*visible.height<=4_194_304,let preview=LayerInteraction(page:page,selected:selected,directory:directory,drawingViewport:visible.insetBy(dx:-stroke.width,dy:-stroke.width).intersection(CGRect(x:0,y:0,width:page.width,height:page.height))){interaction=preview;preview.attach(to:self);interactionRevision=revision+1;drawingInteraction=true}
-            if drawingInteraction,let index=page.layers.firstIndex(where:{$0.id==selected}),let directory{var live=page;live.layers[index].strokes.append(stroke);update(page:live,directory:directory,selected:selected,zoom:zoom);return}
+            // Erasure and textured/soft ink must not rasterize a drawing sprite
+            // synchronously for every touch. Coalesce an exact composite off-main.
             if let index=page.layers.firstIndex(where:{$0.id==selected}),let directory{
-                let region=visible.insetBy(dx:-stroke.width,dy:-stroke.width).integral.intersection(CGRect(x:0,y:0,width:page.width,height:page.height))
+                let transform=page.layers[index].kind == .drawing ? LayerRenderer.transform(page.layers[index]):CGAffineTransform.identity
+                let inkBounds=BrushRenderer.path(stroke).bounds.insetBy(dx:-stroke.width*2,dy:-stroke.width*2).applying(transform)
+                let region=inkBounds.intersection(visible.insetBy(dx:-stroke.width,dy:-stroke.width)).integral.intersection(CGRect(x:0,y:0,width:page.width,height:page.height))
                 if region.width>0,region.height>0{if !softwareStroke{softwareStroke=true;softwareCommitRevision=nil;inkGeneration=UUID()};var live=page;live.layers[index].strokes.append(stroke);let sample=max(1,Int(ceil(sqrt(region.width*region.height/1_048_576))));latestInk=(live,directory,region,sample);liveInk.path=nil;renderLatestInk();return}
             }
         }
