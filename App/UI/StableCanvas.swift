@@ -218,7 +218,7 @@ final class DocumentCanvas: UIView {
     }
     func updateSelection() {
         renderSniper()
-        guard let item = page?.layers.first(where: { $0.id == selected && $0.isVisible }), item.kind != .drawing else {
+        guard let item = page?.layers.first(where: { $0.id == selected && $0.isVisible && !$0.isLocked }), item.kind != .drawing else {
             border.path = nil; stem.path = nil; handles.values.forEach { $0.isHidden = true }; return
         }
         let box = LayerRenderer.bounds(item), transform = LayerRenderer.transform(item), size = 32 / max(0.002, zoom)
@@ -283,7 +283,8 @@ final class DocumentCanvas: UIView {
         button.setPreferredSymbolConfiguration(UIImage.SymbolConfiguration(pointSize: 14, weight: .medium), forImageIn: .normal)
     }
     func handle(at point: CGPoint) -> String? {
-        handles.first { !$0.value.isHidden && hypot($0.value.center.x - point.x, $0.value.center.y - point.y) < 24 * CGFloat(EditorPreferences.handles) / max(0.002, zoom) }?.key
+        let radius=24 * CGFloat(EditorPreferences.handles) / max(0.002, zoom)
+        return handles.filter{!$0.value.isHidden}.map{($0.key,hypot($0.value.center.x-point.x,$0.value.center.y-point.y))}.filter{$0.1<radius}.min{$0.1<$1.1}?.0
     }
     func showStroke(_ stroke: Stroke?, on page: EditorPage, selected: UUID?) {
         CATransaction.begin(); CATransaction.setDisableActions(true)

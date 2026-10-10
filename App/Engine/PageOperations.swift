@@ -84,7 +84,15 @@ enum PageOperations {
             // The renderer produced premultiplied pixels; libpng expects straight RGBA.
             for i in stride(from:0,to:band.count,by:4){let alpha=Int(band[i+3]);if alpha>0 && alpha<255{for c in 0..<3{band[i+c]=UInt8(min(255,Int(band[i+c])*255/alpha))}}};return band
         }
-        output.baseHidden=page.baseHidden;output.layers=try copyLayers(page.layers,from:source,to:root.appendingPathComponent(output.id.uuidString)).map{layer in var next=layer;let b=LayerRenderer.bounds(layer);next.frame.x=(layer.frame.x+Double(b.width)/2)*sx-Double(b.width)/2;next.frame.y=(layer.frame.y+Double(b.height)/2)*sy-Double(b.height)/2;next.scaleX*=sx;next.scaleY*=sy;return next}
+        output.baseHidden=page.baseHidden;output.layers=try copyLayers(page.layers,from:source,to:root.appendingPathComponent(output.id.uuidString)).map{layer in
+            var next=layer;let b=LayerRenderer.bounds(layer),scaled=LayerRenderer.transform(layer).concatenating(CGAffineTransform(scaleX:sx,y:sy))
+            let center=CGPoint(x:b.midX,y:b.midY).applying(scaled)
+            let x=hypot(Double(scaled.a),Double(scaled.b))*(layer.scaleX<0 ? -1:1),y=Double(scaled.a*scaled.d-scaled.b*scaled.c)/x
+            guard x.isFinite,y.isFinite,abs(x)>0.000001,abs(y)>0.000001 else{return layer}
+            let angle=atan2(Double(scaled.b)/x,Double(scaled.a)/x),shear=(Double(scaled.c)*cos(angle)+Double(scaled.d)*sin(angle))/y
+            next.frame.x=Double(center.x-b.width/2);next.frame.y=Double(center.y-b.height/2);next.rotation=angle*180/Double.pi;next.scaleX=x;next.scaleY=y;next.shearX=abs(shear)>0.000001 ? shear:nil
+            return next
+        }
         try persist(output,root:root);return output
     }
     static func importPDF(_ url:URL,root:URL,scale:Double=2)throws->[EditorPage] {

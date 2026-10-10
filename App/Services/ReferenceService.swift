@@ -31,7 +31,7 @@ enum NetworkPolicy {
         if authenticated,let token=session?.access_token,!path.hasPrefix("/auth/v1/token"),Self.tokenExpiry(token)<Date().timeIntervalSince1970+60{try await refresh()}
         if authenticated&&session==nil{throw ImageFailure.message("سجّل الدخول إلى حسابك أولًا")}
         var r=URLRequest(url:url);r.httpMethod=method;r.timeoutInterval=25;r.setValue(config.key,forHTTPHeaderField:"apikey");r.setValue("Bearer "+(session.flatMap{Self.tokenExpiry($0.access_token)>Date().timeIntervalSince1970 ? $0.access_token:nil} ?? config.key),forHTTPHeaderField:"Authorization");r.setValue("application/json",forHTTPHeaderField:"Content-Type");if let body{r.httpBody=try JSONSerialization.data(withJSONObject:body)}
-        let (data,response)=try await transport.data(for:r)
+        let (data,response)=try await readResponse(r)
         guard let http=response as? HTTPURLResponse else{throw ImageFailure.message("تعذر قراءة استجابة الخادم")}
         guard (200..<300).contains(http.statusCode) else{
             let json=(try? JSONSerialization.jsonObject(with:data)) as? [String:Any]
@@ -39,6 +39,19 @@ enum NetworkPolicy {
             let reason=(json?["msg"] ?? json?["message"] ?? json?["error_description"] ?? json?["error"]) as? String ?? ""
             throw ImageFailure.message(Self.errorMessage(status:http.statusCode,code:code,reason:reason))
         };return data
+    }
+    private func readResponse(_ request:URLRequest) async throws->(Data,URLResponse) {
+        do{
+            do{return try await transport.data(for:request)}
+            catch let error as URLError where request.httpMethod=="GET" && [.timedOut,.networkConnectionLost].contains(error.code){
+                try Task.checkCancellation();return try await transport.data(for:request)
+            }
+        }catch let error as URLError{
+            if error.code == .cancelled{throw error}
+            let message:String
+            switch error.code{case .timedOut:message="انتهت مهلة الاتصال بالخادم. أعد المحاولة.";case .notConnectedToInternet:message="لا يوجد اتصال بالإنترنت. تحقّق من الاتصال ثم أعد المحاولة.";case .networkConnectionLost:message="انقطع الاتصال بالخادم. أعد المحاولة.";default:message="تعذر الاتصال بالخادم. تحقّق من الاتصال ثم أعد المحاولة."}
+            throw ImageFailure.message(message)
+        }
     }
     func login(email:String,password:String,signup:Bool,name:String="") async {
         let email=email.trimmingCharacters(in:.whitespacesAndNewlines)

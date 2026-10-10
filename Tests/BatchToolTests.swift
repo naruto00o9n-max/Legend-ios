@@ -37,6 +37,12 @@ final class BatchToolTests:XCTestCase {
         let transformed=LayerRenderer.transform(model.page.layers[1]);for point in [CGPoint.zero,CGPoint(x:80,y:0),CGPoint(x:80,y:90),CGPoint(x:0,y:90)]{let expected=point.applying(LayerRenderer.transform(b)).applying(delta),actual=point.applying(transformed);XCTAssertEqual(actual.x,expected.x,accuracy:0.0001);XCTAssertEqual(actual.y,expected.y,accuracy:0.0001)}
         XCTAssertNotNil(model.page.layers[1].shearX)
     }
+    @MainActor func testLockedLayerHasNoEditableHandlesAndCannotBeDeleted()throws {
+        let root=try root();defer{try? FileManager.default.removeItem(at:root)};let library=LibraryStore(root:root);var page=try PageOperations.blank(title:"طبقة مقفلة",width:100,height:200,color:"FFFFFF",transparent:false,root:root)
+        var layer=EditorLayer(kind:.shape);layer.isLocked=true;page.layers=[layer];try library.persist(page);let model=EditorModel(page:page,library:library);model.selected=layer.id
+        let canvas=DocumentCanvas(frame:CGRect(x:0,y:0,width:100,height:200));canvas.update(page:page,directory:model.directory,selected:layer.id,zoom:1)
+        XCTAssertTrue(canvas.subviews.compactMap{$0 as? UIButton}.allSatisfy{$0.isHidden});model.delete();XCTAssertEqual(model.page.layers,[layer]);XCTAssertEqual(try library.load(page.id).layers,[layer])
+    }
     private func root()throws->URL{let url=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString);try FileManager.default.createDirectory(at:url,withIntermediateDirectories:true);return url}
     private func rgba(_ file:URL)throws->Data {let raw=file.deletingPathExtension().appendingPathExtension("rgba");defer{try? FileManager.default.removeItem(at:raw)};var width:Int32=0,height:Int32=0,error=[CChar](repeating:0,count:512);XCTAssertEqual(LIImportPNG(file.path,raw.path,&width,&height,&error,error.count),1);return try Data(contentsOf:raw)}
     @MainActor func testNormalMergeAndTransparentFlattenRetainCompositeAndUndo()async throws {

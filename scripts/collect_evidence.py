@@ -17,7 +17,7 @@ images=''.join('<figure><img loading="lazy" src="'+html.escape(r['file'],quote=T
 summary={'commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip(),'screenshots':records,'tests':[]}
 for path in sorted(build.glob('test-*.log')):
  text=path.read_text(errors='replace')
- summary['tests'].append({'log':path.name,'passed':re.findall(r"Test Case '(.*?)' passed \((.*?) seconds\)",text),'failures':re.findall(r'^.*error:.*$',text,re.M),'result':'passed' if '** TEST SUCCEEDED **' in text else 'not-passed'})
+ summary['tests'].append({'log':path.name,'passed':re.findall(r"Test Case '(.*?)' passed \((.*?) seconds\)",text),'failures':re.findall(r'^.*error:.*$',text,re.M),'result':'passed' if re.search(r'\*\* TEST (?:EXECUTE )?SUCCEEDED \*\*',text) else 'not-passed'})
 (build/'verification.json').write_text(json.dumps(summary,indent=2,ensure_ascii=False)+'\n')
 shutil.make_archive(str(build/'Cookies-Editor-Screenshots'),'zip',gallery)
 print(f'{len(records)} real simulator captures collected; verification.json records pass/failure evidence')

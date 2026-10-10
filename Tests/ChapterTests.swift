@@ -48,4 +48,13 @@ final class ChapterTests:XCTestCase {
         let bandEdge=try ImagePipeline.tile(raw,width:40,height:300,rect:CGRect(x:10,y:255,width:1,height:2))
         XCTAssertEqual(Array(bandEdge[0..<4]),Array(bandEdge[4..<8]),"PDF stripes cannot repeat or jump at a 256-row boundary")
     }
+    func testNonUniformCanvasResizePreservesRotatedLayerWorldCorners()throws {
+        let root=try root();defer{try? FileManager.default.removeItem(at:root)}
+        var page=try PageOperations.blank(title:"تغيير المقاس",width:50,height:100,color:"FFFFFF",transparent:false,root:root)
+        var layer=EditorLayer(kind:.shape);layer.frame=Box(x:10,y:20,width:20,height:15);layer.rotation=32;page.layers=[layer];try PageOperations.persist(page,root:root)
+        let resized=try PageOperations.resized(page,width:150,height:50,root:root),actual=LayerRenderer.transform(try XCTUnwrap(resized.layers.first)),expected=LayerRenderer.transform(layer).concatenating(CGAffineTransform(scaleX:3,y:0.5))
+        for point in [CGPoint.zero,CGPoint(x:20,y:0),CGPoint(x:20,y:15),CGPoint(x:0,y:15)]{let a=point.applying(actual),b=point.applying(expected);XCTAssertEqual(a.x,b.x,accuracy:0.0001);XCTAssertEqual(a.y,b.y,accuracy:0.0001)}
+        XCTAssertNotNil(resized.layers.first?.shearX)
+    }
+
 }

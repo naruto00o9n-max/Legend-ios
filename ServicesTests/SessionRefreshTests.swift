@@ -38,4 +38,25 @@ final class SessionRefreshTests:XCTestCase {
         await client.logout();XCTAssertNil(client.session)
         do{_ = try await client.request("/rest/v1/private",authenticated:true);XCTFail("Signed-out request must fail locally")}catch{}
     }
+    @MainActor func testTransientReadRetriesOnceButSignupNeverRepeats()async throws {
+        let config=URLSessionConfiguration.ephemeral;config.protocolClasses=[SessionTransport.self];let transport=URLSession(configuration:config);defer{transport.invalidateAndCancel();SessionTransport.handler=nil}
+        let lock=NSLock();var reads=0,signups=0
+        SessionTransport.handler={request in lock.lock();defer{lock.unlock()};if request.httpMethod=="POST"{signups+=1;throw URLError(.timedOut)};reads+=1;if reads==1{throw URLError(.networkConnectionLost)};return Data("[]".utf8)}
+        let client=ReferenceService(configuration:ReferenceConfig(url:"https://session.test",key:"anon"),urlSession:transport)
+        let response=try await client.request("/rest/v1/community");XCTAssertEqual(response,Data("[]".utf8));XCTAssertEqual(reads,2)
+        do{_ = try await client.request("/auth/v1/signup",method:"POST",body:[:]);XCTFail("Signup timeout must be reported")}
+        catch{XCTAssertTrue(error.localizedDescription.contains("انتهت مهلة"))};XCTAssertEqual(signups,1)
+    }
+    @MainActor func testPermanentReadTimeoutIsBoundedAndCancellationNeverRetries()async throws {
+        let config=URLSessionConfiguration.ephemeral;config.protocolClasses=[SessionTransport.self];let transport=URLSession(configuration:config);defer{transport.invalidateAndCancel();SessionTransport.handler=nil}
+        let lock=NSLock();var attempts=0
+        SessionTransport.handler={_ in lock.lock();defer{lock.unlock()};attempts+=1;throw URLError(.timedOut)}
+        let client=ReferenceService(configuration:ReferenceConfig(url:"https://session.test",key:"anon"),urlSession:transport)
+        do{_ = try await client.request("/rest/v1/community");XCTFail("Both read attempts must fail")}
+        catch{XCTAssertTrue(error.localizedDescription.contains("انتهت مهلة"))};XCTAssertEqual(attempts,2)
+        attempts=0;SessionTransport.handler={_ in lock.lock();defer{lock.unlock()};attempts+=1;throw URLError(.cancelled)}
+        do{_ = try await client.request("/rest/v1/community");XCTFail("Cancellation must propagate")}
+        catch{XCTAssertEqual((error as? URLError)?.code,.cancelled)};XCTAssertEqual(attempts,1)
+    }
+
 }

@@ -45,7 +45,8 @@ struct LayerThumbnail: View {
         if let image{Image(uiImage:image).resizable().scaledToFit()}
     }.task(id:layer){var item=layer;item.frame.x=0;item.frame.y=0;item.rotation=0;item.scaleX=1;item.scaleY=1;item.shearX=nil;item.opacity=1
         let snapshot=item,directory=self.directory,previewSize=self.previewSize
-        image=await Task.detached(priority:.utility){let bounds=snapshot.kind == .text ? TextVisualBounds.rect(snapshot):LayerRenderer.bounds(snapshot),format=UIGraphicsImageRendererFormat();format.scale=2;format.opaque=false;let scale=min((previewSize-4)/max(1,bounds.width),(previewSize-4)/max(1,bounds.height));return UIGraphicsImageRenderer(size:CGSize(width:previewSize,height:previewSize),format:format).image{output in output.cgContext.translateBy(x:(previewSize-bounds.width*scale)/2,y:(previewSize-bounds.height*scale)/2);output.cgContext.scaleBy(x:scale,y:scale);output.cgContext.translateBy(x:-bounds.minX,y:-bounds.minY);LayerRenderer.draw([snapshot],in:output.cgContext,directory:directory)}}.value
+        let rendered=await Task.detached(priority:.utility){let bounds=snapshot.kind == .text ? TextVisualBounds.rect(snapshot):LayerRenderer.bounds(snapshot),format=UIGraphicsImageRendererFormat();format.scale=2;format.opaque=false;let scale=min((previewSize-4)/max(1,bounds.width),(previewSize-4)/max(1,bounds.height));return UIGraphicsImageRenderer(size:CGSize(width:previewSize,height:previewSize),format:format).image{output in output.cgContext.translateBy(x:(previewSize-bounds.width*scale)/2,y:(previewSize-bounds.height*scale)/2);output.cgContext.scaleBy(x:scale,y:scale);output.cgContext.translateBy(x:-bounds.minX,y:-bounds.minY);LayerRenderer.draw([snapshot],in:output.cgContext,directory:directory)}}.value
+        guard !Task.isCancelled else{return};image=rendered
     }}
 }
 struct ShapeSheet:View {
