@@ -4,6 +4,8 @@ import ImageIO
 struct EditorView:View {
     @StateObject var model:EditorModel
     @Environment(\.dismiss) var dismiss
+    @EnvironmentObject private var typer:TyperStore
+    @EnvironmentObject private var styles:StyleStore
     @State private var layers=false;@State private var shapes=false;@State private var assistant=false
     @State private var reader=false
     @State private var brushSettings=false
@@ -17,7 +19,7 @@ struct EditorView:View {
     @AppStorage("typer-panel-width") private var typerWidth=320.0
     @AppStorage("typer-panel-height") private var typerHeight=490.0
     var body:some View {
-        ZStack(alignment:textDock=="top" ? .top:.bottom){Palette.ink.ignoresSafeArea();CanvasHost(model:model);if let objectPanel,model.tool == .move,[LayerKind.image,.shape].contains(model.active?.kind ?? .text){TextInspector(model:model,panel:objectPanel,close:{self.objectPanel=nil}).frame(maxWidth:560).frame(height:290).padding(.horizontal,12).padding(.bottom,8)};if model.tool == .text{if let panel=model.panel,model.active?.kind == .text{TextInspector(model:model,panel:panel,close:{model.panel=nil}).frame(maxWidth:560).frame(height:panel == .content ? 240:290).padding(.horizontal,12).padding(.bottom,8).transition(.move(edge:.bottom).combined(with:.opacity))}}}
+        ZStack(alignment:textDock=="top" ? .top:.bottom){Palette.ink.ignoresSafeArea();CanvasHost(model:model,onBubble:{rect,shape in placeBubble(rect,shape:shape)});if let objectPanel,model.tool == .move,[LayerKind.image,.shape].contains(model.active?.kind ?? .text){TextInspector(model:model,panel:objectPanel,close:{self.objectPanel=nil}).frame(maxWidth:560).frame(height:290).padding(.horizontal,12).padding(.bottom,8)};if model.tool == .text{if let panel=model.panel,model.active?.kind == .text{TextInspector(model:model,panel:panel,close:{model.panel=nil}).frame(maxWidth:560).frame(height:panel == .content ? 240:290).padding(.horizontal,12).padding(.bottom,8).transition(.move(edge:.bottom).combined(with:.opacity))}}}
         .safeAreaInset(edge:.top,spacing:0){HStack(spacing:4){IconButton(icon:"chevron.right",title:"العودة"){model.save();dismiss()};VStack(alignment:.leading,spacing:2){Text(model.page.title).font(.system(size:12,weight:.medium)).lineLimit(1);Text(verbatim:"\(model.page.width) × \(model.page.height) · \(Int(model.zoom*100))%").font(.system(size:9,design:.monospaced)).foregroundStyle(Palette.quiet).accessibilityIdentifier("canvas-zoom")};Spacer(minLength:4);IconButton(icon:"arrow.uturn.backward",title:"تراجع"){model.undo()}.disabled(model.undoStack.isEmpty).accessibilityIdentifier("undo");IconButton(icon:"arrow.uturn.forward",title:"إعادة"){model.redo()}.disabled(model.redoStack.isEmpty);IconButton(icon:"square.3.layers.3d",title:"الطبقات"){layers=true}.accessibilityIdentifier("layers-header");IconButton(icon:"square.and.arrow.up",title:"تصدير"){showExport=true}.accessibilityIdentifier("export")}.padding(.horizontal,4).glass(0).frame(height:52)}
         .safeAreaInset(edge:.bottom,spacing:0){VStack(spacing:0){
             if [.brush,.eraser,.cleaner].contains(model.tool){HStack(spacing:12){Button{brushSettings=true}label:{Circle().fill(Color(uiColor:UIColor(hex:model.brushColor))).frame(width:24,height:24).overlay(Circle().stroke(Palette.gold.opacity(0.5),lineWidth:1))}.accessibilityLabel("إعدادات الفرشاة");Slider(value:$model.brushWidth,in:1...160,onEditingChanged:{model.brushSizePreview=$0}).tint(Palette.gold);Text("\(Int(model.brushWidth))").font(.system(size:10,design:.monospaced)).frame(width:30)}.padding(.horizontal,16).frame(height:38)}
@@ -52,6 +54,7 @@ struct EditorView:View {
                     toolButton(Tool.brush.icon,"رسم",id:"tool-brush"){select(.brush)}
                     toolButton("photo.badge.plus","صورة",id:"tool-image"){imagePicker=true}
                     toolButton(Tool.shapes.icon,"أشكال",id:"tool-shapes"){select(.shapes)}
+                    Menu{ForEach(BubbleShape.allCases){shape in Button(shape.title){model.panel=nil;model.sniperMode=false;model.bubbleShape=shape}}}label:{VStack(spacing:6){Image(systemName:"rectangle.and.pencil.and.ellipsis").font(.system(size:20));Text("تنسيق فقاعة").font(.system(size:10))}.frame(width:76,height:60)}.accessibilityIdentifier("tool-bubble-layout")
                     toolButton("text.bubble","التايبر",id:"tool-typer"){assistant.toggle();model.panel=nil}
                     Menu{
                         Button{select(.cleaner)}label:{Label("تنظيف",systemImage:"sparkles")}.accessibilityIdentifier("tool-cleaner")
@@ -66,6 +69,7 @@ struct EditorView:View {
         .toolbar(.hidden,for:.navigationBar).foregroundStyle(Palette.pale).animation(EditorPreferences.motion ? .easeInOut(duration:0.2):nil,value:model.panel).animation(EditorPreferences.motion ? .easeInOut(duration:0.2):nil,value:objectPanel).animation(EditorPreferences.motion ? .easeInOut(duration:0.2):nil,value:assistant)
         .overlay(alignment:.trailing){if !assistant{Button{assistant=true;model.panel=nil}label:{Image("CookiesLogo").resizable().scaledToFit().frame(width:38,height:38).clipShape(Circle()).padding(6).background(Palette.ink.opacity(0.85),in:Circle()).overlay(Circle().stroke(Palette.gold.opacity(0.4),lineWidth:0.8))}.padding(.trailing,12).accessibilityIdentifier("tool-assistant").accessibilityLabel("التايبر")}}
         .overlay(alignment:.trailing){if assistant{GeometryReader{g in TyperPanel(model:model,close:{assistant=false},compact:g.size.height<500).frame(width:min(CGFloat(typerWidth),g.size.width-24),height:min(CGFloat(typerHeight),max(160,g.size.height-136))).frame(maxWidth:.infinity,maxHeight:.infinity,alignment:.trailing).padding(.trailing,8)}.transition(.move(edge:.trailing).combined(with:.opacity))}}
+        .overlay(alignment:.top){if let shape=model.bubbleShape{HStack{Image(systemName:"text.bubble");Text("ارسم مساحة الفقاعة · "+shape.title).font(.system(size:12));Button("التايبر"){assistant=true};Button("إنهاء"){model.bubbleShape=nil}}.padding(12).glass(14).padding(.horizontal,12).padding(.top,58)}}
         .overlay(alignment:.top){if model.sniperMode{HStack{Image(systemName:"scope");Text("حدد الفقاعات بالترتيب · \(model.sniperTargets.count)").font(.system(size:12));Button("تراجع"){_ = model.sniperTargets.popLast()}.disabled(model.sniperTargets.isEmpty);Button("الفقاعات"){assistant=true};Button("إنهاء"){model.sniperMode=false}}.padding(12).glass(14).padding(.horizontal,12).padding(.top,58)}}
         .overlay(alignment:.top){if !model.cleanCandidates.isEmpty{HStack(spacing:8){ForEach(model.cleanCandidates){candidate in Button(candidate.title){model.cleanPreviewID=candidate.id}.buttonStyle(.bordered).tint(model.cleanPreviewID==candidate.id ? Palette.gold:Palette.pale)};Button("اعتماد"){model.acceptCleaning()};Button("إلغاء"){model.discardCleaning()}}.font(.system(size:11)).padding(12).glass(14).padding(.horizontal,12).padding(.top,58)}}
         .overlay{if model.busy && !showExport{ProgressView("جارٍ معالجة المنطقة…").tint(Palette.gold).padding(20).glass()}}
@@ -90,6 +94,19 @@ struct EditorView:View {
         .alert("تعذر إكمال العملية",isPresented:Binding(get:{model.error != nil},set:{if !$0{model.error=nil}})){Button("حسنًا"){model.error=nil}}message:{Text(model.error ?? "")}
         .onDisappear{model.commitTextMask();model.discardCleaning();model.save()}
     }
+    func placeBubble(_ rect:CGRect,shape:BubbleShape){
+        guard let chapter=typer.activeChapter else{model.error="افتح التايبر واختر فصلًا أولًا";assistant=true;return}
+        guard let bubble=chapter.pasteable.first(where:{!$0.used}) else{model.error="اكتمل وضع فقاعات هذا الفصل";return}
+        guard !model.busy else{return};model.busy=true
+        var input=EditorLayer(kind:.text);input.textContent=bubble.text;input.style=typer.tag(bubble.tagID)?.style ?? TextStyle()
+        let request=BubbleLayoutRequest(bounds:rect,shape:shape),pageID=model.page.id,chapterID=chapter.id
+        Task{defer{model.busy=false};do{
+            let prepared=try await BackgroundWork.run{try BubbleLayout.fit(input,request:request)}
+            guard model.page.id==pageID,typer.activeChapter?.id==chapterID,typer.activeChapter?.bubbles.first(where:{$0.id==bubble.id})?.used==false else{return}
+            try typer.place([bubble],chapter:chapterID,model:model,styleAssets:styles.directory,preparedLayout:prepared)
+        }catch{model.error=error.localizedDescription}}
+
+    }
     func toolButton(_ icon:String,_ title:String,id:String,selected:Bool=false,action:@escaping ()->Void)->some View{Button(action:action){VStack(spacing:6){Image(systemName:icon).font(.system(size:20*min(1.2,max(0.8,iconScale)),weight:.regular));Text(title).font(.system(size:10*min(1.3,max(0.85,labelScale)))).lineLimit(1)}.frame(width:62,height:60*min(1.15,max(0.85,toolbarScale))).background(selected ? Palette.gold.opacity(0.16):.clear,in:RoundedRectangle(cornerRadius:12))}.accessibilityIdentifier(id).accessibilityLabel(title)}
-    func select(_ tool:Tool){model.gradientTarget=nil;model.tool=tool;switch tool{case .layers:layers=true;case .shapes:shapes=true;case .text:if model.active?.kind != .text{model.add(.text)}else{model.panel = .content};case .brush,.eraser:if model.active?.kind != .drawing{model.add(.drawing)};default:break}}
+    func select(_ tool:Tool){model.bubbleShape=nil;model.gradientTarget=nil;model.tool=tool;switch tool{case .layers:layers=true;case .shapes:shapes=true;case .text:if model.active?.kind != .text{model.add(.text)}else{model.panel = .content};case .brush,.eraser:if model.active?.kind != .drawing{model.add(.drawing)};default:break}}
 }

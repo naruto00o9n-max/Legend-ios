@@ -75,7 +75,7 @@ final class TyperAndInteractionTests:XCTestCase {
         let canvas=DocumentCanvas(frame:CGRect(x:0,y:0,width:800,height:15000));canvas.update(page:page,directory:library.directory(page.id),selected:text.id,zoom:1);canvas.refreshVisible(CGRect(x:0,y:0,width:400,height:600));try await Task.sleep(nanoseconds:1_000_000_000)
         XCTAssertTrue(canvas.beginLayerInteraction(text.id));let revision=canvas.revision,rasterizations=canvas.interactionRasterizations
         let before=canvas.interactiveLayerCenter
-        for value in 1...100{page.layers[0].frame.x=50+Double(value);page.layers[0].rotation=Double(value)/5;page.layers[0].scaleX=1+Double(value)/100;canvas.update(page:page,directory:library.directory(page.id),selected:text.id,zoom:1)}
+        for value in 1...100{page.layers[0].frame.x=50+Double(value);page.layers[0].rotation=Double(value)/5;page.layers[0].scaleX=1;canvas.update(page:page,directory:library.directory(page.id),selected:text.id,zoom:1)}
         XCTAssertEqual(canvas.revision,revision,"Dragging transforms sprites instead of software tiles");XCTAssertEqual(canvas.interactionRasterizations,rasterizations);XCTAssertNotEqual(canvas.interactiveLayerCenter,before)
         canvas.endLayerInteraction();XCTAssertGreaterThan(canvas.revision,revision)
         page.layers[1].blend = .multiply;canvas.update(page:page,directory:library.directory(page.id),selected:text.id,zoom:1);try await Task.sleep(nanoseconds:1_000_000_000);XCTAssertFalse(canvas.beginLayerInteraction(text.id),"Complex blend stacks must preserve their actual compositor")

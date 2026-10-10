@@ -16,11 +16,13 @@ enum Fonts {
         var f=UIFont.systemFont(ofSize:CGFloat(style.fontSize)),loaded=false
         if let url,let provider=CGDataProvider(url:url as CFURL),let cg=CGFont(provider),let name=cg.postScriptName,let custom=UIFont(name:name as String,size:CGFloat(style.fontSize)){f=custom;loaded=true}
         var traits=UIFontDescriptor.SymbolicTraits();if style.isBold{traits.insert(.traitBold)};if style.isItalic{traits.insert(.traitItalic)}
-        if let d=f.fontDescriptor.withSymbolicTraits(traits){f=UIFont(descriptor:d,size:CGFloat(style.fontSize))};if loaded{cache.countLimit=256;cache.setObject(f,forKey:key)};return f
+        if let d=f.fontDescriptor.withSymbolicTraits(traits){f=UIFont(descriptor:d,size:CGFloat(style.fontSize))};cache.countLimit=512;cache.setObject(f,forKey:key);return f
     }
 }
 extension Bundle {func url(forResource name:String,deletingExtension:Bool)->URL?{url(forResource:name,withExtension:nil,subdirectory:"Fonts")}}
 enum LayerRenderer {
+    private static let boundsLock=NSLock()
+    private static var textBounds:[UUID:(String,TextStyle,CGRect)]=[:]
     static func attributed(_ l:EditorLayer,color:UIColor?=nil)->NSAttributedString {
         let s=l.style,p=NSMutableParagraphStyle();p.alignment=[NSTextAlignment.left,.center,.right,.justified][max(0,min(3,s.alignment))];p.baseWritingDirection = .rightToLeft;p.lineSpacing=CGFloat(s.lineSpacing);if let multiple=s.lineHeightMultiple{p.lineHeightMultiple=CGFloat(multiple)};p.lineBreakMode = .byWordWrapping
         var attributes:[NSAttributedString.Key:Any]=[.font:Fonts.font(s),.foregroundColor:color ?? UIColor(hex:s.color,alpha:CGFloat(s.innerOpacity ?? 1)),.paragraphStyle:p,.kern:s.letterSpacing]
@@ -40,7 +42,13 @@ enum LayerRenderer {
         return result
     }
     static func bounds(_ l:EditorLayer)->CGRect {
-        if l.kind == .text {let b=attributed(l).boundingRect(with:CGSize(width:max(20,l.style.boxWidth),height:100000),options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil);return CGRect(x:0,y:0,width:max(20,l.style.boxWidth),height:max(24,ceil(b.height)))}
+        if l.kind == .text {
+            boundsLock.lock();let cached=textBounds[l.id];boundsLock.unlock()
+            if let cached,cached.0==l.textContent,cached.1==l.style{return cached.2}
+            let b=attributed(l).boundingRect(with:CGSize(width:max(20,l.style.boxWidth),height:100000),options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)
+            let rect=CGRect(x:0,y:0,width:max(20,l.style.boxWidth),height:max(24,ceil(b.height)))
+            boundsLock.lock();if textBounds.count>1024{textBounds.removeAll(keepingCapacity:true)};textBounds[l.id]=(l.textContent,l.style,rect);boundsLock.unlock();return rect
+        }
         return CGRect(x:0,y:0,width:l.frame.width,height:l.frame.height)
     }
     static func transform(_ l:EditorLayer)->CGAffineTransform {
@@ -57,6 +65,9 @@ enum LayerRenderer {
     static func draw(_ layers:[EditorLayer],in ctx:CGContext,directory:URL) {
         UIGraphicsPushContext(ctx);defer{UIGraphicsPopContext()}
         for l in layers where l.isVisible {
+            // Cull in document coordinates before shaping/rasterizing off-screen glyphs.
+            let local=l.kind == .text ? TextVisualBounds.rect(l):bounds(l).insetBy(dx:-CGFloat(max(2,l.style.strokeWidth)),dy:-CGFloat(max(2,l.style.strokeWidth)))
+            if !local.applying(transform(l)).intersects(ctx.boundingBoxOfClipPath){continue}
             ctx.saveGState();ctx.setAlpha(CGFloat(l.opacity));ctx.setBlendMode(l.blend.cg)
             let b=bounds(l);ctx.concatenate(transform(l))
             if l.isMaskEnabled{ctx.addEllipse(in:CGRect(x:l.maskX-l.maskRadius,y:l.maskY-l.maskRadius,width:l.maskRadius*2,height:l.maskRadius*2));ctx.clip()}

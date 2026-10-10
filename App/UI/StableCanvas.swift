@@ -22,6 +22,7 @@ final class DocumentCanvas: UIView {
     private let preview = UIImageView()
     private let border = CAShapeLayer()
     private let stem = CAShapeLayer()
+    private let bubbleFrame=CAShapeLayer()
     private let liveInk = CAShapeLayer()
     private let livePatch=UIImageView()
     var visibleRect:CGRect{visible}
@@ -114,9 +115,9 @@ final class DocumentCanvas: UIView {
             loadPreview(page, directory: directory, identity: identity)
         }
         if pixelsChanged { revision += 1 }
-        interaction?.update(page)
+        interaction?.update(page,screenScale:zoom*traitCollection.displayScale)
         updateSelection()
-        if !visible.isEmpty { refreshVisible(visible) }
+        if pixelsChanged,!visible.isEmpty { refreshVisible(visible) }
     }
     func refreshVisible(_ rect: CGRect) {
         guard let fullPage = page, let directory else { return }
@@ -134,7 +135,7 @@ final class DocumentCanvas: UIView {
         let y0 = Int(floor(area.minY / extent)), y1 = Int(ceil(area.maxY / extent))
         for y in y0..<y1 { for x in x0..<x1 {
             let box = CGRect(x: CGFloat(x) * extent, y: CGFloat(y) * extent, width: extent, height: extent).intersection(imageBounds)
-            let key = "\(sample):\(x):\(y)"; keys.insert(key)
+            let key = "\(sample):\(max(1,min(4,Int(ceil(zoom*traitCollection.displayScale))))):\(x):\(y)"; keys.insert(key)
             let tile: Tile
             if let existing = tiles[key] { tile = existing } else {
                 tile = Tile(rect: box, sample: sample); tiles[key] = tile
@@ -164,10 +165,11 @@ final class DocumentCanvas: UIView {
     private func render(_ tile: Tile, key: String, page: EditorPage, directory: URL) {
         tile.pending = true
         let requested = revision, identity = sourceIdentity, cache = sourceCache
+        let textResolution=max(1,min(4,ceil(zoom*traitCollection.displayScale)))
         worker.async { [weak self] in
             let base: UIImage?
             var read = false
-            let cacheKey = (identity + "|" + key) as NSString
+            let cacheKey = (identity + "|\(tile.sample):\(Int(tile.rect.minX)):\(Int(tile.rect.minY))") as NSString
             if let cached = cache.object(forKey: cacheKey) { base = cached } else {
                 read = true
                 let pixels:[UInt8]? = page.baseHidden==true ? [UInt8](repeating:0,count:((Int(tile.rect.width)+tile.sample-1)/tile.sample)*((Int(tile.rect.height)+tile.sample-1)/tile.sample)*4):(try? ImagePipeline.tile(directory.appendingPathComponent(page.raw), width: page.width, height: page.height, rect: tile.rect, sample: tile.sample))
@@ -177,12 +179,14 @@ final class DocumentCanvas: UIView {
             }
             var composite = base
             if let base, !page.layers.isEmpty {
-                let format = UIGraphicsImageRendererFormat(); format.scale = 1; format.opaque = false; format.preferredRange = .standard
+                let format = UIGraphicsImageRendererFormat(); format.scale = textResolution; format.opaque = false; format.preferredRange = .standard
                 composite = UIGraphicsImageRenderer(size: base.size, format: format).image { output in
+                    output.cgContext.interpolationQuality = .none
                     base.draw(in: CGRect(origin: .zero, size: base.size))
                     let context = output.cgContext
                     context.scaleBy(x: base.size.width / tile.rect.width, y: base.size.height / tile.rect.height)
                     context.translateBy(x: -tile.rect.minX, y: -tile.rect.minY)
+                    context.interpolationQuality = .high
                     LayerRenderer.draw(page.layers, in: context, directory: directory)
                 }
             }
@@ -340,7 +344,7 @@ final class DocumentCanvas: UIView {
     }
     @discardableResult func beginLayerInteraction(_ id: UUID) -> Bool {
         guard let page, let directory, interaction == nil,
-              let preview = LayerInteraction(page: page, selected: id, directory: directory) else { return false }
+              let preview = LayerInteraction(page: page, selected: id, directory: directory,screenScale:zoom*traitCollection.displayScale) else { return false }
         interaction = preview; preview.attach(to: self); interactionRevision = revision + 1
         update(page: page, directory: directory, selected: selected, zoom: zoom)
         return true
@@ -352,6 +356,12 @@ final class DocumentCanvas: UIView {
     }
     var interactionRasterizations: Int { interaction?.rasterizations ?? 0 }
     var interactiveLayerCenter: CGPoint? { interaction?.center }
+    func showBubbleFrame(_ rect:CGRect?,shape:BubbleShape){
+        CATransaction.begin();CATransaction.setDisableActions(true);defer{CATransaction.commit()}
+        guard let rect else{bubbleFrame.path=nil;return}
+        bubbleFrame.fillColor=UIColor.clear.cgColor;bubbleFrame.strokeColor=UIColor(hex:"D4AF37").cgColor;bubbleFrame.lineWidth=1.5/max(0.002,zoom)
+        bubbleFrame.path=(shape == .oval || shape == .scream ? UIBezierPath(ovalIn:rect):UIBezierPath(rect:rect)).cgPath;layer.addSublayer(bubbleFrame)
+    }
     func showSniper(_ targets:[SniperTarget]) {
         guard targets != sniperTargets || sniperZoom != zoom else{return}
         sniperTargets=targets;sniperZoom=0;renderSniper()

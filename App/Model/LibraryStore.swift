@@ -87,19 +87,22 @@ import SwiftUI
     var redoDocuments:[EditorPage]=[]
     @Published var sniperTargets:[SniperTarget]=[]
     @Published var sniperMode=false
+    @Published var bubbleShape:BubbleShape?
     @Published var requestTyper=false
     let library:LibraryStore; var visibleCenter=CGPoint.zero
     private var previewTask:Task<Void,Never>?
     init(page:EditorPage,library:LibraryStore){self.page=page;self.library=library}
     var directory:URL {library.directory(page.id)}
     var active:EditorLayer? {page.layers.first{$0.id==selected}}
-    @discardableResult func insertDialogues(_ values:[(String,TextStyle?)],targets:[SniperTarget]=[])throws->[UUID] {
+    @discardableResult func insertDialogues(_ values:[(String,TextStyle?)],targets:[SniperTarget]=[],bubbleLayout:BubbleLayoutRequest?=nil,preparedLayout:EditorLayer?=nil)throws->[UUID] {
         let previous=page.layers;var next=page
         let center = !EditorPreferences.smartPosition || visibleCenter == .zero ? CGPoint(x:Double(page.width)/2,y:200):visibleCenter
         for (index,value) in values.enumerated() {
             var item=EditorLayer(kind:.text,name:value.0);item.textContent=value.0
             if let style=value.1{item.style=style}
             item.style.fontSize*=EditorPreferences.typerScale;item.style.boxWidth=min(item.style.boxWidth*EditorPreferences.typerScale,Double(page.width));let bounds=LayerRenderer.bounds(item);item.frame=Box(x:max(0,center.x-bounds.width/2),y:max(0,center.y-bounds.height/2),width:bounds.width,height:bounds.height)
+            if let preparedLayout{item.textContent=preparedLayout.textContent;item.style.fontSize=preparedLayout.style.fontSize;item.style.boxWidth=preparedLayout.style.boxWidth;item.style.alignment=1;item.frame=preparedLayout.frame}
+            else if let bubbleLayout{item=try BubbleLayout.fit(item,request:bubbleLayout)}
             if index<targets.count{item=SniperDetector.fitted(item,to:targets[index])}
             next.layers.append(item)
         }

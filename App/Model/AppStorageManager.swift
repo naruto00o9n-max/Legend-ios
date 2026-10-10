@@ -176,7 +176,7 @@ enum AppStorageManager {
     static func resetLocalData()throws {
         // Called from Settings, after explicit destructive confirmation; no editor is open.
         for font in Fonts.userFiles{CTFontManagerUnregisterFontsForURL(font as CFURL,.process,nil)}
-        for directory in [documents,caches,fm.temporaryDirectory,fm.urls(for:.applicationSupportDirectory,in:.userDomainMask)[0]]{for file in try fm.contentsOfDirectory(at:directory,includingPropertiesForKeys:nil){try fm.removeItem(at:file)}}
+        for directory in [documents,caches,fm.temporaryDirectory,fm.urls(for:.applicationSupportDirectory,in:.userDomainMask)[0]]{if !fm.fileExists(atPath:directory.path){continue};for file in try fm.contentsOfDirectory(at:directory,includingPropertiesForKeys:nil){try fm.removeItem(at:file)}}
         if let name=Bundle.main.bundleIdentifier{UserDefaults.standard.removePersistentDomain(forName:name)}
         Keychain.remove("session");URLCache.shared.removeAllCachedResponses();Fonts.register()
     }

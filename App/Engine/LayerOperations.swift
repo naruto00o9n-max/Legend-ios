@@ -2,22 +2,7 @@ import UIKit
 
 extension EditorModel {
     func transformGroupPeers(from original:EditorLayer,baseline:[EditorLayer]) {
-        guard let group=original.groupID,let current=active,current.id==original.id else{return}
-        let delta=LayerRenderer.transform(original).inverted().concatenating(LayerRenderer.transform(current))
-        let sx=current.scaleX/original.scaleX,sy=current.scaleY/original.scaleY
-        guard sx.isFinite,sy.isFinite else{return}
-        for old in baseline where old.groupID==group && old.id != original.id && !old.isLocked {
-            guard let index=page.layers.firstIndex(where:{$0.id==old.id}) else{continue}
-            let box=LayerRenderer.bounds(old),center=CGPoint(x:box.midX,y:box.midY).applying(LayerRenderer.transform(old)).applying(delta)
-            let transformed=LayerRenderer.transform(old).concatenating(delta)
-            let scaleX=hypot(Double(transformed.a),Double(transformed.b))*(old.scaleX<0 ? -1:1)
-            guard abs(scaleX)>0.000001 else{continue}
-            let rotation=atan2(Double(transformed.b)/scaleX,Double(transformed.a)/scaleX)
-            let scaleY=Double(transformed.a*transformed.d-transformed.b*transformed.c)/scaleX
-            guard abs(scaleY)>0.000001 else{continue}
-            let shear=(Double(transformed.c)*cos(rotation)+Double(transformed.d)*sin(rotation))/scaleY
-            var next=old;next.frame.x=Double(center.x-box.width/2);next.frame.y=Double(center.y-box.height/2);next.rotation=rotation*180/Double.pi;next.scaleX=scaleX;next.scaleY=scaleY;next.shearX=abs(shear)>0.000001 ? shear:nil;page.layers[index]=next
-        }
+        LayerGroupTransform.apply(page:&page,from:original,baseline:baseline)
     }
     func groupLayers(_ ids:Set<UUID>,name:String){guard !ids.isEmpty else{return};checkpoint();let group=UUID();for i in page.layers.indices where ids.contains(page.layers[i].id){page.layers[i].groupID=group;page.layers[i].groupName=name};save()}
     func ungroupLayers(_ ids:Set<UUID>){checkpoint();for i in page.layers.indices where ids.contains(page.layers[i].id){page.layers[i].groupID=nil;page.layers[i].groupName=nil};save()}
@@ -54,5 +39,27 @@ enum LayerBitmap {
         }
         guard LIWriterFinish(writer)==1 else{throw ImageFailure.message("لم يكتمل دمج الطبقات")};completed=true
         var output=EditorLayer(kind:.image,name:"طبقات مدمجة");output.imagePath=name;output.frame=Box(x:region.minX,y:region.minY,width:region.width,height:region.height);return output
+    }
+}
+
+
+enum LayerGroupTransform {
+    static func apply(page:inout EditorPage,from original:EditorLayer,baseline:[EditorLayer]) {
+        guard let group=original.groupID,let current=page.layers.first(where:{$0.id==original.id}) else{return}
+        let delta=LayerRenderer.transform(original).inverted().concatenating(LayerRenderer.transform(current))
+        let sx=current.scaleX/original.scaleX,sy=current.scaleY/original.scaleY
+        guard sx.isFinite,sy.isFinite else{return}
+        for old in baseline where old.groupID==group && old.id != original.id && !old.isLocked {
+            guard let index=page.layers.firstIndex(where:{$0.id==old.id}) else{continue}
+            let box=LayerRenderer.bounds(old),center=CGPoint(x:box.midX,y:box.midY).applying(LayerRenderer.transform(old)).applying(delta)
+            let transformed=LayerRenderer.transform(old).concatenating(delta)
+            let scaleX=hypot(Double(transformed.a),Double(transformed.b))*(old.scaleX<0 ? -1:1)
+            guard abs(scaleX)>0.000001 else{continue}
+            let rotation=atan2(Double(transformed.b)/scaleX,Double(transformed.a)/scaleX)
+            let scaleY=Double(transformed.a*transformed.d-transformed.b*transformed.c)/scaleX
+            guard abs(scaleY)>0.000001 else{continue}
+            let shear=(Double(transformed.c)*cos(rotation)+Double(transformed.d)*sin(rotation))/scaleY
+            var next=old;next.frame.x=Double(center.x-box.width/2);next.frame.y=Double(center.y-box.height/2);next.rotation=rotation*180/Double.pi;next.scaleX=scaleX;next.scaleY=scaleY;next.shearX=abs(shear)>0.000001 ? shear:nil;page.layers[index]=next
+        }
     }
 }

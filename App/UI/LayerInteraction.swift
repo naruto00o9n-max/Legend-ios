@@ -9,12 +9,15 @@ final class LayerInteraction {
         var signature: EditorLayer
         var rect: CGRect
         let viewport:CGRect?
-        init(layer: EditorLayer, directory: URL,viewport:CGRect?=nil) {
+        var resolution:CGFloat
+        init(layer: EditorLayer, directory: URL,viewport:CGRect?=nil,resolution:CGFloat=1) {
+            self.resolution=resolution
             self.viewport=viewport
             signature = Self.signature(layer); rect = viewport ?? Self.rect(layer)
             view.isUserInteractionEnabled = false; view.isHidden = true
-            view.layer.magnificationFilter = .nearest
-            view.image = Self.raster(signature, rect: rect, directory: directory)
+            view.layer.magnificationFilter = layer.kind == .text ? .linear:.nearest
+            view.layer.minificationFilter = .trilinear
+            view.image = Self.raster(signature, rect: rect, directory: directory,resolution:resolution)
             updateTransform(layer)
         }
         static func signature(_ layer: EditorLayer) -> EditorLayer {
@@ -29,19 +32,27 @@ final class LayerInteraction {
             return LayerRenderer.bounds(layer).insetBy(dx:-max(2,layer.style.strokeWidth),dy:-max(2,layer.style.strokeWidth)).integral
         }
 
-        static func raster(_ layer: EditorLayer, rect: CGRect, directory: URL) -> UIImage {
-            let format = UIGraphicsImageRendererFormat(); format.scale = 1
+        static func raster(_ layer: EditorLayer, rect: CGRect, directory: URL,resolution:CGFloat=1) -> UIImage {
+            let format = UIGraphicsImageRendererFormat(); format.scale = resolution
             format.opaque = false; format.preferredRange = .standard
             return UIGraphicsImageRenderer(size: rect.size, format: format).image { output in
                 output.cgContext.translateBy(x: -rect.minX, y: -rect.minY)
                 LayerRenderer.draw([layer], in: output.cgContext, directory: directory)
             }
         }
-        func update(_ layer: EditorLayer, directory: URL) -> Bool {
+        func update(_ layer: EditorLayer, directory: URL,screenScale:CGFloat) -> Bool {
             let next = Self.signature(layer), nextRect = viewport ?? Self.rect(layer)
-            let changed = next != signature || nextRect != rect
-            if changed { signature = next; rect = nextRect; view.image = Self.raster(next, rect: rect, directory: directory) }
+            let target=Self.resolution(for:layer,rect:nextRect,screenScale:screenScale)
+            // Regenerate at scale boundaries; plain movement only transforms a cached sprite.
+            let changed = next != signature || nextRect != rect || target != resolution
+            if changed { signature = next; rect = nextRect;resolution=target; view.image = Self.raster(next, rect: rect, directory: directory,resolution:resolution) }
             updateTransform(layer); return changed
+        }
+        static func resolution(for layer:EditorLayer,rect:CGRect,screenScale:CGFloat)->CGFloat {
+            guard layer.kind == .text else{return 1}
+            let requested=max(1,screenScale*CGFloat(max(abs(layer.scaleX),abs(layer.scaleY))))
+            let bucket=pow(2,ceil(log2(requested)))
+            return max(1,min(8,bucket,sqrt(4_194_304/max(1,rect.width*rect.height))))
         }
         private func updateTransform(_ layer: EditorLayer) {
             let transform = LayerRenderer.transform(layer)
@@ -58,7 +69,7 @@ final class LayerInteraction {
     private let order: [UUID]
     var phase = Phase.preparing
     private(set) var rasterizations = 0
-    init?(page: EditorPage, selected: UUID, directory: URL,drawingViewport:CGRect?=nil) {
+    init?(page: EditorPage, selected: UUID, directory: URL,drawingViewport:CGRect?=nil,screenScale:CGFloat=1) {
         guard let selectedIndex=page.layers.firstIndex(where:{$0.id==selected}) else{return nil}
         let group=page.layers[selectedIndex].groupID
         let index=group.flatMap{id in page.layers.firstIndex(where:{$0.groupID==id})} ?? selectedIndex
@@ -71,12 +82,12 @@ final class LayerInteraction {
         guard areas.allSatisfy({ $0 > 0 && $0 <= 4_194_304 }), areas.reduce(0, +) <= 8_388_608 else { return nil }
         self.selected = selected; self.directory = directory
         self.order = foreground.map(\.id); self.excluded = Set(order)
-        for layer in foreground { sprites[layer.id] = Sprite(layer: layer, directory: directory,viewport:layer.kind == .drawing ? spriteRect(layer):nil); rasterizations += 1 }
+        for layer in foreground { sprites[layer.id] = Sprite(layer: layer, directory: directory,viewport:layer.kind == .drawing ? spriteRect(layer):nil,resolution:Sprite.resolution(for:layer,rect:spriteRect(layer),screenScale:screenScale)); rasterizations += 1 }
     }
     func attach(to canvas: UIView) { for id in order { if let sprite = sprites[id] { canvas.addSubview(sprite.view) } } }
-    func update(_ page: EditorPage) {
+    func update(_ page: EditorPage,screenScale:CGFloat=1) {
         CATransaction.begin(); CATransaction.setDisableActions(true)
-        for item in page.layers { if sprites[item.id]?.update(item, directory: directory) == true { rasterizations += 1 } }
+        for item in page.layers { if sprites[item.id]?.update(item, directory: directory,screenScale:screenScale) == true { rasterizations += 1 } }
         CATransaction.commit()
     }
     func bringForward(in canvas: UIView) { for id in order { if let sprite = sprites[id] { canvas.bringSubviewToFront(sprite.view) } } }

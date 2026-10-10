@@ -95,7 +95,7 @@ final class EditorTests:XCTestCase {
         // UIScrollView rounds offsets to physical display pixels. Measure the
         // converted document center within one display pixel at this zoom.
         let pixelInDocument=1/(max(1,scroll.traitCollection.displayScale)*scroll.zoomScale)
-        XCTAssertEqual(scroll.contentInset.left,67.5,accuracy:0.1);XCTAssertEqual(scroll.contentInset.top,160,accuracy:0.1);XCTAssertEqual(model.visibleCenter.x,400,accuracy:pixelInDocument);XCTAssertEqual(model.visibleCenter.y,300,accuracy:pixelInDocument)
+        XCTAssertEqual(scroll.contentInset.left,96,accuracy:0.1);XCTAssertEqual(scroll.contentInset.top,160,accuracy:0.1);XCTAssertEqual(model.visibleCenter.x,400,accuracy:pixelInDocument);XCTAssertEqual(model.visibleCenter.y,300,accuracy:pixelInDocument)
         let savedCenter=model.visibleCenter,savedZoom=model.zoom;coordinator.readOnly=true;scroll.setZoomScale(2,animated:false);coordinator.updateCenter();XCTAssertEqual(model.visibleCenter,savedCenter,"Reading has its own viewport");XCTAssertEqual(model.zoom,savedZoom,"Reading must not overwrite editor zoom")
     }
     @MainActor func testGalleryRefreshesAfterEditedThumbnailIsSaved() async throws {

@@ -4,6 +4,7 @@ import UIKit
 struct CanvasHost:UIViewRepresentable {
     @ObservedObject var model:EditorModel
     var readOnly=false
+    var onBubble:((CGRect,BubbleShape)->Void)?
     func makeCoordinator()->Coordinator {Coordinator(model)}
     func makeUIView(context:Context)->UIScrollView {
         let s=CanvasViewport();context.coordinator.readOnly=readOnly;s.backgroundColor=UIColor(hex:"080808");s.delegate=context.coordinator;s.bouncesZoom=true;s.showsVerticalScrollIndicator=false;s.showsHorizontalScrollIndicator=false;s.maximumZoomScale=128;s.contentInsetAdjustmentBehavior = .never;s.accessibilityIdentifier="canvas-scroll"
@@ -16,12 +17,16 @@ struct CanvasHost:UIViewRepresentable {
         let longPress=UILongPressGestureRecognizer(target:context.coordinator,action:#selector(Coordinator.longPress(_:)));longPress.delegate=context.coordinator;s.addGestureRecognizer(longPress)
         return s
     }
-        func updateUIView(_ s:UIScrollView,context:Context){let c=context.coordinator;c.model=model;if let viewport=s as? CanvasViewport{viewport.showBrushSize(model.brushSizePreview ? CGFloat(model.brushWidth)*s.zoomScale:nil)};c.canvas.gradientMode=readOnly ? nil:model.gradientTarget;c.canvas.deformationMode = !readOnly && model.panel == .perspective;c.canvas.update(page:model.canvasPage,directory:model.directory,selected:readOnly ? nil:model.selected,zoom:s.zoomScale);c.canvas.showSniper(readOnly ? []:model.sniperTargets);s.accessibilityValue="\(model.page.layers.count) طبقات، \(model.page.layers.reduce(0){$0+$1.strokes.count}) خطوط رسم، الحجم \(String(format:"%.2f",model.active?.scaleX ?? 1))";s.panGestureRecognizer.minimumNumberOfTouches=(!readOnly && [Tool.brush,.eraser,.cleaner].contains(model.tool)) ? 2:1
+        func updateUIView(_ s:UIScrollView,context:Context){let c=context.coordinator;c.model=model;c.onBubble=onBubble;if let viewport=s as? CanvasViewport{viewport.showBrushSize(model.brushSizePreview ? CGFloat(model.brushWidth)*s.zoomScale:nil)};c.canvas.gradientMode=readOnly ? nil:model.gradientTarget;c.canvas.deformationMode = !readOnly && model.panel == .perspective;c.canvas.update(page:c.gesturePage ?? model.canvasPage,directory:model.directory,selected:readOnly ? nil:model.selected,zoom:s.zoomScale);c.canvas.showSniper(readOnly ? []:model.sniperTargets);s.accessibilityValue="\(model.page.layers.count) طبقات، \(model.page.layers.reduce(0){$0+$1.strokes.count}) خطوط رسم، الحجم \(String(format:"%.2f",model.active?.scaleX ?? 1))";s.panGestureRecognizer.minimumNumberOfTouches=(!readOnly && [Tool.brush,.eraser,.cleaner].contains(model.tool)) ? 2:1
         if !c.fitted{s.layoutIfNeeded();DispatchQueue.main.async{guard !c.fitted,s.bounds.width>0,s.bounds.height>0 else{return};let full=min(s.bounds.width/CGFloat(model.page.width),s.bounds.height/CGFloat(model.page.height));s.minimumZoomScale=max(0.002,full/4);let reading=s.bounds.width/CGFloat(model.page.width)*0.96;s.setZoomScale(reading,animated:false);c.fitted=true
             if c.readOnly,let saved=ReaderBookmark.viewport(page:c.model.page.id){s.setZoomScale(CGFloat(min(128,max(Double(s.minimumZoomScale),saved.zoom))),animated:false);s.setContentOffset(CGPoint(x:max(0,CGFloat(saved.x)*s.zoomScale-s.bounds.width/2),y:max(0,CGFloat(saved.y)*s.zoomScale-s.bounds.height/2)),animated:false)}
             c.updateCenter(recenter:true)}}else{c.updateCenter()}
     }
     class Coordinator:NSObject,UIScrollViewDelegate,UIGestureRecognizerDelegate {
+        var onBubble:((CGRect,BubbleShape)->Void)?
+        var bubbleOrigin:CGPoint?
+        var gesturePage:EditorPage?
+        func changeGesture(_ body:(inout EditorLayer)->Void){guard var page=gesturePage,let i=page.layers.firstIndex(where:{$0.id==model.selected}) else{return};body(&page.layers[i]);gesturePage=page}
         var model:EditorModel;var canvas:DocumentCanvas!;weak var scroll:UIScrollView?;weak var panGesture:UIPanGestureRecognizer?;var fitted=false;var readOnly=false;var centering=false;var initial:EditorLayer?;var groupInitial:[EditorLayer]=[];var dragHandle:String?;var touchedHandle:String?;var touchOrigin:CGPoint?;var rotationStart=0.0;var scaleStart=1.0;var stroke:Stroke?;var smudge:SmudgeSession?
         init(_ model:EditorModel){self.model=model}
         func viewForZooming(in scrollView:UIScrollView)->UIView?{canvas}
@@ -44,8 +49,9 @@ struct CanvasHost:UIViewRepresentable {
             if gesture is UITapGestureRecognizer{var view=touch.view;while let current=view{if current is UIControl{return false};view=current.superview}}
             return true
         }
-        func gestureRecognizerShouldBegin(_ g:UIGestureRecognizer)->Bool{if g is UILongPressGestureRecognizer{return canvas.handle(at:g.location(in:canvas))==nil && canvas.bounds.contains(g.location(in:canvas))};guard g === panGesture else{return true};if model.sniperMode{return false};if model.drawingShape=="fill",model.tool == .brush{return false};if model.textMaskMode,model.active?.kind == .text{return true};if [.brush,.eraser,.cleaner].contains(model.tool){return true};let point=g.location(in:canvas),translation=(g as? UIPanGestureRecognizer)?.translation(in:canvas) ?? .zero,origin=touchOrigin ?? CGPoint(x:point.x-translation.x,y:point.y-translation.y);return touchedHandle != nil || canvas.handle(at:origin) != nil || hit(origin) != nil}
+        func gestureRecognizerShouldBegin(_ g:UIGestureRecognizer)->Bool{if g is UILongPressGestureRecognizer{return canvas.handle(at:g.location(in:canvas))==nil && canvas.bounds.contains(g.location(in:canvas))};guard g === panGesture else{return true};if model.bubbleShape != nil{return true};if model.sniperMode{return false};if model.drawingShape=="fill",model.tool == .brush{return false};if model.textMaskMode,model.active?.kind == .text{return true};if [.brush,.eraser,.cleaner].contains(model.tool){return true};let point=g.location(in:canvas),translation=(g as? UIPanGestureRecognizer)?.translation(in:canvas) ?? .zero,origin=touchOrigin ?? CGPoint(x:point.x-translation.x,y:point.y-translation.y);return touchedHandle != nil || canvas.handle(at:origin) != nil || hit(origin) != nil}
         @objc func tap(_ g:UITapGestureRecognizer){let point=g.location(in:canvas);model.visibleCenter=point
+            if model.bubbleShape != nil{return}
             if model.sniperMode{Task{await model.detectSniper(at:point)};return}
             if model.textMaskMode,let active=model.active,active.kind == .text,!active.isLocked{let local=point.applying(LayerRenderer.transform(active).inverted());let dot=Stroke(points:[Point(x:local.x,y:local.y)],width:model.brushWidth,color:"FFFFFF",erase:!model.textMaskRestore);model.checkpoint();model.change{$0.textMask=($0.textMask ?? [])+[dot]};return}
             if model.tool == .brush,model.drawingShape=="fill"{Task{await model.fillBucket(at:point)};return}
@@ -76,9 +82,18 @@ struct CanvasHost:UIViewRepresentable {
         @objc func longPress(_ g:UILongPressGestureRecognizer){if g.state == .began{removeTextPrompt();sampleColor(at:g.location(in:canvas))}}
         @objc func pan(_ g:UIPanGestureRecognizer){let point=g.location(in:canvas)
             removeTextPrompt()
+            if let shape=model.bubbleShape {
+                if g.state == .began{bubbleOrigin=point}
+                if let origin=bubbleOrigin {
+                    let rect=CGRect(x:min(origin.x,point.x),y:min(origin.y,point.y),width:abs(point.x-origin.x),height:abs(point.y-origin.y))
+                    canvas.showBubbleFrame(rect,shape:shape)
+                    if g.state == .ended{canvas.showBubbleFrame(nil,shape:shape);bubbleOrigin=nil;onBubble?(rect,shape)}
+                    else if g.state == .cancelled{canvas.showBubbleFrame(nil,shape:shape);bubbleOrigin=nil}
+                };return
+            }
             if [.brush,.eraser,.cleaner].contains(model.tool){
-                if g.state == .began || g.state == .changed{var preview=model.canvasPage;if let stroke,let index=preview.layers.firstIndex(where:{$0.id==model.selected}){preview.layers[index].strokes.append(stroke)};(scroll as? CanvasViewport)?.loupe.show(page:preview,directory:model.directory,point:point)}
-                else{(scroll as? CanvasViewport)?.loupe.hide()}
+                if (g.state == .began || g.state == .changed),let loupe=(scroll as? CanvasViewport)?.loupe,loupe.shouldSample{var preview=model.canvasPage;if let stroke,let index=preview.layers.firstIndex(where:{$0.id==model.selected}){preview.layers[index].strokes.append(stroke)};loupe.show(page:preview,directory:model.directory,point:point)}
+                else if g.state == .ended || g.state == .cancelled{(scroll as? CanvasViewport)?.loupe.hide()}
             }
             if model.tool == .brush,model.drawingShape=="smudge"{
                 if g.state == .began{do{smudge=try SmudgeSession(page:model.page,directory:model.directory,region:canvas.visibleRect.insetBy(dx:-model.brushWidth,dy:-model.brushWidth),point:point,width:model.brushWidth,strength:model.smudgeStrength)}catch{model.error=error.localizedDescription}}
@@ -89,9 +104,9 @@ struct CanvasHost:UIViewRepresentable {
             }
             if model.textMaskMode,let active=model.active,active.kind == .text,!active.isLocked{
                 let local=point.applying(LayerRenderer.transform(active).inverted())
-                if g.state == .began{initial=active;model.checkpoint();stroke=Stroke(points:[Point(x:local.x,y:local.y)],width:model.brushWidth,color:"FFFFFF",erase:!model.textMaskRestore);canvas.beginLayerInteraction(active.id)}
-                if g.state == .changed || g.state == .ended{stroke?.points.append(Point(x:local.x,y:local.y));if let initial,let stroke{model.change(persist:false){$0.textMask=(initial.textMask ?? [])+[stroke]};canvas.update(page:model.page,directory:model.directory,selected:model.selected,zoom:scroll?.zoomScale ?? 1)}}
-                if g.state == .ended || g.state == .cancelled{if g.state == .cancelled,let initial{model.change(persist:false){$0.textMask=initial.textMask}};canvas.endLayerInteraction();stroke=nil;initial=nil;model.save()}
+                if g.state == .began{initial=active;gesturePage=model.page;model.checkpoint();stroke=Stroke(points:[Point(x:local.x,y:local.y)],width:model.brushWidth,color:"FFFFFF",erase:!model.textMaskRestore);canvas.beginLayerInteraction(active.id)}
+                if g.state == .changed || g.state == .ended{stroke?.points.append(Point(x:local.x,y:local.y));if let initial,let stroke{changeGesture{$0.textMask=(initial.textMask ?? [])+[stroke]};canvas.update(page:gesturePage ?? model.page,directory:model.directory,selected:model.selected,zoom:scroll?.zoomScale ?? 1)}}
+                if g.state == .ended || g.state == .cancelled{if g.state == .ended,let gesturePage{model.page=gesturePage};self.gesturePage=nil;canvas.update(page:model.page,directory:model.directory,selected:model.selected,zoom:scroll?.zoomScale ?? 1);canvas.endLayerInteraction();stroke=nil;initial=nil;model.save()}
                 return
             }
             if [.brush,.eraser,.cleaner].contains(model.tool){
@@ -103,8 +118,8 @@ struct CanvasHost:UIViewRepresentable {
                 else if g.state == .ended{if let stroke{if model.tool == .cleaner{canvas.showStroke(nil,on:model.page,selected:model.selected);Task{await model.clean(stroke)}}else{canvas.commitLiveStroke();model.change{$0.strokes.append(stroke)}}};stroke=nil}
                 return
             }
-            if g.state == .began{let translation=g.translation(in:canvas),origin=touchOrigin ?? CGPoint(x:point.x-translation.x,y:point.y-translation.y);dragHandle=touchedHandle ?? canvas.handle(at:origin);guard let l=(dragHandle != nil ? model.active:hit(origin)) else{return};model.selected=l.id;initial=l;groupInitial=model.page.layers;model.checkpoint();canvas.beginLayerInteraction(l.id);let b=LayerRenderer.bounds(l),dx=Double(origin.x)-l.frame.x-Double(b.width)/2,dy=Double(origin.y)-l.frame.y-Double(b.height)/2;rotationStart=atan2(dy,dx);scaleStart=max(1,hypot(dx,dy))}
-            if (g.state == .changed || g.state == .ended),let initial {let raw=g.translation(in:canvas),speed=CGFloat(dragHandle==nil ? 1:EditorPreferences.handleSpeed),t=CGPoint(x:raw.x*speed,y:raw.y*speed),b=LayerRenderer.bounds(initial),snapshot=model.page;model.change(persist:false){l in
+            if g.state == .began{let translation=g.translation(in:canvas),origin=touchOrigin ?? CGPoint(x:point.x-translation.x,y:point.y-translation.y);dragHandle=touchedHandle ?? canvas.handle(at:origin);guard let l=(dragHandle != nil ? model.active:hit(origin)) else{return};model.selected=l.id;initial=l;gesturePage=model.page;groupInitial=model.page.layers;model.checkpoint();canvas.beginLayerInteraction(l.id);let b=LayerRenderer.bounds(l),dx=Double(origin.x)-l.frame.x-Double(b.width)/2,dy=Double(origin.y)-l.frame.y-Double(b.height)/2;rotationStart=atan2(dy,dx);scaleStart=max(1,hypot(dx,dy))}
+            if (g.state == .changed || g.state == .ended),let initial {let raw=g.translation(in:canvas),speed=CGFloat(dragHandle==nil ? 1:EditorPreferences.handleSpeed),t=CGPoint(x:raw.x*speed,y:raw.y*speed),b=LayerRenderer.bounds(initial),snapshot=gesturePage ?? model.page;changeGesture{l in
                 if let handle=dragHandle,handle.hasPrefix("gradient-"),let target=model.gradientTarget{
                     let local=point.applying(LayerRenderer.transform(initial).inverted());var values=GradientGeometry.points(initial.style,target:target,size:b.size)
                     values[handle=="gradient-start" ? 0:1]=Point(x:min(2,max(-1,Double(local.x/max(1,b.width)))),y:min(2,max(-1,Double(local.y/max(1,b.height)))))
@@ -128,8 +143,8 @@ struct CanvasHost:UIViewRepresentable {
                 default:l.frame.x=initial.frame.x+Double(t.x);l.frame.y=initial.frame.y+Double(t.y)
                     if EditorPreferences.snap{SnapAlignment.apply(&l,page:snapshot,tolerance:8/max(0.01,model.zoom))}
                 }
-            };if dragHandle==nil || ["resize","rotate","scale-x","scale-y"].contains(dragHandle ?? ""){model.transformGroupPeers(from:initial,baseline:groupInitial)};canvas.update(page:model.page,directory:model.directory,selected:model.selected,zoom:scroll?.zoomScale ?? 1)}
-            if g.state == .ended || g.state == .cancelled{canvas.endLayerInteraction();initial=nil;groupInitial=[];dragHandle=nil;touchedHandle=nil;touchOrigin=nil;model.save()}
+            };if dragHandle==nil || ["resize","rotate","scale-x","scale-y"].contains(dragHandle ?? ""){if var draft=gesturePage{LayerGroupTransform.apply(page:&draft,from:initial,baseline:groupInitial);gesturePage=draft}};canvas.update(page:gesturePage ?? model.page,directory:model.directory,selected:model.selected,zoom:scroll?.zoomScale ?? 1)}
+            if g.state == .ended || g.state == .cancelled{if g.state == .ended, var draft=gesturePage{draft.modified=Date();model.page=draft};gesturePage=nil;canvas.update(page:model.page,directory:model.directory,selected:model.selected,zoom:scroll?.zoomScale ?? 1);canvas.endLayerInteraction();initial=nil;groupInitial=[];dragHandle=nil;touchedHandle=nil;touchOrigin=nil;model.save()}
         }
     }
 }
