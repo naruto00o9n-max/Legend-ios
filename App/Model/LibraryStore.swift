@@ -63,6 +63,7 @@ import SwiftUI
     @Published var brushStyle = "normal"
     @Published var brushOpacity=1.0
     @Published var brushTexture=""
+    @Published var brushSizePreview=false
     @Published var drawingShape="free"
     @Published var drawingFilled=false
     @Published var cleanCandidates:[CleaningCandidate]=[]

@@ -114,4 +114,19 @@ final class EditorUITests:XCTestCase {
         app.buttons["demo-project"].tap();let project=app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH 'project-'")).firstMatch;XCTAssertTrue(project.waitForExistence(timeout:30));project.tap();XCTAssertTrue(app.buttons["tool-brush"].waitForExistence(timeout:10))
         tool("brush");app.buttons["إعدادات الفرشاة"].tap();XCTAssertTrue(app.buttons["brush-close"].waitForExistence(timeout:5));capture("17-brush-settings");app.buttons["brush-close"].tap();tool("shapes");XCTAssertTrue(app.buttons["شكل 1"].waitForExistence(timeout:5));capture("18-shapes");app.buttons["شكل 1"].tap();tool("reader");XCTAssertTrue(app.buttons["إغلاق القراءة"].waitForExistence(timeout:5));capture("19-reader");app.buttons["إغلاق القراءة"].tap()
     }
+    func testLayerButtonsActuallyHideUnlockAndDelete() {
+        openEditor();tool("text");app.buttons["text-inspector-close"].tap();tool("layers")
+        let eye=app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH 'layer-eye-' ")).firstMatch,lock=app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH 'layer-lock-' ")).firstMatch,delete=app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH 'layer-delete-' ")).firstMatch
+        XCTAssertTrue(eye.waitForExistence(timeout:5));XCTAssertEqual(eye.value as? String,"visible");eye.tap();XCTAssertEqual(eye.value as? String,"hidden");eye.tap();XCTAssertEqual(eye.value as? String,"visible")
+        lock.tap();XCTAssertEqual(lock.value as? String,"locked");XCTAssertFalse(delete.isEnabled);lock.tap();XCTAssertEqual(lock.value as? String,"unlocked");XCTAssertTrue(delete.isEnabled);capture("fix-layer-controls");delete.tap();XCTAssertFalse(eye.exists);app.buttons["layers-close"].tap();XCTAssertTrue((app.scrollViews["canvas-scroll"].value as? String ?? "").hasPrefix("0 طبقات"))
+    }
+    func testCanvasTapDoesNotCreateUnrequestedTextAndFontsStayInsideEditor() {
+        openEditor();tool("text");app.buttons["text-inspector-close"].tap();let canvas=app.scrollViews["canvas-scroll"]
+        canvas.coordinate(withNormalizedOffset:CGVector(dx:0.15,dy:0.18)).tap();XCTAssertTrue((canvas.value as? String ?? "").hasPrefix("1 طبقات"));XCTAssertFalse(app.buttons["canvas-add-text-confirm"].exists)
+        app.buttons["text-add"].tap();app.buttons["text-inspector-close"].tap();let button=app.buttons["panel-font"];reveal(button,in:app.scrollViews["panel-strip"]);button.tap();app.buttons["editor-font-library"].tap();XCTAssertTrue(app.buttons["آخر استخدام"].waitForExistence(timeout:5));XCTAssertTrue(app.buttons["المفضلة"].exists);XCTAssertTrue(app.buttons["العربية"].exists);capture("fix-in-editor-font-library");app.buttons["font-close"].tap();XCTAssertTrue(app.buttons["text-add"].exists)
+    }
+    func testRealStorageScreenShowsProjectsAndSelection() {
+        start();app.buttons["settings"].tap();let storage=app.buttons["settings-storage"];for _ in 0..<4 where !storage.isHittable{app.swipeUp()};storage.tap();XCTAssertTrue(app.staticTexts["storage-total"].waitForExistence(timeout:10));XCTAssertTrue(app.buttons["storage-clear-cache"].exists);XCTAssertTrue(app.buttons["storage-backup-selected"].exists);capture("fix-storage-backup-selection");assertLayout()
+    }
+
 }

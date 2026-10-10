@@ -60,6 +60,20 @@ cleanup:
   return ok;
 }
 
+/* Validate every compressed row and CRC without producing a second disk image. */
+int LIValidatePNG(const char *source,int expectedWidth,int expectedHeight) {
+  FILE *input=fopen(source,"rb");if(!input)return 0;
+  png_structp png=png_create_read_struct(PNG_LIBPNG_VER_STRING,NULL,NULL,NULL);
+  png_infop info=png?png_create_info_struct(png):NULL;unsigned char * volatile row=NULL;int ok=0;
+  if(!png||!info)goto done;if(setjmp(png_jmpbuf(png)))goto done;
+  png_init_io(png,input);png_set_user_limits(png,32768,1000000);png_set_chunk_malloc_max(png,16*1024*1024);png_set_crc_action(png,PNG_CRC_ERROR_QUIT,PNG_CRC_ERROR_QUIT);png_read_info(png,info);
+  if(png_get_image_width(png,info)!=(png_uint_32)expectedWidth||png_get_image_height(png,info)!=(png_uint_32)expectedHeight||png_get_bit_depth(png,info)>8)png_error(png,"Source cannot rebuild decoded cache");
+  int passes=png_set_interlace_handling(png);png_read_update_info(png,info);row=calloc(1,png_get_rowbytes(png,info));if(!row)png_error(png,"No row memory");
+  for(int pass=0;pass<passes;pass++)for(int y=0;y<expectedHeight;y++)png_read_row(png,(png_bytep)row,NULL);
+  png_read_end(png,info);ok=1;
+done:free((void *)row);if(png)png_destroy_read_struct(&png,info?&info:NULL,NULL);fclose(input);return ok;
+}
+
 int LIReadTile(const char *raw,int width,int height,int x,int y,int w,int h,int sample,uint8_t *rgba) {
   if(width<1||height<1||sample<1||w<1||h<1||x<0||y<0||x>=width||y>=height)return 0;
   FILE *file=fopen(raw,"rb");if(!file)return 0;

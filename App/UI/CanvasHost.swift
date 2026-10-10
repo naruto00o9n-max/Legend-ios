@@ -10,13 +10,13 @@ struct CanvasHost:UIViewRepresentable {
         let canvas=DocumentCanvas(frame:CGRect(x:0,y:0,width:model.page.width,height:model.page.height));s.addSubview(canvas);context.coordinator.canvas=canvas;context.coordinator.scroll=s;canvas.onHandle={ [weak coordinator=context.coordinator] name in guard let c=coordinator else{return};switch name{case "delete":c.model.delete();case "duplicate":c.model.duplicate();case "edit":c.model.tool = .text;c.model.panel = .content;case "styles":c.model.tool = .text;c.model.panel = .styles;default:break}}
         s.onViewportSizeChange = { [weak coordinator=context.coordinator] in guard let coordinator,coordinator.fitted else{return};coordinator.updateCenter() }
         if readOnly{return s}
-        let tap=UITapGestureRecognizer(target:context.coordinator,action:#selector(Coordinator.tap(_:)));tap.delegate=context.coordinator;canvas.addGestureRecognizer(tap)
-        let double=UITapGestureRecognizer(target:context.coordinator,action:#selector(Coordinator.doubleTap(_:)));double.numberOfTapsRequired=2;double.delegate=context.coordinator;canvas.addGestureRecognizer(double)
-        let pan=UIPanGestureRecognizer(target:context.coordinator,action:#selector(Coordinator.pan(_:)));pan.maximumNumberOfTouches=1;pan.delegate=context.coordinator;canvas.addGestureRecognizer(pan);context.coordinator.panGesture=pan;s.panGestureRecognizer.require(toFail:pan)
-        let longPress=UILongPressGestureRecognizer(target:context.coordinator,action:#selector(Coordinator.longPress(_:)));longPress.delegate=context.coordinator;canvas.addGestureRecognizer(longPress)
+        let tap=UITapGestureRecognizer(target:context.coordinator,action:#selector(Coordinator.tap(_:)));tap.delegate=context.coordinator;s.addGestureRecognizer(tap)
+        let double=UITapGestureRecognizer(target:context.coordinator,action:#selector(Coordinator.doubleTap(_:)));double.numberOfTapsRequired=2;double.delegate=context.coordinator;s.addGestureRecognizer(double)
+        let pan=UIPanGestureRecognizer(target:context.coordinator,action:#selector(Coordinator.pan(_:)));pan.maximumNumberOfTouches=1;pan.delegate=context.coordinator;s.addGestureRecognizer(pan);context.coordinator.panGesture=pan;s.panGestureRecognizer.require(toFail:pan)
+        let longPress=UILongPressGestureRecognizer(target:context.coordinator,action:#selector(Coordinator.longPress(_:)));longPress.delegate=context.coordinator;s.addGestureRecognizer(longPress)
         return s
     }
-        func updateUIView(_ s:UIScrollView,context:Context){let c=context.coordinator;c.model=model;c.canvas.gradientMode=readOnly ? nil:model.gradientTarget;c.canvas.deformationMode = !readOnly && model.panel == .perspective;c.canvas.update(page:model.canvasPage,directory:model.directory,selected:readOnly ? nil:model.selected,zoom:s.zoomScale);c.canvas.showSniper(readOnly ? []:model.sniperTargets);s.accessibilityValue="\(model.page.layers.count) طبقات، \(model.page.layers.reduce(0){$0+$1.strokes.count}) خطوط رسم، الحجم \(String(format:"%.2f",model.active?.scaleX ?? 1))";s.panGestureRecognizer.minimumNumberOfTouches=(!readOnly && [Tool.brush,.eraser,.cleaner].contains(model.tool)) ? 2:1
+        func updateUIView(_ s:UIScrollView,context:Context){let c=context.coordinator;c.model=model;if let viewport=s as? CanvasViewport{viewport.showBrushSize(model.brushSizePreview ? CGFloat(model.brushWidth)*s.zoomScale:nil)};c.canvas.gradientMode=readOnly ? nil:model.gradientTarget;c.canvas.deformationMode = !readOnly && model.panel == .perspective;c.canvas.update(page:model.canvasPage,directory:model.directory,selected:readOnly ? nil:model.selected,zoom:s.zoomScale);c.canvas.showSniper(readOnly ? []:model.sniperTargets);s.accessibilityValue="\(model.page.layers.count) طبقات، \(model.page.layers.reduce(0){$0+$1.strokes.count}) خطوط رسم، الحجم \(String(format:"%.2f",model.active?.scaleX ?? 1))";s.panGestureRecognizer.minimumNumberOfTouches=(!readOnly && [Tool.brush,.eraser,.cleaner].contains(model.tool)) ? 2:1
         if !c.fitted{s.layoutIfNeeded();DispatchQueue.main.async{guard !c.fitted,s.bounds.width>0,s.bounds.height>0 else{return};let full=min(s.bounds.width/CGFloat(model.page.width),s.bounds.height/CGFloat(model.page.height));s.minimumZoomScale=max(0.002,full/4);let reading=s.bounds.width/CGFloat(model.page.width)*0.96;s.setZoomScale(reading,animated:false);c.fitted=true
             if c.readOnly,let saved=ReaderBookmark.viewport(page:c.model.page.id){s.setZoomScale(CGFloat(min(128,max(Double(s.minimumZoomScale),saved.zoom))),animated:false);s.setContentOffset(CGPoint(x:max(0,CGFloat(saved.x)*s.zoomScale-s.bounds.width/2),y:max(0,CGFloat(saved.y)*s.zoomScale-s.bounds.height/2)),animated:false)}
             c.updateCenter()}}else{c.updateCenter()}
@@ -26,7 +26,7 @@ struct CanvasHost:UIViewRepresentable {
         init(_ model:EditorModel){self.model=model}
         func viewForZooming(in scrollView:UIScrollView)->UIView?{canvas}
         func scrollViewDidZoom(_ s:UIScrollView){if !readOnly{model.zoom=Double(s.zoomScale)};canvas.zoom=s.zoomScale;canvas.updateSelection();updateCenter()}
-        func scrollViewDidScroll(_ s:UIScrollView){updateCenter()}
+        func scrollViewDidScroll(_ s:UIScrollView){removeTextPrompt();updateCenter()}
         func updateCenter(){guard let s=scroll,!centering else{return};centering=true;defer{centering=false};let horizontal=max(0,(s.bounds.width-canvas.frame.width)/2),vertical=max(0,(s.bounds.height-canvas.frame.height)/2);let insets=UIEdgeInsets(top:vertical,left:horizontal,bottom:vertical,right:horizontal);if s.contentInset != insets{s.contentInset=insets};var offset=s.contentOffset;if horizontal>0{offset.x = -horizontal};if vertical>0{offset.y = -vertical};if offset != s.contentOffset{s.contentOffset=offset};if !readOnly{model.visibleCenter=canvas.convert(CGPoint(x:s.bounds.midX,y:s.bounds.midY),from:s)};canvas.refreshVisible(canvas.convert(s.bounds,from:s));if readOnly,fitted{let center=canvas.convert(CGPoint(x:s.bounds.midX,y:s.bounds.midY),from:s);ReaderBookmark.save(ReaderViewport(x:Double(center.x),y:Double(center.y),zoom:Double(s.zoomScale)),page:model.page.id)}}
         func hit(_ point:CGPoint)->EditorLayer?{model.page.layers.reversed().first{l in guard l.isVisible,!l.isLocked,l.kind != .drawing else{return false};let b=LayerRenderer.bounds(l);return b.insetBy(dx:-18/max(0.01,model.zoom),dy:-36/max(0.01,model.zoom)).contains(point.applying(LayerRenderer.transform(l).inverted()))}}
         func gestureRecognizer(_ gesture:UIGestureRecognizer,shouldReceive touch:UITouch)->Bool {
@@ -34,19 +34,42 @@ struct CanvasHost:UIViewRepresentable {
             if gesture is UITapGestureRecognizer{var view=touch.view;while let current=view{if current is UIControl{return false};view=current.superview}}
             return true
         }
-        func gestureRecognizerShouldBegin(_ g:UIGestureRecognizer)->Bool{if g is UILongPressGestureRecognizer{return canvas.handle(at:g.location(in:canvas))==nil && hit(g.location(in:canvas))?.kind == .text};guard g === panGesture else{return true};if model.sniperMode{return false};if model.drawingShape=="fill",model.tool == .brush{return false};if model.textMaskMode,model.active?.kind == .text{return true};if [.brush,.eraser,.cleaner].contains(model.tool){return true};let point=g.location(in:canvas),translation=(g as? UIPanGestureRecognizer)?.translation(in:canvas) ?? .zero,origin=touchOrigin ?? CGPoint(x:point.x-translation.x,y:point.y-translation.y);return touchedHandle != nil || canvas.handle(at:origin) != nil || hit(origin) != nil}
+        func gestureRecognizerShouldBegin(_ g:UIGestureRecognizer)->Bool{if g is UILongPressGestureRecognizer{return canvas.handle(at:g.location(in:canvas))==nil && canvas.bounds.contains(g.location(in:canvas))};guard g === panGesture else{return true};if model.sniperMode{return false};if model.drawingShape=="fill",model.tool == .brush{return false};if model.textMaskMode,model.active?.kind == .text{return true};if [.brush,.eraser,.cleaner].contains(model.tool){return true};let point=g.location(in:canvas),translation=(g as? UIPanGestureRecognizer)?.translation(in:canvas) ?? .zero,origin=touchOrigin ?? CGPoint(x:point.x-translation.x,y:point.y-translation.y);return touchedHandle != nil || canvas.handle(at:origin) != nil || hit(origin) != nil}
         @objc func tap(_ g:UITapGestureRecognizer){let point=g.location(in:canvas);model.visibleCenter=point
             if model.sniperMode{Task{await model.detectSniper(at:point)};return}
             if model.textMaskMode,let active=model.active,active.kind == .text,!active.isLocked{let local=point.applying(LayerRenderer.transform(active).inverted());let dot=Stroke(points:[Point(x:local.x,y:local.y)],width:model.brushWidth,color:"FFFFFF",erase:!model.textMaskRestore);model.checkpoint();model.change{$0.textMask=($0.textMask ?? [])+[dot]};return}
             if model.tool == .brush,model.drawingShape=="fill"{Task{await model.fillBucket(at:point)};return}
             if [.brush,.eraser,.cleaner].contains(model.tool){let drawingPoint=(model.tool != .cleaner && model.active?.kind == .drawing) ? point.applying(LayerRenderer.transform(model.active!).inverted()):point;let dot=Stroke(points:[Point(x:drawingPoint.x,y:drawingPoint.y)],width:model.brushWidth,color:model.brushColor,erase:model.tool == .eraser,brush:model.brushStyle,opacity:model.brushOpacity,texturePath:model.brushTexture,shape:model.drawingShape,filled:model.drawingFilled);if model.tool == .cleaner{Task{await model.clean(dot)}}else{if model.active?.kind != .drawing{model.add(.drawing)};model.checkpoint();model.change{$0.strokes.append(dot)}};return}
-            if model.tool == .text,hit(point)==nil{model.add(.text)}else if model.tool == .eyedropper{
-                if let sample=try? ImagePipeline.compositeRegion(model.page,directory:model.directory,rect:CGRect(x:Int(point.x),y:Int(point.y),width:1,height:1)),let data=sample.dataProvider?.data{let bytes=data as Data;if bytes.count>=4{model.brushColor=String(format:"%02X%02X%02X",bytes[0],bytes[1],bytes[2])}}
-            }else{model.selected=hit(point)?.id;if model.active?.kind == .text{model.tool = .text}}
+            if model.tool == .eyedropper{sampleColor(at:point)}
+            else if let layer=hit(point){removeTextPrompt();model.selected=layer.id;if layer.kind == .text{model.tool = .text}}
+            else {model.selected=nil;if UserDefaults.standard.bool(forKey:"editor-tap-add-text"){showTextPrompt(at:point)}else{removeTextPrompt()}}
         }
+        var textPrompt:UIButton?
+        var promptPoint:CGPoint = .zero
+        func removeTextPrompt(){textPrompt?.removeFromSuperview();textPrompt=nil}
+        func showTextPrompt(at point:CGPoint){
+            removeTextPrompt();guard let scroll else{return};promptPoint=point
+            let button=UIButton(type:.system);button.setTitle("نضيف نص؟",for:.normal);button.setTitleColor(.white,for:.normal);button.backgroundColor=UIColor(white:0.12,alpha:0.96);button.layer.cornerRadius=14;button.layer.borderWidth=1;button.layer.borderColor=UIColor(hex:"D4AF37").cgColor;button.accessibilityIdentifier="canvas-add-text-confirm"
+            let anchor=canvas.convert(point,to:scroll);let width:CGFloat=140;button.frame=CGRect(x:min(scroll.bounds.maxX-width-8,max(scroll.bounds.minX+8,anchor.x-width/2)),y:max(scroll.bounds.minY+8,anchor.y-64),width:width,height:44)
+            let arrow=CAShapeLayer(),path=UIBezierPath();let x=min(width-10,max(10,anchor.x-button.frame.minX));path.move(to:CGPoint(x:x-7,y:44));path.addLine(to:CGPoint(x:x,y:53));path.addLine(to:CGPoint(x:x+7,y:44));path.close();arrow.path=path.cgPath;arrow.fillColor=button.backgroundColor?.cgColor;button.layer.addSublayer(arrow)
+            button.addTarget(self,action:#selector(confirmText),for:.touchUpInside);scroll.addSubview(button);textPrompt=button
+        }
+        @objc func confirmText(){model.visibleCenter=promptPoint;model.tool = .text;model.add(.text);removeTextPrompt()}
+        func sampleColor(at point:CGPoint){
+            guard canvas.bounds.contains(point),let image=try? ImagePipeline.compositeRegion(model.canvasPage,directory:model.directory,rect:CGRect(x:floor(point.x),y:floor(point.y),width:1,height:1)),let data=image.dataProvider?.data else{return}
+            let bytes=data as Data;guard bytes.count>=4 else{return};let color=String(format:"%02X%02X%02X",bytes[0],bytes[1],bytes[2]);model.brushColor=color
+            if model.active?.kind == .text{model.checkpoint();model.change{$0.style.color=color}}
+            if EditorPreferences.haptics{UISelectionFeedbackGenerator().selectionChanged()}
+        }
+
         @objc func doubleTap(_ g:UITapGestureRecognizer){guard let layer=hit(g.location(in:canvas)),layer.kind == .text else{return};let action=UserDefaults.standard.string(forKey:"editor-double-tap") ?? "edit";model.selected=layer.id;if action=="edit"{model.tool = .text;model.panel = .content}else if action=="typer"{model.requestTyper=true}}
-        @objc func longPress(_ g:UILongPressGestureRecognizer){if g.state == .began,let l=hit(g.location(in:canvas)),l.kind == .text{model.selected=l.id;model.tool = .text;model.panel = .content}}
+        @objc func longPress(_ g:UILongPressGestureRecognizer){if g.state == .began{removeTextPrompt();sampleColor(at:g.location(in:canvas))}}
         @objc func pan(_ g:UIPanGestureRecognizer){let point=g.location(in:canvas)
+            removeTextPrompt()
+            if [.brush,.eraser,.cleaner].contains(model.tool){
+                if g.state == .began || g.state == .changed{var preview=model.canvasPage;if let stroke,let index=preview.layers.firstIndex(where:{$0.id==model.selected}){preview.layers[index].strokes.append(stroke)};(scroll as? CanvasViewport)?.loupe.show(page:preview,directory:model.directory,point:point)}
+                else{(scroll as? CanvasViewport)?.loupe.hide()}
+            }
             if model.tool == .brush,model.drawingShape=="smudge"{
                 if g.state == .began{do{smudge=try SmudgeSession(page:model.page,directory:model.directory,region:canvas.visibleRect.insetBy(dx:-model.brushWidth,dy:-model.brushWidth),point:point,width:model.brushWidth,strength:model.smudgeStrength)}catch{model.error=error.localizedDescription}}
                 else if g.state == .changed{smudge?.move(to:point);if let smudge{canvas.showPatch(smudge.image(),rect:smudge.region)}}
@@ -104,10 +127,17 @@ struct CanvasHost:UIViewRepresentable {
 /// Rotation and keyboard layout can resize a viewport without scrolling it.
 /// Refresh document-space insertion coordinates and visible tiles in that case.
 final class CanvasViewport:UIScrollView {
+    let loupe=BrushLoupe(frame:CGRect(x:12,y:12,width:156,height:156))
+    private let brushRing=CAShapeLayer()
     var onViewportSizeChange:(()->Void)?
+    override init(frame:CGRect){super.init(frame:frame);addSubview(loupe);layer.addSublayer(brushRing);brushRing.fillColor=UIColor.clear.cgColor;brushRing.strokeColor=UIColor.white.cgColor;brushRing.lineWidth=1.5;brushRing.shadowColor=UIColor.black.cgColor;brushRing.shadowRadius=2;brushRing.shadowOpacity=1}
+    required init?(coder:NSCoder){fatalError()}
+    func showBrushSize(_ diameter:CGFloat?){guard let diameter else{brushRing.path=nil;return};brushRing.path=UIBezierPath(ovalIn:CGRect(x:bounds.midX-diameter/2,y:bounds.midY-diameter/2,width:diameter,height:diameter)).cgPath}
+
     private var previousSize:CGSize = .zero
     override func layoutSubviews(){
         super.layoutSubviews()
+        loupe.frame=CGRect(x:bounds.minX+12,y:bounds.minY+12,width:156,height:156);bringSubviewToFront(loupe)
         guard bounds.width>0,bounds.height>0,bounds.size != previousSize else{return}
         previousSize=bounds.size
         onViewportSizeChange?()

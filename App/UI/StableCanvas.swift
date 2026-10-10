@@ -68,6 +68,11 @@ final class DocumentCanvas: UIView {
     var gradientMode:String?
     var deformationMode=false
     var onHandle: ((String) -> Void)?
+    override func point(inside point:CGPoint,with event:UIEvent?)->Bool {
+        if super.point(inside:point,with:event){return true}
+        if handle(at:point) != nil{return true}
+        return page?.layers.contains{item in item.isVisible && !item.isLocked && item.kind != .drawing && LayerRenderer.bounds(item).contains(point.applying(LayerRenderer.transform(item).inverted()))} ?? false
+    }
     override init(frame: CGRect) {
         super.init(frame: frame)
         isOpaque = false; backgroundColor = .clear; clipsToBounds = false

@@ -8,6 +8,20 @@ enum ImageFailure: LocalizedError {
 }
 enum ImagePipeline {
     static let space=CGColorSpaceCreateDeviceRGB()
+    private static let decodedLock=NSLock()
+    static func ensureDecoded(_ url:URL,width:Int,height:Int)throws {
+        if FileManager.default.fileExists(atPath:url.path){return}
+        decodedLock.lock();defer{decodedLock.unlock()}
+        if FileManager.default.fileExists(atPath:url.path){return}
+        let directory=url.deletingLastPathComponent()
+        let page=try JSONDecoder().decode(EditorPage.self,from:Data(contentsOf:directory.appendingPathComponent("page.json")))
+        guard page.raw==url.lastPathComponent,page.width==width,page.height==height,AppStorageManager.safe(page.source),!page.source.contains("/") else{throw ImageFailure.message("تعذر إعادة بناء ذاكرة الصورة")}
+        let temporary=directory.appendingPathComponent(".decode-\(UUID()).rgba");defer{try? FileManager.default.removeItem(at:temporary)}
+        var w:Int32=0,h:Int32=0,error=[CChar](repeating:0,count:512)
+        guard LIImportPNG(directory.appendingPathComponent(page.source).path,temporary.path,&w,&h,&error,error.count)==1,Int(w)==width,Int(h)==height else{throw ImageFailure.message("تعذر إعادة قراءة الصورة الأصلية؛ لم تُغيّر بياناتها")}
+        try FileManager.default.moveItem(at:temporary,to:url)
+    }
+    static func clearMemoryCaches(){assets.removeAllObjects();spaces.removeAllObjects()}
     private static let assets=NSCache<NSString,UIImage>()
     private static let assetLock=NSLock()
     static func asset(_ url:URL)->UIImage? {assetLock.lock();defer{assetLock.unlock()};if let image=assets.object(forKey:url.path as NSString){return image};guard let image=UIImage(contentsOfFile:url.path) else{return nil};assets.totalCostLimit=64*1024*1024;assets.setObject(image,forKey:url.path as NSString,cost:Int(image.size.width*image.size.height)*4);return image}
@@ -18,6 +32,7 @@ enum ImagePipeline {
         return CGImage(width:width,height:height,bitsPerComponent:8,bitsPerPixel:32,bytesPerRow:width*4,space:colorSpace,bitmapInfo:CGBitmapInfo(rawValue:CGImageAlphaInfo.last.rawValue),provider:provider,decode:nil,shouldInterpolate:false,intent:.defaultIntent)
     }
     static func tile(_ url:URL,width:Int,height:Int,rect:CGRect,sample:Int=1)throws->[UInt8] {
+        try ensureDecoded(url,width:width,height:height)
         let x=max(0,Int(rect.minX)),y=max(0,Int(rect.minY)),w=min(width-x,max(1,Int(ceil(rect.width)))),h=min(height-y,max(1,Int(ceil(rect.height))))
         guard w>0,h>0 else{return []};var bytes=[UInt8](repeating:0,count:((w+sample-1)/sample)*((h+sample-1)/sample)*4)
         guard LIReadRegion(url.path,Int32(width),Int32(height),Int32(x),Int32(y),Int32(w),Int32(h),Int32(sample),&bytes)==1 else{throw ImageFailure.message("تعذر قراءة جزء من الصورة")};return bytes

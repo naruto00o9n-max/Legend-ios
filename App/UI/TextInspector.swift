@@ -5,6 +5,7 @@ struct TextInspector:View {
     @Environment(\.dismiss) var dismiss
     var close:(()->Void)? = nil
     @State private var texturePicker=false
+    @State private var fontLibrary=false
     @AppStorage("editor-panel-density") private var panelDensity=1.0
     @State private var textRange=NSRange(location:0,length:0)
     @State private var rangeColor=Color.white
@@ -16,9 +17,10 @@ struct TextInspector:View {
     var style:TextStyle {model.active?.style ?? TextStyle()}
     func value(_ key:WritableKeyPath<TextStyle,Double>)->Binding<Double>{Binding(get:{style[keyPath:key]},set:{v in model.change{$0.style[keyPath:key]=v}})}
     func flag(_ key:WritableKeyPath<TextStyle,Bool>)->Binding<Bool>{Binding(get:{style[keyPath:key]},set:{v in model.change{$0.style[keyPath:key]=v}})}
-    var body:some View {VStack(spacing:0){HStack{Text(panel.title).font(.system(size:15,weight:.semibold));Spacer();IconButton(icon:"checkmark",title:"تم"){model.commitTextMask();model.save();model.gradientTarget=nil;model.textMaskMode=false;if let close{close()}else{dismiss()}}}.padding(.horizontal,18).frame(height:52)
+    var body:some View {VStack(spacing:0){HStack{Text(panel.title).font(.system(size:15,weight:.semibold));Spacer();IconButton(icon:"checkmark",title:"تم"){model.commitTextMask();model.save();model.gradientTarget=nil;model.textMaskMode=false;if let close{close()}else{dismiss()}}.accessibilityIdentifier("text-inspector-close")}.padding(.horizontal,18).frame(height:52)
         ScrollView{VStack(alignment:.leading,spacing:18*min(1.15,max(0.85,panelDensity))){content}.padding(.horizontal,20*min(1.15,max(0.85,panelDensity))).padding(.bottom,24)}.accessibilityIdentifier("text-inspector-scroll")
     }.foregroundStyle(Palette.pale).background(Palette.ink.opacity(0.75)).glass(28).ignoresSafeArea(edges:.bottom).onAppear{model.checkpoint()}.onDisappear{if panel == .mask{model.commitTextMask()}}.scrollDismissesKeyboard(.interactively)
+        .sheet(isPresented:$fontLibrary){FontLibraryView(onSelect:{name in model.change{$0.style.fontPath=name}},currentFont:style.fontPath)}
         .sheet(isPresented:$texturePicker){PhotoLibraryPicker{result in
             switch result{case .failure(let error):model.error=error.localizedDescription;case .success(let urls):if let url=urls.first{defer{try? FileManager.default.removeItem(at:url)};do{let name=UUID().uuidString+"."+url.pathExtension;try FileManager.default.copyItem(at:url,to:model.directory.appendingPathComponent(name));model.change{$0.style.texturePath=name}}catch{model.error=error.localizedDescription}}}
         }}
@@ -39,7 +41,8 @@ struct TextInspector:View {
                 Button("مسح تنسيق التحديد"){let start=textRange.location,end=start+textRange.length;model.change{$0.style.spans.removeAll{$0.start<end && $0.end>start}}}.disabled(textRange.length==0)
             }.font(.system(size:12))
         case .font:
-            ForEach((Fonts.files+Fonts.otf).sorted{$0.lastPathComponent<$1.lastPathComponent},id:\.self){url in Button{model.change{$0.style.fontPath=url.lastPathComponent}}label:{HStack{Text("حروف تصنع الحوار").font(Font(Fonts.font({var s=style;s.fontPath=url.lastPathComponent;s.fontSize=20;return s}())));Spacer();if style.fontPath==url.lastPathComponent{Image(systemName:"checkmark")}}.padding(12).glass(14)}}
+            Button{fontLibrary=true}label:{Label("الخطوط · بحث ومفضلة واستيراد",systemImage:"textformat.alt")}.buttonStyle(.bordered).accessibilityIdentifier("editor-font-library")
+            ForEach((Fonts.files+Fonts.otf).sorted{$0.lastPathComponent<$1.lastPathComponent},id:\.self){url in Button{model.change{$0.style.fontPath=url.lastPathComponent};var recent=UserDefaults.standard.stringArray(forKey:"fontRecent") ?? [];recent.removeAll{$0==url.lastPathComponent};recent.insert(url.lastPathComponent,at:0);UserDefaults.standard.set(Array(recent.prefix(30)),forKey:"fontRecent")}label:{HStack{Text("حروف تصنع الحوار - "+url.deletingPathExtension().lastPathComponent).font(Font(Fonts.font({var s=style;s.fontPath=url.lastPathComponent;s.fontSize=20;return s}())));Spacer();if style.fontPath==url.lastPathComponent{Image(systemName:"checkmark")}}.padding(12).glass(14)}}
         case .format:
             knob("الحجم",value(\.fontSize),8...240);knob("عرض النص",value(\.boxWidth),40...Double(model.page.width))
             HStack{Toggle("غامق",isOn:flag(\.isBold));Toggle("مائل",isOn:flag(\.isItalic))}.toggleStyle(.button)

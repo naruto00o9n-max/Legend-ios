@@ -6,6 +6,7 @@
 extern "C" {
 #endif
 /* PNG is decoded to an RGBA8 disk file, not a full-image allocation. */
+int LIValidatePNG(const char *source, int expectedWidth, int expectedHeight);
 int LIImportPNG(const char *source, const char *raw, int *width, int *height, char *error, size_t capacity);
 uint8_t *LICopyPNGProfile(const char *source, size_t *length);
 void LIFreeBuffer(void *buffer);
