@@ -5,6 +5,7 @@ struct TextInspector:View {
     @Environment(\.dismiss) var dismiss
     var close:(()->Void)? = nil
     @State private var texturePicker=false
+    @AppStorage("editor-panel-density") private var panelDensity=1.0
     @State private var textRange=NSRange(location:0,length:0)
     @State private var rangeColor=Color.white
     @State private var rangeSize=48.0
@@ -15,17 +16,23 @@ struct TextInspector:View {
     var style:TextStyle {model.active?.style ?? TextStyle()}
     func value(_ key:WritableKeyPath<TextStyle,Double>)->Binding<Double>{Binding(get:{style[keyPath:key]},set:{v in model.change{$0.style[keyPath:key]=v}})}
     func flag(_ key:WritableKeyPath<TextStyle,Bool>)->Binding<Bool>{Binding(get:{style[keyPath:key]},set:{v in model.change{$0.style[keyPath:key]=v}})}
-    var body:some View {VStack(spacing:0){HStack{Text(panel.title).font(.system(size:15,weight:.semibold));Spacer();IconButton(icon:"checkmark",title:"تم"){model.save();model.gradientTarget=nil;model.textMaskMode=false;if let close{close()}else{dismiss()}}}.padding(.horizontal,18).frame(height:52)
-        ScrollView{VStack(alignment:.leading,spacing:18){content}.padding(.horizontal,20).padding(.bottom,24)}.accessibilityIdentifier("text-inspector-scroll")
-    }.foregroundStyle(Palette.pale).background(Palette.ink.opacity(0.75)).glass(28).ignoresSafeArea(edges:.bottom).onAppear{model.checkpoint()}.scrollDismissesKeyboard(.interactively)
+    var body:some View {VStack(spacing:0){HStack{Text(panel.title).font(.system(size:15,weight:.semibold));Spacer();IconButton(icon:"checkmark",title:"تم"){model.commitTextMask();model.save();model.gradientTarget=nil;model.textMaskMode=false;if let close{close()}else{dismiss()}}}.padding(.horizontal,18).frame(height:52)
+        ScrollView{VStack(alignment:.leading,spacing:18*min(1.15,max(0.85,panelDensity))){content}.padding(.horizontal,20*min(1.15,max(0.85,panelDensity))).padding(.bottom,24)}.accessibilityIdentifier("text-inspector-scroll")
+    }.foregroundStyle(Palette.pale).background(Palette.ink.opacity(0.75)).glass(28).ignoresSafeArea(edges:.bottom).onAppear{model.checkpoint()}.onDisappear{if panel == .mask{model.commitTextMask()}}.scrollDismissesKeyboard(.interactively)
         .sheet(isPresented:$texturePicker){PhotoLibraryPicker{result in
             switch result{case .failure(let error):model.error=error.localizedDescription;case .success(let urls):if let url=urls.first{defer{try? FileManager.default.removeItem(at:url)};do{let name=UUID().uuidString+"."+url.pathExtension;try FileManager.default.copyItem(at:url,to:model.directory.appendingPathComponent(name));model.change{$0.style.texturePath=name}}catch{model.error=error.localizedDescription}}}
         }}
     }
     @ViewBuilder var content:some View {
         switch panel {
-        case .content:ArabicTextEditor(text:Binding(get:{model.active?.textContent ?? ""},set:{v in model.change{layer in layer.style.spans=TextRanges.adjusted(layer.style.spans,from:layer.textContent,to:v);layer.textContent=v}}),layer:model.active,selectionChanged:{textRange=$0;model.textSelection=$0;model.textSelectionLayer=model.selected}).frame(minHeight:140).padding(12).glass(16).accessibilityIdentifier("text-input")
-            ScrollView(.horizontal,showsIndicators:false){HStack(spacing:16){Button{UIPasteboard.general.string=model.active?.textContent}label:{Label("نسخ",systemImage:"doc.on.doc")};Button{if let text=UIPasteboard.general.string{model.change{$0.textContent=text;$0.style.spans=[]}}}label:{Label("لصق",systemImage:"doc.on.clipboard")};Button("ABC"){model.change{$0.textContent=$0.textContent.uppercased();$0.style.spans=[]}};Button("abc"){model.change{$0.textContent=$0.textContent.lowercased();$0.style.spans=[]}};Button("ـ"){model.change{layer in let source=layer.textContent as NSString;let range=NSRange(location:min(textRange.location,source.length),length:min(textRange.length,max(0,source.length-textRange.location)));layer.textContent=source.replacingCharacters(in:range,with:"ـ");layer.style.spans=[]}};Button{docking=docking=="bottom" ? "top":"bottom"}label:{Label("إرساء",systemImage:docking=="bottom" ? "arrow.up.to.line":"arrow.down.to.line")}}.font(.system(size:11)).padding(.vertical,4)}
+        case .content:ArabicTextEditor(text:Binding(get:{model.active?.textContent ?? ""},set:{v in model.change{layer in layer.style.spans=TextRanges.adjusted(layer.style.spans,from:layer.textContent,to:v);layer.textContent=v}}),layer:model.active,selectionChanged:{textRange=$0;model.textSelection=$0;model.textSelectionLayer=model.selected},requestedSelection:textRange).frame(minHeight:140).padding(12).glass(16).accessibilityIdentifier("text-input")
+            ScrollView(.horizontal,showsIndicators:false){HStack(spacing:16){
+                Button{copySelection()}label:{Label("نسخ",systemImage:"doc.on.doc")}
+                Button{if let text=UIPasteboard.general.string{replaceSelection(text)}}label:{Label("لصق",systemImage:"doc.on.clipboard")}
+                Button{copySelection();if textRange.length>0{replaceSelection("")}}label:{Label("قص",systemImage:"scissors")}.disabled(textRange.length==0)
+                Button("ABC"){changeCase(upper:true)};Button("abc"){changeCase(upper:false)};Button("ـ"){replaceSelection("ـ")}
+                Button{docking=docking=="bottom" ? "top":"bottom"}label:{Label("إرساء",systemImage:docking=="bottom" ? "arrow.up.to.line":"arrow.down.to.line")}
+            }.font(.system(size:11)).padding(.vertical,4)}
             DisclosureGroup("تنسيق التحديد (\(textRange.length) حرف)",isExpanded:$rangeFormatting){
                 ColorPicker("لون التحديد",selection:$rangeColor,supportsOpacity:false);Toggle("التحديد غامق",isOn:$rangeBold);knob("حجم التحديد",$rangeSize,8...240)
                 Button("تطبيق على التحديد"){if textRange.length>0{model.change{$0.style.spans.append(TextRun(start:textRange.location,end:textRange.location+textRange.length,color:UIColor(rangeColor).hex,fontSize:rangeSize,isBold:rangeBold))}}}.disabled(textRange.length==0)
@@ -72,8 +79,8 @@ struct TextInspector:View {
             knob("شفافية الطبقة",Binding(get:{model.active?.opacity ?? 1},set:{v in model.change{$0.opacity=v}}),0...1)
             Picker("المزج",selection:Binding(get:{model.active?.blend ?? .normal},set:{v in model.change{$0.blend=v}})){ForEach(Blend.allCases,id:\.self){Text($0.title).tag($0)}}.pickerStyle(.menu)
         case .mask:
-            Toggle("مسح حروف النص بالإصبع",isOn:$model.textMaskMode)
-            if model.textMaskMode{Toggle("استرجاع الحروف بدل المسح",isOn:$model.textMaskRestore);knob("حجم قلم القناع",$model.brushWidth,1...160);Button("إعادة القناع كاملًا"){model.checkpoint();model.change{$0.textMask=[]}};Text("ارسم على النص داخل اللوحة؛ استرجاع القناع يعيد الحروف الأصلية فقط.").font(.system(size:12)).foregroundStyle(Palette.quiet)}
+            Toggle("مسح حروف النص بالإصبع",isOn:Binding(get:{model.textMaskMode},set:{enabled in if enabled{model.beginTextMask()}else{model.commitTextMask()}}))
+            if model.textMaskMode{HStack{Button("اعتماد المسح"){model.commitTextMask()};Button("إلغاء تغييرات المسح",role:.cancel){model.cancelTextMask()}};Toggle("استرجاع الحروف بدل المسح",isOn:$model.textMaskRestore);knob("حجم قلم القناع",$model.brushWidth,1...160);Button("إعادة القناع كاملًا"){model.checkpoint();model.change{$0.textMask=[]}};Text("ارسم على النص داخل اللوحة؛ استرجاع القناع يعيد الحروف الأصلية فقط.").font(.system(size:12)).foregroundStyle(Palette.quiet)}
             Toggle("تفعيل قناع دائري",isOn:Binding(get:{model.active?.isMaskEnabled ?? false},set:{v in model.change{$0.isMaskEnabled=v}}));knob("نصف القطر",Binding(get:{model.active?.maskRadius ?? 80},set:{v in model.change{$0.maskRadius=v}}),5...400)
             knob("المركز أفقيًا",Binding(get:{model.active?.maskX ?? 0},set:{v in model.change{$0.maskX=v}}),0...500);knob("المركز رأسيًا",Binding(get:{model.active?.maskY ?? 0},set:{v in model.change{$0.maskY=v}}),0...500)
         case .styles:
@@ -94,6 +101,9 @@ struct TextInspector:View {
         let text=source.replacingCharacters(in:range,with:transformed);model.checkpoint();model.change{$0.style.spans=TextRanges.adjusted($0.style.spans,from:$0.textContent,to:text);$0.textContent=text}
     }
 
+    func copySelection(){guard let layer=model.active else{return};let source=layer.textContent as NSString,start=min(source.length,max(0,textRange.location)),length=min(textRange.length,source.length-start);UIPasteboard.general.string=length>0 ? source.substring(with:NSRange(location:start,length:length)):layer.textContent}
+    func replaceSelection(_ value:String,range:NSRange?=nil){guard let layer=model.active else{return};let result=TextRanges.replacement(layer.textContent,range:range ?? textRange,with:value,spans:layer.style.spans);model.change{$0.textContent=result.0;$0.style.spans=result.1};textRange=result.2;model.textSelection=result.2;model.textSelectionLayer=model.selected}
+    func changeCase(upper:Bool){guard let layer=model.active else{return};let source=layer.textContent as NSString,start=min(source.length,max(0,textRange.location)),length=min(textRange.length,source.length-start),range=length>0 ? NSRange(location:start,length:length):NSRange(location:0,length:source.length);let selected=source.substring(with:range);replaceSelection(upper ? selected.uppercased():selected.lowercased(),range:range)}
     func knob(_ label:String,_ source:Binding<Double>,_ range:ClosedRange<Double>)->some View{let binding=Binding<Double>(get:{min(range.upperBound,max(range.lowerBound,source.wrappedValue))},set:{source.wrappedValue=min(range.upperBound,max(range.lowerBound,$0))});return VStack(alignment:.leading,spacing:8){HStack{Text(label).font(.system(size:12));Spacer();TextField(label,value:binding,format:.number.precision(.fractionLength(0...1))).font(.system(size:12,design:.monospaced)).multilineTextAlignment(.trailing).keyboardType(.numbersAndPunctuation).frame(width:70).accessibilityIdentifier("value-\(label)")};Slider(value:binding,in:range).tint(Palette.gold)}.padding(12).glass(16)}
     func swatches(_ label:String,_ key:WritableKeyPath<TextStyle,String>)->some View {VStack(alignment:.leading,spacing:12){Text(label).font(.system(size:12));HStack(spacing:12){ForEach(["FFFFFF","000000","D4AF37","F5DF99","E74646","46A4D8","7957B7"],id:\.self){hex in Button{model.change{$0.style[keyPath:key]=hex}}label:{Circle().fill(Color(uiColor:UIColor(hex:hex))).frame(width:26,height:26).overlay(Circle().stroke(style[keyPath:key]==hex ? Palette.gold:.clear,lineWidth:3))}}}.environment(\.layoutDirection,.leftToRight);ColorPicker("لون مخصص",selection:Binding(get:{Color(uiColor:UIColor(hex:style[keyPath:key]))},set:{v in model.change{$0.style[keyPath:key]=UIColor(v).hex}}),supportsOpacity:false).font(.system(size:12))}.padding(12).glass(16)}
 }

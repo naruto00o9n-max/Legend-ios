@@ -52,6 +52,15 @@ final class TextStyleTests:XCTestCase {
         var noGradient=source;noGradient.textGradientPoints=nil;current.textGradientPoints=[Point(x:0,y:0),Point(x:1,y:1)]
         XCTAssertNil(try StyleComponent.merge(noGradient,into:current,selected:[.fill]).textGradientPoints)
     }
+    @MainActor func testTextMaskDraftCancelAndApplyAreAtomicAndUndoable()throws {
+        let root=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString);defer{try? FileManager.default.removeItem(at:root)}
+        let library=LibraryStore(root:root);var page=try PageOperations.blank(title:"قناع",width:120,height:200,color:"FFFFFF",transparent:false,root:root);let text=EditorLayer(kind:.text);page.layers=[text];try library.persist(page)
+        let model=EditorModel(page:page,library:library);model.selected=text.id;model.beginTextMask();model.checkpoint();model.change{$0.textMask=[Stroke(points:[Point(x:10,y:10)],width:8,color:"FFFFFF",erase:true)]}
+        XCTAssertNil(try library.load(page.id).layers[0].textMask,"Tentative mask must not replace the saved document")
+        model.undo();XCTAssertNil(model.active?.textMask);XCTAssertEqual(model.selected,text.id);model.redo();XCTAssertEqual(model.active?.textMask?.count,1);XCTAssertEqual(model.selected,text.id)
+        model.cancelTextMask();XCTAssertEqual(model.page,page);XCTAssertTrue(model.undoStack.isEmpty)
+        model.beginTextMask();model.checkpoint();model.change{$0.textMask=[Stroke(points:[Point(x:10,y:10)],width:8,color:"FFFFFF",erase:true)]};model.commitTextMask();XCTAssertEqual(model.undoStack.count,1);XCTAssertEqual(try library.load(page.id).layers[0].textMask?.count,1);model.undo();XCTAssertEqual(model.page.layers,[text])
+    }
     func testGradientPreservesGlyphAlphaAndEmptyLetterHoles() throws {
         var layer=EditorLayer(kind:.text);layer.textContent="OO";layer.frame.x=50;layer.frame.y=40;layer.style.boxWidth=250;layer.style.fontSize=88;layer.style.strokeWidth=0;layer.style.color="FFFFFF"
         let dir=FileManager.default.temporaryDirectory
@@ -74,6 +83,7 @@ final class TextStyleTests:XCTestCase {
         let row:[String:Any]=["name":"حد","extraStrokes":[["strokeWidth":8,"strokeColor":-65536,"strokeGradient":[-65536,-16776961],"strokeGradientStops":[0,1],"strokeGradientAngle":45]]]
         let imported=try ReferenceStyleImport.decode(JSONSerialization.data(withJSONObject:[row]));XCTAssertEqual(imported[0].style.extraStrokes?.first?.width,8);XCTAssertEqual(imported[0].style.extraStrokes?.first?.gradient,["FF0000","0000FF"])
         XCTAssertThrowsError(try ReferenceStyleImport.decode(JSONSerialization.data(withJSONObject:[["effectType":"PLASMA_SHADER"]])))
+        XCTAssertThrowsError(try ReferenceStyleImport.decode(JSONSerialization.data(withJSONObject:[["strokeShape":3]])))
     }
     func testSpanBoldOverridesOnlySelectedUTF16Range() {
         var layer=EditorLayer(kind:.text);layer.textContent="عربي ABC";layer.style.spans=[TextRun(start:5,end:8,color:"FF0000",fontSize:70,isBold:true)]
@@ -85,6 +95,11 @@ final class TextStyleTests:XCTestCase {
         let corners=[Point(x:0,y:0),Point(x:1,y:0),Point(x:1,y:1),Point(x:0,y:1)]
         let values=try XCTUnwrap(PerspectiveGeometry.extended(corners,width:200,height:100,padding:20));XCTAssertEqual(values,[Point(x:-0.1,y:-0.2),Point(x:1.1,y:-0.2),Point(x:1.1,y:1.2),Point(x:-0.1,y:1.2)])
         let translated=corners.map{Point(x:$0.x+0.3,y:$0.y-0.1)},shifted=try XCTUnwrap(PerspectiveGeometry.extended(translated,width:200,height:100,padding:20));XCTAssertEqual(shifted[0].x,0.2,accuracy:0.0001);XCTAssertEqual(shifted[0].y,-0.3,accuracy:0.0001)
+    }
+    func testInlinePasteAndCaseConversionPreserveOtherTextAndItsFormatting(){
+        let source="حوار ABC ثم نص",span=TextRun(start:12,end:14,color:"FF0000")
+        let inserted=TextRanges.replacement(source,range:NSRange(location:5,length:3),with:"xy",spans:[span]);XCTAssertEqual(inserted.0,"حوار xy ثم نص");XCTAssertEqual(inserted.1.first?.start,11);XCTAssertEqual(inserted.2.location,7)
+        let sameLength=TextRanges.replacement(source,range:NSRange(location:5,length:3),with:"abc",spans:[span]);XCTAssertEqual(sameLength.1,[span])
     }
     func testRichRangeTracksInsertionAndDeletionBeforeArabicText() {
         let run=TextRun(start:4,end:7,color:"FF0000",fontSize:22,isBold:true)
@@ -115,4 +130,22 @@ final class TextStyleTests:XCTestCase {
         let handles=canvas.subviews.compactMap{$0 as? UIButton}.filter{!$0.isHidden}
         XCTAssertEqual(handles.count,4);XCTAssertTrue(handles.allSatisfy{$0.accessibilityIdentifier?.hasPrefix("selection-deform-")==true})
     }
+    func testInvalidImportedMeshNeverIndexesMissingPointsOrOverflowsDimensions()throws {
+        var style=TextStyle();style.isMeshMode=true;style.meshRows=Int.max;style.meshCols=3
+        XCTAssertFalse(MeshGeometry.valid(style));XCTAssertEqual(MeshGeometry.target(x:0.5,y:0.5,style:style),Point(x:0.5,y:0.5))
+        style.meshRows=3;style.meshPoints=[];XCTAssertFalse(MeshGeometry.valid(style))
+        XCTAssertThrowsError(try ReferenceStyleImport.decode(JSONSerialization.data(withJSONObject:[["isMeshMode":true,"meshRows":3,"meshCols":3,"meshPoints":[]]])))
+        style.meshPoints=MeshGeometry.grid(rows:3,cols:3);XCTAssertTrue(MeshGeometry.valid(style));style.meshPoints[0].x=Double.infinity;XCTAssertFalse(MeshGeometry.valid(style))
+    }
+
+    func testOutlineKeepsPixelWidthAcrossDifferentFontSizesAndMaskIgnoresSpanColor(){
+        var layer=EditorLayer(kind:.text);layer.textContent="AB";layer.style.fontSize=40;layer.style.spans=[TextRun(start:1,end:2,color:"FF0000",fontSize:80)]
+        let outlined=LayerRenderer.outlineAttributed(layer,width:4,color:.white)
+        XCTAssertEqual(outlined.attribute(.strokeWidth,at:0,effectiveRange:nil) as? Double,10)
+        XCTAssertEqual(outlined.attribute(.strokeWidth,at:1,effectiveRange:nil) as? Double,5)
+        XCTAssertEqual(outlined.attribute(.foregroundColor,at:1,effectiveRange:nil) as? UIColor,.clear)
+        XCTAssertEqual(LayerRenderer.attributed(layer,color:.white).attribute(.foregroundColor,at:1,effectiveRange:nil) as? UIColor,.white)
+        XCTAssertEqual(LayerRenderer.attributed(layer).attribute(.foregroundColor,at:1,effectiveRange:nil) as? UIColor,UIColor(hex:"FF0000"))
+    }
+
 }

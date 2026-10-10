@@ -15,7 +15,7 @@ enum TextVisualBounds {
         let pad:Double=padding(style),width:Double=Double(base.width),height:Double=Double(base.height)
         var result: CGRect=base.insetBy(dx:-CGFloat(pad),dy:-CGFloat(pad))
         guard width>0,height>0 else{return result.integral}
-        if style.isMeshMode {
+        if style.isMeshMode,MeshGeometry.valid(style) {
             let xs:[Double]=[-pad/width,1+pad/width]
             let ys:[Double]=[-pad/height,1+pad/height]
             for x in xs{for y in ys{

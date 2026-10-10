@@ -31,4 +31,13 @@ final class RecoveryTests:XCTestCase {
         let restored=TyperStore(directory:folder);XCTAssertNotNil(restored.error);XCTAssertEqual(restored.chapter(id)?.bubbles.first?.text,"حوار")
     }
 
+    @MainActor func testFailedLibraryIndexWriteNeverDeletesProjectOrChangesVisibleFolders()throws {
+        let root=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString);defer{try? FileManager.default.removeItem(at:root)}
+        let library=LibraryStore(root:root),page=try PageOperations.blank(title:"محفوظ",width:24,height:40,color:"FFFFFF",transparent:false,root:root);XCTAssertTrue(library.add(page,parent:nil));let item=try XCTUnwrap(library.items.first)
+        let index=root.appendingPathComponent("library.json");try FileManager.default.removeItem(at:index);try FileManager.default.createDirectory(at:index,withIntermediateDirectories:true)
+        library.remove(item);XCTAssertNotNil(library.error);XCTAssertEqual(library.items,[item]);XCTAssertTrue(FileManager.default.fileExists(atPath:library.directory(page.id).appendingPathComponent(page.source).path))
+        library.createFolder("جديد",parent:nil);XCTAssertEqual(library.items,[item])
+        library.rename(item,to:"اسم لم يُحفظ");XCTAssertEqual(library.items,[item]);XCTAssertEqual(try library.load(page.id).title,"محفوظ")
+    }
+
 }

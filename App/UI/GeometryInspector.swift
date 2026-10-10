@@ -2,7 +2,7 @@ import SwiftUI
 
 struct GeometryInspector:View {
     @ObservedObject var model:EditorModel
-    var mesh:Bool {model.active?.style.isMeshMode ?? false}
+    var mesh:Bool {guard let style=model.active?.style else{return false};return style.isMeshMode && MeshGeometry.valid(style)}
     var points:[Point] {let s=model.active?.style ?? TextStyle();if mesh {return s.meshPoints};return s.perspectivePoints.count==4 ? s.perspectivePoints:[Point(x:0,y:0),Point(x:1,y:0),Point(x:1,y:1),Point(x:0,y:1)]}
     var body:some View {
         VStack(alignment:.leading,spacing:14){

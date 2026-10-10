@@ -20,7 +20,7 @@ final class LayerInteraction {
         static func signature(_ layer: EditorLayer) -> EditorLayer {
             var value = layer
             value.frame.x = 0; value.frame.y = 0; value.rotation = 0
-            value.scaleX = 1; value.scaleY = 1; value.opacity = 1
+            value.scaleX = 1; value.scaleY = 1; value.shearX=nil; value.opacity = 1
             value.isLocked = false; value.isVisible = true
             return value
         }

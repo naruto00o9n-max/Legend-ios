@@ -47,6 +47,7 @@ struct Stroke: Codable, Equatable { var points: [Point]; var width: Double; var 
 struct EditorLayer: Codable, Equatable, Identifiable {
     var id = UUID(); var kind: LayerKind; var name = "طبقة"; var frame = Box()
     var rotation = 0.0; var scaleX = 1.0; var scaleY = 1.0; var opacity = 1.0
+    var shearX:Double?
     var isVisible = true; var isLocked = false; var blend = Blend.normal
     var textContent = "نص جديد"; var style = TextStyle(); var imagePath = ""; var shape = 0
     var textMask:[Stroke]?

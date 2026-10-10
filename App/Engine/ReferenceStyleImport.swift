@@ -9,6 +9,7 @@ enum ReferenceStyleImport {
         let colorKeys=Set(["color","strokeColor","shadowColor","backgroundColor","effectColor","threeDColor"])
         let gradientKeys=Set(["textGradient","strokeGradient","shadowGradient"])
         return try rows.map{row in
+            guard (row["strokeShape"] as? Int ?? 0)==0 else{throw ImageFailure.message("شكل حد النص غير مدعوم بعد؛ احتُفظ بالملف دون تغييره")}
             var dictionary=defaults
             for (key,value) in row where defaults[key] != nil && !(value is NSNull){
                 if colorKeys.contains(key){dictionary[key]=color(value)}
@@ -19,6 +20,7 @@ enum ReferenceStyleImport {
             }
             if let path=row["fontPath"] as? String,!path.isEmpty{dictionary["fontPath"]=(path as NSString).lastPathComponent}
             var style=try JSONDecoder().decode(TextStyle.self,from:JSONSerialization.data(withJSONObject:dictionary))
+            guard !style.isMeshMode || MeshGeometry.valid(style) else{throw ImageFailure.message("شبكة تشويه النمط غير صالحة أو تتجاوز 8×8")}
             if let opacity=row["innerOpacity"] as? Double{style.innerOpacity=min(1,max(0,opacity/255))}
             if row["isFadeEnabled"] as? Bool==true{style.fadeAmount=min(1,max(0,(row["fadeValue"] as? Double ?? 0)/100));style.fadeAngle=row["fadeAngle"] as? Double}
             if let outlines=row["extraStrokes"] as? [[String:Any]]{style.extraStrokes=try outlines.map{outline in

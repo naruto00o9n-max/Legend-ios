@@ -72,6 +72,7 @@ struct ArabicTextEditor: UIViewRepresentable {
     var identifier = "text-input"
     var layer:EditorLayer?=nil
     var selectionChanged:((NSRange)->Void)?=nil
+    var requestedSelection:NSRange?=nil
     func makeCoordinator() -> Coordinator { Coordinator(self) }
     func makeUIView(context: Context) -> UITextView {
         let view = UITextView()
@@ -96,11 +97,12 @@ struct ArabicTextEditor: UIViewRepresentable {
             styled.enumerateAttribute(.font,in:NSRange(location:0,length:styled.length)){value,range,_ in if let font=value as? UIFont{styled.addAttribute(.font,value:UIFont(descriptor:font.fontDescriptor,size:min(40,max(8,17*font.pointSize/CGFloat(max(1,layer.style.fontSize))))),range:range)}}
             if !view.attributedText.isEqual(to:styled){view.attributedText=styled;view.selectedRange=NSRange(location:min(selection.location,styled.length),length:min(selection.length,max(0,styled.length-selection.location)))}
         }else if view.text != text { view.text = text }
+        if view.markedTextRange==nil,let requestedSelection{let count=view.text.utf16.count,location=min(count,max(0,requestedSelection.location));let selection=NSRange(location:location,length:min(max(0,requestedSelection.length),count-location));if view.selectedRange != selection{view.selectedRange=selection}}
     }
     final class Coordinator: NSObject, UITextViewDelegate {
         var parent: ArabicTextEditor
         init(_ parent: ArabicTextEditor) { self.parent = parent }
-        func textViewDidBeginEditing(_ view: UITextView) { if view.text == "نص جديد" { view.selectedRange = NSRange(location: 0, length: view.text.utf16.count) } }
+        func textViewDidBeginEditing(_ view:UITextView){if view.text=="نص جديد"{DispatchQueue.main.async{guard view.isFirstResponder,view.text=="نص جديد" else{return};view.selectedRange=NSRange(location:0,length:view.text.utf16.count);self.parent.selectionChanged?(view.selectedRange)}}}
         func textViewDidChange(_ view: UITextView) { parent.text = view.text }
         func textViewDidChangeSelection(_ view:UITextView){parent.selectionChanged?(view.selectedRange)}
     }

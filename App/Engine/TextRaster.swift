@@ -10,7 +10,7 @@ enum TextRaster {
         let s=layer.style
         let advanced = !s.shadowGradient.isEmpty || !(s.extraStrokes ?? []).isEmpty || !(layer.textMask ?? []).isEmpty || (s.fadeAmount ?? 0)>0 || !s.textGradient.isEmpty || !s.strokeGradient.isEmpty || !s.texturePath.isEmpty || !s.perspectivePoints.isEmpty || s.isMeshMode || s.rotationX != 0 || s.rotationY != 0 || s.effectType == .blur || s.effectType == .fade
         guard advanced,rect.width*rect.height<4_194_304 else{return false}
-        var glyphLayer=layer;glyphLayer.frame.x=0;glyphLayer.frame.y=0;glyphLayer.rotation=0;glyphLayer.scaleX=1;glyphLayer.scaleY=1;glyphLayer.opacity=1;glyphLayer.isLocked=false;glyphLayer.isVisible=true;let key=(directory.path+String(data:(try? JSONEncoder().encode(glyphLayer)) ?? Data(),encoding:.utf8)!) as NSString
+        var glyphLayer=layer;glyphLayer.frame.x=0;glyphLayer.frame.y=0;glyphLayer.rotation=0;glyphLayer.scaleX=1;glyphLayer.scaleY=1;glyphLayer.shearX=nil;glyphLayer.opacity=1;glyphLayer.isLocked=false;glyphLayer.isVisible=true;let key=(directory.path+String(data:(try? JSONEncoder().encode(glyphLayer)) ?? Data(),encoding:.utf8)!) as NSString
         let pad=CGFloat(TextVisualBounds.padding(s,minimum:8))
         let size=CGSize(width:ceil(rect.width+pad*2),height:ceil(rect.height+pad*2))
         let raster:Raster
@@ -39,7 +39,7 @@ enum TextRaster {
                 ctx.setBlendMode(.normal)
                 if s.strokeWidth>0{
                     let outline=UIGraphicsImageRenderer(size:size,format:format).image{output in
-                        let a=NSMutableAttributedString(attributedString:LayerRenderer.attributed(layer,color:.clear));a.addAttributes([.strokeColor:UIColor.white,.strokeWidth:s.strokeWidth/max(1,s.fontSize)*100],range:NSRange(location:0,length:a.length));a.draw(with:rect.offsetBy(dx:pad,dy:pad),options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)
+                        let a=LayerRenderer.outlineAttributed(layer,width:s.strokeWidth,color:.white);a.draw(with:rect.offsetBy(dx:pad,dy:pad),options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)
                     }
                     let colored=UIGraphicsImageRenderer(size:size,format:format).image{output in
                         GradientPaint.draw(colors:s.strokeGradient.isEmpty ? [s.strokeColor,s.strokeColor]:s.strokeGradient,stops:s.strokeGradientStops,angle:s.strokeGradientAngle,type:s.strokeGradientType,rect:rect.offsetBy(dx:pad,dy:pad),points:s.strokeGradientPoints,in:output.cgContext)
@@ -52,7 +52,7 @@ enum TextRaster {
                 result=UIGraphicsImageRenderer(size:size,format:format).image{output in
                     for depth in stride(from:min(64,s.threeDDepth),through:1,by:-1){LayerRenderer.attributed(layer,color:UIColor(hex:s.threeDColor)).draw(with:rect.offsetBy(dx:pad+CGFloat(depth),dy:pad+CGFloat(depth)),options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)}
                     for outline in (s.extraStrokes ?? []).sorted(by:{$0.width>$1.width}) where outline.width>0{
-                        let mask=UIGraphicsImageRenderer(size:size,format:format).image{_ in let a=NSMutableAttributedString(attributedString:LayerRenderer.attributed(layer,color:.clear));a.addAttributes([.strokeColor:UIColor.white,.strokeWidth:outline.width/max(1,s.fontSize)*100],range:NSRange(location:0,length:a.length));a.draw(with:rect.offsetBy(dx:pad,dy:pad),options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)}
+                        let mask=UIGraphicsImageRenderer(size:size,format:format).image{_ in let a=LayerRenderer.outlineAttributed(layer,width:outline.width,color:.white);a.draw(with:rect.offsetBy(dx:pad,dy:pad),options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)}
                         let colored=UIGraphicsImageRenderer(size:size,format:format).image{r in GradientPaint.draw(colors:(outline.gradient ?? []).isEmpty ? [outline.color,outline.color]:outline.gradient!,stops:outline.stops ?? [],angle:outline.angle ?? 0,type:outline.gradientType ?? 0,rect:rect.offsetBy(dx:pad,dy:pad),in:r.cgContext);mask.draw(at:.zero,blendMode:.destinationIn,alpha:1)}
                         colored.draw(at:.zero)
                     }
@@ -91,7 +91,7 @@ enum TextRaster {
         }
         c.saveGState()
         if s.shadowGradient.isEmpty && (s.shadowRadius>0 || s.effectType == .neon || s.effectType == .shadow){c.setShadow(offset:CGSize(width:s.shadowDx,height:s.shadowDy),blur:CGFloat(s.effectType == .neon ? s.effectValue:s.shadowRadius),color:UIColor(hex:s.effectType == .neon ? s.effectColor:s.shadowColor,alpha:CGFloat(s.shadowAlpha)/255).cgColor)}
-        if s.isMeshMode,s.meshPoints.count==(s.meshRows+1)*(s.meshCols+1){drawMesh(raster.image,imageRect:raster.frame,textRect:rect,style:s,in:c)}else{raster.image.draw(in:raster.frame)}
+        if s.isMeshMode,MeshGeometry.valid(s){drawMesh(raster.image,imageRect:raster.frame,textRect:rect,style:s,in:c)}else{raster.image.draw(in:raster.frame)}
         c.restoreGState();return true
     }
     static func drawMesh(_ image:UIImage,imageRect:CGRect,textRect:CGRect,style:TextStyle,in c:CGContext){

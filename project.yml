@@ -46,6 +46,7 @@ targetTemplates:
     - framework: .work/opencv/opencv2.framework
       embed: false
     - sdk: UIKit.framework
+    - sdk: MetricKit.framework
     - sdk: Accelerate.framework
     - sdk: AVFoundation.framework
     - sdk: CoreMedia.framework

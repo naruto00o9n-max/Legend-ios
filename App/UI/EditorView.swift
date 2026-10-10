@@ -62,7 +62,7 @@ struct EditorView:View {
             }
 
         }.foregroundStyle(Palette.pale).glass(0)}
-        .toolbar(.hidden,for:.navigationBar).foregroundStyle(Palette.pale).animation(EditorPreferences.motion ? .easeInOut(duration:0.2):nil,value:model.panel)
+        .toolbar(.hidden,for:.navigationBar).foregroundStyle(Palette.pale).animation(EditorPreferences.motion ? .easeInOut(duration:0.2):nil,value:model.panel).animation(EditorPreferences.motion ? .easeInOut(duration:0.2):nil,value:objectPanel).animation(EditorPreferences.motion ? .easeInOut(duration:0.2):nil,value:assistant)
         .overlay(alignment:.trailing){if !assistant{Button{assistant=true;model.panel=nil}label:{Image("CookiesLogo").resizable().scaledToFit().frame(width:38,height:38).clipShape(Circle()).padding(6).background(Palette.ink.opacity(0.85),in:Circle()).overlay(Circle().stroke(Palette.gold.opacity(0.4),lineWidth:0.8))}.padding(.trailing,12).accessibilityIdentifier("tool-assistant").accessibilityLabel("التايبر")}}
         .overlay(alignment:.trailing){if assistant{GeometryReader{g in TyperPanel(model:model,close:{assistant=false},compact:g.size.height<500).frame(width:min(CGFloat(typerWidth),g.size.width-24),height:min(CGFloat(typerHeight),max(160,g.size.height-136))).frame(maxWidth:.infinity,maxHeight:.infinity,alignment:.trailing).padding(.trailing,8)}.transition(.move(edge:.trailing).combined(with:.opacity))}}
         .overlay(alignment:.top){if model.sniperMode{HStack{Image(systemName:"scope");Text("حدد الفقاعات بالترتيب · \(model.sniperTargets.count)").font(.system(size:12));Button("تراجع"){_ = model.sniperTargets.popLast()}.disabled(model.sniperTargets.isEmpty);Button("الفقاعات"){assistant=true};Button("إنهاء"){model.sniperMode=false}}.padding(12).glass(14).padding(.horizontal,12).padding(.top,58)}}
@@ -87,7 +87,7 @@ struct EditorView:View {
         }}
 
         .alert("تعذر إكمال العملية",isPresented:Binding(get:{model.error != nil},set:{if !$0{model.error=nil}})){Button("حسنًا"){model.error=nil}}message:{Text(model.error ?? "")}
-        .onDisappear{model.discardCleaning();model.save()}
+        .onDisappear{model.commitTextMask();model.discardCleaning();model.save()}
     }
     func toolButton(_ icon:String,_ title:String,id:String,selected:Bool=false,action:@escaping ()->Void)->some View{Button(action:action){VStack(spacing:6){Image(systemName:icon).font(.system(size:20*min(1.2,max(0.8,iconScale)),weight:.regular));Text(title).font(.system(size:10*min(1.3,max(0.85,labelScale)))).lineLimit(1)}.frame(width:62,height:60*min(1.15,max(0.85,toolbarScale))).background(selected ? Palette.gold.opacity(0.16):.clear,in:RoundedRectangle(cornerRadius:12))}.accessibilityIdentifier(id).accessibilityLabel(title)}
     func select(_ tool:Tool){model.gradientTarget=nil;model.tool=tool;switch tool{case .layers:layers=true;case .shapes:shapes=true;case .text:if model.active?.kind != .text{model.add(.text)}else{model.panel = .content};case .brush,.eraser:if model.active?.kind != .drawing{model.add(.drawing)};default:break}}

@@ -26,8 +26,17 @@ enum LayerRenderer {
         var attributes:[NSAttributedString.Key:Any]=[.font:Fonts.font(s),.foregroundColor:color ?? UIColor(hex:s.color,alpha:CGFloat(s.innerOpacity ?? 1)),.paragraphStyle:p,.kern:s.letterSpacing]
         if s.isUnderline{attributes[.underlineStyle]=NSUnderlineStyle.single.rawValue};if s.isStrikeThrough{attributes[.strikethroughStyle]=NSUnderlineStyle.single.rawValue}
         let result=NSMutableAttributedString(string:l.textContent,attributes:attributes)
-        for run in s.spans {let range=NSRange(location:max(0,run.start),length:max(0,min(result.length,run.end)-max(0,run.start)));guard range.location+range.length<=result.length else{continue};if let color=run.color{result.addAttribute(.foregroundColor,value:UIColor(hex:color),range:range)};if run.fontSize != nil || run.isBold != nil{var fontStyle=s;if let size=run.fontSize{fontStyle.fontSize=size};if let bold=run.isBold{fontStyle.isBold=bold};result.addAttribute(.font,value:Fonts.font(fontStyle),range:range)}}
+        for run in s.spans {let range=NSRange(location:max(0,run.start),length:max(0,min(result.length,run.end)-max(0,run.start)));guard range.location+range.length<=result.length else{continue};if color==nil,let runColor=run.color{result.addAttribute(.foregroundColor,value:UIColor(hex:runColor,alpha:CGFloat(s.innerOpacity ?? 1)),range:range)};if run.fontSize != nil || run.isBold != nil{var fontStyle=s;if let size=run.fontSize{fontStyle.fontSize=size};if let bold=run.isBold{fontStyle.isBold=bold};result.addAttribute(.font,value:Fonts.font(fontStyle),range:range)}}
         if let offset=s.tashkeelOffset,offset != 0{var index=0;for scalar in l.textContent.unicodeScalars{let count=scalar.value>0xFFFF ? 2:1;if CharacterSet.nonBaseCharacters.contains(scalar){result.addAttribute(.baselineOffset,value:offset,range:NSRange(location:index,length:count))};index+=count}}
+        return result
+    }
+    static func outlineAttributed(_ layer:EditorLayer,width:Double,color:UIColor)->NSAttributedString {
+        let result=NSMutableAttributedString(attributedString:attributed(layer,color:.clear))
+        result.addAttribute(.strokeColor,value:color,range:NSRange(location:0,length:result.length))
+        result.enumerateAttribute(.font,in:NSRange(location:0,length:result.length)){font,range,_ in
+            let size=(font as? UIFont)?.pointSize ?? CGFloat(layer.style.fontSize)
+            result.addAttribute(.strokeWidth,value:width/max(1,Double(size))*100,range:range)
+        }
         return result
     }
     static func bounds(_ l:EditorLayer)->CGRect {
@@ -36,6 +45,13 @@ enum LayerRenderer {
     }
     static func transform(_ l:EditorLayer)->CGAffineTransform {
         let b=bounds(l)
+        if let shear=l.shearX,abs(shear)>0.000001{
+            let theta=l.rotation*Double.pi/180,c=cos(theta),s=sin(theta)
+            let a=c*l.scaleX,bb=s*l.scaleX,cc=(c*shear-s)*l.scaleY,d=(s*shear+c)*l.scaleY
+            let x=l.frame.x+Double(b.width)/2-(a*Double(b.width)+cc*Double(b.height))/2
+            let y=l.frame.y+Double(b.height)/2-(bb*Double(b.width)+d*Double(b.height))/2
+            return CGAffineTransform(a:a,b:bb,c:cc,d:d,tx:x,ty:y)
+        }
         return CGAffineTransform(translationX:CGFloat(l.frame.x)+b.width/2,y:CGFloat(l.frame.y)+b.height/2).rotated(by:CGFloat(l.rotation)*CGFloat.pi/180).scaledBy(x:CGFloat(l.scaleX),y:CGFloat(l.scaleY)).translatedBy(x:-b.width/2,y:-b.height/2)
     }
     static func draw(_ layers:[EditorLayer],in ctx:CGContext,directory:URL) {
@@ -62,11 +78,11 @@ enum LayerRenderer {
         if s.backgroundAlpha>0{UIColor(hex:s.backgroundColor,alpha:CGFloat(s.backgroundAlpha)/255).setFill();UIBezierPath(roundedRect:background,cornerRadius:CGFloat(s.backgroundCornerRadius)).fill()}
         func text(_ color:UIColor?=nil,_ offset:CGPoint = .zero){attributed(l,color:color).draw(with:rect.offsetBy(dx:offset.x,dy:offset.y),options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)}
         if TextRaster.draw(l,rect:rect,in:c,directory:directory){return}
-        for outline in (s.extraStrokes ?? []).sorted(by:{$0.width>$1.width}) where outline.width>0{let a=NSMutableAttributedString(attributedString:attributed(l,color:.clear));a.addAttributes([.strokeColor:UIColor(hex:outline.color),.strokeWidth:outline.width/max(1,s.fontSize)*100],range:NSRange(location:0,length:a.length));a.draw(with:rect,options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)}
+        for outline in (s.extraStrokes ?? []).sorted(by:{$0.width>$1.width}) where outline.width>0{let a=outlineAttributed(l,width:outline.width,color:UIColor(hex:outline.color));a.draw(with:rect,options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)}
         for depth in stride(from:min(64,s.threeDDepth),through:1,by:-1){text(UIColor(hex:s.threeDColor),CGPoint(x:depth,y:depth))}
         if s.shadowRadius>0||s.effectType == .shadow||s.effectType == .neon||s.effectType == .blur {c.setShadow(offset:CGSize(width:s.shadowDx,height:s.shadowDy),blur:CGFloat(s.effectType == .none ? s.shadowRadius:s.effectValue),color:UIColor(hex:s.effectType == .neon ? s.effectColor:s.shadowColor,alpha:CGFloat(s.shadowAlpha)/255).cgColor)}
         if s.strokeWidth>0||s.fakeBoldWidth>0 {
-            let a=NSMutableAttributedString(attributedString:attributed(l));a.addAttributes([.strokeColor:UIColor(hex:s.strokeColor),.strokeWidth:-max(s.strokeWidth,s.fakeBoldWidth)/max(1,s.fontSize)*100],range:NSRange(location:0,length:a.length));a.draw(with:rect,options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)
+            let a=outlineAttributed(l,width:max(s.strokeWidth,s.fakeBoldWidth),color:UIColor(hex:s.strokeColor));a.draw(with:rect,options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)
         }
         switch s.effectType {
         case .glitch,.error: text(UIColor(hex:s.effectColor),CGPoint(x:s.effectValue,y:0));text(UIColor(hex:s.strokeColor),CGPoint(x:-s.effectValue,y:0));text()

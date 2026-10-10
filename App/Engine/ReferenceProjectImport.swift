@@ -15,7 +15,7 @@ enum ReferenceProjectImport {
             if FileManager.default.fileExists(atPath:exact.path){return exact}
             let found=files.filter{$0.lastPathComponent==name};guard found.count==1,let file=found.first else{throw ImageFailure.message("أصل مفقود أو ملتبس في المشروع: "+name)};return file
         }
-        var imported:[EditorPage]=[]
+        var imported:[EditorPage]=[],fonts=Set<URL>()
         do{for (index,pageMeta) in pages.sorted(by:{($0["orderIndex"] as? Int ?? 0)<($1["orderIndex"] as? Int ?? 0)}).enumerated(){
             try Task.checkCancellation();guard let originalID=pageMeta["id"] as? String,!originalID.contains("/"),!originalID.contains("..") else{throw ImageFailure.message("معرف الصفحة مفقود")}
             let state=projectFolder.appendingPathComponent("pages").appendingPathComponent(originalID+".json")
@@ -30,7 +30,7 @@ enum ReferenceProjectImport {
                 let kind=(row["layerType"] as? String ?? "").lowercased(),name=row["name"] as? String ?? "طبقة مستوردة"
                 var layer:EditorLayer
                 if kind.contains("text"){layer=EditorLayer(kind:.text,name:name);layer.textContent=row["textContent"] as? String ?? "";layer.style=try ReferenceStyleImport.decode(JSONSerialization.data(withJSONObject:[row]))[0].style
-                    if let font=row["fontPath"] as? String,font.contains("/"),let input=try? asset(font){try FileManager.default.createDirectory(at:Fonts.userDirectory,withIntermediateDirectories:true);let output=Fonts.userDirectory.appendingPathComponent(input.lastPathComponent);if !FileManager.default.fileExists(atPath:output.path){try FileManager.default.copyItem(at:input,to:output)};Fonts.register()}
+                    if let font=row["fontPath"] as? String,!font.isEmpty{if let input=try? asset(font){fonts.insert(input)}else if !(Fonts.files+Fonts.otf).contains(where:{$0.lastPathComponent==(font as NSString).lastPathComponent}){throw ImageFailure.message("خط المشروع مفقود: "+(font as NSString).lastPathComponent)}}
                     if let texture=row["texturePath"] as? String,!texture.isEmpty{layer.style.texturePath=try copy(texture)}
                 }else if kind.contains("image") || kind.contains("drawing") || kind.contains("shape"),let path=row["imagePath"] as? String,!path.isEmpty{layer=EditorLayer(kind:.image,name:name);layer.imagePath=try copy(path)}
                 else{throw ImageFailure.message("الطبقة \(name) لا تملك بيانات يمكن ترحيلها بأمان؛ بقي الأرشيف الأصلي دون تغيير")}
@@ -42,6 +42,6 @@ enum ReferenceProjectImport {
                 page.layers.append(layer)
             }
             try PageOperations.persist(page,root:root);imported[imported.count-1]=page
-        };return imported}catch{for page in imported{try? FileManager.default.removeItem(at:root.appendingPathComponent(page.id.uuidString))};throw error}
+        };if !fonts.isEmpty{try FontPackage.importFiles(Array(fonts))};return imported}catch{for page in imported{try? FileManager.default.removeItem(at:root.appendingPathComponent(page.id.uuidString))};throw error}
     }
 }

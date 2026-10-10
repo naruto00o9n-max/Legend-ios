@@ -32,7 +32,7 @@ struct CanvasHost:UIViewRepresentable {
             if gesture is UITapGestureRecognizer{var view=touch.view;while let current=view{if current is UIControl{return false};view=current.superview}}
             return true
         }
-        func gestureRecognizerShouldBegin(_ g:UIGestureRecognizer)->Bool{guard g === panGesture else{return true};if model.sniperMode{return false};if model.drawingShape=="fill",model.tool == .brush{return false};if model.textMaskMode,model.active?.kind == .text{return true};if [.brush,.eraser,.cleaner].contains(model.tool){return true};return canvas.handle(at:g.location(in:canvas)) != nil || hit(g.location(in:canvas)) != nil}
+        func gestureRecognizerShouldBegin(_ g:UIGestureRecognizer)->Bool{guard g === panGesture else{return true};if model.sniperMode{return false};if model.drawingShape=="fill",model.tool == .brush{return false};if model.textMaskMode,model.active?.kind == .text{return true};if [.brush,.eraser,.cleaner].contains(model.tool){return true};let point=g.location(in:canvas),translation=(g as? UIPanGestureRecognizer)?.translation(in:canvas) ?? .zero,origin=CGPoint(x:point.x-translation.x,y:point.y-translation.y);return canvas.handle(at:origin) != nil || hit(origin) != nil}
         @objc func tap(_ g:UITapGestureRecognizer){let point=g.location(in:canvas);model.visibleCenter=point
             if model.sniperMode{Task{await model.detectSniper(at:point)};return}
             if model.textMaskMode,let active=model.active,active.kind == .text,!active.isLocked{let local=point.applying(LayerRenderer.transform(active).inverted());let dot=Stroke(points:[Point(x:local.x,y:local.y)],width:model.brushWidth,color:"FFFFFF",erase:!model.textMaskRestore);model.checkpoint();model.change{$0.textMask=($0.textMask ?? [])+[dot]};return}
@@ -55,8 +55,8 @@ struct CanvasHost:UIViewRepresentable {
             if model.textMaskMode,let active=model.active,active.kind == .text,!active.isLocked{
                 let local=point.applying(LayerRenderer.transform(active).inverted())
                 if g.state == .began{initial=active;model.checkpoint();stroke=Stroke(points:[Point(x:local.x,y:local.y)],width:model.brushWidth,color:"FFFFFF",erase:!model.textMaskRestore);canvas.beginLayerInteraction(active.id)}
-                else if g.state == .changed{stroke?.points.append(Point(x:local.x,y:local.y));if let initial,let stroke{model.change(persist:false){$0.textMask=(initial.textMask ?? [])+[stroke]};canvas.update(page:model.page,directory:model.directory,selected:model.selected,zoom:scroll?.zoomScale ?? 1)}}
-                else if g.state == .ended || g.state == .cancelled{if g.state == .cancelled,let initial{model.change(persist:false){$0.textMask=initial.textMask}};canvas.endLayerInteraction();stroke=nil;initial=nil;model.save()}
+                if g.state == .changed || g.state == .ended{stroke?.points.append(Point(x:local.x,y:local.y));if let initial,let stroke{model.change(persist:false){$0.textMask=(initial.textMask ?? [])+[stroke]};canvas.update(page:model.page,directory:model.directory,selected:model.selected,zoom:scroll?.zoomScale ?? 1)}}
+                if g.state == .ended || g.state == .cancelled{if g.state == .cancelled,let initial{model.change(persist:false){$0.textMask=initial.textMask}};canvas.endLayerInteraction();stroke=nil;initial=nil;model.save()}
                 return
             }
             if [.brush,.eraser,.cleaner].contains(model.tool){
@@ -68,7 +68,7 @@ struct CanvasHost:UIViewRepresentable {
                 else if g.state == .ended{if let stroke{if model.tool == .cleaner{canvas.showStroke(nil,on:model.page,selected:model.selected);Task{await model.clean(stroke)}}else{canvas.commitLiveStroke();model.change{$0.strokes.append(stroke)}}};stroke=nil}
                 return
             }
-            if g.state == .began{let translation=g.translation(in:canvas),origin=CGPoint(x:point.x-translation.x,y:point.y-translation.y);dragHandle=canvas.handle(at:origin);guard let l=(dragHandle != nil ? model.active:hit(point)) else{return};model.selected=l.id;initial=l;groupInitial=model.page.layers;model.checkpoint();canvas.beginLayerInteraction(l.id);let b=LayerRenderer.bounds(l),dx=Double(origin.x)-l.frame.x-Double(b.width)/2,dy=Double(origin.y)-l.frame.y-Double(b.height)/2;rotationStart=atan2(dy,dx);scaleStart=max(1,hypot(dx,dy))}
+            if g.state == .began{let translation=g.translation(in:canvas),origin=CGPoint(x:point.x-translation.x,y:point.y-translation.y);dragHandle=canvas.handle(at:origin);guard let l=(dragHandle != nil ? model.active:hit(origin)) else{return};model.selected=l.id;initial=l;groupInitial=model.page.layers;model.checkpoint();canvas.beginLayerInteraction(l.id);let b=LayerRenderer.bounds(l),dx=Double(origin.x)-l.frame.x-Double(b.width)/2,dy=Double(origin.y)-l.frame.y-Double(b.height)/2;rotationStart=atan2(dy,dx);scaleStart=max(1,hypot(dx,dy))}
             if (g.state == .changed || g.state == .ended),let initial {let raw=g.translation(in:canvas),speed=CGFloat(dragHandle==nil ? 1:EditorPreferences.handleSpeed),t=CGPoint(x:raw.x*speed,y:raw.y*speed),b=LayerRenderer.bounds(initial),snapshot=model.page;model.change(persist:false){l in
                 if let handle=dragHandle,handle.hasPrefix("gradient-"),let target=model.gradientTarget{
                     let local=point.applying(LayerRenderer.transform(initial).inverted());var values=GradientGeometry.points(initial.style,target:target,size:b.size)
@@ -78,7 +78,7 @@ struct CanvasHost:UIViewRepresentable {
                 if let handle=dragHandle,handle.hasPrefix("deform-"),let index=Int(handle.dropFirst(7)) {
                     let local=point.applying(LayerRenderer.transform(initial).inverted())
                     let p=Point(x:min(2,max(-1,Double(local.x/max(1,b.width)))),y:min(2,max(-1,Double(local.y/max(1,b.height)))))
-                    if l.style.isMeshMode,index<l.style.meshPoints.count{l.style.meshPoints[index]=p}
+                    if l.style.isMeshMode,MeshGeometry.valid(l.style),index<l.style.meshPoints.count{l.style.meshPoints[index]=p}
                     else{if l.style.perspectivePoints.count != 4{l.style.perspectivePoints=[Point(x:0,y:0),Point(x:1,y:0),Point(x:1,y:1),Point(x:0,y:1)]};if index<4{l.style.perspectivePoints[index]=p}}
                     return
                 }
@@ -93,7 +93,7 @@ struct CanvasHost:UIViewRepresentable {
                 default:l.frame.x=initial.frame.x+Double(t.x);l.frame.y=initial.frame.y+Double(t.y)
                     if EditorPreferences.snap{SnapAlignment.apply(&l,page:snapshot,tolerance:8/max(0.01,model.zoom))}
                 }
-            };if dragHandle==nil || ["resize","rotate"].contains(dragHandle ?? ""){model.transformGroupPeers(from:initial,baseline:groupInitial)};canvas.update(page:model.page,directory:model.directory,selected:model.selected,zoom:scroll?.zoomScale ?? 1)}
+            };if dragHandle==nil || ["resize","rotate","scale-x","scale-y"].contains(dragHandle ?? ""){model.transformGroupPeers(from:initial,baseline:groupInitial)};canvas.update(page:model.page,directory:model.directory,selected:model.selected,zoom:scroll?.zoomScale ?? 1)}
             if g.state == .ended || g.state == .cancelled{canvas.endLayerInteraction();initial=nil;groupInitial=[];dragHandle=nil;model.save()}
         }
     }

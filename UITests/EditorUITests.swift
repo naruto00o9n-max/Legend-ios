@@ -60,7 +60,7 @@ final class EditorUITests:XCTestCase {
         app.buttons["selection-edit"].tap();XCTAssertTrue(app.textViews["text-input"].waitForExistence(timeout:5))
     }
     func testCreateUserStyleAndApplyGlyphGradient(){
-        openEditor();tool("text");XCTAssertTrue(app.textViews["text-input"].waitForExistence(timeout:6));app.textViews["text-input"].tap();app.textViews["text-input"].typeText("نمط الحوار");app.buttons["تم"].tap()
+        openEditor();tool("text");XCTAssertTrue(app.textViews["text-input"].waitForExistence(timeout:6));app.textViews["text-input"].tap();app.textViews["text-input"].typeText("نمط الحوار");XCTAssertEqual(app.textViews["text-input"].value as? String,"نمط الحوار","Typing into a new text layer must replace its placeholder");app.buttons["تم"].tap()
         reveal(app.buttons["panel-color"],in:app.scrollViews["panel-strip"]);app.buttons["panel-color"].tap();let gradient=app.switches["تدرج لوني"];for _ in 0..<5{if gradient.isHittable{break};app.scrollViews["text-inspector-scroll"].swipeUp()};XCTAssertTrue(gradient.exists);gradient.tap();capture("batch-11-glyph-gradient");app.buttons["تم"].tap()
         reveal(app.buttons["panel-styles"],in:app.scrollViews["panel-strip"]);app.buttons["panel-styles"].tap();XCTAssertTrue(app.buttons["style-create"].waitForExistence(timeout:5));app.buttons["style-create"].tap();capture("batch-12-create-style");app.alerts.buttons["حفظ"].tap();let saved=app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH 'saved-style-'")).firstMatch;XCTAssertTrue(saved.waitForExistence(timeout:10));capture("batch-13-custom-style-library");saved.tap();XCTAssertFalse(app.alerts["تعذر حفظ النمط"].exists);app.buttons["تم"].tap();capture("batch-14-styled-text-on-canvas")
     }
@@ -83,6 +83,15 @@ final class EditorUITests:XCTestCase {
     }
 
     func testEditorTextLayersAndExport(){openEditor();tool("text");let text=app.textViews["text-input"];XCTAssertTrue(text.waitForExistence(timeout:6));XCTAssertFalse(app.scrollViews["tool-strip"].exists,"Text mode replaces primary tools");XCTAssertTrue(app.buttons["text-add"].exists);text.tap();text.typeText("كوكيز إيدتور\nاختبار الحوار العربي");capture("07-text-entry-keyboard");app.buttons["تم"].tap();capture("08-text-layer");assertLayout();reveal(app.buttons["panel-format"],in:app.scrollViews["panel-strip"]);app.buttons["panel-format"].tap();capture("09-format");app.buttons["تم"].tap();tool("layers");capture("10-layers");app.buttons["تم"].tap();app.buttons["export"].tap();capture("11-export-settings");app.buttons["export-png"].tap();XCTAssertTrue(app.buttons["share-png"].waitForExistence(timeout:60));capture("12-export-complete")}
+    func testLayerTypeChipsMatchTheVisibleRows(){
+        openEditor();tool("text");XCTAssertTrue(app.textViews["text-input"].waitForExistence(timeout:5));app.buttons["تم"].tap();tool("shapes");app.buttons["شكل 1"].tap();tool("layers")
+        let text=app.buttons["layers-filter-text"];XCTAssertTrue(text.waitForExistence(timeout:5));text.tap();XCTAssertEqual(text.value as? String,"مختار")
+        XCTAssertTrue(app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH 'layer-row-text-'")).firstMatch.exists);XCTAssertFalse(app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH 'layer-row-shape-'")).firstMatch.exists);capture("batch-19-layer-type-filter");assertLayout()
+        app.buttons["layers-filter-all"].tap();XCTAssertTrue(app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH 'layer-row-shape-'")).firstMatch.exists);capture("batch-20-layer-types-and-actions")
+    }
+    func testLocalDiagnosticReportsScreen(){
+        start();app.buttons["settings"].tap();let button=app.buttons["settings-diagnostics"];if !button.isHittable{app.scrollViews.firstMatch.swipeUp()};XCTAssertTrue(button.waitForExistence(timeout:5));button.tap();XCTAssertTrue(app.buttons["diagnostics-close"].waitForExistence(timeout:5));capture("batch-18-diagnostic-reports");assertLayout();app.buttons["diagnostics-close"].tap()
+    }
     func testEveryTextInspectorAndFontLibrary(){
         openEditor();tool("text");XCTAssertTrue(app.textViews["text-input"].waitForExistence(timeout:6));app.buttons["تم"].tap()
         for panel in ["font","format","color","gradientMap","stroke","background","shadow","position","spacing","threeD","perspective","effects","texture","opacity","styles","mask"]{

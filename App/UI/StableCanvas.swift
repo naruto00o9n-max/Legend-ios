@@ -231,8 +231,8 @@ final class DocumentCanvas: UIView {
         }
         for (key,button) in handles where key.hasPrefix("gradient-"){button.isHidden=true}
         if deformationMode,item.kind == .text {
-            let s=item.style
-            let points=s.isMeshMode && s.meshPoints.count==(s.meshRows+1)*(s.meshCols+1) ? s.meshPoints : (s.perspectivePoints.count==4 ? s.perspectivePoints:[Point(x:0,y:0),Point(x:1,y:0),Point(x:1,y:1),Point(x:0,y:1)])
+            let s=item.style,isMesh=item.style.isMeshMode && MeshGeometry.valid(item.style)
+            let points=isMesh ? s.meshPoints : (s.perspectivePoints.count==4 ? s.perspectivePoints:[Point(x:0,y:0),Point(x:1,y:0),Point(x:1,y:1),Point(x:0,y:1)])
             handles.values.forEach{$0.isHidden=true}
             let outline=UIBezierPath()
             for (index,point) in points.enumerated(){
@@ -240,9 +240,9 @@ final class DocumentCanvas: UIView {
                 if handles[name]==nil {let button=UIButton(type:.custom);button.setImage(UIImage(systemName:"circle.fill"),for:.normal);button.backgroundColor=UIColor(white:0.06,alpha:0.94);button.accessibilityIdentifier="selection-"+name;button.accessibilityLabel="نقطة المنظور \(index+1)";addSubview(button);handles[name]=button}
                 let p=CGPoint(x:CGFloat(point.x)*box.width,y:CGFloat(point.y)*box.height).applying(transform)
                 place(name,at:p,size:size * CGFloat(EditorPreferences.handles))
-                if !s.isMeshMode {if index==0{outline.move(to:p)}else{outline.addLine(to:p)}}
+                if !isMesh {if index==0{outline.move(to:p)}else{outline.addLine(to:p)}}
             }
-            if !s.isMeshMode{outline.close()}
+            if !isMesh{outline.close()}
             border.path=outline.cgPath;border.lineWidth=1/max(0.002,zoom);stem.path=nil
             return
         }

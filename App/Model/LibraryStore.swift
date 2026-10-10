@@ -20,22 +20,36 @@ import SwiftUI
         return folders.compactMap{folder in guard UUID(uuidString:folder.lastPathComponent) != nil,let data=try? Data(contentsOf:folder.appendingPathComponent("page.json")),let page=try? JSONDecoder().decode(EditorPage.self,from:data) else{return nil};return LibraryItem(id:page.id,title:page.title,folder:false,pages:[page.id])}.sorted{$0.title.localizedStandardCompare($1.title) == .orderedAscending}
     }
     func directory(_ page: UUID)->URL {root.appendingPathComponent(page.uuidString,isDirectory:true)}
-    func createFolder(_ name: String,parent:UUID?) {items.append(LibraryItem(parent:parent,title:name,folder:true));save()}
-    func add(_ page:EditorPage,parent:UUID?) {if let index=items.firstIndex(where:{$0.id==parent && $0.isChapter==true}){items[index].pages.append(page.id);items[index].modified=Date()}else{items.append(LibraryItem(id:page.id,parent:parent,title:page.title,folder:false,pages:[page.id]))};save()}
+    func createFolder(_ name:String,parent:UUID?){var next=items;next.append(LibraryItem(parent:parent,title:name,folder:true));do{try commitItems(next)}catch{self.error=error.localizedDescription}}
+    @discardableResult func add(_ page:EditorPage,parent:UUID?)->Bool {
+        var next=items
+        if let index=next.firstIndex(where:{$0.id==parent && $0.isChapter==true}){next[index].pages.append(page.id);next[index].modified=Date()}else{next.append(LibraryItem(id:page.id,parent:parent,title:page.title,folder:false,pages:[page.id]))}
+        do{try commitItems(next);return true}catch{self.error=error.localizedDescription;return false}
+    }
     func load(_ id:UUID)throws->EditorPage {
         guard let saved=try RecoveryFile.read(EditorPage.self,at:directory(id).appendingPathComponent("page.json")) else{throw ImageFailure.message("ملف الصفحة مفقود")}
         if saved.recovered{error="استُعيدت الصفحة من آخر حفظ سليم. راجع آخر تعديل قبل المتابعة."};return saved.value
     }
     func persist(_ page:EditorPage)throws {try RecoveryFile.write(page,at:directory(page.id).appendingPathComponent("page.json"))}
-    func remove(_ item:LibraryItem) {for child in items.filter({$0.parent==item.id}){remove(child)};items.removeAll{$0.id==item.id};if !item.folder{for id in item.pages{try? FileManager.default.removeItem(at:directory(id))}};save()}
-    func move(_ item:LibraryItem,parent:UUID?){
-        var next=parent,visited=Set<UUID>();while let id=next{guard id != item.id,visited.insert(id).inserted else{error="لا يمكن نقل مجلد داخل نفسه";return};next=items.first{$0.id==id}?.parent}
-        if let index=items.firstIndex(where:{$0.id==item.id}){items[index].parent=parent;save()}
+    func remove(_ item:LibraryItem){
+        var ids:Set<UUID>=[item.id],changed=true
+        while changed{changed=false;for child in items where child.parent.map(ids.contains)==true{if ids.insert(child.id).inserted{changed=true}}}
+        let removed=items.filter{ids.contains($0.id)},next=items.filter{!ids.contains($0.id)}
+        do{try commitItems(next)}catch{self.error=error.localizedDescription;return}
+        let retained=Set(next.flatMap(\.pages))
+        for id in Set(removed.flatMap(\.pages)) where !retained.contains(id){try? FileManager.default.removeItem(at:directory(id))}
     }
-    func rename(_ item:LibraryItem,to name:String) {if let i=items.firstIndex(where:{$0.id==item.id}){do{if !item.folder,item.isChapter != true{var page=try load(item.id);page.title=name;try persist(page)};items[i].title=name;save()}catch{self.error=error.localizedDescription}}}
+    func move(_ item:LibraryItem,parent:UUID?){
+        var parentID=parent,visited=Set<UUID>();while let id=parentID{guard id != item.id,visited.insert(id).inserted else{error="لا يمكن نقل مجلد داخل نفسه";return};parentID=items.first{$0.id==id}?.parent}
+        var next=items;if let index=next.firstIndex(where:{$0.id==item.id}){next[index].parent=parent;do{try commitItems(next)}catch{self.error=error.localizedDescription}}
+    }
+    func rename(_ item:LibraryItem,to name:String){
+        var next=items;guard let index=next.firstIndex(where:{$0.id==item.id}) else{return};var previousPage:EditorPage?
+        do{if !item.folder,item.isChapter != true{var page=try load(item.id);previousPage=page;page.title=name;try persist(page)};next[index].title=name;try commitItems(next)}catch{if let previousPage{try? persist(previousPage)};self.error=error.localizedDescription}
+    }
     func importImage(_ url:URL,parent:UUID?) async {
         if ["pdf","zip","cookieschapter"].contains(url.pathExtension.lowercased()) {var created:UUID?;do{let id=try createChapter(url.deletingPathExtension().lastPathComponent,parent:parent);created=id;try await importPages([url],chapter:id)}catch{if let created,let item=items.first(where:{$0.id==created}),item.pages.isEmpty{remove(item)};self.error=error.localizedDescription};return}
-        do {let root=self.root;let page=try await Task.detached(priority:.userInitiated){try url.pathExtension.lowercased()=="cookies" ? ProjectArchive.importFile(url,root:root):ImagePipeline.importImage(url,root:root)}.value;add(page,parent:parent)}catch{self.error=error.localizedDescription}
+        do {let root=self.root;let page=try await Task.detached(priority:.userInitiated){try url.pathExtension.lowercased()=="cookies" ? ProjectArchive.importFile(url,root:root):ImagePipeline.importImage(url,root:root)}.value;if !add(page,parent:parent){try? FileManager.default.removeItem(at:directory(page.id))}}catch{self.error=error.localizedDescription}
     }
 }
 
@@ -59,6 +73,7 @@ import SwiftUI
     @Published var cleanPreviewID:UUID?
     @Published var fillTolerance=12.0
     @Published var smudgeStrength=0.4
+    var textMaskDraft:TextMaskDraft?
     @Published var textMaskMode=false
     @Published var textMaskRestore=false
     @Published var zoom = 1.0
@@ -107,11 +122,11 @@ import SwiftUI
         if kind == .drawing{l.frame=Box(x:0,y:0,width:Double(page.width),height:Double(page.height))}
         page.layers.append(l);selected=l.id;save();if kind == .text{panel = .content}
     }
-    func delete() {guard let selected else{return};checkpoint();page.layers.removeAll{$0.id==selected};self.selected=nil;save()}
+    func delete() {guard let selected,active?.isLocked==false else{return};checkpoint();page.layers.removeAll{$0.id==selected};self.selected=nil;save()}
     func duplicate() {guard var l=active else{return};checkpoint();l.id=UUID();l.frame.x+=20;l.frame.y+=20;page.layers.append(l);selected=l.id;save()}
-    func undo(){guard let previous=undoStack.popLast() else{return};redoStack.append(page.layers);redoDocuments.append(page);if let document=undoDocuments.popLast(){page=document}else{page.layers=previous};selected=nil;save()}
-    func redo(){guard let next=redoStack.popLast() else{return};undoStack.append(page.layers);undoDocuments.append(page);if let document=redoDocuments.popLast(){page=document}else{page.layers=next};selected=nil;save()}
-    func save(){do{try library.persist(page)}catch{self.error=error.localizedDescription}
+    func undo(){guard let previous=undoStack.popLast() else{return};redoStack.append(page.layers);redoDocuments.append(page);if let document=undoDocuments.popLast(){page=document}else{page.layers=previous};if textMaskDraft==nil{selected=nil};save()}
+    func redo(){guard let next=redoStack.popLast() else{return};undoStack.append(page.layers);undoDocuments.append(page);if let document=redoDocuments.popLast(){page=document}else{page.layers=next};if textMaskDraft==nil{selected=nil};save()}
+    func save(){guard textMaskDraft==nil else{return};do{try library.persist(page)}catch{self.error=error.localizedDescription}
         previewTask?.cancel();let snapshot=page,directory=self.directory
         let library=self.library
         previewTask=Task {try? await Task.sleep(nanoseconds:500_000_000);guard !Task.isCancelled else{return};do{try await Task.detached(priority:.utility){try ImagePipeline.projectThumbnail(snapshot,directory:directory)}.value;guard !Task.isCancelled else{return};library.objectWillChange.send()}catch{}}

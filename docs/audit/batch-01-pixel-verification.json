@@ -1,0 +1,15 @@
+{
+  "test": "Tests/pixel_roundtrip.c",
+  "platform": "Linux C core",
+  "source_commit": "ffe5b16ed67a65defadd42b70d4b20975794a9ce",
+  "dimensions": [
+    800,
+    15000
+  ],
+  "bytes_compared": 48000000,
+  "source_rgba_sha256": "23e463f291d5955d01eb6f3b927100f3bb3456a51ebb2305e71b34f020ba7a6d",
+  "export_rgba_sha256": "23e463f291d5955d01eb6f3b927100f3bb3456a51ebb2305e71b34f020ba7a6d",
+  "passed": true,
+  "scope": "Generated RGBA fixture including transparent/half-alpha pixels; streaming import/export, edge tile reads and blend operations. Native UI and device performance are separate gates.",
+  "utc": "2026-10-10T02:56:15.349899+00:00"
+}

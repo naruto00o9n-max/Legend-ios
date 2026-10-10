@@ -9,7 +9,14 @@ extension EditorModel {
         for old in baseline where old.groupID==group && old.id != original.id && !old.isLocked {
             guard let index=page.layers.firstIndex(where:{$0.id==old.id}) else{continue}
             let box=LayerRenderer.bounds(old),center=CGPoint(x:box.midX,y:box.midY).applying(LayerRenderer.transform(old)).applying(delta)
-            var next=old;next.frame.x=Double(center.x-box.width/2);next.frame.y=Double(center.y-box.height/2);next.rotation+=current.rotation-original.rotation;next.scaleX*=sx;next.scaleY*=sy;page.layers[index]=next
+            let transformed=LayerRenderer.transform(old).concatenating(delta)
+            let scaleX=hypot(Double(transformed.a),Double(transformed.b))*(old.scaleX<0 ? -1:1)
+            guard abs(scaleX)>0.000001 else{continue}
+            let rotation=atan2(Double(transformed.b)/scaleX,Double(transformed.a)/scaleX)
+            let scaleY=Double(transformed.a*transformed.d-transformed.b*transformed.c)/scaleX
+            guard abs(scaleY)>0.000001 else{continue}
+            let shear=(Double(transformed.c)*cos(rotation)+Double(transformed.d)*sin(rotation))/scaleY
+            var next=old;next.frame.x=Double(center.x-box.width/2);next.frame.y=Double(center.y-box.height/2);next.rotation=rotation*180/Double.pi;next.scaleX=scaleX;next.scaleY=scaleY;next.shearX=abs(shear)>0.000001 ? shear:nil;page.layers[index]=next
         }
     }
     func groupLayers(_ ids:Set<UUID>,name:String){guard !ids.isEmpty else{return};checkpoint();let group=UUID();for i in page.layers.indices where ids.contains(page.layers[i].id){page.layers[i].groupID=group;page.layers[i].groupName=name};save()}

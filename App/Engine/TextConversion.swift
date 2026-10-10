@@ -12,7 +12,7 @@ extension EditorModel {
             guard let png=image.pngData() else{throw ImageFailure.message("تعذر تحويل النص")};let name=UUID().uuidString+".png";try png.write(to:directory.appendingPathComponent(name),options:.atomic);return name
         }
         guard let index=page.layers.firstIndex(where:{$0.id==layer.id}),page.layers[index]==layer else{try? FileManager.default.removeItem(at:directory.appendingPathComponent(filename));return}
-        checkpoint();var result=EditorLayer(kind:.image,name:layer.textContent);result.id=layer.id;result.imagePath=filename;let center=CGPoint(x:rect.midX,y:rect.midY).applying(LayerRenderer.transform(layer));result.frame=Box(x:center.x-rect.width/2,y:center.y-rect.height/2,width:rect.width,height:rect.height);result.rotation=layer.rotation;result.scaleX=layer.scaleX;result.scaleY=layer.scaleY;result.opacity=layer.opacity;result.blend=layer.blend;page.layers[index]=result;panel=nil;tool = .move;save()
+        checkpoint();var result=EditorLayer(kind:.image,name:layer.textContent);result.id=layer.id;result.imagePath=filename;let center=CGPoint(x:rect.midX,y:rect.midY).applying(LayerRenderer.transform(layer));result.frame=Box(x:center.x-rect.width/2,y:center.y-rect.height/2,width:rect.width,height:rect.height);result.rotation=layer.rotation;result.scaleX=layer.scaleX;result.scaleY=layer.scaleY;result.shearX=layer.shearX;result.opacity=layer.opacity;result.blend=layer.blend;page.layers[index]=result;panel=nil;tool = .move;save()
         }catch{self.error=error.localizedDescription}
     }
 }

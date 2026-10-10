@@ -45,5 +45,7 @@ final class ChapterTests:XCTestCase {
         let bottom=try ImagePipeline.tile(raw,width:40,height:300,rect:CGRect(x:10,y:290,width:1,height:1))
         XCTAssertGreaterThan(top[0],240);XCTAssertLessThan(top[2],10)
         XCTAssertGreaterThan(bottom[2],240);XCTAssertLessThan(bottom[0],10)
+        let bandEdge=try ImagePipeline.tile(raw,width:40,height:300,rect:CGRect(x:10,y:255,width:1,height:2))
+        XCTAssertEqual(Array(bandEdge[0..<4]),Array(bandEdge[4..<8]),"PDF stripes cannot repeat or jump at a 256-row boundary")
     }
 }

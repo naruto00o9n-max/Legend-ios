@@ -24,6 +24,19 @@ final class BatchToolTests:XCTestCase {
         let model=EditorModel(page:page,library:library);model.selected=a.id;model.checkpoint();model.change(persist:false){$0.frame.x+=25;$0.frame.y+=40};model.transformGroupPeers(from:a,baseline:page.layers);model.save()
         XCTAssertEqual(model.page.layers[1].frame.x,105,accuracy:0.001);XCTAssertEqual(model.page.layers[1].frame.y,140,accuracy:0.001);model.undo();XCTAssertEqual(model.page.layers,page.layers)
     }
+    @MainActor func testFilteredReorderingKeepsOtherLayerTypesAtTheirPositions()throws {
+        let root=try root();defer{try? FileManager.default.removeItem(at:root)};let library=LibraryStore(root:root);var page=try PageOperations.blank(title:"ترتيب",width:100,height:200,color:"FFFFFF",transparent:false,root:root)
+        let a=EditorLayer(kind:.text),b=EditorLayer(kind:.image),c=EditorLayer(kind:.text),d=EditorLayer(kind:.image),e=EditorLayer(kind:.text);page.layers=[a,b,c,d,e];try library.persist(page)
+        let model=EditorModel(page:page,library:library);model.reorderLayers(kind:.text,from:IndexSet(integer:0),to:3)
+        XCTAssertEqual(model.page.layers.map(\.id),[e.id,b.id,a.id,d.id,c.id]);model.undo();XCTAssertEqual(model.page.layers,page.layers)
+    }
+    @MainActor func testNonUniformGroupResizePreservesRotatedPeerAffineCorners()throws {
+        let root=try root();defer{try? FileManager.default.removeItem(at:root)};let library=LibraryStore(root:root);var page=try PageOperations.blank(title:"مجموعة",width:400,height:600,color:"FFFFFF",transparent:false,root:root)
+        let group=UUID();var a=EditorLayer(kind:.shape);a.groupID=group;a.frame=Box(x:10,y:20,width:80,height:90);var b=a;b.id=UUID();b.rotation=35;b.frame.x=180;b.frame.y=200;page.layers=[a,b];try library.persist(page)
+        let model=EditorModel(page:page,library:library);model.selected=a.id;model.change(persist:false){$0.scaleX=1.7;$0.scaleY=0.6};let delta=LayerRenderer.transform(a).inverted().concatenating(LayerRenderer.transform(try XCTUnwrap(model.active)));model.transformGroupPeers(from:a,baseline:page.layers)
+        let transformed=LayerRenderer.transform(model.page.layers[1]);for point in [CGPoint.zero,CGPoint(x:80,y:0),CGPoint(x:80,y:90),CGPoint(x:0,y:90)]{let expected=point.applying(LayerRenderer.transform(b)).applying(delta),actual=point.applying(transformed);XCTAssertEqual(actual.x,expected.x,accuracy:0.0001);XCTAssertEqual(actual.y,expected.y,accuracy:0.0001)}
+        XCTAssertNotNil(model.page.layers[1].shearX)
+    }
     private func root()throws->URL{let url=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString);try FileManager.default.createDirectory(at:url,withIntermediateDirectories:true);return url}
     private func rgba(_ file:URL)throws->Data {let raw=file.deletingPathExtension().appendingPathExtension("rgba");defer{try? FileManager.default.removeItem(at:raw)};var width:Int32=0,height:Int32=0,error=[CChar](repeating:0,count:512);XCTAssertEqual(LIImportPNG(file.path,raw.path,&width,&height,&error,error.count),1);return try Data(contentsOf:raw)}
     @MainActor func testNormalMergeAndTransparentFlattenRetainCompositeAndUndo()async throws {
