@@ -131,12 +131,13 @@ NSDictionary<NSString *, id> *CookiesWhitenBubble(UIImage *source,NSArray<NSValu
             if(!safe||(localized&&evidence<area*0.65))continue;
             accepted.push_back(i);
         }
+        if(!localized&&accepted.size()>2048)return nil; // Bound fallback work on noisy scans.
         // Fallback requires a cluster of at least three similarly sized glyphs.
         for(int i:accepted){
             bool use=localized;
             if(!use){int neighbors=0;double cy=centroids.at<double>(i,1),cx=centroids.at<double>(i,0);int h=stats.at<int>(i,cv::CC_STAT_HEIGHT);
                 for(int j:accepted){int otherH=stats.at<int>(j,cv::CC_STAT_HEIGHT);double dy=abs(centroids.at<double>(j,1)-cy),dx=abs(centroids.at<double>(j,0)-cx);
-                    if(otherH>=h*0.45&&otherH<=h*2.2&&((dy<=std::max(h,otherH)*0.6&&dx<=box.width*0.75)||(dx<=std::max(h,otherH)*0.6&&dy<=box.height*0.75)))neighbors++;
+                    if(otherH>=h*0.45&&otherH<=h*2.2&&((dy<=std::max(h,otherH)*0.6&&dx<=box.width*0.75)||(dx<=std::max(h,otherH)*0.6&&dy<=box.height*0.75))){neighbors++;if(neighbors>=3)break;}
                 }use=neighbors>=3;
             }
             if(use){cv::Rect r(stats.at<int>(i,cv::CC_STAT_LEFT),stats.at<int>(i,cv::CC_STAT_TOP),stats.at<int>(i,cv::CC_STAT_WIDTH),stats.at<int>(i,cv::CC_STAT_HEIGHT));for(int y=r.y;y<r.y+r.height;y++)for(int x=r.x;x<r.x+r.width;x++)if(labels.at<int>(y,x)==i)mask.at<unsigned char>(y,x)=255;}

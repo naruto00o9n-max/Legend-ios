@@ -22,7 +22,15 @@ enum BubbleWhitening {
             let b=observation.boundingBox
             return NSValue(cgRect:CGRect(x:b.minX*region.width,y:(1-b.maxY)*region.height,width:b.width*region.width,height:b.height*region.height))
         }
-        guard let result=CookiesWhitenBubble(UIImage(cgImage:image),outline,rectangles) as? [String:Any],let patch=result["patch"] as? UIImage,let data=patch.pngData() else{throw ImageFailure.message("لم يمكن فصل النص بأمان عن الرسم؛ استخدم التنظيف اليدوي لهذه الفقاعة")}
+        let bitmap=UIImage(cgImage:image)
+        var analyzed=CookiesWhitenBubble(bitmap,outline,rectangles) as? [String:Any]
+        if analyzed==nil,!rectangles.isEmpty{
+            // Vision may detect only part of a glyph or an unrelated shape.
+            // The native fallback independently requires a flat white interior
+            // and a coherent glyph cluster; colored artwork still fails closed.
+            analyzed=CookiesWhitenBubble(bitmap,outline,[]) as? [String:Any]
+        }
+        guard let result=analyzed,let patch=result["patch"] as? UIImage,let data=patch.pngData() else{throw ImageFailure.message("لم يمكن فصل النص بأمان عن الرسم؛ استخدم التنظيف اليدوي لهذه الفقاعة")}
         let name="bubble-clean-\(UUID().uuidString).png";try data.write(to:directory.appendingPathComponent(name),options:.atomic)
         var layer=EditorLayer(kind:.image,name:"تبييض النص الأصلي");layer.imagePath=name;layer.frame=Box(x:region.minX,y:region.minY,width:region.width,height:region.height)
         return BubbleWhiteningResult(layer:layer,reviewRequired:(result["reviewRequired"] as? Bool) ?? true)

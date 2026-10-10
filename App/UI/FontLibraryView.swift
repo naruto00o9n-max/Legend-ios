@@ -27,7 +27,7 @@ struct FontLibraryView:View {
     var body:some View {
         NavigationStack{ZStack{Ambient();VStack(spacing:12){
             TextField("البحث في الخطوط",text:$query).padding(12).glass(14).padding(.horizontal)
-            ScrollView(.horizontal,showsIndicators:false){HStack{ForEach(["الكل","العربية","الإنجليزية","المفضلة","آخر استخدام","المستوردة"]+groups.keys.sorted(),id:\.self){name in Button(name){filter=name}.buttonStyle(.bordered).tint(filter==name ? Palette.gold:Palette.pale)}}.padding(.horizontal)}
+            ScrollView(.horizontal,showsIndicators:false){HStack{ForEach(["الكل","العربية","الإنجليزية","المفضلة","آخر استخدام","المستوردة"]+groups.keys.sorted(),id:\.self){name in Button(name){filter=name}.buttonStyle(.bordered).tint(filter==name ? Palette.gold:Palette.pale)}}.padding(.horizontal)}.accessibilityIdentifier("font-filter-strip")
             List{ForEach(files,id:\.self){url in row(url)}}.id(version).listStyle(.plain).buttonStyle(.borderless).scrollContentBackground(.hidden)
             HStack{Text("\(selected.count) محدد");Spacer();Button("مجموعة جديدة"){naming=true}.disabled(selected.isEmpty);Button("تصدير"){exportFonts()}.disabled(selected.isEmpty);if let output{ShareLink(item:output){Image(systemName:"square.and.arrow.up")}}}.font(.system(size:12)).padding(14).glass(0)
         }}.foregroundStyle(Palette.pale).navigationTitle("مكتبة الخطوط").navigationBarTitleDisplayMode(.inline)
