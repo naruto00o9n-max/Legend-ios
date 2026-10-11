@@ -1,0 +1,114 @@
+{
+  "date": "2026-10-11",
+  "source_commit": "8a6de123a013f780b30cd285b37ddeb2c31ec470",
+  "run_id": 38170453483,
+  "run_url": "https://github.com/naruto00o9n-max/Legend-ios/actions/runs/38170453483",
+  "native_verification": "core iphone passed; ipad and interfaces pending",
+  "reference_apk_sha256": "a3758bcdf50c802c25d9023c90456f6bdde922a94cda08fc3ce737c2a9b29789",
+  "reference_video": {
+    "drive_id": "1x1PyP-DA4mDWFbEqr_xMiO9RGxUi1AfT",
+    "duration_seconds": 48.363333,
+    "width": 1180,
+    "height": 2556,
+    "effects": [
+      "RGB channel shift",
+      "horizontal glitch slices"
+    ]
+  },
+  "local_checks": {
+    "swift_parse": "passed",
+    "diff_check": "passed",
+    "generated_bubbles": {
+      "new_areas": [
+        77802,
+        77802,
+        77802
+      ],
+      "old_algorithm_areas": [
+        70781.5,
+        27979,
+        4996
+      ],
+      "outside_seed_rejected": true
+    },
+    "real_colored_dialogue": {
+      "selected_box": [
+        375,
+        291,
+        250,
+        510
+      ],
+      "new_area": 91679,
+      "old_algorithm_area": 25509,
+      "limitation": "Closed colored interior selected; broken black exterior and outside annotation are not entirely included"
+    },
+    "real_whitening_cases": 5,
+    "outside_patch_pixels_preserved": true
+  },
+  "inventory": {
+    "items": 102,
+    "scope": "editor functions, source-inspected; no percentage of full application parity",
+    "file": "editor-inventory-oct11.json"
+  },
+  "limits": [
+    "No measured physical-device FPS",
+    "No new Google sign-in verification",
+    "Original de8 detector not ported",
+    "Patterned backgrounds require review",
+    "Reference APK launch confirmed version only; no usable live screenshot produced"
+  ],
+  "jobs": [],
+  "artifacts": [],
+  "ipa_bundles": [
+    {
+      "edition": "connected",
+      "path": "/workspace/Cookies-Editor-8a6de12-unsigned.ipa",
+      "source_commit": "8a6de123a013f780b30cd285b37ddeb2c31ec470",
+      "bundle_id": "com.cookies.editor.ios",
+      "display_name": "Cookies Editor",
+      "version": "1.1.0",
+      "build": "1.1.0",
+      "minimum_os": "17.0",
+      "url_schemes": [
+        "cookies-editor"
+      ],
+      "service_enabled": true,
+      "service_configuration_bundled": true,
+      "architecture": "arm64",
+      "unsigned": true,
+      "embedded_source_revision": "8a6de123a013f780b30cd285b37ddeb2c31ec470",
+      "size": 15138693,
+      "sha256": "d1ae945dfe684a982f5fcb5483d8cec09cd968e5d2b2c78987f8eccd3ef46eaf"
+    },
+    {
+      "edition": "local",
+      "path": "/workspace/Cookies-Editor-Local-8a6de12-unsigned.ipa",
+      "source_commit": "8a6de123a013f780b30cd285b37ddeb2c31ec470",
+      "bundle_id": "com.cookies.editor.local",
+      "display_name": "Cookies Editor",
+      "version": "1.1.0",
+      "build": "1.1.0",
+      "minimum_os": "17.0",
+      "url_schemes": [
+        "cookies-editor-local"
+      ],
+      "service_enabled": false,
+      "service_configuration_bundled": false,
+      "architecture": "arm64",
+      "unsigned": true,
+      "embedded_source_revision": "8a6de123a013f780b30cd285b37ddeb2c31ec470",
+      "size": 15137723,
+      "sha256": "d46641527b3599bb79a5a48f72247648c99fed7cc4833948a64b745d875eb975"
+    }
+  ],
+  "native_core": {
+    "iphone": {
+      "editor_tests": 118,
+      "service_mocks": 6,
+      "new_feature_tests": 9,
+      "failed": 0,
+      "log": ".work/colors-8a6-test-iphone-core.log"
+    },
+    "ipad": "pending"
+  }
+}

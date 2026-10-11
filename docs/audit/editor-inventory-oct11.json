@@ -1,0 +1,927 @@
+{
+  "date": "2026-10-11",
+  "ios_source": "8a6de123a013f780b30cd285b37ddeb2c31ec470",
+  "original": "YTyper V4.5",
+  "apk_sha256": "a3758bcdf50c802c25d9023c90456f6bdde922a94cda08fc3ce737c2a9b29789",
+  "scope": "Editor inventory refreshed by source inspection. Not a UI-by-UI parity certificate. Existing paused 70-item batch is not modified.",
+  "entries": [
+    {
+      "id": "F045",
+      "group": "المحرر العام",
+      "feature": "السحب والتكبير حتى رؤية البكسلات",
+      "original_evidence": "EditorCanvasView cached region decoder",
+      "current_status": "موجود",
+      "ios_evidence": "CanvasHost; StableCanvas; LayerRenderer; LibraryStore; native tests",
+      "remaining": "قياسات سرعة الجهاز الفعلي والمطابقة البصرية الشاملة ليست مثبتة."
+    },
+    {
+      "id": "F046",
+      "group": "المحرر العام",
+      "feature": "أبعاد أصلية وتصدير لا يعتمد على المعاينة",
+      "original_evidence": "BitmapRegionDecoder؛ الأصل 800×15000",
+      "current_status": "موجود",
+      "ios_evidence": "CanvasHost; StableCanvas; LayerRenderer; LibraryStore; native tests",
+      "remaining": "قياسات سرعة الجهاز الفعلي والمطابقة البصرية الشاملة ليست مثبتة."
+    },
+    {
+      "id": "F050",
+      "group": "المحرر العام",
+      "feature": "التراجع والإعادة",
+      "original_evidence": "EditorCanvasView history snapshots",
+      "current_status": "موجود",
+      "ios_evidence": "CanvasHost; StableCanvas; LayerRenderer; LibraryStore; native tests",
+      "remaining": "قياسات سرعة الجهاز الفعلي والمطابقة البصرية الشاملة ليست مثبتة."
+    },
+    {
+      "id": "F057",
+      "group": "النصوص",
+      "feature": "إضافة وتحرير النص العربي RTL",
+      "original_evidence": "dialog_add_text؛ layout_inline_editor؛ لقطة 24",
+      "current_status": "موجود",
+      "ios_evidence": "CanvasHost; StableCanvas; LayerRenderer; LibraryStore; native tests",
+      "remaining": "قياسات سرعة الجهاز الفعلي والمطابقة البصرية الشاملة ليست مثبتة."
+    },
+    {
+      "id": "F058",
+      "group": "النصوص",
+      "feature": "المقابض التسعة وتحريك/تدوير/تمديد/نسخ/حذف",
+      "original_evidence": "view/v.java؛ لقطة 24-text-handles",
+      "current_status": "موجود",
+      "ios_evidence": "CanvasHost; StableCanvas; LayerRenderer; LibraryStore; native tests",
+      "remaining": "قياسات سرعة الجهاز الفعلي والمطابقة البصرية الشاملة ليست مثبتة."
+    },
+    {
+      "id": "F047",
+      "group": "المحرر العام",
+      "feature": "الرسم المباشر والسحب/التدوير السلس",
+      "original_evidence": "EditorCanvasView onTouch/draw",
+      "current_status": "جزئي",
+      "ios_evidence": "CanvasHost; LayerInteraction; live ink tests",
+      "remaining": "استجابة حية موجودة، لكن ضمان السلاسة على جميع الأجهزة الضعيفة يحتاج قياسًا فعليًا."
+    },
+    {
+      "id": "F048",
+      "group": "المحرر العام",
+      "feature": "شريط الأدوات يتبدل بحسب الأداة",
+      "original_evidence": "activity_editor text/image/shape/drawing strips",
+      "current_status": "موجود",
+      "ios_evidence": "EditorView tool/text/brush/object strips",
+      "remaining": "الأدوات الفرعية تستبدل الشريط؛ تخصيصها ليس بكل تفاصيل الأصل."
+    },
+    {
+      "id": "F049",
+      "group": "المحرر العام",
+      "feature": "القائمة الدائرية وتخصيص اختصاراتها",
+      "original_evidence": "RadialMenuTool؛ HolographicRadialMenuKt؛ RadialCustomizerSheetKt",
+      "current_status": "ناقص",
+      "ios_evidence": "EditorView; CanvasHost; EditorPreferences",
+      "remaining": "القائمة الدائرية المخصصة، شبكة اللوحة، تثبيت الخلفية مع وضع تحريك بيد واحدة، وZen الكامل غير موجودة."
+    },
+    {
+      "id": "F051",
+      "group": "المحرر العام",
+      "feature": "شبكة اللوحة وإعداداتها",
+      "original_evidence": "activity_editor btnGrid",
+      "current_status": "ناقص",
+      "ios_evidence": "EditorView; CanvasHost; EditorPreferences",
+      "remaining": "القائمة الدائرية المخصصة، شبكة اللوحة، تثبيت الخلفية مع وضع تحريك بيد واحدة، وZen الكامل غير موجودة."
+    },
+    {
+      "id": "F053",
+      "group": "المحرر العام",
+      "feature": "قفل الخلفية وتثبيت التحريك بيد واحدة",
+      "original_evidence": "btnPinBackground؛ btnToolOneHandPan؛ btnLock",
+      "current_status": "ناقص",
+      "ios_evidence": "EditorView; CanvasHost; EditorPreferences",
+      "remaining": "القائمة الدائرية المخصصة، شبكة اللوحة، تثبيت الخلفية مع وضع تحريك بيد واحدة، وZen الكامل غير موجودة."
+    },
+    {
+      "id": "F055",
+      "group": "المحرر العام",
+      "feature": "وضع التركيز Zen واختصارات اللمس",
+      "original_evidence": "EditorActivity.toggleZenMode؛ DOUBLE_TAP_ZOOM",
+      "current_status": "ناقص",
+      "ios_evidence": "EditorView; CanvasHost; EditorPreferences",
+      "remaining": "القائمة الدائرية المخصصة، شبكة اللوحة، تثبيت الخلفية مع وضع تحريك بيد واحدة، وZen الكامل غير موجودة."
+    },
+    {
+      "id": "F052",
+      "group": "المحرر العام",
+      "feature": "المحاذاة المغناطيسية Snap",
+      "original_evidence": "layout_snap_settings؛ SNAP_* prefs",
+      "current_status": "موجود",
+      "ios_evidence": "SnapAlignment; CanvasHost; WorkspaceSettingsView",
+      "remaining": "التقاط المركز والحواف والزوايا موجود؛ دليل المحاذاة وأهداف الأصل الكاملة يحتاج مقارنة تفاعلية."
+    },
+    {
+      "id": "F054",
+      "group": "المحرر العام",
+      "feature": "خلفية اللوحة وألوانها/شبكتها/صورتها وتمويهها",
+      "original_evidence": "dialog_canvas_background؛ CanvasBackgroundBottomSheet",
+      "current_status": "جزئي",
+      "ios_evidence": "CanvasHost backgroundColor 080808",
+      "remaining": "خلفية داكنة ثابتة؛ خيارات الصورة/الضبابية/شبكة الخلفية الأصلية غير موجودة."
+    },
+    {
+      "id": "F056",
+      "group": "المحرر العام",
+      "feature": "قطارة لون من المركب النهائي",
+      "original_evidence": "layout_eyedropper_overlay؛ ColorPickerPanel",
+      "current_status": "موجود",
+      "ios_evidence": "ColorSampler; CanvasHost; BrushFeedback; ColorLibraryStore",
+      "remaining": "يقرأ المركب النهائي ويعرض اللون فوق الإصبع؛ الحالات المتقدمة تحتاج تجربة الجهاز."
+    },
+    {
+      "id": "F059",
+      "group": "النصوص",
+      "feature": "محرر Inline مع لصق/نسخ/حروف كبيرة/صغيرة/تطويل وإرساء",
+      "original_evidence": "layout_inline_editor IDs",
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "TextInspector; TextRanges; TextRaster; GradientControls; GeometryInspector; TextMaskEditing; TextConversion; StableCanvas",
+      "remaining": "هذه الأدوات لم تعد مفقودة. المطابقة الدقيقة لكل مقبض وقالب، حجم الإدراج، والأداء مع كل خط وتشكيل ما زالت تتطلب المقارنة. أضيف التباعد السالب وRGB/Glitch؛ نتيجة اختبارات مصدر الدفعة موثقة في colors-effects-oct11.md."
+    },
+    {
+      "id": "F062",
+      "group": "النصوص",
+      "feature": "تنسيق كلمة/مدى محدد Rich spans",
+      "original_evidence": "TextSpan؛ layout_inline_editor selection actions",
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "TextInspector; TextRanges; TextRaster; GradientControls; GeometryInspector; TextMaskEditing; TextConversion; StableCanvas",
+      "remaining": "هذه الأدوات لم تعد مفقودة. المطابقة الدقيقة لكل مقبض وقالب، حجم الإدراج، والأداء مع كل خط وتشكيل ما زالت تتطلب المقارنة. أضيف التباعد السالب وRGB/Glitch؛ نتيجة اختبارات مصدر الدفعة موثقة في colors-effects-oct11.md."
+    },
+    {
+      "id": "F063",
+      "group": "النصوص",
+      "feature": "تنسيق كل سطر والكشيدة والتوزيع",
+      "original_evidence": "dialog_text_line_format؛ TextLineFormatPanel؛ KashidaLineFormatter",
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "TextInspector; TextRanges; TextRaster; GradientControls; GeometryInspector; TextMaskEditing; TextConversion; StableCanvas",
+      "remaining": "هذه الأدوات لم تعد مفقودة. المطابقة الدقيقة لكل مقبض وقالب، حجم الإدراج، والأداء مع كل خط وتشكيل ما زالت تتطلب المقارنة. أضيف التباعد السالب وRGB/Glitch؛ نتيجة اختبارات مصدر الدفعة موثقة في colors-effects-oct11.md."
+    },
+    {
+      "id": "F064",
+      "group": "النصوص",
+      "feature": "اللون والتدرج الأساسي",
+      "original_evidence": "layout_color_panel؛ ColorPickerPanel",
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "TextInspector; TextRanges; TextRaster; GradientControls; GeometryInspector; TextMaskEditing; TextConversion; StableCanvas",
+      "remaining": "هذه الأدوات لم تعد مفقودة. المطابقة الدقيقة لكل مقبض وقالب، حجم الإدراج، والأداء مع كل خط وتشكيل ما زالت تتطلب المقارنة. أضيف التباعد السالب وRGB/Glitch؛ نتيجة اختبارات مصدر الدفعة موثقة في colors-effects-oct11.md."
+    },
+    {
+      "id": "F065",
+      "group": "النصوص",
+      "feature": "تدرجات متقدمة وتفاعلية وGradient Map",
+      "original_evidence": "AdvancedGradientDialog؛ InteractiveGradientDialog؛ GradientMapPanel",
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "TextInspector; TextRanges; TextRaster; GradientControls; GeometryInspector; TextMaskEditing; TextConversion; StableCanvas",
+      "remaining": "هذه الأدوات لم تعد مفقودة. المطابقة الدقيقة لكل مقبض وقالب، حجم الإدراج، والأداء مع كل خط وتشكيل ما زالت تتطلب المقارنة. أضيف التباعد السالب وRGB/Glitch؛ نتيجة اختبارات مصدر الدفعة موثقة في colors-effects-oct11.md."
+    },
+    {
+      "id": "F067",
+      "group": "النصوص",
+      "feature": "حدود إضافية/تدرج حدود/أشكال حدود وقوالب",
+      "original_evidence": "ExtraStroke؛ StrokeShapeView؛ StrokePresetAdapter",
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "TextInspector; TextRanges; TextRaster; GradientControls; GeometryInspector; TextMaskEditing; TextConversion; StableCanvas",
+      "remaining": "هذه الأدوات لم تعد مفقودة. المطابقة الدقيقة لكل مقبض وقالب، حجم الإدراج، والأداء مع كل خط وتشكيل ما زالت تتطلب المقارنة. أضيف التباعد السالب وRGB/Glitch؛ نتيجة اختبارات مصدر الدفعة موثقة في colors-effects-oct11.md."
+    },
+    {
+      "id": "F068",
+      "group": "النصوص",
+      "feature": "خلفية النص مع استدارة/شفافية/حشو",
+      "original_evidence": "layout_background_panel",
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "TextInspector; TextRanges; TextRaster; GradientControls; GeometryInspector; TextMaskEditing; TextConversion; StableCanvas",
+      "remaining": "هذه الأدوات لم تعد مفقودة. المطابقة الدقيقة لكل مقبض وقالب، حجم الإدراج، والأداء مع كل خط وتشكيل ما زالت تتطلب المقارنة. أضيف التباعد السالب وRGB/Glitch؛ نتيجة اختبارات مصدر الدفعة موثقة في colors-effects-oct11.md."
+    },
+    {
+      "id": "F069",
+      "group": "النصوص",
+      "feature": "الظل والنعومة والإزاحة والشفافية/تدرج الظل",
+      "original_evidence": "layout_shadow_panel؛ ShadowEditorPanel",
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "TextInspector; TextRanges; TextRaster; GradientControls; GeometryInspector; TextMaskEditing; TextConversion; StableCanvas",
+      "remaining": "هذه الأدوات لم تعد مفقودة. المطابقة الدقيقة لكل مقبض وقالب، حجم الإدراج، والأداء مع كل خط وتشكيل ما زالت تتطلب المقارنة. أضيف التباعد السالب وRGB/Glitch؛ نتيجة اختبارات مصدر الدفعة موثقة في colors-effects-oct11.md."
+    },
+    {
+      "id": "F070",
+      "group": "النصوص",
+      "feature": "الموضع والمحاذاة للوحة والنقل خطوة والقلب",
+      "original_evidence": "layout_position_panel IDs",
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "TextInspector; TextRanges; TextRaster; GradientControls; GeometryInspector; TextMaskEditing; TextConversion; StableCanvas",
+      "remaining": "هذه الأدوات لم تعد مفقودة. المطابقة الدقيقة لكل مقبض وقالب، حجم الإدراج، والأداء مع كل خط وتشكيل ما زالت تتطلب المقارنة. أضيف التباعد السالب وRGB/Glitch؛ نتيجة اختبارات مصدر الدفعة موثقة في colors-effects-oct11.md."
+    },
+    {
+      "id": "F071",
+      "group": "النصوص",
+      "feature": "تباعد الحروف والأسطر والتشكيل",
+      "original_evidence": "layout_spacing_panel tashkeel",
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "TextInspector; TextRanges; TextRaster; GradientControls; GeometryInspector; TextMaskEditing; TextConversion; StableCanvas",
+      "remaining": "هذه الأدوات لم تعد مفقودة. المطابقة الدقيقة لكل مقبض وقالب، حجم الإدراج، والأداء مع كل خط وتشكيل ما زالت تتطلب المقارنة. أضيف التباعد السالب وRGB/Glitch؛ نتيجة اختبارات مصدر الدفعة موثقة في colors-effects-oct11.md."
+    },
+    {
+      "id": "F072",
+      "group": "النصوص",
+      "feature": "الأبعاد والبروز ثلاثي الأبعاد",
+      "original_evidence": "layout_3d_panel؛ ThreeDEditorPanel",
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "TextInspector; TextRanges; TextRaster; GradientControls; GeometryInspector; TextMaskEditing; TextConversion; StableCanvas",
+      "remaining": "هذه الأدوات لم تعد مفقودة. المطابقة الدقيقة لكل مقبض وقالب، حجم الإدراج، والأداء مع كل خط وتشكيل ما زالت تتطلب المقارنة. أضيف التباعد السالب وRGB/Glitch؛ نتيجة اختبارات مصدر الدفعة موثقة في colors-effects-oct11.md."
+    },
+    {
+      "id": "F073",
+      "group": "النصوص",
+      "feature": "المنظور الرباعي والشبكة الحرة على الصورة",
+      "original_evidence": "layout_perspective_panel؛ view handlers",
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "TextInspector; TextRanges; TextRaster; GradientControls; GeometryInspector; TextMaskEditing; TextConversion; StableCanvas",
+      "remaining": "هذه الأدوات لم تعد مفقودة. المطابقة الدقيقة لكل مقبض وقالب، حجم الإدراج، والأداء مع كل خط وتشكيل ما زالت تتطلب المقارنة. أضيف التباعد السالب وRGB/Glitch؛ نتيجة اختبارات مصدر الدفعة موثقة في colors-effects-oct11.md."
+    },
+    {
+      "id": "F075",
+      "group": "النصوص",
+      "feature": "الخامات: استيراد وتحجيم ودوران وإزاحة",
+      "original_evidence": "layout_texture_panel؛ TextureEditorPanel",
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "TextInspector; TextRanges; TextRaster; GradientControls; GeometryInspector; TextMaskEditing; TextConversion; StableCanvas",
+      "remaining": "هذه الأدوات لم تعد مفقودة. المطابقة الدقيقة لكل مقبض وقالب، حجم الإدراج، والأداء مع كل خط وتشكيل ما زالت تتطلب المقارنة. أضيف التباعد السالب وRGB/Glitch؛ نتيجة اختبارات مصدر الدفعة موثقة في colors-effects-oct11.md."
+    },
+    {
+      "id": "F076",
+      "group": "النصوص",
+      "feature": "شفافية النص الداخلية ومزج الطبقة",
+      "original_evidence": "layout_opacity_panel innerOpacity؛ LayerBlendMode",
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "TextInspector; TextRanges; TextRaster; GradientControls; GeometryInspector; TextMaskEditing; TextConversion; StableCanvas",
+      "remaining": "هذه الأدوات لم تعد مفقودة. المطابقة الدقيقة لكل مقبض وقالب، حجم الإدراج، والأداء مع كل خط وتشكيل ما زالت تتطلب المقارنة. أضيف التباعد السالب وRGB/Glitch؛ نتيجة اختبارات مصدر الدفعة موثقة في colors-effects-oct11.md."
+    },
+    {
+      "id": "F077",
+      "group": "النصوص",
+      "feature": "تلاشي باتجاه/مدى كأداة مستقلة",
+      "original_evidence": "layout_fade_panel",
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "TextInspector; TextRanges; TextRaster; GradientControls; GeometryInspector; TextMaskEditing; TextConversion; StableCanvas",
+      "remaining": "هذه الأدوات لم تعد مفقودة. المطابقة الدقيقة لكل مقبض وقالب، حجم الإدراج، والأداء مع كل خط وتشكيل ما زالت تتطلب المقارنة. أضيف التباعد السالب وRGB/Glitch؛ نتيجة اختبارات مصدر الدفعة موثقة في colors-effects-oct11.md."
+    },
+    {
+      "id": "F078",
+      "group": "النصوص",
+      "feature": "المسطرة والتوسيط السحري",
+      "original_evidence": "layout_ruler_panel؛ btnAutoCenter",
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "TextInspector; TextRanges; TextRaster; GradientControls; GeometryInspector; TextMaskEditing; TextConversion; StableCanvas",
+      "remaining": "هذه الأدوات لم تعد مفقودة. المطابقة الدقيقة لكل مقبض وقالب، حجم الإدراج، والأداء مع كل خط وتشكيل ما زالت تتطلب المقارنة. أضيف التباعد السالب وRGB/Glitch؛ نتيجة اختبارات مصدر الدفعة موثقة في colors-effects-oct11.md."
+    },
+    {
+      "id": "F079",
+      "group": "النصوص",
+      "feature": "تحويل النص إلى PNG/طبقة صورة",
+      "original_evidence": "activity_editor btnTextToPng",
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "TextInspector; TextRanges; TextRaster; GradientControls; GeometryInspector; TextMaskEditing; TextConversion; StableCanvas",
+      "remaining": "هذه الأدوات لم تعد مفقودة. المطابقة الدقيقة لكل مقبض وقالب، حجم الإدراج، والأداء مع كل خط وتشكيل ما زالت تتطلب المقارنة. أضيف التباعد السالب وRGB/Glitch؛ نتيجة اختبارات مصدر الدفعة موثقة في colors-effects-oct11.md."
+    },
+    {
+      "id": "F080",
+      "group": "النصوص",
+      "feature": "مسح/استرجاع النص بقناع مرسوم",
+      "original_evidence": "layout_eraser_panel rbErase/rbRestore/showMask",
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "TextInspector; TextRanges; TextRaster; GradientControls; GeometryInspector; TextMaskEditing; TextConversion; StableCanvas",
+      "remaining": "هذه الأدوات لم تعد مفقودة. المطابقة الدقيقة لكل مقبض وقالب، حجم الإدراج، والأداء مع كل خط وتشكيل ما زالت تتطلب المقارنة. أضيف التباعد السالب وRGB/Glitch؛ نتيجة اختبارات مصدر الدفعة موثقة في colors-effects-oct11.md."
+    },
+    {
+      "id": "F074",
+      "group": "النصوص",
+      "feature": "التشويه Warp كأداة مستقلة",
+      "original_evidence": "layout_warp_panel؛ WarpEditorPanel",
+      "current_status": "جزئي",
+      "ios_evidence": "LayerRenderer warp fallback; TextInspector effects",
+      "remaining": "تشويه الميل موجود؛ لوحة وخوارزمية Warp الخاصة بالأصل ليست مطابقة."
+    },
+    {
+      "id": "F081",
+      "group": "الأنماط والخطوط",
+      "feature": "أنماط نص محفوظة وإنشاء نمط من المحدد",
+      "original_evidence": "TextStylesPanel؛ btnSaveCurrentStyle؛ SavedTextStyle",
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "StyleStore; StyleLibraryView; SavedStyleDesigner; ReferenceStyleImport; StyleComponents",
+      "remaining": "إنشاء ومحرر كامل ومجلدات ومفضلة ووسوم وتصدير/استيراد ونسخ جزئي موجودة. القطارة الدائرية وآخر نمط بضغطة واحدة وتوافق كل خصائص حزم الأصل غير مثبتة."
+    },
+    {
+      "id": "F082",
+      "group": "الأنماط والخطوط",
+      "feature": "استيراد/تصدير حزم أنماط ووسوم",
+      "original_evidence": "ImportedStylesActivity؛ exportStylesPackage؛ tags export",
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "StyleStore; StyleLibraryView; SavedStyleDesigner; ReferenceStyleImport; StyleComponents",
+      "remaining": "إنشاء ومحرر كامل ومجلدات ومفضلة ووسوم وتصدير/استيراد ونسخ جزئي موجودة. القطارة الدائرية وآخر نمط بضغطة واحدة وتوافق كل خصائص حزم الأصل غير مثبتة."
+    },
+    {
+      "id": "F083",
+      "group": "الأنماط والخطوط",
+      "feature": "قطارة النمط ونسخ آخر نمط",
+      "original_evidence": "Radial STYLE_PIPETTE؛ btnInlineLastStyle",
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "StyleStore; StyleLibraryView; SavedStyleDesigner; ReferenceStyleImport; StyleComponents",
+      "remaining": "إنشاء ومحرر كامل ومجلدات ومفضلة ووسوم وتصدير/استيراد ونسخ جزئي موجودة. القطارة الدائرية وآخر نمط بضغطة واحدة وتوافق كل خصائص حزم الأصل غير مثبتة."
+    },
+    {
+      "id": "F084",
+      "group": "الأنماط والخطوط",
+      "feature": "مكتبة خطوط عربية/إنجليزية/مستوردة بفلاتر ومجموعات",
+      "original_evidence": "FontLibraryActivity؛ FontsGridScreenKt",
+      "current_status": "موجود",
+      "ios_evidence": "FontLibraryView; FontPackage",
+      "remaining": "فلاتر عربية/إنجليزية ومفضلة وآخر استخدام واستيراد وتصدير موجودة؛ مجموعات الأصل التفصيلية تحتاج مقارنة."
+    },
+    {
+      "id": "F085",
+      "group": "الأنماط والخطوط",
+      "feature": "تصدير الخطوط/حزمها وحذف المخصصة",
+      "original_evidence": "ImportedFontsActivity export/import flows",
+      "current_status": "موجود",
+      "ios_evidence": "FontLibraryView; FontPackage",
+      "remaining": "فلاتر عربية/إنجليزية ومفضلة وآخر استخدام واستيراد وتصدير موجودة؛ مجموعات الأصل التفصيلية تحتاج مقارنة."
+    },
+    {
+      "id": "F086",
+      "group": "الأنماط والخطوط",
+      "feature": "مزامنة الخطوط والأنماط وGoogle Drive",
+      "original_evidence": "ImportedFonts/Styles syncStyleToDrive/syncAll؛ dialog_cloud_manager",
+      "current_status": "اعتماد خارجي",
+      "ios_evidence": "لا يوجد اتصال Google Drive للمزامنة في iOS",
+      "remaining": "مزامنة الخطوط والأنماط تحتاج تكامل Drive رسمي؛ النسخ المحلي ليس مزامنة سحابية."
+    },
+    {
+      "id": "F087",
+      "group": "الصور والأشكال",
+      "feature": "إضافة صورة كطبقة مع حفظ المصدر",
+      "original_evidence": "btnToolImage؛ ImageSourceSelectionDialog",
+      "current_status": "موجود",
+      "ios_evidence": "EditorView Photos picker; LayerInteraction",
+      "remaining": "إضافة وتحريك وتحويل/نسخ/حذف الصورة موجودة؛ النص يبقى منفصلًا."
+    },
+    {
+      "id": "F088",
+      "group": "الصور والأشكال",
+      "feature": "موضع الصورة/دورانها/تمديدها/نسخها وحذفها",
+      "original_evidence": "btnImgPosition؛ view transforms",
+      "current_status": "موجود",
+      "ios_evidence": "EditorView Photos picker; LayerInteraction",
+      "remaining": "إضافة وتحريك وتحويل/نسخ/حذف الصورة موجودة؛ النص يبقى منفصلًا."
+    },
+    {
+      "id": "F089",
+      "group": "الصور والأشكال",
+      "feature": "قص الصورة/قص الخلفية والشفاء بقصّ المنطقة",
+      "original_evidence": "ImageCropActivity؛ HEAL_CROP؛ btnToolCropBg",
+      "current_status": "جزئي",
+      "ios_evidence": "PageOperations cropped/canvasResized; BackgroundReplacement; EditorView",
+      "remaining": "قص/تغيير لوحة الفصل واستبدال الأصل موجود؛ أداة قص طبقة صورة وشفاء من قص مطابق للأصل ناقصة."
+    },
+    {
+      "id": "F090",
+      "group": "الصور والأشكال",
+      "feature": "استبدال الخلفية وتغيير مقاسها",
+      "original_evidence": "btnReplaceBackground؛ btnImgResize؛ dialog_resize_canvas",
+      "current_status": "جزئي",
+      "ios_evidence": "PageOperations cropped/canvasResized; BackgroundReplacement; EditorView",
+      "remaining": "قص/تغيير لوحة الفصل واستبدال الأصل موجود؛ أداة قص طبقة صورة وشفاء من قص مطابق للأصل ناقصة."
+    },
+    {
+      "id": "F091",
+      "group": "الصور والأشكال",
+      "feature": "منظور الصورة وعتامتها ومزجها",
+      "original_evidence": "btnImgPerspective/btnImgOpacity",
+      "current_status": "جزئي",
+      "ios_evidence": "EditorView object opacity/position; LayerRenderer",
+      "remaining": "عتامة ومزج وتحويل الصورة موجود؛ منظور رباعي/شبكي خاص بالصورة غير موصل كأداة كاملة."
+    },
+    {
+      "id": "F092",
+      "group": "الصور والأشكال",
+      "feature": "سطوع/تباين/تشبع/تعريض/حرارة/صبغة/ظل/إضاءة/درجة/حواف",
+      "original_evidence": "layout_image_adjustments_panel 10 parameters",
+      "current_status": "ناقص",
+      "ios_evidence": "No image adjustment/effect stack model or ImageEffectsPanel equivalent in App",
+      "remaining": "ضبط وفلاتر وتكديس تأثيرات الصور، الفرشاة السحرية، قناع حر لمسح/استرجاع الصورة، ومسودات الصور غير مكتملة/غير موجودة. قناع النص منفصل."
+    },
+    {
+      "id": "F093",
+      "group": "الصور والأشكال",
+      "feature": "فلاتر الصورة وقوالبها",
+      "original_evidence": "ImageFiltersPanel؛ item_filter_preset",
+      "current_status": "ناقص",
+      "ios_evidence": "No image adjustment/effect stack model or ImageEffectsPanel equivalent in App",
+      "remaining": "ضبط وفلاتر وتكديس تأثيرات الصور، الفرشاة السحرية، قناع حر لمسح/استرجاع الصورة، ومسودات الصور غير مكتملة/غير موجودة. قناع النص منفصل."
+    },
+    {
+      "id": "F094",
+      "group": "الصور والأشكال",
+      "feature": "تأثيرات الصورة: 13 نوعًا مع تكديس وترتيب/تعطيل",
+      "original_evidence": "ImageEffectType؛ ImageEffectsPanel؛ item_active_effect",
+      "current_status": "ناقص",
+      "ios_evidence": "No image adjustment/effect stack model or ImageEffectsPanel equivalent in App",
+      "remaining": "ضبط وفلاتر وتكديس تأثيرات الصور، الفرشاة السحرية، قناع حر لمسح/استرجاع الصورة، ومسودات الصور غير مكتملة/غير موجودة. قناع النص منفصل."
+    },
+    {
+      "id": "F095",
+      "group": "الصور والأشكال",
+      "feature": "الفرشاة السحرية: مؤثر موضعي بقناع",
+      "original_evidence": "layout_magic_brush_panel 7 types",
+      "current_status": "ناقص",
+      "ios_evidence": "No image adjustment/effect stack model or ImageEffectsPanel equivalent in App",
+      "remaining": "ضبط وفلاتر وتكديس تأثيرات الصور، الفرشاة السحرية، قناع حر لمسح/استرجاع الصورة، ومسودات الصور غير مكتملة/غير موجودة. قناع النص منفصل."
+    },
+    {
+      "id": "F096",
+      "group": "الصور والأشكال",
+      "feature": "مسح واسترجاع الصورة بقناع",
+      "original_evidence": "btnImgEraser؛ EraserEditorPanel",
+      "current_status": "ناقص",
+      "ios_evidence": "No image adjustment/effect stack model or ImageEffectsPanel equivalent in App",
+      "remaining": "ضبط وفلاتر وتكديس تأثيرات الصور، الفرشاة السحرية، قناع حر لمسح/استرجاع الصورة، ومسودات الصور غير مكتملة/غير موجودة. قناع النص منفصل."
+    },
+    {
+      "id": "F097",
+      "group": "الصور والأشكال",
+      "feature": "مسودات الصور وإدارة المحفوظات",
+      "original_evidence": "ImageDraftsBottomSheet؛ dialog_image_drafts",
+      "current_status": "ناقص",
+      "ios_evidence": "No image adjustment/effect stack model or ImageEffectsPanel equivalent in App",
+      "remaining": "ضبط وفلاتر وتكديس تأثيرات الصور، الفرشاة السحرية، قناع حر لمسح/استرجاع الصورة، ومسودات الصور غير مكتملة/غير موجودة. قناع النص منفصل."
+    },
+    {
+      "id": "F098",
+      "group": "الصور والأشكال",
+      "feature": "الأشكال وفقاعات الكلام الأساسية",
+      "original_evidence": "ShapeType 21؛ dialog_shape_picker",
+      "current_status": "جزئي",
+      "ios_evidence": "LayerRenderer.shapePath; EditorView shapes/text inspector",
+      "remaining": "أشكال أساسية ولون وحدود وتحويل وعتامة موجودة؛ منظور ومسح الشكل المتقدم وبعض فقاعات الأصل ناقصة."
+    },
+    {
+      "id": "F099",
+      "group": "الصور والأشكال",
+      "feature": "أدوات الأشكال: لون/موضع/منظور/مسح/شفافية",
+      "original_evidence": "activity_editor shape strip",
+      "current_status": "جزئي",
+      "ios_evidence": "LayerRenderer.shapePath; EditorView shapes/text inspector",
+      "remaining": "أشكال أساسية ولون وحدود وتحويل وعتامة موجودة؛ منظور ومسح الشكل المتقدم وبعض فقاعات الأصل ناقصة."
+    },
+    {
+      "id": "F100",
+      "group": "الرسم والتنظيف",
+      "feature": "فرشاة صلبة/مائية/مضيئة وحجم ولون",
+      "original_evidence": "DrawingBrushPanel NORMAL/WATERCOLOR/NEON",
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "BrushRenderer; AuxiliaryViews; CanvasHost; SmudgeSession; FillBucket; Cleaner; CleaningPreview",
+      "remaining": "الفرشاة/خامة مخصصة/شفافية/أشكال/ممحات/طمس/دلو/تنظيف/معاينة موجودة. أدوات الأصل الإضافية والتكافؤ البصري لكل فرشاة لا تزال غير مثبتة."
+    },
+    {
+      "id": "F101",
+      "group": "الرسم والتنظيف",
+      "feature": "فرشاة SOFT/MARKER/CUSTOM_TEXTURE",
+      "original_evidence": "BrushStyle enum؛ DrawingBrushPanel",
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "BrushRenderer; AuxiliaryViews; CanvasHost; SmudgeSession; FillBucket; Cleaner; CleaningPreview",
+      "remaining": "الفرشاة/خامة مخصصة/شفافية/أشكال/ممحات/طمس/دلو/تنظيف/معاينة موجودة. أدوات الأصل الإضافية والتكافؤ البصري لكل فرشاة لا تزال غير مثبتة."
+    },
+    {
+      "id": "F102",
+      "group": "الرسم والتنظيف",
+      "feature": "شفافية الفرشاة وفرشاة Plus",
+      "original_evidence": "layout_drawing_brush_panel opacity؛ DrawingBrushPlusPanel",
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "BrushRenderer; AuxiliaryViews; CanvasHost; SmudgeSession; FillBucket; Cleaner; CleaningPreview",
+      "remaining": "الفرشاة/خامة مخصصة/شفافية/أشكال/ممحات/طمس/دلو/تنظيف/معاينة موجودة. أدوات الأصل الإضافية والتكافؤ البصري لكل فرشاة لا تزال غير مثبتة."
+    },
+    {
+      "id": "F103",
+      "group": "الرسم والتنظيف",
+      "feature": "ممحاة الرسم ومسح اللوحة",
+      "original_evidence": "DrawingEraserPanel clearCanvas",
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "BrushRenderer; AuxiliaryViews; CanvasHost; SmudgeSession; FillBucket; Cleaner; CleaningPreview",
+      "remaining": "الفرشاة/خامة مخصصة/شفافية/أشكال/ممحات/طمس/دلو/تنظيف/معاينة موجودة. أدوات الأصل الإضافية والتكافؤ البصري لكل فرشاة لا تزال غير مثبتة."
+    },
+    {
+      "id": "F104",
+      "group": "الرسم والتنظيف",
+      "feature": "الرسم: مستطيل/دائرة/خط مستقيم وتعبئة",
+      "original_evidence": "DrawingTool enum؛ DrawingShapesPanel",
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "BrushRenderer; AuxiliaryViews; CanvasHost; SmudgeSession; FillBucket; Cleaner; CleaningPreview",
+      "remaining": "الفرشاة/خامة مخصصة/شفافية/أشكال/ممحات/طمس/دلو/تنظيف/معاينة موجودة. أدوات الأصل الإضافية والتكافؤ البصري لكل فرشاة لا تزال غير مثبتة."
+    },
+    {
+      "id": "F105",
+      "group": "الرسم والتنظيف",
+      "feature": "طمس Smudge وحجم وقوة",
+      "original_evidence": "DrawingSmudgePanel؛ DrawingTool.SMUDGE",
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "BrushRenderer; AuxiliaryViews; CanvasHost; SmudgeSession; FillBucket; Cleaner; CleaningPreview",
+      "remaining": "الفرشاة/خامة مخصصة/شفافية/أشكال/ممحات/طمس/دلو/تنظيف/معاينة موجودة. أدوات الأصل الإضافية والتكافؤ البصري لكل فرشاة لا تزال غير مثبتة."
+    },
+    {
+      "id": "F106",
+      "group": "الرسم والتنظيف",
+      "feature": "دلو التعبئة Fill Bucket",
+      "original_evidence": "RadialMenuTool.FILL_BUCKET؛ EditorCanvasView.fillBucketAt",
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "BrushRenderer; AuxiliaryViews; CanvasHost; SmudgeSession; FillBucket; Cleaner; CleaningPreview",
+      "remaining": "الفرشاة/خامة مخصصة/شفافية/أشكال/ممحات/طمس/دلو/تنظيف/معاينة موجودة. أدوات الأصل الإضافية والتكافؤ البصري لكل فرشاة لا تزال غير مثبتة."
+    },
+    {
+      "id": "F107",
+      "group": "الرسم والتنظيف",
+      "feature": "تنظيف منطقة OpenCV Inpaint",
+      "original_evidence": "QUICK_CLEANER؛ layout_inpaint_panel",
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "BrushRenderer; AuxiliaryViews; CanvasHost; SmudgeSession; FillBucket; Cleaner; CleaningPreview",
+      "remaining": "الفرشاة/خامة مخصصة/شفافية/أشكال/ممحات/طمس/دلو/تنظيف/معاينة موجودة. أدوات الأصل الإضافية والتكافؤ البصري لكل فرشاة لا تزال غير مثبتة."
+    },
+    {
+      "id": "F108",
+      "group": "الرسم والتنظيف",
+      "feature": "معاينة التنظيف/تنويعات/اعتماد/إلغاء",
+      "original_evidence": "layout_inpaint_variations_panel؛ cleaner pill",
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "BrushRenderer; AuxiliaryViews; CanvasHost; SmudgeSession; FillBucket; Cleaner; CleaningPreview",
+      "remaining": "الفرشاة/خامة مخصصة/شفافية/أشكال/ممحات/طمس/دلو/تنظيف/معاينة موجودة. أدوات الأصل الإضافية والتكافؤ البصري لكل فرشاة لا تزال غير مثبتة."
+    },
+    {
+      "id": "F109",
+      "group": "الطبقات",
+      "feature": "طبقات نص/صورة/شكل/رسم منفصلة",
+      "original_evidence": "LayerData/TextLayer/ImageLayer/ShapeLayer/DrawingLayer",
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "LayerOrdering; LayerOperations; LayerSheet; AuxiliaryViews",
+      "remaining": "فلاتر ومعاينة وتحديد ودمج وتسطيح وتجميع موجودة. المجموعات المسطحة لا تثبت مجلدات متداخلة أو أقنعة قص مطابقة."
+    },
+    {
+      "id": "F110",
+      "group": "الطبقات",
+      "feature": "ترتيب/إظهار/إخفاء/قفل/نسخ/حذف/شفافية/مزج",
+      "original_evidence": "dialog_layers_glass؛ item_layer",
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "LayerOrdering; LayerOperations; LayerSheet; AuxiliaryViews",
+      "remaining": "فلاتر ومعاينة وتحديد ودمج وتسطيح وتجميع موجودة. المجموعات المسطحة لا تثبت مجلدات متداخلة أو أقنعة قص مطابقة."
+    },
+    {
+      "id": "F111",
+      "group": "الطبقات",
+      "feature": "فلاتر أنواع الطبقات ومعاينة مكبرة/تحديد متعدد",
+      "original_evidence": "dialog_layers_glass؛ dialog_preview_layer",
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "LayerOrdering; LayerOperations; LayerSheet; AuxiliaryViews",
+      "remaining": "فلاتر ومعاينة وتحديد ودمج وتسطيح وتجميع موجودة. المجموعات المسطحة لا تثبت مجلدات متداخلة أو أقنعة قص مطابقة."
+    },
+    {
+      "id": "F112",
+      "group": "الطبقات",
+      "feature": "دمج طبقات/تسطيح/تجميع",
+      "original_evidence": "EditorCanvasView layer merge؛ quick merge",
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "LayerOrdering; LayerOperations; LayerSheet; AuxiliaryViews",
+      "remaining": "فلاتر ومعاينة وتحديد ودمج وتسطيح وتجميع موجودة. المجموعات المسطحة لا تثبت مجلدات متداخلة أو أقنعة قص مطابقة."
+    },
+    {
+      "id": "F040",
+      "group": "التايبر والقنص",
+      "feature": "القنص: تحليل الفقاعة وتحديد الأهداف بالترتيب",
+      "original_evidence": "engine/q.java؛ view/v.java؛ layout_typer_panel",
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "SniperDetector; BubbleBoundary.hpp; TyperStore.place; ContourTypesetter",
+      "remaining": "تحديد وتوزيع وتنسيق موجودة. الحدود المفتوحة والزخارف التي تشبه محيط فقاعة قد تتطلب تحديدًا يدويًا."
+    },
+    {
+      "id": "F041",
+      "group": "التايبر والقنص",
+      "feature": "توزيع عدة فقاعات على أهداف القنص",
+      "original_evidence": "typer/w.java pasteSniperTargets",
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "SniperDetector; BubbleBoundary.hpp; TyperStore.place; ContourTypesetter",
+      "remaining": "تحديد وتوزيع وتنسيق موجودة. الحدود المفتوحة والزخارف التي تشبه محيط فقاعة قد تتطلب تحديدًا يدويًا."
+    },
+    {
+      "id": "F042",
+      "group": "التايبر والقنص",
+      "feature": "ذخيرة القنص وربط الاستحقاقات والحساب",
+      "original_evidence": "Prefs sniper_ammo؛ typer/w.java deductions",
+      "current_status": "اعتماد خادم",
+      "ios_evidence": "ReferenceService entitlements",
+      "remaining": "لا تُغيّر ذخيرة أو نقاط الخادم؛ الأدوات المحلية مجانية."
+    },
+    {
+      "id": "F043",
+      "group": "التايبر والقنص",
+      "feature": "نافذة عائمة فوق التطبيقات",
+      "original_evidence": "FloatingWidgetService؛ FolatingWidgetDashboard",
+      "current_status": "بديل iOS",
+      "ios_evidence": "TyperPanel",
+      "remaining": "نافذة داخل التطبيق؛ iOS لا يسمح بنافذة عامة فوق التطبيقات الأخرى."
+    },
+    {
+      "id": "F150",
+      "group": "كتالوج تأثيرات النص",
+      "feature": "BLUR",
+      "original_evidence": "data/model/TextEffect.java؛ EffectsEditorPanel",
+      "current_status": "جزئي",
+      "ios_evidence": "TextRaster; LayerRenderer; TextArtRenderer; TextInspector",
+      "remaining": "تنفيذ محلي موجود؛ التكافؤ البصري والخوارزمي مع كل تأثير الأصل غير مثبت. RGB/شرائح Glitch مستلهمان من فيديو ibisPaint."
+    },
+    {
+      "id": "F151",
+      "group": "كتالوج تأثيرات النص",
+      "feature": "GLITCH",
+      "original_evidence": "data/model/TextEffect.java؛ EffectsEditorPanel",
+      "current_status": "جزئي",
+      "ios_evidence": "TextArtRenderer.swift; TextInspector.swift; ColorAndReferenceEffectsTests.swift",
+      "remaining": "أضيف Glitch بشرائح أفقية قابلة لضبط الارتفاع والإزاحة وإزاحة اللون وتوزيع ثابت قابل للتغيير، دون تحويل النص إلى صورة. مطابقة كل معامل ونتيجة تأثير GLITCH في YTyper تحتاج مقارنة تفاعلية مباشرة؛ هذه الدفعة تطابق نوع المؤثر في فيديو ibisPaint."
+    },
+    {
+      "id": "F152",
+      "group": "كتالوج تأثيرات النص",
+      "feature": "SLICE",
+      "original_evidence": "data/model/TextEffect.java؛ EffectsEditorPanel",
+      "current_status": "جزئي",
+      "ios_evidence": "TextRaster; LayerRenderer; TextArtRenderer; TextInspector",
+      "remaining": "تنفيذ محلي موجود؛ التكافؤ البصري والخوارزمي مع كل تأثير الأصل غير مثبت. RGB/شرائح Glitch مستلهمان من فيديو ibisPaint."
+    },
+    {
+      "id": "F153",
+      "group": "كتالوج تأثيرات النص",
+      "feature": "NEON",
+      "original_evidence": "data/model/TextEffect.java؛ EffectsEditorPanel",
+      "current_status": "جزئي",
+      "ios_evidence": "TextRaster; LayerRenderer; TextArtRenderer; TextInspector",
+      "remaining": "تنفيذ محلي موجود؛ التكافؤ البصري والخوارزمي مع كل تأثير الأصل غير مثبت. RGB/شرائح Glitch مستلهمان من فيديو ibisPaint."
+    },
+    {
+      "id": "F154",
+      "group": "كتالوج تأثيرات النص",
+      "feature": "FADE",
+      "original_evidence": "data/model/TextEffect.java؛ EffectsEditorPanel",
+      "current_status": "جزئي",
+      "ios_evidence": "TextRaster; LayerRenderer; TextArtRenderer; TextInspector",
+      "remaining": "تنفيذ محلي موجود؛ التكافؤ البصري والخوارزمي مع كل تأثير الأصل غير مثبت. RGB/شرائح Glitch مستلهمان من فيديو ibisPaint."
+    },
+    {
+      "id": "F155",
+      "group": "كتالوج تأثيرات النص",
+      "feature": "WARP",
+      "original_evidence": "data/model/TextEffect.java؛ EffectsEditorPanel",
+      "current_status": "جزئي",
+      "ios_evidence": "TextRaster; LayerRenderer; TextArtRenderer; TextInspector",
+      "remaining": "تنفيذ محلي موجود؛ التكافؤ البصري والخوارزمي مع كل تأثير الأصل غير مثبت. RGB/شرائح Glitch مستلهمان من فيديو ibisPaint."
+    },
+    {
+      "id": "F156",
+      "group": "كتالوج تأثيرات النص",
+      "feature": "SHADOW",
+      "original_evidence": "data/model/TextEffect.java؛ EffectsEditorPanel",
+      "current_status": "جزئي",
+      "ios_evidence": "TextRaster; LayerRenderer; TextArtRenderer; TextInspector",
+      "remaining": "تنفيذ محلي موجود؛ التكافؤ البصري والخوارزمي مع كل تأثير الأصل غير مثبت. RGB/شرائح Glitch مستلهمان من فيديو ibisPaint."
+    },
+    {
+      "id": "F157",
+      "group": "كتالوج تأثيرات النص",
+      "feature": "ERROR",
+      "original_evidence": "data/model/TextEffect.java؛ EffectsEditorPanel",
+      "current_status": "جزئي",
+      "ios_evidence": "TextRaster; LayerRenderer; TextArtRenderer; TextInspector",
+      "remaining": "تنفيذ محلي موجود؛ التكافؤ البصري والخوارزمي مع كل تأثير الأصل غير مثبت. RGB/شرائح Glitch مستلهمان من فيديو ibisPaint."
+    },
+    {
+      "id": "F158",
+      "group": "كتالوج تأثيرات النص",
+      "feature": "ECHO",
+      "original_evidence": "data/model/TextEffect.java؛ EffectsEditorPanel",
+      "current_status": "ناقص",
+      "ios_evidence": "TextEffect enum lacks these cases",
+      "remaining": "تأثيرات النص المتقدمة/shaders غير موجودة في iOS."
+    },
+    {
+      "id": "F159",
+      "group": "كتالوج تأثيرات النص",
+      "feature": "LIQUID",
+      "original_evidence": "data/model/TextEffect.java؛ EffectsEditorPanel",
+      "current_status": "ناقص",
+      "ios_evidence": "TextEffect enum lacks these cases",
+      "remaining": "تأثيرات النص المتقدمة/shaders غير موجودة في iOS."
+    },
+    {
+      "id": "F160",
+      "group": "كتالوج تأثيرات النص",
+      "feature": "CRIMSON_TEARS",
+      "original_evidence": "data/model/TextEffect.java؛ EffectsEditorPanel",
+      "current_status": "ناقص",
+      "ios_evidence": "TextEffect enum lacks these cases",
+      "remaining": "تأثيرات النص المتقدمة/shaders غير موجودة في iOS."
+    },
+    {
+      "id": "F161",
+      "group": "كتالوج تأثيرات النص",
+      "feature": "ABYSSAL",
+      "original_evidence": "data/model/TextEffect.java؛ EffectsEditorPanel",
+      "current_status": "ناقص",
+      "ios_evidence": "TextEffect enum lacks these cases",
+      "remaining": "تأثيرات النص المتقدمة/shaders غير موجودة في iOS."
+    },
+    {
+      "id": "F162",
+      "group": "كتالوج تأثيرات النص",
+      "feature": "PANIC_TREMOR",
+      "original_evidence": "data/model/TextEffect.java؛ EffectsEditorPanel",
+      "current_status": "ناقص",
+      "ios_evidence": "TextEffect enum lacks these cases",
+      "remaining": "تأثيرات النص المتقدمة/shaders غير موجودة في iOS."
+    },
+    {
+      "id": "F163",
+      "group": "كتالوج تأثيرات النص",
+      "feature": "FIRE_SHADER",
+      "original_evidence": "data/model/TextEffect.java؛ EffectsEditorPanel",
+      "current_status": "ناقص",
+      "ios_evidence": "TextEffect enum lacks these cases",
+      "remaining": "تأثيرات النص المتقدمة/shaders غير موجودة في iOS."
+    },
+    {
+      "id": "F164",
+      "group": "كتالوج تأثيرات النص",
+      "feature": "GLASS_SHADER",
+      "original_evidence": "data/model/TextEffect.java؛ EffectsEditorPanel",
+      "current_status": "ناقص",
+      "ios_evidence": "TextEffect enum lacks these cases",
+      "remaining": "تأثيرات النص المتقدمة/shaders غير موجودة في iOS."
+    },
+    {
+      "id": "F165",
+      "group": "كتالوج تأثيرات النص",
+      "feature": "AURA_SHADER",
+      "original_evidence": "data/model/TextEffect.java؛ EffectsEditorPanel",
+      "current_status": "ناقص",
+      "ios_evidence": "TextEffect enum lacks these cases",
+      "remaining": "تأثيرات النص المتقدمة/shaders غير موجودة في iOS."
+    },
+    {
+      "id": "F166",
+      "group": "كتالوج تأثيرات النص",
+      "feature": "NEBULA_SHADER",
+      "original_evidence": "data/model/TextEffect.java؛ EffectsEditorPanel",
+      "current_status": "ناقص",
+      "ios_evidence": "TextEffect enum lacks these cases",
+      "remaining": "تأثيرات النص المتقدمة/shaders غير موجودة في iOS."
+    },
+    {
+      "id": "F167",
+      "group": "كتالوج تأثيرات النص",
+      "feature": "PLASMA_SHADER",
+      "original_evidence": "data/model/TextEffect.java؛ EffectsEditorPanel",
+      "current_status": "ناقص",
+      "ios_evidence": "TextEffect enum lacks these cases",
+      "remaining": "تأثيرات النص المتقدمة/shaders غير موجودة في iOS."
+    },
+    {
+      "id": "F168",
+      "group": "كتالوج تأثيرات النص",
+      "feature": "HOLOGRAPHIC_SHADER",
+      "original_evidence": "data/model/TextEffect.java؛ EffectsEditorPanel",
+      "current_status": "ناقص",
+      "ios_evidence": "TextEffect enum lacks these cases",
+      "remaining": "تأثيرات النص المتقدمة/shaders غير موجودة في iOS."
+    },
+    {
+      "id": "F169",
+      "group": "كتالوج تأثيرات النص",
+      "feature": "ELECTRIC_SHADER",
+      "original_evidence": "data/model/TextEffect.java؛ EffectsEditorPanel",
+      "current_status": "ناقص",
+      "ios_evidence": "TextEffect enum lacks these cases",
+      "remaining": "تأثيرات النص المتقدمة/shaders غير موجودة في iOS."
+    },
+    {
+      "id": "F170",
+      "group": "كتالوج تأثيرات الصور",
+      "feature": "BLUR",
+      "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel",
+      "current_status": "ناقص",
+      "ios_evidence": "No image effect stack",
+      "remaining": "تأثيرات الصورة ليست تأثيرات النص؛ إضافة RGB للنص لا تنجز CHROMATIC للصورة."
+    },
+    {
+      "id": "F171",
+      "group": "كتالوج تأثيرات الصور",
+      "feature": "CHROMATIC",
+      "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel",
+      "current_status": "ناقص",
+      "ios_evidence": "No image effect stack",
+      "remaining": "تأثيرات الصورة ليست تأثيرات النص؛ إضافة RGB للنص لا تنجز CHROMATIC للصورة."
+    },
+    {
+      "id": "F172",
+      "group": "كتالوج تأثيرات الصور",
+      "feature": "GLITCH",
+      "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel",
+      "current_status": "ناقص",
+      "ios_evidence": "No image effect stack",
+      "remaining": "تأثيرات الصورة ليست تأثيرات النص؛ إضافة RGB للنص لا تنجز CHROMATIC للصورة."
+    },
+    {
+      "id": "F173",
+      "group": "كتالوج تأثيرات الصور",
+      "feature": "VIGNETTE",
+      "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel",
+      "current_status": "ناقص",
+      "ios_evidence": "No image effect stack",
+      "remaining": "تأثيرات الصورة ليست تأثيرات النص؛ إضافة RGB للنص لا تنجز CHROMATIC للصورة."
+    },
+    {
+      "id": "F174",
+      "group": "كتالوج تأثيرات الصور",
+      "feature": "GRAIN",
+      "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel",
+      "current_status": "ناقص",
+      "ios_evidence": "No image effect stack",
+      "remaining": "تأثيرات الصورة ليست تأثيرات النص؛ إضافة RGB للنص لا تنجز CHROMATIC للصورة."
+    },
+    {
+      "id": "F175",
+      "group": "كتالوج تأثيرات الصور",
+      "feature": "GLOW",
+      "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel",
+      "current_status": "ناقص",
+      "ios_evidence": "No image effect stack",
+      "remaining": "تأثيرات الصورة ليست تأثيرات النص؛ إضافة RGB للنص لا تنجز CHROMATIC للصورة."
+    },
+    {
+      "id": "F176",
+      "group": "كتالوج تأثيرات الصور",
+      "feature": "PIXELATE",
+      "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel",
+      "current_status": "ناقص",
+      "ios_evidence": "No image effect stack",
+      "remaining": "تأثيرات الصورة ليست تأثيرات النص؛ إضافة RGB للنص لا تنجز CHROMATIC للصورة."
+    },
+    {
+      "id": "F177",
+      "group": "كتالوج تأثيرات الصور",
+      "feature": "HALFTONE",
+      "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel",
+      "current_status": "ناقص",
+      "ios_evidence": "No image effect stack",
+      "remaining": "تأثيرات الصورة ليست تأثيرات النص؛ إضافة RGB للنص لا تنجز CHROMATIC للصورة."
+    },
+    {
+      "id": "F178",
+      "group": "كتالوج تأثيرات الصور",
+      "feature": "SLICE",
+      "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel",
+      "current_status": "ناقص",
+      "ios_evidence": "No image effect stack",
+      "remaining": "تأثيرات الصورة ليست تأثيرات النص؛ إضافة RGB للنص لا تنجز CHROMATIC للصورة."
+    },
+    {
+      "id": "F179",
+      "group": "كتالوج تأثيرات الصور",
+      "feature": "FADE",
+      "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel",
+      "current_status": "ناقص",
+      "ios_evidence": "No image effect stack",
+      "remaining": "تأثيرات الصورة ليست تأثيرات النص؛ إضافة RGB للنص لا تنجز CHROMATIC للصورة."
+    },
+    {
+      "id": "F180",
+      "group": "كتالوج تأثيرات الصور",
+      "feature": "DUOTONE",
+      "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel",
+      "current_status": "ناقص",
+      "ios_evidence": "No image effect stack",
+      "remaining": "تأثيرات الصورة ليست تأثيرات النص؛ إضافة RGB للنص لا تنجز CHROMATIC للصورة."
+    },
+    {
+      "id": "F181",
+      "group": "كتالوج تأثيرات الصور",
+      "feature": "MIRROR",
+      "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel",
+      "current_status": "ناقص",
+      "ios_evidence": "No image effect stack",
+      "remaining": "تأثيرات الصورة ليست تأثيرات النص؛ إضافة RGB للنص لا تنجز CHROMATIC للصورة."
+    },
+    {
+      "id": "F182",
+      "group": "كتالوج تأثيرات الصور",
+      "feature": "OUTLINE",
+      "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel",
+      "current_status": "ناقص",
+      "ios_evidence": "No image effect stack",
+      "remaining": "تأثيرات الصورة ليست تأثيرات النص؛ إضافة RGB للنص لا تنجز CHROMATIC للصورة."
+    }
+  ]
+}

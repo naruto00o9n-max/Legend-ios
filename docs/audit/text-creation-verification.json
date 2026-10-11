@@ -63,6 +63,39 @@
       "xcode_succeeded": true
     }
   },
-  "connected_interfaces": "pending",
-  "local_interfaces": "pending"
+  "connected_interfaces": {
+    "ipad": {
+      "passed": 22,
+      "total": 23,
+      "failures": [
+        "testFullTagEditorSavesAndReopensItsRealTextTools:209 (canvas did not exist yet)"
+      ],
+      "files_import_passed": true,
+      "manual_done_passed": true,
+      "service_gates": 2
+    },
+    "iphone": {
+      "passed": 21,
+      "total": 23,
+      "failures": [
+        "testFullTagEditorSavesAndReopensItsRealTextTools:209 (canvas did not exist yet)",
+        "testOrganizedSettingsAndDetailedGuide (foreground guide scrolling)"
+      ],
+      "files_import_passed": true,
+      "manual_done_passed": true,
+      "service_gates": 2
+    }
+  },
+  "local_interfaces": {
+    "ipad": {
+      "passed": 2,
+      "photos_repeat_passed": 1,
+      "raw_source_bytes": 48000000,
+      "untouched_source": true
+    },
+    "iphone": {
+      "status": "cancelled during local compilation at the old 80-minute deadline",
+      "no_runtime_success_claimed": true
+    }
+  }
 }
