@@ -8,6 +8,7 @@ struct StyleLibraryView:View {
     @State private var query=""
     @State private var group="الكل"
     @State private var naming=false
+    @State private var savingLayer:EditorLayer?
     @State private var editing:SavedTextStyle?
     @State private var name=""
     @State private var category="أنماطي"
@@ -29,7 +30,7 @@ struct StyleLibraryView:View {
     var filtered:[SavedTextStyle]{store.styles.filter{(group=="الكل" || $0.group==group || $0.group.hasPrefix(group+"/")) && (section != "favorites" || $0.favorite==true) && (section != "recent" || $0.lastUsed != nil) && (query.isEmpty || ($0.title+" "+($0.keywords ?? []).joined(separator:" ")).localizedCaseInsensitiveContains(query))}.sorted{section=="recent" ? ($0.lastUsed ?? .distantPast)>($1.lastUsed ?? .distantPast):$0.modified>$1.modified}}
     var body:some View {
         VStack(alignment:.leading,spacing:14){
-            HStack{Button{editing=nil;keywords="";name=model.active?.textContent.prefix(20).description ?? "";naming=true}label:{Label("حفظ نمط جديد",systemImage:"plus")}.accessibilityIdentifier("style-create");Spacer();Menu{
+            HStack{Button{editing=nil;savingLayer=model.active;keywords="";name=model.active?.textContent.prefix(20).description ?? "";naming=true}label:{Label("حفظ نمط جديد",systemImage:"plus")}.accessibilityIdentifier("style-create");Spacer();Menu{
                 Button{designID=nil;designing=DialogueTag(title:"نمط جديد",prefix:"",style:.plainText())}label:{Label("تصميم نمط في المحرر",systemImage:"textformat")}
                 Button{renamedFolder=nil;folderName="";folderNaming=true}label:{Label("إنشاء مجلد",systemImage:"folder.badge.plus")}
                 if group != "الكل"{Button("إعادة تسمية المجلد"){renamedFolder=group;folderName=group;folderNaming=true};Button("إزالة المجلد مع إبقاء أنماطه"){perform{try store.removeFolder(group);group="الكل"}}}
@@ -58,7 +59,14 @@ struct StyleLibraryView:View {
             if let exported{ShareLink(item:exported){Label("مشاركة الحزمة",systemImage:"square.and.arrow.up")}}
         }
         .sheet(isPresented:$pasteOptions){NavigationStack{List{ForEach(StyleComponent.allCases){component in Toggle(component.title,isOn:Binding(get:{components.contains(component)},set:{if $0{components.insert(component)}else{components.remove(component)}})).listRowBackground(Color.clear)}}.scrollContentBackground(.hidden).background(Palette.ink).navigationTitle("خصائص النمط").toolbar{ToolbarItem(placement:.cancellationAction){Button("إلغاء"){pasteOptions=false}};ToolbarItem(placement:.confirmationAction){Button("لصق"){perform{try store.paste(to:model,components:components);pasteOptions=false}}.disabled(components.isEmpty)}}}.preferredColorScheme(.dark)}
-        .sheet(isPresented:$naming){NavigationStack{VStack(spacing:20){SurfaceHeader(title:editing==nil ? "احفظ أسلوبك":"تفاصيل النمط",subtitle:"اسم ومجلد ووسوم للعثور عليه سريعًا",icon:"textformat");TextField("اسم النمط",text:$name).padding(16).glass(16).accessibilityIdentifier("style-name");TextField("المجلد · استخدم / للمجلدات الفرعية",text:$category).padding(16).glass(16);TextField("وسوم البحث مفصولة بفاصلة",text:$keywords).padding(16).glass(16);Spacer()}.padding(24).background(Palette.ink).toolbar{ToolbarItem(placement:.cancellationAction){Button("إلغاء"){naming=false}};ToolbarItem(placement:.confirmationAction){Button("حفظ"){perform{let id:UUID;if let editing{id=editing.id;try store.rename(id,title:name,group:category)}else if let layer=model.active{id=try store.save(title:name,group:category,layer:layer,from:model.directory)}else{throw ImageFailure.message("حدد نصًا أو استخدم تصميم نمط في المحرر")};try store.updateKeywords(id,keywords);naming=false}}.disabled(name.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty).accessibilityIdentifier("style-save-details")}}}.cookiesInterface().presentationDetents([.medium,.large])}
+        .sheet(isPresented:$naming){StyleDetailsSheet(title:name,group:category,keywords:keywords,editing:editing != nil){title,folder,words in
+            let id:UUID
+            if let editing{id=editing.id;try store.rename(id,title:title,group:folder)}
+            else if let layer=savingLayer{id=try store.save(title:title,group:folder,layer:layer,from:model.directory)}
+            else{throw ImageFailure.message("حدد نصًا أو استخدم تصميم نمط في المحرر")}
+            try store.updateKeywords(id,words)
+            name=title;category=folder;keywords=words
+        }}
         .alert(renamedFolder==nil ? "مجلد أنماط جديد":"تعديل المجلد",isPresented:$folderNaming){TextField("اسم المجلد",text:$folderName);Button("حفظ"){perform{if let old=renamedFolder{try store.renameFolder(old,to:folderName)}else{try store.createFolder(folderName)};group=folderName}};Button("إلغاء",role:.cancel){}}
         .fullScreenCover(item:$designing){tag in SavedStyleDesigner(tag:tag,replacing:designID,group:category)}
         .cookiesFileImporter(isPresented:$importer,allowedContentTypes:[UTType(filenameExtension:"cookiesstyles") ?? .zip,.zip]){result in perform{let tags=try store.importPackage(result.get());for tag in tags{try typer.saveTag(tag)}}}
@@ -66,6 +74,39 @@ struct StyleLibraryView:View {
     }
     func perform(_ action:()throws->Void){do{try action()}catch{failure=error.localizedDescription}}
 }
+/// Keep editing state and dismissal in the presented form itself. Its presenter
+/// lives in a lazily laid out inspector and can reflow after a style is saved.
+private struct StyleDetailsSheet:View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var title:String
+    @State private var group:String
+    @State private var keywords:String
+    @State private var failure:String?
+    let editing:Bool
+    let onSave:(String,String,String)throws->Void
+    init(title:String,group:String,keywords:String,editing:Bool,onSave:@escaping (String,String,String)throws->Void){
+        _title=State(initialValue:title);_group=State(initialValue:group);_keywords=State(initialValue:keywords);self.editing=editing;self.onSave=onSave
+    }
+    var body:some View{NavigationStack{
+        ScrollView{VStack(alignment:.leading,spacing:20){
+            SurfaceHeader(title:editing ? "تفاصيل النمط":"احفظ أسلوبك",subtitle:"اسم ومجلد ووسوم للعثور عليه سريعًا",icon:"textformat")
+            TextField("اسم النمط",text:$title).padding(16).glass(16).accessibilityIdentifier("style-name")
+            TextField("المجلد · استخدم / للمجلدات الفرعية",text:$group).padding(16).glass(16)
+            TextField("وسوم البحث مفصولة بفاصلة",text:$keywords).padding(16).glass(16)
+            if let failure{Label(failure,systemImage:"exclamationmark.circle").font(.callout).foregroundStyle(Palette.pale).padding(16).glass(16).accessibilityIdentifier("style-save-error")}
+        }.frame(maxWidth:560).padding(24).frame(maxWidth:.infinity)}
+        .scrollDismissesKeyboard(.interactively).background(Palette.ink)
+        .navigationTitle(editing ? "تفاصيل النمط":"حفظ نمط جديد").navigationBarTitleDisplayMode(.inline)
+        .toolbar{
+            ToolbarItem(placement:.cancellationAction){Button("إلغاء"){dismiss()}.frame(minWidth:60,minHeight:44)}
+            ToolbarItem(placement:.confirmationAction){Button{
+                do{try onSave(title,group,keywords);dismiss()}
+                catch{failure=error.localizedDescription}
+            }label:{Text("حفظ").frame(minWidth:60,minHeight:44).contentShape(Rectangle())}.disabled(title.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty).accessibilityIdentifier("style-save-details")}
+        }
+    }.cookiesInterface().presentationDetents([.large]).presentationDragIndicator(.visible)}
+}
+
 struct StylePreview:View {
     let item:SavedTextStyle
     let directory:URL

@@ -1,14 +1,14 @@
 name: Cookies Editor iPad repair and unsigned IPA
 on:
   push:
-    branches: [main]
+    branches: [main, verify/style-form-oct11]
     paths: ['App/**', 'Tests/**', 'UITests/**', 'ServicesTests/**', 'ServicesUITests/**', 'LocalUITests/**', 'project.yml', 'scripts/build_ipas.sh', 'scripts/verify_build_identity.py', 'scripts/test_simulators.sh', 'scripts/test_local_simulator.sh', 'scripts/fetch_whitening_fixtures.py', 'scripts/whitening-fixtures.json', 'scripts/verify_control_retry.py', '.github/workflows/ios-build.yml']
   workflow_dispatch:
     inputs:
       verification_scope:
         description: Full validation or an unchanged-app test regression retry
         type: choice
-        options: [full, focused, regression, controls]
+        options: [full, focused, regression, controls, styles]
         default: full
 concurrency:
   group: cookies-ios-${{ github.ref }}-${{ github.sha }}
@@ -115,9 +115,12 @@ jobs:
       - name: Interfaces, Photos and services
         if: ${{ !cancelled() }}
         env:
-          TASK_SCOPE: ${{ contains(github.event.head_commit.message, '[control hit-area retry]') && 'controls' || contains(github.event.head_commit.message, '[ui-only retry]') && 'focused' || contains(github.event.head_commit.message, '[interface test retry]') && 'regression' || inputs.verification_scope }}
+          TASK_SCOPE: ${{ contains(github.event.head_commit.message, '[style form retry]') && 'styles' || contains(github.event.head_commit.message, '[control hit-area retry]') && 'controls' || contains(github.event.head_commit.message, '[ui-only retry]') && 'focused' || contains(github.event.head_commit.message, '[interface test retry]') && 'regression' || inputs.verification_scope }}
         run: |
-          if [[ "$TASK_SCOPE" == controls ]]; then
+          if [[ "$TASK_SCOPE" == styles ]]; then
+            python3 scripts/verify_style_form_retry.py
+            bash scripts/test_simulators.sh '${{ matrix.screen }}' ui 'CookiesUITests/EditorUITests/testColorLibraryFavoritesAndNegativeLineSpacing,CookiesUITests/EditorUITests/testCreateUserStyleAndApplyGlyphGradient,CookiesUITests/EditorUITests/testOrganizedSettingsAndDetailedGuide,CookiesUITests/EditorUITests/testFullTagEditorSavesAndReopensItsRealTextTools,CookiesUITests/EditorUITests/testManualDoneRemembersOutlineForNewManualText,CookiesUITests/EditorUITests/testRealFilesPickerImportsFontAndReturnsToLibrary,CookiesUITests/EditorUITests/testPhotosImportAndIPadOrientation'
+          elif [[ "$TASK_SCOPE" == controls ]]; then
             # Only the two mechanically verified, nonvisual color-control
             # corrections may reuse the unaffected full-suite UI results.
             python3 scripts/verify_control_retry.py
