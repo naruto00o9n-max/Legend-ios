@@ -23,7 +23,7 @@ struct ChapterGalleryView:View {
         ZStack{Ambient();ScrollView{VStack(alignment:.leading,spacing:20){
             SurfaceHeader(title:chapter?.title ?? "الفصل",subtitle:"استورد، رتّب، وحرّر صفحاتك في استوديو واحد",icon:"rectangle.stack")
             HStack(spacing:8){QuietBadge(text:"\(ids.count) صفحة",icon:"rectangle.stack");if selecting{QuietBadge(text:"\(selection.count) محدد",icon:"checkmark.circle")};Spacer();Button(selecting ? "تم":"تحديد"){selecting.toggle();if !selecting{selection=[]}}.buttonStyle(CapsuleActionStyle(selected:selecting)).accessibilityIdentifier("chapter-select")}
-            LazyVGrid(columns:[GridItem(.adaptive(minimum:145),spacing:12)],spacing:12){
+            ResponsiveActionGrid(items:4){
                 ActionTile(title:"إضافة صور",subtitle:"من مكتبة الجهاز",icon:"photo.badge.plus"){photos=true}.accessibilityIdentifier("chapter-import-photos")
                 ActionTile(title:"فتح ملفات",subtitle:"صور وحزم ومشاريع",icon:"folder.badge.plus"){files=true}.accessibilityIdentifier("chapter-import-files")
                 ActionTile(title:"سحب الفصل",subtitle:"من رابط إلى صفحات مرتبة",icon:"globe"){browser=true}.accessibilityIdentifier("chapter-webtoon")

@@ -82,3 +82,29 @@ struct MetricField:View {
     var unit="px"
     var body:some View{HStack(spacing:12){Text(title).font(.system(size:13));Spacer();TextField(title,value:$value,format:.number).font(.system(size:15,weight:.medium,design:.monospaced)).multilineTextAlignment(.trailing).keyboardType(.numberPad).frame(width:100);Text(unit).font(.system(size:10)).foregroundStyle(Palette.quiet)}.glassField()}
 }
+
+/// Fills the available row without leaving unused columns on an iPad. Width is
+/// measured locally so split windows and rotation do not depend on screen size.
+struct ResponsiveActionGrid<Content:View>:View {
+    let itemCount:Int
+    var minimumWidth:CGFloat=145
+    @ViewBuilder var content:Content
+    @State private var width:CGFloat=0
+    init(items:Int,minimumWidth:CGFloat=145,@ViewBuilder content:()->Content){
+        itemCount=items;self.minimumWidth=minimumWidth;self.content=content()
+    }
+    private var columns:[GridItem]{
+        let available=width>0 ? width:minimumWidth*2+12
+        let count=max(1,min(itemCount,Int((available+12)/(minimumWidth+12))))
+        return Array(repeating:GridItem(.flexible(minimum:0),spacing:12),count:count)
+    }
+    var body:some View{
+        LazyVGrid(columns:columns,spacing:12){content}
+            .background(GeometryReader{geometry in Color.clear.preference(key:ActionGridWidth.self,value:geometry.size.width)})
+            .onPreferenceChange(ActionGridWidth.self){value in if value.isFinite,abs(width-value)>1{width=value}}
+    }
+}
+private struct ActionGridWidth:PreferenceKey {
+    static var defaultValue:CGFloat=0
+    static func reduce(value:inout CGFloat,nextValue:()->CGFloat){value=nextValue()}
+}
