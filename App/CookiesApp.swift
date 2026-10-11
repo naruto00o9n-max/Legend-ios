@@ -13,8 +13,9 @@ struct CookiesSessionRoot:View {
     @StateObject private var styles=StyleStore()
     @AppStorage("welcome-complete") var entered=false
     @State private var account=false
+    @Environment(\.scenePhase) private var phase
     var body:some View {Group{if entered{NavigationStack{LibraryView()}}else{WelcomeView(begin:{withAnimation(.easeInOut(duration:0.3)){entered=true};account=NetworkPolicy.enabled},edit:{withAnimation(.easeInOut(duration:0.3)){entered=true}})}}
         .fullScreenCover(isPresented:$account){if NetworkPolicy.enabled{AccountView()}}.onOpenURL{url in if url.isFileURL{Task{await library.importImage(url,parent:nil)}}}
-        .task{ColorLibraryStore.shared.reload()}.environmentObject(library).environmentObject(service).environmentObject(typer).environmentObject(styles).cookiesInterface().dynamicTypeSize(.small ... .xxxLarge)
+        .task{ColorLibraryStore.shared.reload()}.onChange(of:phase){_,value in if value != .active{do{try ColorLibraryStore.shared.flushIfNeeded()}catch{ColorLibraryStore.shared.error=error.localizedDescription}}}.environmentObject(library).environmentObject(service).environmentObject(typer).environmentObject(styles).cookiesInterface().dynamicTypeSize(.small ... .xxxLarge)
     }
 }

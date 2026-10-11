@@ -93,6 +93,17 @@ struct StylePackage:Codable {
         next[index].title=title;next[index].group=group.isEmpty ? "أنماطي":group;next[index].modified=Date();try commit(next)
     }
     func createFolder(_ title:String)throws{let value=title.trimmingCharacters(in:.whitespacesAndNewlines);guard storageReadable,!value.isEmpty else{throw ImageFailure.message("اكتب اسم المجلد")};let next=Array(Set(folders+[value])).sorted();try RecoveryFile.write(next,at:directory.appendingPathComponent("folders.json"));folders=next}
+    func renameFolder(_ source:String,to destination:String)throws{
+        let title=destination.trimmingCharacters(in:.whitespacesAndNewlines);guard !title.isEmpty,title != source,!title.hasPrefix(source+"/") else{throw ImageFailure.message("اختر اسمًا آخر للمجلد")}
+        func renamed(_ name:String)->String{name==source ? title:name.hasPrefix(source+"/") ? title+String(name.dropFirst(source.count)):name}
+        var next=styles;for i in next.indices{next[i].group=renamed(next[i].group)};let newFolders=Array(Set(folders.map(renamed)+[title])).sorted()
+        try commit(next);try RecoveryFile.write(newFolders,at:directory.appendingPathComponent("folders.json"));folders=newFolders
+    }
+    func removeFolder(_ title:String)throws{
+        // Removing organization must not silently delete the user's styles.
+        var next=styles;for i in next.indices where next[i].group==title || next[i].group.hasPrefix(title+"/"){next[i].group="أنماطي"};let newFolders=folders.filter{$0 != title && !$0.hasPrefix(title+"/")}
+        try commit(next);try RecoveryFile.write(newFolders,at:directory.appendingPathComponent("folders.json"));folders=newFolders
+    }
     func toggleFavorite(_ id:UUID)throws{var next=styles;guard let i=next.firstIndex(where:{$0.id==id}) else{return};next[i].favorite = !(next[i].favorite ?? false);try commit(next)}
     func updateKeywords(_ id:UUID,_ words:String)throws{var next=styles;guard let i=next.firstIndex(where:{$0.id==id}) else{return};next[i].keywords=words.split(separator:",").map{String($0).trimmingCharacters(in:.whitespacesAndNewlines)}.filter{!$0.isEmpty};try commit(next)}
     func move(_ ids:Set<UUID>,to group:String)throws{try createFolder(group);var next=styles;for i in next.indices where ids.contains(next[i].id){next[i].group=group};try commit(next)}
@@ -134,8 +145,7 @@ struct StylePackage:Codable {
         guard let current=model.active?.style,model.active?.isLocked==false,!components.isEmpty else{throw ImageFailure.message("حدد نصًا غير مقفل واختر خصائص اللصق")}
         let merged=try StyleComponent.merge(style,into:current,selected:components)
         let next=try resolved(merged,from:components.contains(.texture) ? source:model.directory,into:model.directory)
-        model.checkpoint();model.change{$0.style=next;if includeLayout{item.transform?.apply(to:&$0)}};for color in next.usedColors{model.colorStore.record(color)}
-        var updated=styles;if let i=updated.firstIndex(where:{$0.id==item.id}){updated[i].lastUsed=Date();try commit(updated)}
+        model.checkpoint();model.change{$0.style=next};for color in next.usedColors{model.colorStore.record(color)}
     }
     func export(ids:Set<UUID>=[],tags:[DialogueTag]=[])throws->URL {
         let selected=ids.isEmpty ? styles:styles.filter{ids.contains($0.id)}

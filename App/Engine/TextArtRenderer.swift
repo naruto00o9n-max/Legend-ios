@@ -11,7 +11,7 @@ enum TextArtRenderer {
     static func draw(_ layer:EditorLayer,rect:CGRect,in c:CGContext,directory:URL)->Bool {
         guard layer.style.effectType == .chromatic || layer.style.effectType == .glitch else{return false}
         let art=layer.style.art ?? TextArtSettings()
-        var base=layer;base.style.effectType = .none;base.style.art=nil
+        var base=layer;base.style.effectType = .none;base.style.art=TextArtSettings(distance:0,angle:0,order:0,bandHeight:26,strength:0,colorShift:0,seed:0)
         let area=TextVisualBounds.rect(base)
         let orders=[[0,1,2],[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0]],order=orders[max(0,min(5,art.order))]
         let colors=[UIColor.red,UIColor.green,UIColor.blue]

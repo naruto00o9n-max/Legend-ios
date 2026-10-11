@@ -8,7 +8,7 @@ enum TextRaster {
     static let context=CIContext(options:[.cacheIntermediates:false])
     static func draw(_ layer:EditorLayer,rect:CGRect,in c:CGContext,directory:URL)->Bool {
         let s=layer.style
-        let advanced = !s.shadowGradient.isEmpty || !(s.extraStrokes ?? []).isEmpty || !(layer.textMask ?? []).isEmpty || (s.fadeAmount ?? 0)>0 || !s.textGradient.isEmpty || !s.strokeGradient.isEmpty || !s.texturePath.isEmpty || !s.perspectivePoints.isEmpty || s.isMeshMode || s.rotationX != 0 || s.rotationY != 0 || s.effectType == .blur || s.effectType == .fade
+        let advanced = s.art != nil || !s.shadowGradient.isEmpty || !(s.extraStrokes ?? []).isEmpty || !(layer.textMask ?? []).isEmpty || (s.fadeAmount ?? 0)>0 || !s.textGradient.isEmpty || !s.strokeGradient.isEmpty || !s.texturePath.isEmpty || !s.perspectivePoints.isEmpty || s.isMeshMode || s.rotationX != 0 || s.rotationY != 0 || s.effectType == .blur || s.effectType == .fade
         guard advanced,rect.width*rect.height<4_194_304 else{return false}
         let transform=c.ctm
         let requested=max(2,hypot(transform.a,transform.b),hypot(transform.c,transform.d))

@@ -27,7 +27,7 @@ struct ColorLibrary:Codable,Equatable {var version=1;var colors:[StoredColor]=[]
         let hex=value.trimmingCharacters(in:.whitespacesAndNewlines).replacingOccurrences(of:"#",with:"").uppercased()
         guard hex.count==6,hex.allSatisfy({$0.isASCII && "0123456789ABCDEF".contains($0)}) else{return nil};return hex
     }
-    func reload(){pending?.cancel();pending=nil;writer.sync{};do{try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true);library=try RecoveryFile.read(ColorLibrary.self,at:file)?.value ?? ColorLibrary();readable=true;error=nil}catch{readable=false;error=error.localizedDescription}}
+    func reload(){pending?.cancel();pending=nil;writer.sync{};do{try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true);library=try RecoveryFile.read(ColorLibrary.self,at:file)?.value ?? ColorLibrary();readable=true;error=nil}catch{readable=false;self.error=error.localizedDescription}}
     func record(_ value:String){
         guard readable,let hex=Self.normalized(value) else{return}
         if let index=library.colors.firstIndex(where:{$0.hex==hex}){library.colors[index].lastUsed=Date()}else{library.colors.append(StoredColor(hex:hex,lastUsed:Date()))}
@@ -39,5 +39,7 @@ struct ColorLibrary:Codable,Equatable {var version=1;var colors:[StoredColor]=[]
     func removeGroup(_ id:UUID){library.groups.removeAll{$0.id==id};for i in library.colors.indices{library.colors[i].groups.removeAll{$0==id}};schedule()}
     func toggleGroup(_ hex:String,_ id:UUID){guard library.groups.contains(where:{$0.id==id}),let i=library.colors.firstIndex(where:{$0.hex==hex}) else{return};if library.colors[i].groups.contains(id){library.colors[i].groups.removeAll{$0==id}}else{library.colors[i].groups.append(id)};schedule()}
     private func schedule(){guard readable else{return};pending?.cancel();let snapshot=library,url=file;let work=DispatchWorkItem{do{try RecoveryFile.write(snapshot,at:url)}catch{let message=error.localizedDescription;Task{@MainActor [weak self] in self?.error=message}}};pending=work;writer.asyncAfter(deadline:.now()+0.3,execute:work)}
+    func discardPendingWrites(){pending?.cancel();pending=nil;writer.sync{}}
+    func flushIfNeeded()throws{if pending != nil{try flush()}}
     func flush()throws{guard readable else{throw ImageFailure.message("تعذر قراءة مكتبة الألوان؛ احتُفظ ببياناتها")};pending?.cancel();pending=nil;let snapshot=library,url=file;try writer.sync{try RecoveryFile.write(snapshot,at:url)}}
 }
