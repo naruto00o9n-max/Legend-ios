@@ -127,6 +127,7 @@ import SwiftUI
     func add(_ kind:LayerKind,shape:Int=0) {
         checkpoint();let center = !EditorPreferences.smartPosition || visibleCenter == .zero ? CGPoint(x:Double(page.width)/2,y:200):visibleCenter
         var l=EditorLayer(kind:kind,name:kind == .text ? "نص جديد":"طبقة \(page.layers.count+1)");l.frame=Box(x:max(0,Double(center.x)-160),y:max(0,Double(center.y)-65),width:min(320,Double(page.width)),height:130);l.style.boxWidth=l.frame.width;l.style.fontSize=UserDefaults.standard.object(forKey:"default-text-size") as? Double ?? 48;l.shape=shape
+        if kind == .text{l.style=TextStyle.plainText(fontSize:l.style.fontSize,boxWidth:l.frame.width)}
         if kind == .drawing{l.frame=Box(x:0,y:0,width:Double(page.width),height:Double(page.height))}
         page.layers.append(l);selected=l.id;save();if kind == .text{panel = .content}
     }

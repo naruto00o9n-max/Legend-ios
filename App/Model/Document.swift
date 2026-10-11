@@ -41,6 +41,11 @@ struct TextStyle: Codable, Equatable {
     var extraStrokes:[ExtraOutline]?
     var spans: [TextRun] = []; var customWidth: Double?; var baseWidth = 0.0; var baseHeight = 0.0
 }
+extension TextStyle {
+    static func plainText(fontSize:Double=48,boxWidth:Double=320)->TextStyle{
+        var style=TextStyle();style.fontSize=fontSize;style.boxWidth=boxWidth;style.color="000000";style.strokeWidth=0;return style
+    }
+}
 struct ExtraOutline:Codable,Equatable,Identifiable {var id=UUID();var width:Double;var color:String;var gradient:[String]?;var stops:[Double]?;var angle:Double?;var gradientType:Int?}
 struct TextRun: Codable, Equatable { var start: Int; var end: Int; var color: String?; var fontSize: Double?; var isBold: Bool? }
 struct Stroke: Codable, Equatable { var points: [Point]; var width: Double; var color: String; var erase = false; var brush = "normal";var opacity:Double?;var texturePath:String?;var shape:String?;var filled:Bool? }

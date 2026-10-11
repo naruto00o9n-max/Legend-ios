@@ -17,8 +17,8 @@ struct AccountView: View {
                         HStack { Brand(); Spacer(); IconButton(icon: "xmark", title: "متابعة التحرير") { dismiss() }.accessibilityIdentifier("account-skip") }
                             .padding(.horizontal, 28).padding(.top, 20)
                         Spacer(minLength: max(36, geometry.size.height * 0.1))
-                        VStack(alignment: .leading, spacing: 22) {
-                            Image("CookiesLogo").resizable().scaledToFit().frame(width: 64, height: 64).clipShape(Circle())
+                        VStack(alignment: .leading, spacing: 20) {
+                            Image("CookiesLogo").resizable().scaledToFit().frame(width: 54, height: 54).clipShape(Circle())
                             VStack(alignment: .leading, spacing: 10) {
                                 Text(signup ? "أنشئ حسابك" : "مرحبًا بعودتك").font(.system(size: 32, weight: .semibold))
                                 Text(signup ? "حساب واحد لأعمالك ومجتمعك." : "سجّل الدخول للوصول إلى حسابك والمجتمع.").font(.system(size: 14)).foregroundStyle(Palette.quiet)
@@ -40,10 +40,10 @@ struct AccountView: View {
                             Button { submit() } label: { HStack { if service.busy { ProgressView().tint(Palette.ink) }; Text(signup ? "إنشاء الحساب" : "تسجيل الدخول") } }.buttonStyle(GoldButtonStyle(primary: true)).disabled(service.busy).accessibilityIdentifier("account-submit")
                             HStack { Rectangle().fill(.white.opacity(0.1)).frame(height: 1); Text("أو").font(.system(size: 12)).foregroundStyle(Palette.quiet); Rectangle().fill(.white.opacity(0.1)).frame(height: 1) }
                             Button { focus = nil; service.google() } label: { Label("الدخول باستخدام Google", systemImage: "globe") }.buttonStyle(GoldButtonStyle()).disabled(service.busy).accessibilityIdentifier("account-google")
-                            Text("إذا انتهى دخول Google عند localhost، فإن الخدمة لم تُهيّئ العودة إلى نسخة iOS. استخدم البريد بعد تأكيده؛ يحتاج Google إلى تعديل إعداد العودة لدى مالك الخدمة.").font(.system(size:11)).foregroundStyle(Palette.quiet).lineSpacing(4)
+                            DisclosureGroup("إذا تعذر تسجيل الدخول"){Text("تحقق من بيانات الحساب ورسالة الخطأ. إذا انتهى Google عند localhost، تحتاج إعدادات الخدمة إلى تهيئة العودة للتطبيق. جرّب البريد بعد تأكيده.").font(.system(size:11)).foregroundStyle(Palette.quiet).lineSpacing(4)}.font(.system(size:12))
                             Button(signup ? "لدي حساب بالفعل" : "إنشاء حساب جديد") { withAnimation(.easeInOut(duration: 0.2)) { signup.toggle(); service.message = nil } }.font(.system(size: 14)).frame(maxWidth: .infinity)
                             Button("متابعة التحرير") { dismiss() }.font(.system(size: 13)).foregroundStyle(Palette.quiet).frame(maxWidth: .infinity)
-                        }.frame(maxWidth: 420).padding(.horizontal, 28)
+                        }.padding(22).glass(28).frame(maxWidth: 464).padding(.horizontal, 20)
                         Spacer(minLength: 44)
                     }.frame(minHeight: geometry.size.height, alignment: .top)
                 }.scrollDismissesKeyboard(.interactively)

@@ -33,7 +33,8 @@ struct ServiceHub: View {
                 Ambient()
                 ScrollView {
                     LazyVStack(alignment:.leading,spacing:18) {
-                        HStack { Image(systemName:"magnifyingglass").foregroundStyle(Palette.quiet);TextField("ابحث في المجتمع",text:$search).font(.system(size:14));if !search.isEmpty{Button{search=""}label:{Image(systemName:"xmark.circle.fill")}} }.padding(14).glass(14)
+                        SurfaceHeader(title:"مساحة للحوار",subtitle:"أعمال المترجمين والمحررين، وأفكار تستحق المشاركة",icon:"person.2")
+                        SearchBar(placeholder:"ابحث في المجتمع",text:$search)
                         if loading && posts.isEmpty{ProgressView("جارٍ تحميل المنشورات…").frame(maxWidth:.infinity).padding(30)}
                         if let failure{VStack(alignment:.leading,spacing:12){Text(failure).font(.system(size:13));Button("إعادة المحاولة"){Task{await load()}}}.padding(18).glass(18)}
                         ForEach(Array(filtered.enumerated()),id:\.element.id) { index,post in
@@ -57,13 +58,13 @@ struct CommunityCard:View {
     let post:CommunityEntry
     var body:some View {
         VStack(alignment:.leading,spacing:16) {
-            HStack(spacing:10) { Image(systemName:"person.crop.circle.fill").font(.system(size:28)).foregroundStyle(Palette.quiet);VStack(alignment:.leading,spacing:4){Text(post.author_name ?? "عضو المجتمع").font(.system(size:12,weight:.medium));Text("من مجتمع المترجمين").font(.system(size:10)).foregroundStyle(Palette.quiet)};Spacer();if post.is_pinned==true{Image(systemName:"pin.fill").font(.system(size:13)).foregroundStyle(Palette.gold)} }
+            HStack(spacing:10) { SurfaceSymbol(icon:"person.crop.circle",size:38);VStack(alignment:.leading,spacing:4){Text(post.author_name ?? "عضو المجتمع").font(.system(size:12,weight:.medium));Text("من مجتمع المترجمين").font(.system(size:10)).foregroundStyle(Palette.quiet)};Spacer();if post.is_pinned==true{QuietBadge(text:"مثبّت",icon:"pin.fill")} }
             Text(post.title ?? "").font(.system(size:18,weight:.semibold)).multilineTextAlignment(.leading)
             if let text=post.description,!text.isEmpty{Text(text).font(.system(size:14)).foregroundStyle(.white.opacity(0.8)).lineSpacing(5).lineLimit(4).multilineTextAlignment(.leading)}
             if let media=post.media_urls?.first,let url=URL(string:media){AsyncImage(url:url){phase in switch phase{case .success(let image):image.resizable().scaledToFit();case .failure:Image(systemName:"photo").frame(height:80).frame(maxWidth:.infinity).foregroundStyle(Palette.quiet);default:ProgressView().frame(height:180).frame(maxWidth:.infinity)}}.frame(maxHeight:320).clipShape(RoundedRectangle(cornerRadius:14))}
             if let tags=post.tags,!tags.isEmpty{Text(tags.map{$0.hasPrefix("#") ? $0:"#"+$0}.joined(separator:"  ")).font(.system(size:11)).foregroundStyle(Palette.quiet)}
             Divider().overlay(.white.opacity(0.08))
-            HStack { Label("\(post.upvotes ?? 0)",systemImage:"hand.thumbsup");Spacer();Label("المنشور والتعليقات",systemImage:"bubble.right") }.font(.system(size:12)).foregroundStyle(Palette.quiet)
+            HStack { QuietBadge(text:"\(post.upvotes ?? 0)",icon:"hand.thumbsup");Spacer();Label("افتح الحوار",systemImage:"bubble.right") }.font(.system(size:12)).foregroundStyle(Palette.quiet)
         }.frame(maxWidth:.infinity,alignment:.leading).padding(20).glass(22)
     }
 }
@@ -81,7 +82,7 @@ struct CommunityDetail: View {
             if let text=post.description{Text(text).font(.system(size:15)).lineSpacing(6).textSelection(.enabled)}
             Button{Task{await vote()}}label:{Label("الإعجاب بالمنشور",systemImage:"hand.thumbsup")}.buttonStyle(GoldButtonStyle()).disabled(busy)
             HStack{Text("التعليقات").font(.system(size:18,weight:.semibold));Spacer();Text("\(comments.count)").font(.system(size:12)).foregroundStyle(Palette.quiet)}
-            ForEach(comments){comment in VStack(alignment:.leading,spacing:9){Text(comment.author_name ?? "عضو المجتمع").font(.system(size:12,weight:.semibold));Text(comment.content).font(.system(size:14)).lineSpacing(5)}.frame(maxWidth:.infinity,alignment:.leading).padding(16).glass(16)}
+            ForEach(comments){comment in VStack(alignment:.leading,spacing:9){HStack(spacing:8){SurfaceSymbol(icon:"person.crop.circle",size:28);Text(comment.author_name ?? "عضو المجتمع").font(.system(size:12,weight:.semibold));Spacer()};Text(comment.content).font(.system(size:14)).lineSpacing(5)}.frame(maxWidth:.infinity,alignment:.leading).padding(16).glass(16)}
             if comments.isEmpty{Text("لا توجد تعليقات معتمدة بعد").font(.system(size:12)).foregroundStyle(Palette.quiet)}
             if service.session==nil{Button("سجّل الدخول للمشاركة"){account=true}.buttonStyle(GoldButtonStyle())}else{
                 ArabicTextEditor(text:$reply,identifier:"community-reply").frame(height:100).glass(16)

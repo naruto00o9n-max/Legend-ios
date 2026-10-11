@@ -1,6 +1,6 @@
 # Cookies Editor · native iPhone and iPad
 
-One SwiftUI/UIKit application, with local image editing available without login and ordinary client access to the original service. White text and icons, black glass and restrained gold accents; Arabic RTL. The current reference is YTyper **4.5**, not the earlier 3.8 APK.
+A shared SwiftUI/UIKit codebase with two installable editions: the connected application, with ordinary client access to the original service and editing without login; and a standalone edition with no account/community routes or bundled service configuration. Both are named Cookies Editor and use separate bundle IDs. White text and icons, black glass and restrained gold accents; Arabic RTL. The current reference is YTyper **4.5**, not the earlier 3.8 APK.
 
 This is a development preview, **not a certified replica or a production release**. The work prioritizes real Photos import, stable image rendering, text tools and tablet layout. A temporary-email test demonstrated signup, confirmation and a real password session on the original API. The user subsequently confirmed email/password login, commenting, Typer and Sniper on their device. Google return configuration, all service features and complete interface/renderer parity remain unfinished or unverified. See [the current Typer/performance repair](docs/repair-typer-and-performance.md).
 
@@ -12,12 +12,16 @@ On an Intel Mac with Xcode 16+, Python 3.11+ and XcodeGen:
 python3 scripts/fetch_resources.py
 xcodegen generate
 bash scripts/build_ipas.sh
-bash scripts/test_simulators.sh ipad
-bash scripts/test_simulators.sh iphone
+bash scripts/test_simulators.sh ipad core
+bash scripts/test_simulators.sh ipad ui
+bash scripts/test_local_simulator.sh ipad
+bash scripts/test_simulators.sh iphone core
+bash scripts/test_simulators.sh iphone ui
+bash scripts/test_local_simulator.sh iphone
 python3 scripts/collect_evidence.py
 ```
 
-CI produces one `Cookies-Editor-unsigned.ipa`; sign it before installing. Minimum iOS/iPadOS is 17. Tests seed an actual Photos-library asset at 800×15000, exercise the application on iPad and iPhone, and export unmodified screenshot attachments and test logs. Simulator success does not certify a physical device.
+CI produces `Cookies-Editor-unsigned.ipa` and `Cookies-Editor-Local-unsigned.ipa`; sign each before installing. Local means no account/community; website chapter import remains available. The editions can coexist because their bundle IDs differ. Each IPA embeds its exact source revision, and CI checks service configuration isolation and unsigned status. Minimum iOS/iPadOS is 17. Tests seed an actual Photos-library asset at 800×15000, exercise the application on iPad and iPhone, and export unmodified screenshot attachments and test logs. Simulator success does not certify a physical device.
 
 OpenCV 4.11.0 is pinned. Simulator builds currently require x86_64 because its supplied framework has an arm64 device slice but no arm64 simulator slice. PNG uses pinned libpng with its license. Original public client configuration and 47 font files are fetched from the verified APK; no administrator credentials are used.
 
@@ -26,3 +30,7 @@ See [scope and limitations](docs/ios-status.md), [interface evidence](docs/inter
 ## Full reference inventory and completion plan
 
 See the [Arabic comparison of 182 work items](docs/audit/comparison-ar.md), [screen map](docs/audit/screen-map.md), [button/input associations](docs/audit/control-associations.csv), and [staged implementation plan](docs/audit/implementation-plan.md). Download the audit directory and open index.html for an offline searchable viewer. These are evidence-qualified work items, not a parity percentage.
+
+## Workspace refresh
+
+See [the October 11 workspace redesign](docs/audit/workspace-redesign-oct11.md): a persistent floating Typer, automatic resumption, independent editable tag colors, organized settings, chapter studio, live color feedback and a searchable Arabic guide. The earlier editor quality repairs remain in place; the 70-item parity batch is still paused.

@@ -17,6 +17,7 @@ struct ProfileView:View {
     @State private var loading=true
     var body:some View {
         NavigationStack { ZStack {Ambient();ScrollView {VStack(spacing:24) {
+            SurfaceHeader(title:"ملفك الشخصي",subtitle:"حوارك ومساهماتك في المجتمع",icon:"person.crop.circle")
             ZStack { Circle().fill(.white.opacity(0.05));if let avatar=profile?.discord_avatar,let url=URL(string:avatar){AsyncImage(url:url){phase in if let image=phase.image{image.resizable().scaledToFill()}else{Image(systemName:"person.fill").font(.system(size:38)).foregroundStyle(Palette.quiet)}}}else{Image(systemName:"person.fill").font(.system(size:38)).foregroundStyle(Palette.quiet)} }.frame(width:92,height:92).clipShape(Circle()).overlay(Circle().stroke(Palette.gold.opacity(0.35),lineWidth:1)).padding(.top,25)
             VStack(spacing:8){Text(profile?.display_name ?? "حسابي").font(.system(size:26,weight:.semibold));Text(service.session?.user.email ?? "").font(.system(size:13)).foregroundStyle(Palette.quiet).environment(\.layoutDirection,.leftToRight)}
             if loading{ProgressView()}

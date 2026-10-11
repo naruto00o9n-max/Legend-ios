@@ -1,0 +1,1471 @@
+{
+  "source_commit": "59cecb19392fa58b4b49d8728243e20ac8bc3987",
+  "workflow_run": 38105907274,
+  "workflow_url": "https://github.com/naruto00o9n-max/Legend-ios/actions/runs/38105907274",
+  "status": "engine_passed_ui_failures_recorded_followup_pending",
+  "scope": "friend report: import, text strokes and gradients, image preview, slider response, whitening, typesetting, eraser ring",
+  "paused_parity_batch": true,
+  "local": {
+    "swift_syntax": "passed",
+    "diff_check": "passed",
+    "cleaner_sha256": "6f53cf08965fd9cb58f8c114edadb4158e90fd9db8af9c78b8c5dfaa7595c8f1",
+    "exact_cpp": {
+      "source_commit": "59cecb19392fa58b4b49d8728243e20ac8bc3987",
+      "implementation": "C++ body extracted verbatim from App/Core/Cleaner.mm; Objective-C geometry converted to equivalent OpenCV rects; Linux OpenCV 4.10",
+      "native_ios_integration": false,
+      "cases": [
+        {
+          "case": "arabic-shadow-localized",
+          "seconds": 0.264,
+          "mask_pixels": 71895,
+          "outside_mask_exact": true,
+          "residual_ink": 0
+        },
+        {
+          "case": "arabic-shadow-fallback",
+          "seconds": 0.24,
+          "mask_pixels": 71895,
+          "outside_mask_exact": true,
+          "residual_ink": 0
+        },
+        {
+          "case": "arabic-scream",
+          "seconds": 0.197,
+          "mask_pixels": 44295,
+          "outside_mask_exact": true,
+          "residual_ink": 0
+        },
+        {
+          "case": "japanese-vertical",
+          "seconds": 0.086,
+          "mask_pixels": 4862,
+          "outside_mask_exact": true,
+          "residual_ink": 0
+        },
+        {
+          "case": "yellow-outlined",
+          "seconds": 0.174,
+          "mask_pixels": 46947,
+          "outside_mask_exact": true,
+          "residual_dark_ink": 0,
+          "residual_white_outline": 0
+        }
+      ]
+    }
+  },
+  "limitations": [
+    "Simulator checks do not measure low-end physical iPad frame rate.",
+    "Finite raster source cannot supply new image detail beyond its original pixels.",
+    "Patterned colored backgrounds require user review.",
+    "Native Files callback/import is exercised with sandbox copies, not every external iCloud/provider UI."
+  ],
+  "ipa": {
+    "source_commit": "59cecb19392fa58b4b49d8728243e20ac8bc3987",
+    "workflow_run": 38105907274,
+    "artifact": 11689482484,
+    "path": "/workspace/Cookies-Editor-Quality-59cecb1-unsigned.ipa",
+    "size": 14454929,
+    "sha256": "1ce6aae43f0cefdcf3d417160491eff366cae2b33c70d05d0db3a12600749ccd",
+    "architecture": "arm64",
+    "code_signature_command": false,
+    "code_signature_directory": false,
+    "embedded_mobileprovision": false,
+    "display_name": "Cookies Editor",
+    "minimum_os": "17.0",
+    "embedded_source_commit": null
+  },
+  "source_integrity": {
+    "dimensions": [
+      800,
+      15000
+    ],
+    "unchanged_rgba_bytes": 48000000,
+    "edge_tile_and_composite": "passed",
+    "evidence": "38105907274 / job 114371385680 / 2026-10-11T02:48:02.7804330Z"
+  },
+  "native": {
+    "iphone": {
+      "core_editor": {
+        "executed": 95,
+        "failures": 0
+      },
+      "core_mock_services": {
+        "executed": 6,
+        "failures": 0
+      },
+      "engine_artifact": 11690067661,
+      "cases": [
+        {
+          "suite": "CookiesTests.BatchToolTests",
+          "test": "testCleanerPreviewDoesNotCommitBeforeAcceptAndCanCancel",
+          "status": "passed",
+          "seconds": 0.141
+        },
+        {
+          "suite": "CookiesTests.BatchToolTests",
+          "test": "testFillBucketStopsAtClosedBoundary",
+          "status": "passed",
+          "seconds": 0.009
+        },
+        {
+          "suite": "CookiesTests.BatchToolTests",
+          "test": "testFilteredReorderingKeepsOtherLayerTypesAtTheirPositions",
+          "status": "passed",
+          "seconds": 0.075
+        },
+        {
+          "suite": "CookiesTests.BatchToolTests",
+          "test": "testGroupedLayersMoveTogetherAndUndoAsOneEdit",
+          "status": "passed",
+          "seconds": 0.339
+        },
+        {
+          "suite": "CookiesTests.BatchToolTests",
+          "test": "testLockedLayerHasNoEditableHandlesAndCannotBeDeleted",
+          "status": "passed",
+          "seconds": 0.215
+        },
+        {
+          "suite": "CookiesTests.BatchToolTests",
+          "test": "testNonUniformGroupResizePreservesRotatedPeerAffineCorners",
+          "status": "passed",
+          "seconds": 0.853
+        },
+        {
+          "suite": "CookiesTests.BatchToolTests",
+          "test": "testNormalMergeAndTransparentFlattenRetainCompositeAndUndo",
+          "status": "passed",
+          "seconds": 0.145
+        },
+        {
+          "suite": "CookiesTests.BatchToolTests",
+          "test": "testReferenceBrushAssetsArePackagedAndUsableTextureProducesTintedAlphaStamps",
+          "status": "passed",
+          "seconds": 1.259
+        },
+        {
+          "suite": "CookiesTests.BubbleLayoutTests",
+          "test": "testArabicFitsChosenBoundsWithoutChangingColorOrFont",
+          "status": "passed",
+          "seconds": 4.271
+        },
+        {
+          "suite": "CookiesTests.BubbleLayoutTests",
+          "test": "testComplexBlendGestureShowsIntermediateFrameBeforeCommit",
+          "status": "passed",
+          "seconds": 0.211
+        },
+        {
+          "suite": "CookiesTests.BubbleLayoutTests",
+          "test": "testEvenAndOddSymmetricProfilesPreserveEveryWord",
+          "status": "passed",
+          "seconds": 0.003
+        },
+        {
+          "suite": "CookiesTests.BubbleLayoutTests",
+          "test": "testFittedTyperInsertionMarksOnlyInsertedBubbleAndKeepsStyle",
+          "status": "passed",
+          "seconds": 1.658
+        },
+        {
+          "suite": "CookiesTests.BubbleLayoutTests",
+          "test": "testGestureDraftDoesNotPublishEveryPoint",
+          "status": "passed",
+          "seconds": 0.045
+        },
+        {
+          "suite": "CookiesTests.ChapterTests",
+          "test": "testChapterOrderCoverHistoryAndArchiveSurviveRestart",
+          "status": "passed",
+          "seconds": 0.382
+        },
+        {
+          "suite": "CookiesTests.ChapterTests",
+          "test": "testNonUniformCanvasResizePreservesRotatedLayerWorldCorners",
+          "status": "passed",
+          "seconds": 0.046
+        },
+        {
+          "suite": "CookiesTests.ChapterTests",
+          "test": "testPDFTopAndBottomDoNotFlipAndPageCountIsPreserved",
+          "status": "passed",
+          "seconds": 0.056
+        },
+        {
+          "suite": "CookiesTests.ChapterTests",
+          "test": "testSplitMergeKeepsEverySourceByteAndLayerCoordinates",
+          "status": "passed",
+          "seconds": 0.162
+        },
+        {
+          "suite": "CookiesTests.DiagnosticReportsTests",
+          "test": "testReportsStayLocalBoundedAndCanBeRemoved",
+          "status": "passed",
+          "seconds": 0.076
+        },
+        {
+          "suite": "CookiesTests.EditorQualityRegressionTests",
+          "test": "testContourFitReservesSpaceForAdditionalOutlineAndShadow",
+          "status": "passed",
+          "seconds": 4.363
+        },
+        {
+          "suite": "CookiesTests.EditorQualityRegressionTests",
+          "test": "testEffectsRasterResolutionTracksContextScale",
+          "status": "passed",
+          "seconds": 4.193
+        },
+        {
+          "suite": "CookiesTests.EditorQualityRegressionTests",
+          "test": "testEraserRingFollowsTouchAndActualDiameter",
+          "status": "passed",
+          "seconds": 0.007
+        },
+        {
+          "suite": "CookiesTests.EditorQualityRegressionTests",
+          "test": "testFilesPickerUsesImportCopyModeAndDeliversAllURLsAfterDismissal",
+          "status": "passed",
+          "seconds": 0.385
+        },
+        {
+          "suite": "CookiesTests.EditorQualityRegressionTests",
+          "test": "testLongSpeechTailDoesNotPullTypesettingOutOfBubbleBody",
+          "status": "passed",
+          "seconds": 0.366
+        },
+        {
+          "suite": "CookiesTests.EditorQualityRegressionTests",
+          "test": "testPartialOCRDoesNotLeaveSecondLineInFourWhiteBubbles",
+          "status": "passed",
+          "seconds": 0.151
+        },
+        {
+          "suite": "CookiesTests.EditorQualityRegressionTests",
+          "test": "testSelectedFontCopyIsInstalledAndReadableAfterPickerCloses",
+          "status": "passed",
+          "seconds": 0.469
+        },
+        {
+          "suite": "CookiesTests.EditorQualityRegressionTests",
+          "test": "testWideWhiteOutlinePreservesGradientGlyphInterior",
+          "status": "passed",
+          "seconds": 0.161
+        },
+        {
+          "suite": "CookiesTests.EditorTests",
+          "test": "testAddExportMatchesNativeCanvas",
+          "status": "passed",
+          "seconds": 0.004
+        },
+        {
+          "suite": "CookiesTests.EditorTests",
+          "test": "testCanvasKeepsPixelsWhenSelectionOrViewportChanges",
+          "status": "passed",
+          "seconds": 3.284
+        },
+        {
+          "suite": "CookiesTests.EditorTests",
+          "test": "testComplexBlendEraserShowsActualCompositeBeforeFingerRelease",
+          "status": "passed",
+          "seconds": 0.071
+        },
+        {
+          "suite": "CookiesTests.EditorTests",
+          "test": "testGalleryRefreshesAfterEditedThumbnailIsSaved",
+          "status": "passed",
+          "seconds": 1.911
+        },
+        {
+          "suite": "CookiesTests.EditorTests",
+          "test": "testLongPNGAndProjectRoundTrip",
+          "status": "passed",
+          "seconds": 5.915
+        },
+        {
+          "suite": "CookiesTests.EditorTests",
+          "test": "testOriginalFontsAndNativeCleaner",
+          "status": "passed",
+          "seconds": 9.114
+        },
+        {
+          "suite": "CookiesTests.EditorTests",
+          "test": "testPhotoProviderFileSurvivesCallbackAndKeepsOriginalBytes",
+          "status": "passed",
+          "seconds": 0.135
+        },
+        {
+          "suite": "CookiesTests.EditorTests",
+          "test": "testProjectArchiveJPEGAndPSD",
+          "status": "passed",
+          "seconds": 65.96
+        },
+        {
+          "suite": "CookiesTests.EditorTests",
+          "test": "testSmallCanvasIsCenteredWhileZoomedOut",
+          "status": "passed",
+          "seconds": 0.026
+        },
+        {
+          "suite": "CookiesTests.EditorTests",
+          "test": "testUndoAndLayerTransforms",
+          "status": "passed",
+          "seconds": 1.159
+        },
+        {
+          "suite": "CookiesTests.EditorTests",
+          "test": "testUnifiedApplicationIdentity",
+          "status": "passed",
+          "seconds": 0.01
+        },
+        {
+          "suite": "CookiesTests.FontPackageTests",
+          "test": "testReimportingBundledFontIsIdempotentAndInvalidPackageCopiesNothing",
+          "status": "passed",
+          "seconds": 0.116
+        },
+        {
+          "suite": "CookiesTests.ImageImportTests",
+          "test": "testJPEGEXIFRotationKeepsFullDimensionsAndTopBottomContent",
+          "status": "passed",
+          "seconds": 0.035
+        },
+        {
+          "suite": "CookiesTests.ImageImportTests",
+          "test": "testTransparentPNGIsCopiedByteForByteAndExportedWithoutReencoding",
+          "status": "passed",
+          "seconds": 0.158
+        },
+        {
+          "suite": "CookiesTests.RecoveryTests",
+          "test": "testBrokenCurrentDocumentRecoversValidatedPreviousAndPreservesDamagedBytes",
+          "status": "passed",
+          "seconds": 0.011
+        },
+        {
+          "suite": "CookiesTests.RecoveryTests",
+          "test": "testCorruptTyperWithoutBackupCannotOverwriteUserData",
+          "status": "passed",
+          "seconds": 0.009
+        },
+        {
+          "suite": "CookiesTests.RecoveryTests",
+          "test": "testFailedLibraryIndexWriteNeverDeletesProjectOrChangesVisibleFolders",
+          "status": "passed",
+          "seconds": 0.044
+        },
+        {
+          "suite": "CookiesTests.RecoveryTests",
+          "test": "testInvalidCurrentDoesNotOverwriteLastGoodBackup",
+          "status": "passed",
+          "seconds": 0.016
+        },
+        {
+          "suite": "CookiesTests.RecoveryTests",
+          "test": "testTyperRestoresPreviousDraftAfterCorruption",
+          "status": "passed",
+          "seconds": 0.029
+        },
+        {
+          "suite": "CookiesTests.ReferenceProjectTests",
+          "test": "testActualAndroidBlankProjectPreservesDimensionsAndSourceBytes",
+          "status": "passed",
+          "seconds": 0.225
+        },
+        {
+          "suite": "CookiesTests.ReferenceProjectTests",
+          "test": "testActualAndroidTextKeepsCenterAutomaticWidthAndTransparentBackground",
+          "status": "passed",
+          "seconds": 0.23
+        },
+        {
+          "suite": "CookiesTests.SniperWorkflowTests",
+          "test": "testConcaveOutlineCannotPutTextAcrossGapOrBorder",
+          "status": "passed",
+          "seconds": 0.004
+        },
+        {
+          "suite": "CookiesTests.SniperWorkflowTests",
+          "test": "testDecoratedColoredBubbleWithoutLocalizedTextIsRejected",
+          "status": "passed",
+          "seconds": 0.035
+        },
+        {
+          "suite": "CookiesTests.SniperWorkflowTests",
+          "test": "testEveryFormattedArabicLineFitsItsActualContourBand",
+          "status": "passed",
+          "seconds": 3.426
+        },
+        {
+          "suite": "CookiesTests.SniperWorkflowTests",
+          "test": "testGradientTextIsInpaintedWithoutFillingWholeBubble",
+          "status": "passed",
+          "seconds": 0.075
+        },
+        {
+          "suite": "CookiesTests.SniperWorkflowTests",
+          "test": "testMultiBubblePreviewDoesNotCommitUntilAcceptedAndUndoRestoresAll",
+          "status": "passed",
+          "seconds": 0.048
+        },
+        {
+          "suite": "CookiesTests.SniperWorkflowTests",
+          "test": "testRealColoredOutlinedTextIsRemovedWithExplicitReview",
+          "status": "passed",
+          "seconds": 0.912
+        },
+        {
+          "suite": "CookiesTests.SniperWorkflowTests",
+          "test": "testRealImportedManhwaWhiteningPipelineAndExport",
+          "status": "passed",
+          "seconds": 0.849
+        },
+        {
+          "suite": "CookiesTests.SniperWorkflowTests",
+          "test": "testRealMangaVerticalTextLeavesContourUnchanged",
+          "status": "passed",
+          "seconds": 0.111
+        },
+        {
+          "suite": "CookiesTests.SniperWorkflowTests",
+          "test": "testRealManhwaArabicShadowIsRemovedWithoutChangingBubbleBorder",
+          "status": "passed",
+          "seconds": 0.932
+        },
+        {
+          "suite": "CookiesTests.SniperWorkflowTests",
+          "test": "testRealScreamBubblePreservesHandlesAndOutsideArt",
+          "status": "passed",
+          "seconds": 0.237
+        },
+        {
+          "suite": "CookiesTests.SniperWorkflowTests",
+          "test": "testRGBAImageRejectsIncompatibleGrayProfileWithoutLosingPixels",
+          "status": "passed",
+          "seconds": 0.007
+        },
+        {
+          "suite": "CookiesTests.SniperWorkflowTests",
+          "test": "testTextOnlyWhiteningLeavesBorderAndDecorationTransparent",
+          "status": "passed",
+          "seconds": 0.014
+        },
+        {
+          "suite": "CookiesTests.SniperWorkflowTests",
+          "test": "testWhiteningReadsOriginalPixelsAndUndoExportsOriginalFile",
+          "status": "passed",
+          "seconds": 0.127
+        },
+        {
+          "suite": "CookiesTests.StorageAndInteractionTests",
+          "test": "testCacheCleaningCannotDestroyPixelsWhenOriginalIsCorrupt",
+          "status": "passed",
+          "seconds": 0.039
+        },
+        {
+          "suite": "CookiesTests.StorageAndInteractionTests",
+          "test": "testEyedropperSamplesCompositedPixelsForBrushAndSelectedText",
+          "status": "passed",
+          "seconds": 0.029
+        },
+        {
+          "suite": "CookiesTests.StorageAndInteractionTests",
+          "test": "testFoldersAreRestoredWithoutUnselectedProjectMetadata",
+          "status": "passed",
+          "seconds": 0.036
+        },
+        {
+          "suite": "CookiesTests.StorageAndInteractionTests",
+          "test": "testFullResetRemovesRealLocalDataPreferencesAndSession",
+          "status": "passed",
+          "seconds": 0.216
+        },
+        {
+          "suite": "CookiesTests.StorageAndInteractionTests",
+          "test": "testInlineTextAlwaysWhiteWithoutChangingLayerColorsOrFont",
+          "status": "passed",
+          "seconds": 0.012
+        },
+        {
+          "suite": "CookiesTests.StorageAndInteractionTests",
+          "test": "testInterruptedRestoreRollsBackBeforeLibraryLoads",
+          "status": "passed",
+          "seconds": 0.014
+        },
+        {
+          "suite": "CookiesTests.StorageAndInteractionTests",
+          "test": "testSelectiveBackupRestorePreservesUnselectedProjectsAndRebuildsExactPixels",
+          "status": "passed",
+          "seconds": 0.184
+        },
+        {
+          "suite": "CookiesTests.StorageAndInteractionTests",
+          "test": "testTamperedBackupFailsBeforeReplacingLocalData",
+          "status": "passed",
+          "seconds": 0.046
+        },
+        {
+          "suite": "CookiesTests.StorageAndInteractionTests",
+          "test": "testTextOutsideImageRemainsInHitRegion",
+          "status": "passed",
+          "seconds": 0.007
+        },
+        {
+          "suite": "CookiesTests.TextStyleTests",
+          "test": "testAndroidExtraStrokeKeepsItsOwnGradientAndUnsupportedEffectsAreExplicit",
+          "status": "passed",
+          "seconds": 0.005
+        },
+        {
+          "suite": "CookiesTests.TextStyleTests",
+          "test": "testAndroidSpacingUnitsAndARGBTransparencyAreNotFlattened",
+          "status": "passed",
+          "seconds": 0.003
+        },
+        {
+          "suite": "CookiesTests.TextStyleTests",
+          "test": "testAndroidStyleSchemaPreservesColorsStopsAndDeformation",
+          "status": "passed",
+          "seconds": 0.006
+        },
+        {
+          "suite": "CookiesTests.TextStyleTests",
+          "test": "testGradientCatalogTargetsTheGlyphOutlineAndShadowIndependently",
+          "status": "passed",
+          "seconds": 0.009
+        },
+        {
+          "suite": "CookiesTests.TextStyleTests",
+          "test": "testGradientHandlesBelongToTheTextAndUseSavedEndpoints",
+          "status": "passed",
+          "seconds": 0.015
+        },
+        {
+          "suite": "CookiesTests.TextStyleTests",
+          "test": "testGradientPreservesGlyphAlphaAndEmptyLetterHoles",
+          "status": "passed",
+          "seconds": 0.403
+        },
+        {
+          "suite": "CookiesTests.TextStyleTests",
+          "test": "testHomographyPaddingKeepsIdentityAndTranslatedTextCoordinates",
+          "status": "passed",
+          "seconds": 0.002
+        },
+        {
+          "suite": "CookiesTests.TextStyleTests",
+          "test": "testInlinePasteAndCaseConversionPreserveOtherTextAndItsFormatting",
+          "status": "passed",
+          "seconds": 0.002
+        },
+        {
+          "suite": "CookiesTests.TextStyleTests",
+          "test": "testInvalidImportedMeshNeverIndexesMissingPointsOrOverflowsDimensions",
+          "status": "passed",
+          "seconds": 0.003
+        },
+        {
+          "suite": "CookiesTests.TextStyleTests",
+          "test": "testMeshPaddingIdentityAndResamplingKeepTextCoordinates",
+          "status": "passed",
+          "seconds": 0.002
+        },
+        {
+          "suite": "CookiesTests.TextStyleTests",
+          "test": "testOutlineKeepsPixelWidthAcrossDifferentFontSizesAndMaskIgnoresSpanColor",
+          "status": "passed",
+          "seconds": 0.004
+        },
+        {
+          "suite": "CookiesTests.TextStyleTests",
+          "test": "testPerspectiveUsesCanvasHandlesInsteadOfAnIndependentRectangle",
+          "status": "passed",
+          "seconds": 0.013
+        },
+        {
+          "suite": "CookiesTests.TextStyleTests",
+          "test": "testRasterConversionPreservesRotatedScaledDeformedTextAndUndo",
+          "status": "passed",
+          "seconds": 1.167
+        },
+        {
+          "suite": "CookiesTests.TextStyleTests",
+          "test": "testRichRangeTracksInsertionAndDeletionBeforeArabicText",
+          "status": "passed",
+          "seconds": 0.003
+        },
+        {
+          "suite": "CookiesTests.TextStyleTests",
+          "test": "testSavedStyleSurvivesProjectRemovalAndKeepsTextAndPosition",
+          "status": "passed",
+          "seconds": 1.422
+        },
+        {
+          "suite": "CookiesTests.TextStyleTests",
+          "test": "testSelectiveStylePasteKeepsUnselectedFontGeometryAndRichSpans",
+          "status": "passed",
+          "seconds": 0.009
+        },
+        {
+          "suite": "CookiesTests.TextStyleTests",
+          "test": "testSpanBoldOverridesOnlySelectedUTF16Range",
+          "status": "passed",
+          "seconds": 0.004
+        },
+        {
+          "suite": "CookiesTests.TextStyleTests",
+          "test": "testTextMaskDraftCancelAndApplyAreAtomicAndUndoable",
+          "status": "passed",
+          "seconds": 0.071
+        },
+        {
+          "suite": "CookiesTests.TyperAndInteractionTests",
+          "test": "testChapterInsertionSavesRealTextLayerAndUsedBubble",
+          "status": "passed",
+          "seconds": 1.367
+        },
+        {
+          "suite": "CookiesTests.TyperAndInteractionTests",
+          "test": "testDistributionStartsAtChosenBubbleAndSkipsTitlesAndUsedText",
+          "status": "passed",
+          "seconds": 0.003
+        },
+        {
+          "suite": "CookiesTests.TyperAndInteractionTests",
+          "test": "testDraftAndDeletedTagFormattingSurviveRestart",
+          "status": "passed",
+          "seconds": 0.028
+        },
+        {
+          "suite": "CookiesTests.TyperAndInteractionTests",
+          "test": "testLiveDrawingIsVisibleBeforeCommitWithoutRecomposingTiles",
+          "status": "passed",
+          "seconds": 3.592
+        },
+        {
+          "suite": "CookiesTests.TyperAndInteractionTests",
+          "test": "testSniperDetectsClosedBubbleAndFallsBackToPin",
+          "status": "passed",
+          "seconds": 0.29
+        },
+        {
+          "suite": "CookiesTests.TyperAndInteractionTests",
+          "test": "testTagGroupsBubbleOrderAndTrashPersistWithoutLosingProgress",
+          "status": "passed",
+          "seconds": 0.433
+        },
+        {
+          "suite": "CookiesTests.TyperAndInteractionTests",
+          "test": "testTextTransformsReuseRasterAndKeepForegroundOrder",
+          "status": "passed",
+          "seconds": 4.146
+        },
+        {
+          "suite": "CookiesTests.TyperAndInteractionTests",
+          "test": "testTranscriptIdentityAndProgressSurviveRestart",
+          "status": "passed",
+          "seconds": 0.028
+        },
+        {
+          "suite": "CookiesServicesTests.ServiceTests",
+          "test": "testAuthenticationErrorsRemainSpecific",
+          "status": "passed",
+          "seconds": 0.003
+        },
+        {
+          "suite": "CookiesServicesTests.ServiceTests",
+          "test": "testSignupResponseDoesNotClaimEmailDelivery",
+          "status": "passed",
+          "seconds": 0.002
+        },
+        {
+          "suite": "CookiesServicesTests.SessionRefreshTests",
+          "test": "testConcurrentAuthenticatedReadsRefreshOnceAndUseRenewedToken",
+          "status": "passed",
+          "seconds": 0.194
+        },
+        {
+          "suite": "CookiesServicesTests.SessionRefreshTests",
+          "test": "testPermanentReadTimeoutIsBoundedAndCancellationNeverRetries",
+          "status": "passed",
+          "seconds": 0.364
+        },
+        {
+          "suite": "CookiesServicesTests.SessionRefreshTests",
+          "test": "testPublicReadDoesNotRefreshExpiredSessionAndLogoutClearsIt",
+          "status": "passed",
+          "seconds": 0.005
+        },
+        {
+          "suite": "CookiesServicesTests.SessionRefreshTests",
+          "test": "testTransientReadRetriesOnceButSignupNeverRepeats",
+          "status": "passed",
+          "seconds": 0.358
+        }
+      ],
+      "ui": {
+        "executed": 18,
+        "failures": 2,
+        "failed_cases": [
+          "testCanvasTapDoesNotCreateUnrequestedTextAndFontsStayInsideEditor",
+          "testTextTapSuggestionRequiresExplicitConfirmation"
+        ],
+        "verification_artifact": 11690695745,
+        "real_services": {
+          "api": {
+            "executed": 1,
+            "failures": 0
+          },
+          "account_community_ui": {
+            "executed": 1,
+            "failures": 0
+          }
+        },
+        "gates": {
+          "local_editor_and_photos_exit_code": 65,
+          "real_external_services_exit_code": 0,
+          "external_failure_does_not_discard_local_evidence": true
+        }
+      }
+    },
+    "ipad": {
+      "core_editor": {
+        "executed": 95,
+        "failures": 0
+      },
+      "core_mock_services": {
+        "executed": 6,
+        "failures": 0
+      },
+      "engine_artifact": 11689507898,
+      "cases": [
+        {
+          "suite": "CookiesTests.BatchToolTests",
+          "test": "testCleanerPreviewDoesNotCommitBeforeAcceptAndCanCancel",
+          "status": "passed",
+          "seconds": 0.165
+        },
+        {
+          "suite": "CookiesTests.BatchToolTests",
+          "test": "testFillBucketStopsAtClosedBoundary",
+          "status": "passed",
+          "seconds": 0.016
+        },
+        {
+          "suite": "CookiesTests.BatchToolTests",
+          "test": "testFilteredReorderingKeepsOtherLayerTypesAtTheirPositions",
+          "status": "passed",
+          "seconds": 0.091
+        },
+        {
+          "suite": "CookiesTests.BatchToolTests",
+          "test": "testGroupedLayersMoveTogetherAndUndoAsOneEdit",
+          "status": "passed",
+          "seconds": 0.227
+        },
+        {
+          "suite": "CookiesTests.BatchToolTests",
+          "test": "testLockedLayerHasNoEditableHandlesAndCannotBeDeleted",
+          "status": "passed",
+          "seconds": 0.396
+        },
+        {
+          "suite": "CookiesTests.BatchToolTests",
+          "test": "testNonUniformGroupResizePreservesRotatedPeerAffineCorners",
+          "status": "passed",
+          "seconds": 0.828
+        },
+        {
+          "suite": "CookiesTests.BatchToolTests",
+          "test": "testNormalMergeAndTransparentFlattenRetainCompositeAndUndo",
+          "status": "passed",
+          "seconds": 0.302
+        },
+        {
+          "suite": "CookiesTests.BatchToolTests",
+          "test": "testReferenceBrushAssetsArePackagedAndUsableTextureProducesTintedAlphaStamps",
+          "status": "passed",
+          "seconds": 1.257
+        },
+        {
+          "suite": "CookiesTests.BubbleLayoutTests",
+          "test": "testArabicFitsChosenBoundsWithoutChangingColorOrFont",
+          "status": "passed",
+          "seconds": 5.437
+        },
+        {
+          "suite": "CookiesTests.BubbleLayoutTests",
+          "test": "testComplexBlendGestureShowsIntermediateFrameBeforeCommit",
+          "status": "passed",
+          "seconds": 0.118
+        },
+        {
+          "suite": "CookiesTests.BubbleLayoutTests",
+          "test": "testEvenAndOddSymmetricProfilesPreserveEveryWord",
+          "status": "passed",
+          "seconds": 0.006
+        },
+        {
+          "suite": "CookiesTests.BubbleLayoutTests",
+          "test": "testFittedTyperInsertionMarksOnlyInsertedBubbleAndKeepsStyle",
+          "status": "passed",
+          "seconds": 2.111
+        },
+        {
+          "suite": "CookiesTests.BubbleLayoutTests",
+          "test": "testGestureDraftDoesNotPublishEveryPoint",
+          "status": "passed",
+          "seconds": 0.014
+        },
+        {
+          "suite": "CookiesTests.ChapterTests",
+          "test": "testChapterOrderCoverHistoryAndArchiveSurviveRestart",
+          "status": "passed",
+          "seconds": 0.522
+        },
+        {
+          "suite": "CookiesTests.ChapterTests",
+          "test": "testNonUniformCanvasResizePreservesRotatedLayerWorldCorners",
+          "status": "passed",
+          "seconds": 0.057
+        },
+        {
+          "suite": "CookiesTests.ChapterTests",
+          "test": "testPDFTopAndBottomDoNotFlipAndPageCountIsPreserved",
+          "status": "passed",
+          "seconds": 8.532
+        },
+        {
+          "suite": "CookiesTests.ChapterTests",
+          "test": "testSplitMergeKeepsEverySourceByteAndLayerCoordinates",
+          "status": "passed",
+          "seconds": 0.166
+        },
+        {
+          "suite": "CookiesTests.DiagnosticReportsTests",
+          "test": "testReportsStayLocalBoundedAndCanBeRemoved",
+          "status": "passed",
+          "seconds": 0.085
+        },
+        {
+          "suite": "CookiesTests.EditorQualityRegressionTests",
+          "test": "testContourFitReservesSpaceForAdditionalOutlineAndShadow",
+          "status": "passed",
+          "seconds": 4.388
+        },
+        {
+          "suite": "CookiesTests.EditorQualityRegressionTests",
+          "test": "testEffectsRasterResolutionTracksContextScale",
+          "status": "passed",
+          "seconds": 4.232
+        },
+        {
+          "suite": "CookiesTests.EditorQualityRegressionTests",
+          "test": "testEraserRingFollowsTouchAndActualDiameter",
+          "status": "passed",
+          "seconds": 0.022
+        },
+        {
+          "suite": "CookiesTests.EditorQualityRegressionTests",
+          "test": "testFilesPickerUsesImportCopyModeAndDeliversAllURLsAfterDismissal",
+          "status": "passed",
+          "seconds": 3.031
+        },
+        {
+          "suite": "CookiesTests.EditorQualityRegressionTests",
+          "test": "testLongSpeechTailDoesNotPullTypesettingOutOfBubbleBody",
+          "status": "passed",
+          "seconds": 2.105
+        },
+        {
+          "suite": "CookiesTests.EditorQualityRegressionTests",
+          "test": "testPartialOCRDoesNotLeaveSecondLineInFourWhiteBubbles",
+          "status": "passed",
+          "seconds": 0.073
+        },
+        {
+          "suite": "CookiesTests.EditorQualityRegressionTests",
+          "test": "testSelectedFontCopyIsInstalledAndReadableAfterPickerCloses",
+          "status": "passed",
+          "seconds": 0.488
+        },
+        {
+          "suite": "CookiesTests.EditorQualityRegressionTests",
+          "test": "testWideWhiteOutlinePreservesGradientGlyphInterior",
+          "status": "passed",
+          "seconds": 0.38
+        },
+        {
+          "suite": "CookiesTests.EditorTests",
+          "test": "testAddExportMatchesNativeCanvas",
+          "status": "passed",
+          "seconds": 0.003
+        },
+        {
+          "suite": "CookiesTests.EditorTests",
+          "test": "testCanvasKeepsPixelsWhenSelectionOrViewportChanges",
+          "status": "passed",
+          "seconds": 3.69
+        },
+        {
+          "suite": "CookiesTests.EditorTests",
+          "test": "testComplexBlendEraserShowsActualCompositeBeforeFingerRelease",
+          "status": "passed",
+          "seconds": 0.077
+        },
+        {
+          "suite": "CookiesTests.EditorTests",
+          "test": "testGalleryRefreshesAfterEditedThumbnailIsSaved",
+          "status": "passed",
+          "seconds": 2.353
+        },
+        {
+          "suite": "CookiesTests.EditorTests",
+          "test": "testLongPNGAndProjectRoundTrip",
+          "status": "passed",
+          "seconds": 4.844
+        },
+        {
+          "suite": "CookiesTests.EditorTests",
+          "test": "testOriginalFontsAndNativeCleaner",
+          "status": "passed",
+          "seconds": 1.487
+        },
+        {
+          "suite": "CookiesTests.EditorTests",
+          "test": "testPhotoProviderFileSurvivesCallbackAndKeepsOriginalBytes",
+          "status": "passed",
+          "seconds": 0.163
+        },
+        {
+          "suite": "CookiesTests.EditorTests",
+          "test": "testProjectArchiveJPEGAndPSD",
+          "status": "passed",
+          "seconds": 71.359
+        },
+        {
+          "suite": "CookiesTests.EditorTests",
+          "test": "testSmallCanvasIsCenteredWhileZoomedOut",
+          "status": "passed",
+          "seconds": 0.022
+        },
+        {
+          "suite": "CookiesTests.EditorTests",
+          "test": "testUndoAndLayerTransforms",
+          "status": "passed",
+          "seconds": 1.864
+        },
+        {
+          "suite": "CookiesTests.EditorTests",
+          "test": "testUnifiedApplicationIdentity",
+          "status": "passed",
+          "seconds": 0.031
+        },
+        {
+          "suite": "CookiesTests.FontPackageTests",
+          "test": "testReimportingBundledFontIsIdempotentAndInvalidPackageCopiesNothing",
+          "status": "passed",
+          "seconds": 0.376
+        },
+        {
+          "suite": "CookiesTests.ImageImportTests",
+          "test": "testJPEGEXIFRotationKeepsFullDimensionsAndTopBottomContent",
+          "status": "passed",
+          "seconds": 0.048
+        },
+        {
+          "suite": "CookiesTests.ImageImportTests",
+          "test": "testTransparentPNGIsCopiedByteForByteAndExportedWithoutReencoding",
+          "status": "passed",
+          "seconds": 0.14
+        },
+        {
+          "suite": "CookiesTests.RecoveryTests",
+          "test": "testBrokenCurrentDocumentRecoversValidatedPreviousAndPreservesDamagedBytes",
+          "status": "passed",
+          "seconds": 0.013
+        },
+        {
+          "suite": "CookiesTests.RecoveryTests",
+          "test": "testCorruptTyperWithoutBackupCannotOverwriteUserData",
+          "status": "passed",
+          "seconds": 0.014
+        },
+        {
+          "suite": "CookiesTests.RecoveryTests",
+          "test": "testFailedLibraryIndexWriteNeverDeletesProjectOrChangesVisibleFolders",
+          "status": "passed",
+          "seconds": 0.04
+        },
+        {
+          "suite": "CookiesTests.RecoveryTests",
+          "test": "testInvalidCurrentDoesNotOverwriteLastGoodBackup",
+          "status": "passed",
+          "seconds": 0.012
+        },
+        {
+          "suite": "CookiesTests.RecoveryTests",
+          "test": "testTyperRestoresPreviousDraftAfterCorruption",
+          "status": "passed",
+          "seconds": 0.058
+        },
+        {
+          "suite": "CookiesTests.ReferenceProjectTests",
+          "test": "testActualAndroidBlankProjectPreservesDimensionsAndSourceBytes",
+          "status": "passed",
+          "seconds": 0.214
+        },
+        {
+          "suite": "CookiesTests.ReferenceProjectTests",
+          "test": "testActualAndroidTextKeepsCenterAutomaticWidthAndTransparentBackground",
+          "status": "passed",
+          "seconds": 0.307
+        },
+        {
+          "suite": "CookiesTests.SniperWorkflowTests",
+          "test": "testConcaveOutlineCannotPutTextAcrossGapOrBorder",
+          "status": "passed",
+          "seconds": 0.003
+        },
+        {
+          "suite": "CookiesTests.SniperWorkflowTests",
+          "test": "testDecoratedColoredBubbleWithoutLocalizedTextIsRejected",
+          "status": "passed",
+          "seconds": 0.01
+        },
+        {
+          "suite": "CookiesTests.SniperWorkflowTests",
+          "test": "testEveryFormattedArabicLineFitsItsActualContourBand",
+          "status": "passed",
+          "seconds": 4.543
+        },
+        {
+          "suite": "CookiesTests.SniperWorkflowTests",
+          "test": "testGradientTextIsInpaintedWithoutFillingWholeBubble",
+          "status": "passed",
+          "seconds": 0.144
+        },
+        {
+          "suite": "CookiesTests.SniperWorkflowTests",
+          "test": "testMultiBubblePreviewDoesNotCommitUntilAcceptedAndUndoRestoresAll",
+          "status": "passed",
+          "seconds": 0.057
+        },
+        {
+          "suite": "CookiesTests.SniperWorkflowTests",
+          "test": "testRealColoredOutlinedTextIsRemovedWithExplicitReview",
+          "status": "passed",
+          "seconds": 0.975
+        },
+        {
+          "suite": "CookiesTests.SniperWorkflowTests",
+          "test": "testRealImportedManhwaWhiteningPipelineAndExport",
+          "status": "passed",
+          "seconds": 0.953
+        },
+        {
+          "suite": "CookiesTests.SniperWorkflowTests",
+          "test": "testRealMangaVerticalTextLeavesContourUnchanged",
+          "status": "passed",
+          "seconds": 0.072
+        },
+        {
+          "suite": "CookiesTests.SniperWorkflowTests",
+          "test": "testRealManhwaArabicShadowIsRemovedWithoutChangingBubbleBorder",
+          "status": "passed",
+          "seconds": 1.014
+        },
+        {
+          "suite": "CookiesTests.SniperWorkflowTests",
+          "test": "testRealScreamBubblePreservesHandlesAndOutsideArt",
+          "status": "passed",
+          "seconds": 0.315
+        },
+        {
+          "suite": "CookiesTests.SniperWorkflowTests",
+          "test": "testRGBAImageRejectsIncompatibleGrayProfileWithoutLosingPixels",
+          "status": "passed",
+          "seconds": 0.014
+        },
+        {
+          "suite": "CookiesTests.SniperWorkflowTests",
+          "test": "testTextOnlyWhiteningLeavesBorderAndDecorationTransparent",
+          "status": "passed",
+          "seconds": 0.065
+        },
+        {
+          "suite": "CookiesTests.SniperWorkflowTests",
+          "test": "testWhiteningReadsOriginalPixelsAndUndoExportsOriginalFile",
+          "status": "passed",
+          "seconds": 0.134
+        },
+        {
+          "suite": "CookiesTests.StorageAndInteractionTests",
+          "test": "testCacheCleaningCannotDestroyPixelsWhenOriginalIsCorrupt",
+          "status": "passed",
+          "seconds": 0.038
+        },
+        {
+          "suite": "CookiesTests.StorageAndInteractionTests",
+          "test": "testEyedropperSamplesCompositedPixelsForBrushAndSelectedText",
+          "status": "passed",
+          "seconds": 0.045
+        },
+        {
+          "suite": "CookiesTests.StorageAndInteractionTests",
+          "test": "testFoldersAreRestoredWithoutUnselectedProjectMetadata",
+          "status": "passed",
+          "seconds": 0.06
+        },
+        {
+          "suite": "CookiesTests.StorageAndInteractionTests",
+          "test": "testFullResetRemovesRealLocalDataPreferencesAndSession",
+          "status": "passed",
+          "seconds": 0.71
+        },
+        {
+          "suite": "CookiesTests.StorageAndInteractionTests",
+          "test": "testInlineTextAlwaysWhiteWithoutChangingLayerColorsOrFont",
+          "status": "passed",
+          "seconds": 0.005
+        },
+        {
+          "suite": "CookiesTests.StorageAndInteractionTests",
+          "test": "testInterruptedRestoreRollsBackBeforeLibraryLoads",
+          "status": "passed",
+          "seconds": 0.018
+        },
+        {
+          "suite": "CookiesTests.StorageAndInteractionTests",
+          "test": "testSelectiveBackupRestorePreservesUnselectedProjectsAndRebuildsExactPixels",
+          "status": "passed",
+          "seconds": 0.122
+        },
+        {
+          "suite": "CookiesTests.StorageAndInteractionTests",
+          "test": "testTamperedBackupFailsBeforeReplacingLocalData",
+          "status": "passed",
+          "seconds": 0.068
+        },
+        {
+          "suite": "CookiesTests.StorageAndInteractionTests",
+          "test": "testTextOutsideImageRemainsInHitRegion",
+          "status": "passed",
+          "seconds": 0.015
+        },
+        {
+          "suite": "CookiesTests.TextStyleTests",
+          "test": "testAndroidExtraStrokeKeepsItsOwnGradientAndUnsupportedEffectsAreExplicit",
+          "status": "passed",
+          "seconds": 0.017
+        },
+        {
+          "suite": "CookiesTests.TextStyleTests",
+          "test": "testAndroidSpacingUnitsAndARGBTransparencyAreNotFlattened",
+          "status": "passed",
+          "seconds": 0.005
+        },
+        {
+          "suite": "CookiesTests.TextStyleTests",
+          "test": "testAndroidStyleSchemaPreservesColorsStopsAndDeformation",
+          "status": "passed",
+          "seconds": 0.01
+        },
+        {
+          "suite": "CookiesTests.TextStyleTests",
+          "test": "testGradientCatalogTargetsTheGlyphOutlineAndShadowIndependently",
+          "status": "passed",
+          "seconds": 0.032
+        },
+        {
+          "suite": "CookiesTests.TextStyleTests",
+          "test": "testGradientHandlesBelongToTheTextAndUseSavedEndpoints",
+          "status": "passed",
+          "seconds": 0.063
+        },
+        {
+          "suite": "CookiesTests.TextStyleTests",
+          "test": "testGradientPreservesGlyphAlphaAndEmptyLetterHoles",
+          "status": "passed",
+          "seconds": 0.46
+        },
+        {
+          "suite": "CookiesTests.TextStyleTests",
+          "test": "testHomographyPaddingKeepsIdentityAndTranslatedTextCoordinates",
+          "status": "passed",
+          "seconds": 0.003
+        },
+        {
+          "suite": "CookiesTests.TextStyleTests",
+          "test": "testInlinePasteAndCaseConversionPreserveOtherTextAndItsFormatting",
+          "status": "passed",
+          "seconds": 0.003
+        },
+        {
+          "suite": "CookiesTests.TextStyleTests",
+          "test": "testInvalidImportedMeshNeverIndexesMissingPointsOrOverflowsDimensions",
+          "status": "passed",
+          "seconds": 0.004
+        },
+        {
+          "suite": "CookiesTests.TextStyleTests",
+          "test": "testMeshPaddingIdentityAndResamplingKeepTextCoordinates",
+          "status": "passed",
+          "seconds": 0.003
+        },
+        {
+          "suite": "CookiesTests.TextStyleTests",
+          "test": "testOutlineKeepsPixelWidthAcrossDifferentFontSizesAndMaskIgnoresSpanColor",
+          "status": "passed",
+          "seconds": 0.004
+        },
+        {
+          "suite": "CookiesTests.TextStyleTests",
+          "test": "testPerspectiveUsesCanvasHandlesInsteadOfAnIndependentRectangle",
+          "status": "passed",
+          "seconds": 0.01
+        },
+        {
+          "suite": "CookiesTests.TextStyleTests",
+          "test": "testRasterConversionPreservesRotatedScaledDeformedTextAndUndo",
+          "status": "passed",
+          "seconds": 1.162
+        },
+        {
+          "suite": "CookiesTests.TextStyleTests",
+          "test": "testRichRangeTracksInsertionAndDeletionBeforeArabicText",
+          "status": "passed",
+          "seconds": 0.003
+        },
+        {
+          "suite": "CookiesTests.TextStyleTests",
+          "test": "testSavedStyleSurvivesProjectRemovalAndKeepsTextAndPosition",
+          "status": "passed",
+          "seconds": 1.297
+        },
+        {
+          "suite": "CookiesTests.TextStyleTests",
+          "test": "testSelectiveStylePasteKeepsUnselectedFontGeometryAndRichSpans",
+          "status": "passed",
+          "seconds": 0.01
+        },
+        {
+          "suite": "CookiesTests.TextStyleTests",
+          "test": "testSpanBoldOverridesOnlySelectedUTF16Range",
+          "status": "passed",
+          "seconds": 0.004
+        },
+        {
+          "suite": "CookiesTests.TextStyleTests",
+          "test": "testTextMaskDraftCancelAndApplyAreAtomicAndUndoable",
+          "status": "passed",
+          "seconds": 0.195
+        },
+        {
+          "suite": "CookiesTests.TyperAndInteractionTests",
+          "test": "testChapterInsertionSavesRealTextLayerAndUsedBubble",
+          "status": "passed",
+          "seconds": 1.158
+        },
+        {
+          "suite": "CookiesTests.TyperAndInteractionTests",
+          "test": "testDistributionStartsAtChosenBubbleAndSkipsTitlesAndUsedText",
+          "status": "passed",
+          "seconds": 0.003
+        },
+        {
+          "suite": "CookiesTests.TyperAndInteractionTests",
+          "test": "testDraftAndDeletedTagFormattingSurviveRestart",
+          "status": "passed",
+          "seconds": 0.035
+        },
+        {
+          "suite": "CookiesTests.TyperAndInteractionTests",
+          "test": "testLiveDrawingIsVisibleBeforeCommitWithoutRecomposingTiles",
+          "status": "passed",
+          "seconds": 3.93
+        },
+        {
+          "suite": "CookiesTests.TyperAndInteractionTests",
+          "test": "testSniperDetectsClosedBubbleAndFallsBackToPin",
+          "status": "passed",
+          "seconds": 0.058
+        },
+        {
+          "suite": "CookiesTests.TyperAndInteractionTests",
+          "test": "testTagGroupsBubbleOrderAndTrashPersistWithoutLosingProgress",
+          "status": "passed",
+          "seconds": 0.106
+        },
+        {
+          "suite": "CookiesTests.TyperAndInteractionTests",
+          "test": "testTextTransformsReuseRasterAndKeepForegroundOrder",
+          "status": "passed",
+          "seconds": 3.452
+        },
+        {
+          "suite": "CookiesTests.TyperAndInteractionTests",
+          "test": "testTranscriptIdentityAndProgressSurviveRestart",
+          "status": "passed",
+          "seconds": 0.039
+        },
+        {
+          "suite": "CookiesServicesTests.ServiceTests",
+          "test": "testAuthenticationErrorsRemainSpecific",
+          "status": "passed",
+          "seconds": 0.006
+        },
+        {
+          "suite": "CookiesServicesTests.ServiceTests",
+          "test": "testSignupResponseDoesNotClaimEmailDelivery",
+          "status": "passed",
+          "seconds": 0.01
+        },
+        {
+          "suite": "CookiesServicesTests.SessionRefreshTests",
+          "test": "testConcurrentAuthenticatedReadsRefreshOnceAndUseRenewedToken",
+          "status": "passed",
+          "seconds": 0.033
+        },
+        {
+          "suite": "CookiesServicesTests.SessionRefreshTests",
+          "test": "testPermanentReadTimeoutIsBoundedAndCancellationNeverRetries",
+          "status": "passed",
+          "seconds": 0.021
+        },
+        {
+          "suite": "CookiesServicesTests.SessionRefreshTests",
+          "test": "testPublicReadDoesNotRefreshExpiredSessionAndLogoutClearsIt",
+          "status": "passed",
+          "seconds": 0.008
+        },
+        {
+          "suite": "CookiesServicesTests.SessionRefreshTests",
+          "test": "testTransientReadRetriesOnceButSignupNeverRepeats",
+          "status": "passed",
+          "seconds": 0.008
+        }
+      ],
+      "full_ui": {
+        "executed": 18,
+        "failed": 1,
+        "artifact": 11690640618,
+        "cases": [
+          {
+            "suite": "CookiesUITests.EditorUITests",
+            "test": "testCanvasTapDoesNotCreateUnrequestedTextAndFontsStayInsideEditor",
+            "status": "passed",
+            "seconds": 110.146
+          },
+          {
+            "suite": "CookiesUITests.EditorUITests",
+            "test": "testChapterBlankMergeSplitReaderAndExport",
+            "status": "passed",
+            "seconds": 216.299
+          },
+          {
+            "suite": "CookiesUITests.EditorUITests",
+            "test": "testCreateUserStyleAndApplyGlyphGradient",
+            "status": "passed",
+            "seconds": 69.116
+          },
+          {
+            "suite": "CookiesUITests.EditorUITests",
+            "test": "testEditorTextLayersAndExport",
+            "status": "passed",
+            "seconds": 68.142
+          },
+          {
+            "suite": "CookiesUITests.EditorUITests",
+            "test": "testEveryTextInspectorAndFontLibrary",
+            "status": "passed",
+            "seconds": 115.172
+          },
+          {
+            "suite": "CookiesUITests.EditorUITests",
+            "test": "testLayerButtonsActuallyHideUnlockAndDelete",
+            "status": "passed",
+            "seconds": 54.047
+          },
+          {
+            "suite": "CookiesUITests.EditorUITests",
+            "test": "testLayerTypeChipsMatchTheVisibleRows",
+            "status": "passed",
+            "seconds": 51.768
+          },
+          {
+            "suite": "CookiesUITests.EditorUITests",
+            "test": "testLocalDiagnosticReportsScreen",
+            "status": "passed",
+            "seconds": 36.933
+          },
+          {
+            "suite": "CookiesUITests.EditorUITests",
+            "test": "testPhotosImportAndIPadOrientation",
+            "status": "passed",
+            "seconds": 81.8
+          },
+          {
+            "suite": "CookiesUITests.EditorUITests",
+            "test": "testPinchAndDrawing",
+            "status": "passed",
+            "seconds": 56.015
+          },
+          {
+            "suite": "CookiesUITests.EditorUITests",
+            "test": "testRealStorageScreenShowsProjectsAndSelection",
+            "status": "passed",
+            "seconds": 50.952
+          },
+          {
+            "suite": "CookiesUITests.EditorUITests",
+            "test": "testShapesReaderBrushSettingsAndFontLibrary",
+            "status": "passed",
+            "seconds": 65.564
+          },
+          {
+            "suite": "CookiesUITests.EditorUITests",
+            "test": "testShapeToolsReplaceMainStripAndKeepGeometryEditable",
+            "status": "passed",
+            "seconds": 47.305
+          },
+          {
+            "suite": "CookiesUITests.EditorUITests",
+            "test": "testStrokePlusMinusChangesByExactlyOneWithoutDragging",
+            "status": "passed",
+            "seconds": 36.967
+          },
+          {
+            "suite": "CookiesUITests.EditorUITests",
+            "test": "testTextHandlesKeepImageWhileEditing",
+            "status": "passed",
+            "seconds": 47.81
+          },
+          {
+            "suite": "CookiesUITests.EditorUITests",
+            "test": "testTextTapSuggestionRequiresExplicitConfirmation",
+            "status": "failed",
+            "seconds": 38.534
+          },
+          {
+            "suite": "CookiesUITests.EditorUITests",
+            "test": "testTyperPlacesBubbleAndRetainsGreyUsedProgress",
+            "status": "passed",
+            "seconds": 63.515
+          },
+          {
+            "suite": "CookiesUITests.EditorUITests",
+            "test": "testWelcomeFoldersAndAssistant",
+            "status": "passed",
+            "seconds": 50.399
+          }
+        ]
+      },
+      "gates": {
+        "local_editor_and_photos_exit_code": 65,
+        "real_external_services_exit_code": 0,
+        "external_failure_does_not_discard_local_evidence": true
+      }
+    }
+  },
+  "native_total_engine_cases": 202
+}

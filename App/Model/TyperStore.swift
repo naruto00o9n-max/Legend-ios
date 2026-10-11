@@ -12,6 +12,16 @@ struct DialogueTag: Codable, Equatable, Identifiable {
     var prefix: String
     var style = TextStyle()
     var noPaste = false
+    // A tag's display color identifies it in the Typer, independently of ink.
+    var displayColor: String?
+    var resolvedDisplayColor: String {
+        if let value=displayColor,value.range(of:"^[0-9A-Fa-f]{6}$",options:.regularExpression) != nil{return value.uppercased()}
+        let known=["":"D4AF37","##":"AAB1BA",":":"D58C89","()":"B3A3D3","$":"8CB8D0","**":"D5AE7D","[]":"9ABCB0","#":"C7BE8D"]
+        if let value=known[prefix]{return value}
+        let colors=["D4AF37","9ABCB0","B3A3D3","8CB8D0","D58C89","D5AE7D","AAB1BA","C7BE8D"]
+        let hash=(prefix+title).utf8.reduce(UInt32(2166136261)){($0 ^ UInt32($1)) &* 16777619}
+        return colors[Int(hash % UInt32(colors.count))]
+    }
     static var defaults: [DialogueTag] {
         [("حوار عادي","","hayah.ttf"),("عنوان","##","hsn_sadiyah.ttf"),("صراخ",":","boahmed_alhour.ttf"),("تفكير","()","hacen_sahara.ttf"),("نظام","$","hsn_sadiyah.ttf"),("مؤثرات","**","afsaneh.ttf"),("مربع نص","[]","hacen_samra_lt.ttf"),("راوي","#","hacen_samra_lt.ttf")].map { title,prefix,font in
             var tag = DialogueTag(title:title,prefix:prefix);tag.style.fontPath=font;tag.noPaste=prefix=="##";return tag
@@ -99,6 +109,7 @@ private extension String {
 }
 @MainActor final class TyperStore: ObservableObject {
     @Published private(set) var state=TyperState()
+    @Published private(set) var panelPreferences=TyperPanelPreferences()
     @Published var error: String?
     private var storageReadable=true
     let directory: URL
@@ -108,6 +119,7 @@ private extension String {
         do {try FileManager.default.createDirectory(at:self.directory,withIntermediateDirectories:true)
             let url=self.directory.appendingPathComponent("chapters.json")
             if let saved=try RecoveryFile.read(TyperState.self,at:url){state=saved.value;if saved.recovered{self.error="استُعيدت آخر نسخة سليمة من بياناتك."}}
+            if let saved=try RecoveryFile.read(TyperPanelPreferences.self,at:self.directory.appendingPathComponent("panel-settings.json")){panelPreferences=saved.value}
             if state.tagSets==nil{let group=DialogueTagSet(title:"افتراضي",tags:state.tags);var next=state;next.tagSets=[group];next.activeTagSet=group.id;try commit(next)}
         }catch{storageReadable=false;self.error="تعذر فتح فصول التايبر: "+error.localizedDescription}
     }
@@ -115,6 +127,13 @@ private extension String {
     func chapter(_ id:UUID)->DialogueChapter? {state.chapters.first{$0.id==id}}
     func tag(_ id:UUID?)->DialogueTag? {state.tags.first{$0.id==id} ?? state.tagSets?.flatMap(\.tags).first{$0.id==id} ?? state.retiredTags?.first{$0.id==id}}
     var tagSets:[DialogueTagSet]{state.tagSets ?? []}
+    func savePanelPreferences(_ value:TyperPanelPreferences)throws {
+        guard storageReadable else{throw ImageFailure.message("تعذر قراءة بيانات التايبر؛ لم تُستبدل بياناتك")}
+        guard value != panelPreferences else{return}
+        // Changing a filter must not serialize an entire translated chapter.
+        try RecoveryFile.write(value,at:directory.appendingPathComponent("panel-settings.json"))
+        panelPreferences=value
+    }
     private func commit(_ state:TyperState)throws {guard storageReadable else{throw ImageFailure.message("تعذر قراءة بيانات التايبر؛ احتُفظ بالملف التالف للاستعادة ولم تُستبدل بياناتك")};var next=state;if let index=next.tagSets?.firstIndex(where:{$0.id==next.activeTagSet}){next.tagSets?[index].tags=next.tags};try RecoveryFile.write(next,at:directory.appendingPathComponent("chapters.json"));self.state=next}
     func activate(_ id:UUID)throws {var next=state;next.active=id;try commit(next)}
     @discardableResult func saveChapter(id:UUID?=nil,title:String,source:String,separation:BubbleSeparation,folder:UUID?=nil)throws->UUID {
@@ -147,7 +166,19 @@ private extension String {
         next.chapters[c].modified=Date();try commit(next)
     }
     func reset(_ chapter:UUID)throws {var next=state;guard let c=next.chapters.firstIndex(where:{$0.id==chapter}) else{return};for index in next.chapters[c].bubbles.indices{next.chapters[c].bubbles[index].usedAt=nil;next.chapters[c].bubbles[index].usedOnPage=nil;next.chapters[c].bubbles[index].usedLayer=nil};try commit(next)}
-    func saveTag(_ tag:DialogueTag)throws {var next=state;if let i=next.tags.firstIndex(where:{$0.id==tag.id}){next.tags[i]=tag}else{next.tags.append(tag)};try commit(next)}
+    func saveTag(_ tag:DialogueTag)throws {
+        var next=state,value=tag
+        if let i=next.tags.firstIndex(where:{$0.id==tag.id}){next.tags[i]=value}
+        else{
+            if value.displayColor==nil{
+                let taken=Set(next.tags.map(\.resolvedDisplayColor));var color=value.resolvedDisplayColor
+                if taken.contains(color){let seed=value.id.uuidString.utf8.reduce(UInt32(2166136261)){($0 ^ UInt32($1)) &* 16777619};for index in 0..<512{let hue=(Double(seed%360)/360+Double(index)*0.61803398875).truncatingRemainder(dividingBy:1);color=UIColor(hue:CGFloat(hue),saturation:0.32,brightness:0.8,alpha:1).hex;if !taken.contains(color){break}}}
+                value.displayColor=color
+            }
+            next.tags.append(value)
+        }
+        try commit(next)
+    }
     func removeTag(_ id:UUID)throws {var next=state;if let tag=tag(id){next.retiredTags=(next.retiredTags ?? [])+[tag]};next.tags.removeAll{$0.id==id};try commit(next)}
     func importFile(_ url:URL,folder:UUID?)throws {
         let scoped=url.startAccessingSecurityScopedResource();defer{if scoped{url.stopAccessingSecurityScopedResource()}}

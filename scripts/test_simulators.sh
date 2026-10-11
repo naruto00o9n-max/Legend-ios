@@ -3,6 +3,16 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 TASK_SCREEN="${1:-ipad}"
 TASK_STAGE="${2:-ui}"
+TASK_FILTER="${3:-}"
+TASK_UI_ARGUMENTS=(-only-testing:CookiesUITests)
+if [[ -n "$TASK_FILTER" ]]; then
+  TASK_UI_ARGUMENTS=()
+  IFS=',' read -r -a TASK_CASES <<< "$TASK_FILTER"
+  for TASK_CASE in "${TASK_CASES[@]}"; do
+    [[ "$TASK_CASE" =~ ^CookiesUITests/EditorUITests/test[A-Za-z0-9]+$ ]] || { echo "Invalid UI test selector"; exit 2; }
+    TASK_UI_ARGUMENTS+=("-only-testing:$TASK_CASE")
+  done
+fi
 mkdir -p build/screenshots .work
 xcrun simctl list devices available -j > .work/devices.json
 python3 - "$TASK_SCREEN" <<'PYDEV'
@@ -36,8 +46,19 @@ png=b'\x89PNG\r\n\x1a\n'+chunk(b'IHDR',struct.pack('>IIBBBBB',w,h,8,2,0,0,0))+ch
 pathlib.Path('.work/Photos-800x15000.png').write_bytes(png)
 PYFIX
 xcrun simctl addmedia "$TASK_DEVICE" .work/Photos-800x15000.png
+# A real readable file in the app's shared Documents location, so the font UI
+# test exercises Apple's Files browser and its Done/selection callback.
+if TASK_DOCUMENTS_CONTAINER=$(xcrun simctl get_app_container "$TASK_DEVICE" com.cookies.editor.ios data 2>/dev/null); then
+  python3 - "$TASK_DOCUMENTS_CONTAINER" <<'PYFONT'
+import pathlib,shutil,sys
+font=next(pathlib.Path('App/Resources/Fonts').glob('*.ttf'))
+target=pathlib.Path(sys.argv[1])/'Documents'/'Cookies-Import-Fixture.ttf'
+target.parent.mkdir(parents=True,exist_ok=True)
+shutil.copyfile(font,target)
+PYFONT
+fi
 TASK_STATUS=0
-xcodebuild -project CookiesEditor.xcodeproj -scheme CookiesEditor -configuration Debug -destination "platform=iOS Simulator,id=$TASK_DEVICE" -parallel-testing-enabled NO -derivedDataPath .work/simulator -resultBundlePath "build/$TASK_SCREEN.xcresult" -only-testing:CookiesUITests ARCHS=x86_64 ONLY_ACTIVE_ARCH=YES test > "build/test-$TASK_SCREEN.log" 2>&1 || TASK_STATUS=$?
+xcodebuild -project CookiesEditor.xcodeproj -scheme CookiesEditor -configuration Debug -destination "platform=iOS Simulator,id=$TASK_DEVICE" -parallel-testing-enabled NO -derivedDataPath .work/simulator -resultBundlePath "build/$TASK_SCREEN.xcresult" "${TASK_UI_ARGUMENTS[@]}" ARCHS=x86_64 ONLY_ACTIVE_ARCH=YES test > "build/test-$TASK_SCREEN.log" 2>&1 || TASK_STATUS=$?
 if [[ "$TASK_STATUS" == 0 ]]; then
   # The full suite relaunches and clears test projects. Run Photos once last,
   # then inspect the real application container before another test resets it.

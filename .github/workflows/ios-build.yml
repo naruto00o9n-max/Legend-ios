@@ -2,8 +2,14 @@ name: Cookies Editor iPad repair and unsigned IPA
 on:
   push:
     branches: [main]
-    paths: ['App/**', 'Tests/**', 'UITests/**', 'ServicesTests/**', 'ServicesUITests/**', 'project.yml', 'scripts/build_ipas.sh', 'scripts/test_simulators.sh', 'scripts/fetch_whitening_fixtures.py', 'scripts/whitening-fixtures.json', '.github/workflows/ios-build.yml']
+    paths: ['App/**', 'Tests/**', 'UITests/**', 'ServicesTests/**', 'ServicesUITests/**', 'LocalUITests/**', 'project.yml', 'scripts/build_ipas.sh', 'scripts/verify_build_identity.py', 'scripts/test_simulators.sh', 'scripts/test_local_simulator.sh', 'scripts/fetch_whitening_fixtures.py', 'scripts/whitening-fixtures.json', '.github/workflows/ios-build.yml']
   workflow_dispatch:
+    inputs:
+      verification_scope:
+        description: Full validation or focused UI regression retry
+        type: choice
+        options: [full, focused]
+        default: full
 concurrency:
   group: cookies-ios-${{ github.ref }}
   cancel-in-progress: true
@@ -32,11 +38,13 @@ jobs:
             }
   package:
     needs: supersede
-    name: One unsigned arm64 IPA and PNG integrity
+    name: Two unsigned arm64 IPAs and PNG integrity
     runs-on: macos-15-intel
-    timeout-minutes: 25
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 2
       - run: brew install xcodegen
       - uses: actions/cache@v4
         with:
@@ -69,9 +77,11 @@ jobs:
       matrix:
         screen: [ipad, iphone]
     runs-on: macos-15-intel
-    timeout-minutes: 65
+    timeout-minutes: 80
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 2
       - run: brew install xcodegen
       - uses: actions/cache@v4
         with:
@@ -85,6 +95,7 @@ jobs:
       - run: python3 scripts/fetch_whitening_fixtures.py
       - run: xcodegen generate
       - name: Native engine and real whitening regressions
+        if: ${{ !contains(github.event.head_commit.message, '[ui-only retry]') && (github.event_name != 'workflow_dispatch' || inputs.verification_scope != 'focused') }}
         run: bash scripts/test_simulators.sh ${{ matrix.screen }} core
       - uses: actions/upload-artifact@v4
         if: always()
@@ -95,7 +106,19 @@ jobs:
             build/whitening-*/
           retention-days: 30
       - name: Interfaces, Photos and services
-        run: bash scripts/test_simulators.sh ${{ matrix.screen }} ui
+        env:
+          TASK_SCOPE: ${{ contains(github.event.head_commit.message, '[ui-only retry]') && 'focused' || inputs.verification_scope }}
+        run: |
+          if [[ "$TASK_SCOPE" == focused ]]; then
+            # A test-only retry must never skip engine checks for changed app code.
+            git diff --exit-code HEAD^ HEAD -- App Tests ServicesTests ServicesUITests LocalUITests project.yml scripts/fetch_resources.py scripts/fetch_whitening_fixtures.py scripts/whitening-fixtures.json
+            bash scripts/test_simulators.sh '${{ matrix.screen }}' ui 'CookiesUITests/EditorUITests/testTextTapSuggestionRequiresExplicitConfirmation,CookiesUITests/EditorUITests/testStrokePlusMinusChangesByExactlyOneWithoutDragging,CookiesUITests/EditorUITests/testPhotosImportAndIPadOrientation'
+          else
+            bash scripts/test_simulators.sh '${{ matrix.screen }}' ui
+          fi
+      - name: Local edition without account or community
+        if: always()
+        run: bash scripts/test_local_simulator.sh ${{ matrix.screen }}
       - run: python3 scripts/collect_evidence.py
         if: always()
       - uses: actions/upload-artifact@v4

@@ -1,42 +1,19 @@
 import SwiftUI
 
-struct WelcomeView: View {
-    var begin: () -> Void
-    var edit: () -> Void = {}
+struct WelcomeView:View {
+    var begin:()->Void
+    var edit:()->Void={}
     @Environment(\.accessibilityReduceMotion) private var reduced
-    @State private var visible = false
-    var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                Ambient()
-                Canvas { context, size in
-                    for i in 0..<110 {
-                        let x = CGFloat((i * 73 + 19) % 997) / 997 * size.width
-                        let y = CGFloat((i * 127 + 53) % 991) / 991 * size.height
-                        let radius: CGFloat = i % 9 == 0 ? 1.1 : 0.55
-                        context.fill(Path(ellipseIn: CGRect(x:x,y:y,width:radius*2,height:radius*2)),with:.color(Palette.gold.opacity(i % 9 == 0 ? 0.3:0.1)))
-                    }
-                }.accessibilityHidden(true)
-                VStack(spacing: 0) {
-                    HStack { Brand(); Spacer(); Text("مساحة للإبداع").font(.system(size:11)).foregroundStyle(Palette.quiet) }.padding(.top,24)
-                    Spacer(minLength:40)
-                    VStack(spacing:22) {
-                        Image("CookiesLogo").resizable().scaledToFit().frame(width:84,height:84).clipShape(Circle()).shadow(color:Palette.gold.opacity(0.14),radius:35)
-                        VStack(spacing:6) {
-                            Text("Cookies").font(.system(size:48,weight:.semibold,design:.rounded)).tracking(-2)
-                            Text("E D I T O R").font(.system(size:12,weight:.medium)).tracking(5).foregroundStyle(Palette.quiet)
-                        }.environment(\.layoutDirection,.leftToRight)
-                        Capsule().fill(LinearGradient(colors:[.clear,Palette.gold.opacity(0.8),.clear],startPoint:.leading,endPoint:.trailing)).frame(width:150,height:1)
-                        Text("لكل حوار مكانه.").font(.system(size:17,weight:.medium)).padding(.top,6)
-                    }.opacity(visible ? 1:0).offset(y:visible ? 0:12)
-                    Spacer(minLength:44)
-                    VStack(spacing:14) {
-                        Button("تسجيل الدخول",action:begin).buttonStyle(GoldButtonStyle(primary:true)).accessibilityIdentifier("welcome-start")
-                        Button("متابعة التحرير",action:edit).font(.system(size:14)).frame(height:44).frame(maxWidth:.infinity).glass(16)
-                        Text("نصوص وطبقات، بدقة صورك الأصلية").font(.system(size:11)).foregroundStyle(Palette.quiet).padding(.top,10)
-                    }.frame(maxWidth:420).padding(.bottom,max(30,geometry.size.height*0.05))
-                }.padding(.horizontal,28).frame(maxWidth:1000).frame(maxWidth:.infinity).foregroundStyle(Palette.pale)
-            }
-        }.onAppear { withAnimation(reduced ? nil:.easeOut(duration:0.55)) { visible=true } }
-    }
+    @State private var visible=false
+    @State private var guide=false
+    var body:some View{GeometryReader{geometry in ZStack{Ambient();ScrollView{VStack(spacing:28){
+        HStack{Brand();Spacer();Button{guide=true}label:{Image(systemName:"questionmark").font(.system(size:15,weight:.medium)).frame(width:40,height:40).glass(14)}.accessibilityLabel("دليل التطبيق")}.padding(.top,8)
+        Spacer(minLength:geometry.size.height>700 ? 30:4)
+        ZStack{Circle().stroke(.white.opacity(0.045),lineWidth:1).frame(width:206,height:206);Circle().stroke(LinearGradient(colors:[.clear,Palette.gold.opacity(0.42),.clear],startPoint:.topLeading,endPoint:.bottomTrailing),lineWidth:1).frame(width:158,height:158);Image("CookiesLogo").resizable().scaledToFit().frame(width:92,height:92).clipShape(Circle()).shadow(color:Palette.gold.opacity(0.18),radius:34);QuietBadge(text:"لكل حوار مكانه",icon:"text.bubble").offset(y:104)}.accessibilityHidden(true)
+        VStack(spacing:12){Text("Cookies Editor").font(.system(size:36,weight:.semibold,design:.rounded)).tracking(-1).environment(\.layoutDirection,.leftToRight);Text("حكايتك. بصمتك. إبداعك.").font(.system(size:20,weight:.light));Text("مساحة لتحرير المانهوا، تنسيق حواراتها،\nوترتيب فصولها بدقة صورك الأصلية.").font(.system(size:13)).foregroundStyle(Palette.secondary).multilineTextAlignment(.center).lineSpacing(5)}
+        HStack(spacing:8){feature("نصوص","textformat");feature("طبقات","square.3.layers.3d");feature("فصول","rectangle.stack")}.frame(maxWidth:480)
+        VStack(spacing:12){Button(action:NetworkPolicy.enabled ? begin:edit){Label(NetworkPolicy.enabled ? "تسجيل الدخول":"ابدأ الإبداع",systemImage:NetworkPolicy.enabled ? "person.crop.circle":"arrow.up.left")}.buttonStyle(GoldButtonStyle(primary:true)).accessibilityIdentifier("welcome-start");if NetworkPolicy.enabled{Button("متابعة التحرير",action:edit).buttonStyle(GoldButtonStyle())};Text("مساحة عمل مرتّبة. أدوات قريبة. مشاريع محفوظة.").font(.system(size:10)).foregroundStyle(Palette.quiet)}.frame(maxWidth:420)
+        Spacer(minLength:24)
+    }.padding(.horizontal,24).padding(.bottom,24).frame(maxWidth:900).frame(maxWidth:.infinity).frame(minHeight:geometry.size.height).opacity(visible ? 1:0).offset(y:visible ? 0:8)}}}.foregroundStyle(Palette.pale).onAppear{withAnimation(reduced || !EditorPreferences.motion ? nil:.easeOut(duration:0.45)){visible=true}}.sheet(isPresented:$guide){AppGuideView()}}
+    private func feature(_ title:String,_ icon:String)->some View{VStack(spacing:9){Image(systemName:icon).font(.system(size:19,weight:.light));Text(title).font(.system(size:11))}.frame(maxWidth:.infinity).padding(.vertical,16).glass(17)}
 }

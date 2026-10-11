@@ -6,6 +6,9 @@ options:
 settings:
   base:
     SWIFT_VERSION: '5.0'
+    MARKETING_VERSION: '1.1.0'
+    CURRENT_PROJECT_VERSION: '1.1.0'
+    COOKIES_SOURCE_REVISION: development
     CLANG_CXX_LANGUAGE_STANDARD: c++17
     GCC_PREPROCESSOR_DEFINITIONS:
     - $(inherited)
@@ -61,6 +64,9 @@ targetTemplates:
       path: .work/Info-$(TARGET_NAME).plist
       properties:
         CFBundleDisplayName: Cookies Editor
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        CookiesSourceRevision: $(COOKIES_SOURCE_REVISION)
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
         - UIInterfaceOrientationPortrait
@@ -168,6 +174,34 @@ targets:
       properties:
         CookiesServicesEnabled: true
         CFBundleDisplayName: Cookies Editor
+  CookiesLocal:
+    templates:
+    - CookiesBase
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.cookies.editor.local
+    info:
+      path: .work/Info-CookiesLocal.plist
+      properties:
+        CookiesServicesEnabled: false
+        CFBundleDisplayName: Cookies Editor
+        CFBundleURLTypes:
+        - CFBundleURLName: Cookies Local Documents
+          CFBundleURLSchemes:
+          - cookies-editor-local
+  CookiesLocalUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+    - LocalUITests
+    dependencies:
+    - target: CookiesLocal
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.cookies.editor.localuitests
+        TEST_TARGET_NAME: CookiesLocal
+        SWIFT_OBJC_BRIDGING_HEADER: ''
+        GENERATE_INFOPLIST_FILE: true
 schemes:
   CookiesEditor:
     build:
@@ -179,4 +213,12 @@ schemes:
       - CookiesUITests
       - CookiesServicesTests
       - CookiesServicesUITests
+      gatherCoverageData: true
+  CookiesLocal:
+    build:
+      targets:
+        CookiesLocal: all
+    test:
+      targets:
+      - CookiesLocalUITests
       gatherCoverageData: true

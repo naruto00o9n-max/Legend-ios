@@ -56,28 +56,23 @@ struct EditorView:View {
                     toolButton(Tool.shapes.icon,"أشكال",id:"tool-shapes"){select(.shapes)}
                     Menu{ForEach(BubbleShape.allCases){shape in Button(shape.title){model.panel=nil;model.sniperMode=false;model.bubbleShape=shape}}}label:{VStack(spacing:6){Image(systemName:"rectangle.and.pencil.and.ellipsis").font(.system(size:20));Text("تنسيق فقاعة").font(.system(size:10))}.frame(width:76,height:60)}.accessibilityIdentifier("tool-bubble-layout")
                     toolButton("text.bubble","التايبر",id:"tool-typer"){assistant.toggle();model.panel=nil}
-                    Menu{
-                        Button{select(.cleaner)}label:{Label("تنظيف",systemImage:"sparkles")}.accessibilityIdentifier("tool-cleaner")
-                        Button{select(.eyedropper)}label:{Label("قطارة",systemImage:"eyedropper")}.accessibilityIdentifier("tool-eyedropper")
-                        Button{replacingBackground=true}label:{Label("استبدال الصورة الأصلية",systemImage:"photo.on.rectangle")}
-                        Button{reader=true}label:{Label("القراءة",systemImage:"book")}.accessibilityIdentifier("tool-reader")
-                    }label:{VStack(spacing:6){Image(systemName:"ellipsis").font(.system(size:20));Text("المزيد").font(.system(size:10))}.frame(width:62,height:60)}.accessibilityIdentifier("tool-more")
+                    toolButton("scope","القنص",id:"tool-sniper",selected:model.sniperMode){model.bubbleShape=nil;model.sniperMode.toggle();model.tool = .move;model.panel=nil}
+                    toolButton(Tool.cleaner.icon,"تنظيف",id:"tool-cleaner"){select(.cleaner)}
+                    toolButton(Tool.eyedropper.icon,"قطارة",id:"tool-eyedropper",selected:model.tool == .eyedropper){select(.eyedropper)}
+                    toolButton("photo.on.rectangle","استبدال الأصل",id:"tool-replace-background"){replacingBackground=true}
+                    toolButton("book","القراءة",id:"tool-reader"){reader=true}
+
                 }.padding(.horizontal,8)}.frame(height:68*min(1.15,max(0.85,toolbarScale))).accessibilityIdentifier("tool-strip")
             }
 
         }.foregroundStyle(Palette.pale).glass(0)}
         .toolbar(.hidden,for:.navigationBar).foregroundStyle(Palette.pale).animation(EditorPreferences.motion ? .easeInOut(duration:0.2):nil,value:model.panel).animation(EditorPreferences.motion ? .easeInOut(duration:0.2):nil,value:objectPanel).animation(EditorPreferences.motion ? .easeInOut(duration:0.2):nil,value:assistant)
         .overlay(alignment:.trailing){if !assistant{Button{assistant=true;model.panel=nil}label:{Image("CookiesLogo").resizable().scaledToFit().frame(width:38,height:38).clipShape(Circle()).padding(6).background(Palette.ink.opacity(0.85),in:Circle()).overlay(Circle().stroke(Palette.gold.opacity(0.4),lineWidth:0.8))}.padding(.trailing,12).accessibilityIdentifier("tool-assistant").accessibilityLabel("التايبر")}}
-        .overlay(alignment:.trailing){if assistant{GeometryReader{g in TyperPanel(model:model,close:{assistant=false},compact:g.size.height<500).frame(width:min(CGFloat(typerWidth),g.size.width-24),height:min(CGFloat(typerHeight),max(160,g.size.height-136))).frame(maxWidth:.infinity,maxHeight:.infinity,alignment:.trailing).padding(.trailing,8)}.transition(.move(edge:.trailing).combined(with:.opacity))}}
-        .overlay(alignment:.top){if let shape=model.bubbleShape{HStack{Image(systemName:"text.bubble");Text("ارسم مساحة الفقاعة · "+shape.title).font(.system(size:12));Button("التايبر"){assistant=true};Button("إنهاء"){model.bubbleShape=nil}}.padding(12).glass(14).padding(.horizontal,12).padding(.top,58)}}
-        .overlay(alignment:.top){if model.sniperMode && model.cleanCandidates.isEmpty{VStack(spacing:4){
-            HStack{Image(systemName:"scope");Text("حدد الفقاعات بالترتيب · \(model.sniperTargets.count)").font(.system(size:12));Spacer(minLength:4);IconButton(icon:"xmark",title:"إنهاء القنص"){model.sniperMode=false}}
-            HStack(spacing:16){Button{_ = model.sniperTargets.popLast()}label:{Label("تراجع",systemImage:"arrow.uturn.backward")}.disabled(model.sniperTargets.isEmpty);Button{assistant=true}label:{Label("النصوص",systemImage:"text.bubble")};Button{Task{await model.whitenSniperTargets()}}label:{Label("تبييض النص",systemImage:"eraser.fill")}.disabled(model.sniperTargets.isEmpty || model.busy).accessibilityIdentifier("sniper-whiten");Spacer(minLength:0)}.font(.system(size:12)).padding(.horizontal,4).padding(.bottom,8)
-        }.padding(.horizontal,12).glass(14).padding(.horizontal,12).padding(.top,58)}}
-        .overlay(alignment:.top){if !model.cleanCandidates.isEmpty{VStack(spacing:8){
-            ScrollView(.horizontal,showsIndicators:false){HStack(spacing:8){ForEach(model.cleanCandidates){candidate in Button(candidate.title){model.cleanPreviewID=candidate.id}.buttonStyle(.bordered).tint(model.cleanPreviewID==candidate.id ? Palette.gold:Palette.pale)};Button("الأصل"){model.cleanPreviewID=nil}.buttonStyle(.bordered);Button("اعتماد"){model.acceptCleaning()}.disabled(model.cleanPreviewID==nil).accessibilityIdentifier("cleaning-accept");Button("إلغاء"){model.discardCleaning()}.accessibilityIdentifier("cleaning-discard")}}
-            if let detail=model.cleanCandidates.first?.detail,!detail.isEmpty{Text(detail).font(.system(size:11)).foregroundStyle(Palette.quiet).fixedSize(horizontal:false,vertical:true)}
-        }.font(.system(size:11)).padding(12).glass(14).padding(.horizontal,12).padding(.top,58)}}
+        .overlay(alignment:.trailing){if assistant{GeometryReader{g in TyperPanel(model:model,close:{assistant=false},compact:g.size.height<500).frame(width:min(CGFloat(typerWidth),g.size.width-24),height:min(CGFloat(typerHeight),max(160,g.size.height-24))).frame(maxWidth:.infinity,maxHeight:.infinity,alignment:.trailing).padding(.trailing,8)}.transition(.move(edge:.trailing).combined(with:.opacity))}}
+        .overlay(alignment:.top){if let shape=model.bubbleShape{ToolModeCard(title:"تنسيق الفقاعة · "+shape.title,detail:"اسحب داخل الفقاعة؛ يُدرج الحوار التالي من التايبر بحجم وتوزيع مناسبين.",icon:"rectangle.and.pencil.and.ellipsis",close:{model.bubbleShape=nil}){Button{assistant=true}label:{Label("نصوص الفصل",systemImage:"text.bubble")};Menu{ForEach(BubbleShape.allCases){item in Button(item.title){model.bubbleShape=item}}}label:{Label("شكل المنطقة",systemImage:"square.on.circle")}}.padding(.top,58)}}
+        .overlay(alignment:.top){if model.sniperMode && model.cleanCandidates.isEmpty{ToolModeCard(title:"القنص · \(model.sniperTargets.count) أهداف",detail:"المس داخل كل فقاعة بالترتيب، ثم اختر إدراج النصوص أو تبييضها.",icon:"scope",close:{model.sniperMode=false}){Button{_ = model.sniperTargets.popLast()}label:{Label("تراجع",systemImage:"arrow.uturn.backward")}.disabled(model.sniperTargets.isEmpty);Button{assistant=true}label:{Label("النصوص",systemImage:"text.bubble")};Button{Task{await model.whitenSniperTargets()}}label:{Label("تبييض النص",systemImage:"eraser.fill")}.disabled(model.sniperTargets.isEmpty || model.busy).accessibilityIdentifier("sniper-whiten")}.padding(.top,58)}}
+        .overlay(alignment:.top){if !model.cleanCandidates.isEmpty{ToolModeCard(title:"مراجعة التنظيف",detail:model.cleanCandidates.first?.detail ?? "قارن النتيجة بالأصل قبل اعتمادها.",icon:"sparkles",close:{model.discardCleaning()}){ForEach(model.cleanCandidates){candidate in Button(candidate.title){model.cleanPreviewID=candidate.id}.buttonStyle(CapsuleActionStyle(selected:model.cleanPreviewID==candidate.id))};Button{model.cleanPreviewID=nil}label:{Label("الأصل",systemImage:"photo")};Button{model.acceptCleaning()}label:{Label("اعتماد",systemImage:"checkmark")}.disabled(model.cleanPreviewID==nil).accessibilityIdentifier("cleaning-accept");Button{model.discardCleaning()}label:{Label("إلغاء",systemImage:"xmark")}.accessibilityIdentifier("cleaning-discard")}.padding(.top,58)}}
+
         .overlay{if model.busy && !showExport{ProgressView("جارٍ معالجة المنطقة…").tint(Palette.gold).padding(20).glass()}}
         .onChange(of:model.selected){_,_ in objectPanel=nil}
         .onChange(of:model.requestTyper){_,open in if open{assistant=true;model.requestTyper=false}}
@@ -102,14 +97,16 @@ struct EditorView:View {
     }
     func placeBubble(_ rect:CGRect,shape:BubbleShape){
         guard let chapter=typer.activeChapter else{model.error="افتح التايبر واختر فصلًا أولًا";assistant=true;return}
-        guard let bubble=chapter.pasteable.first(where:{!$0.used}) else{model.error="اكتمل وضع فقاعات هذا الفصل";return}
+        let preferences=typer.panelPreferences
+        guard var bubble=DialogueSequence.resume(chapter,cursor:preferences.cursor(in:chapter.id)) else{model.error="اكتمل وضع فقاعات هذا الفصل";return}
         guard !model.busy else{return};model.busy=true
-        var input=EditorLayer(kind:.text);input.textContent=bubble.text;input.style=typer.tag(bubble.tagID)?.style ?? TextStyle()
+        if preferences.uppercase{bubble.text=bubble.text.uppercased()}
+        var input=EditorLayer(kind:.text);input.textContent=bubble.text;input.style=(typer.tag(preferences.overrideTag) ?? typer.tag(bubble.tagID))?.style ?? TextStyle();if let font=preferences.quickFont{input.style.fontPath=font}
         let request=BubbleLayoutRequest(bounds:rect,shape:shape),pageID=model.page.id,chapterID=chapter.id
         Task{defer{model.busy=false};do{
             let prepared=try await BackgroundWork.run{try BubbleLayout.fit(input,request:request)}
             guard model.page.id==pageID,typer.activeChapter?.id==chapterID,typer.activeChapter?.bubbles.first(where:{$0.id==bubble.id})?.used==false else{return}
-            try typer.place([bubble],chapter:chapterID,model:model,styleAssets:styles.directory,preparedLayout:prepared)
+            try typer.place([bubble],chapter:chapterID,model:model,overrideTag:preferences.overrideTag,font:preferences.quickFont,styleAssets:styles.directory,preparedLayout:prepared)
         }catch{model.error=error.localizedDescription}}
 
     }

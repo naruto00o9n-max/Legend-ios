@@ -13,6 +13,8 @@ struct FontLibraryView:View {
     @State private var version=0
     @State private var error:String?
     @State private var scripts:[String:Set<String>]=[:]
+    @State private var catalogue=Fonts.files+Fonts.otf
+    @State private var classification=UUID()
     @State private var query=""
     @State private var filter="الكل"
     @State private var favorites=Set(UserDefaults.standard.stringArray(forKey:"fontFavorites") ?? [])
@@ -21,18 +23,19 @@ struct FontLibraryView:View {
     @State private var groupName=""
     @State private var naming=false
     @State private var output:URL?
-    private var files:[URL] {(Fonts.files+Fonts.otf).filter{url in
+    private var files:[URL] {catalogue.filter{url in
         let name=url.lastPathComponent
         return (query.isEmpty || name.localizedCaseInsensitiveContains(query)) && (filter=="الكل" || scripts[name]?.contains(filter)==true || (filter=="المفضلة" && favorites.contains(name)) || (filter=="آخر استخدام" && recent.contains(name)) || (filter=="المستوردة" && url.path.hasPrefix(Fonts.userDirectory.path)) || (groups[filter]?.contains(name)==true))
     }.sorted{if filter=="آخر استخدام"{return (recent.firstIndex(of:$0.lastPathComponent) ?? Int.max)<(recent.firstIndex(of:$1.lastPathComponent) ?? Int.max)};return $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending}}
     var body:some View {
         NavigationStack{ZStack{Ambient();VStack(spacing:12){
-            TextField("البحث في الخطوط",text:$query).padding(12).glass(14).padding(.horizontal)
-            ScrollView(.horizontal,showsIndicators:false){HStack{ForEach(["الكل","العربية","الإنجليزية","المفضلة","آخر استخدام","المستوردة"]+groups.keys.sorted(),id:\.self){name in Button(name){filter=name}.buttonStyle(.bordered).tint(filter==name ? Palette.gold:Palette.pale)}}.padding(.horizontal)}.accessibilityIdentifier("font-filter-strip")
+            HStack{SurfaceHeader(title:"حروف تصنع الحوار",subtitle:"\(catalogue.count) خطوط · اسم واضح ومعاينة حقيقية",icon:"textformat.alt")}.padding(.horizontal,20)
+            SearchBar(placeholder:"البحث في الخطوط",text:$query).padding(.horizontal,20)
+            ScrollView(.horizontal,showsIndicators:false){HStack{ForEach(["الكل","العربية","الإنجليزية","المفضلة","آخر استخدام","المستوردة"]+groups.keys.sorted(),id:\.self){name in Button(name){filter=name}.buttonStyle(CapsuleActionStyle(selected:filter==name)).accessibilityIdentifier("font-category-"+name).accessibilityLabel(name)}}.padding(.horizontal)}.accessibilityIdentifier("font-filter-strip")
             List{ForEach(files,id:\.self){url in row(url)}}.id(version).listStyle(.plain).buttonStyle(.borderless).scrollContentBackground(.hidden)
             HStack{Text("\(selected.count) محدد");Spacer();Button("مجموعة جديدة"){naming=true}.disabled(selected.isEmpty);Button("تصدير"){exportFonts()}.disabled(selected.isEmpty);if let output{ShareLink(item:output){Image(systemName:"square.and.arrow.up")}}}.font(.system(size:12)).padding(14).glass(0)
         }}.foregroundStyle(Palette.pale).navigationTitle("مكتبة الخطوط").navigationBarTitleDisplayMode(.inline)
-        .toolbar{ToolbarItem(placement:.topBarLeading){Button("إغلاق"){dismiss()}.accessibilityIdentifier("font-close")};ToolbarItem(placement:.topBarTrailing){Button{picker=true}label:{Image(systemName:"plus")}}}
+        .toolbar{ToolbarItem(placement:.topBarLeading){Button("إغلاق"){dismiss()}.accessibilityIdentifier("font-close")};ToolbarItem(placement:.topBarTrailing){Button{picker=true}label:{Image(systemName:"plus")}.accessibilityLabel("استيراد خط").accessibilityIdentifier("font-import")}}
         .disabled(importing).overlay{if importing{ProgressView("جارٍ استيراد الخطوط…").padding(20).glass(20)}}
         .cookiesFileImporter(isPresented:$picker,allowedContentTypes:[.data]){result in do{importFonts(try result.get())}catch{self.error=error.localizedDescription}}
         .alert("مجموعة خطوط",isPresented:$naming){TextField("اسم المجموعة",text:$groupName);Button("حفظ"){let name=groupName.trimmingCharacters(in:.whitespacesAndNewlines);if !name.isEmpty{groups[name]=selected.sorted();saveGroups();filter=name;groupName=""}};Button("إلغاء",role:.cancel){}}
@@ -48,7 +51,14 @@ struct FontLibraryView:View {
         }
     }
     private func choose(_ name:String){guard let onSelect else{return};recent.removeAll{$0==name};recent.insert(name,at:0);recent=Array(recent.prefix(30));UserDefaults.standard.set(recent,forKey:"fontRecent");onSelect(name)}
-    private func classifyFonts(){var result:[String:Set<String>]=[:];for file in Fonts.files+Fonts.otf{var style=TextStyle();style.fontPath=file.lastPathComponent;let ui=Fonts.font(style),font=CTFontCreateWithName(ui.fontName as CFString,17,nil);var supported=Set<String>();for (label,code) in [("العربية",UniChar(0x0639)),("الإنجليزية",UniChar(0x0041))]{var character=code,glyph=CGGlyph();if CTFontGetGlyphsForCharacters(font,&character,&glyph,1),glyph != 0{supported.insert(label)}};result[file.lastPathComponent]=supported};scripts=result}
+    private func classifyFonts(){
+        let fonts=Fonts.files+Fonts.otf,token=UUID();catalogue=fonts;classification=token
+        Task{do{let result=try await BackgroundWork.run{()->[String:Set<String>] in
+            var result:[String:Set<String>]=[:]
+            for file in fonts{try Task.checkCancellation();var style=TextStyle();style.fontPath=file.lastPathComponent;let ui=Fonts.font(style),font=CTFontCreateWithName(ui.fontName as CFString,17,nil);var supported=Set<String>();for (label,code) in [("العربية",UniChar(0x0639)),("الإنجليزية",UniChar(0x0041))]{var character=code,glyph=CGGlyph();if CTFontGetGlyphsForCharacters(font,&character,&glyph,1),glyph != 0{supported.insert(label)}};result[file.lastPathComponent]=supported};return result
+        };if classification==token{scripts=result}}catch{}}
+    }
+
     private func saveGroups(){UserDefaults.standard.set(groups,forKey:"fontGroups")}
     private func importFonts(_ url:URL) {
         importing=true
