@@ -18,7 +18,7 @@ import SwiftUI
             var layer=EditorLayer(kind:.text,name:"معاينة الوسم");layer.textOrigin = .tagPreview;layer.textContent="حوار يصنع الحكاية\nوهذا هو نمط الوسم"
             layer.style=try styles.resolved(tag.style,from:styles.directory,into:model.directory)
             tag.textTransform?.apply(to:&layer)
-            let bounds=LayerRenderer.bounds(layer);layer.frame=Box(x:400-bounds.width/2,y:260-bounds.height/2,width:bounds.width,height:bounds.height)
+            let bounds=LayerRenderer.bounds(layer);layer.frame=Box(x:400-Double(bounds.width)/2,y:260-Double(bounds.height)/2,width:Double(bounds.width),height:Double(bounds.height))
             model.page.layers=[layer];model.selected=layer.id;model.stylePreviewLayer=layer.id;model.tool = .text;model.panel = .font;model.save();self.model=model
         }catch{if !Task.isCancelled{self.error=error.localizedDescription}}}
     }

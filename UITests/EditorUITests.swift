@@ -213,7 +213,16 @@ final class EditorUITests:XCTestCase {
         let confirm=app.buttons["تأكيد وحفظ"];XCTAssertTrue(confirm.waitForExistence(timeout:5));confirm.tap()
         let open=app.buttons["tag-open-editor"];XCTAssertTrue(open.waitForExistence(timeout:8));revealVertical(open);open.tap();XCTAssertTrue(app.buttons["tag-editor-save"].waitForExistence(timeout:12))
         reveal(app.buttons["panel-stroke"],in:app.scrollViews["panel-strip"]);app.buttons["panel-stroke"].tap();XCTAssertEqual(app.textFields["value-السماكة"].value as? String,"5")
-        capture("tag-full-editor-persisted-outline");app.buttons["tag-editor-cancel"].tap();XCTAssertTrue(app.buttons["tag-save"].waitForExistence(timeout:5))
+        capture("fix-tag-full-editor-persisted-outline");app.buttons["tag-editor-cancel"].tap();XCTAssertTrue(app.buttons["tag-save"].waitForExistence(timeout:5))
+    }
+
+    func testManualDoneRemembersOutlineForNewManualText(){
+        openEditor();tool("text");app.buttons["text-inspector-close"].tap()
+        reveal(app.buttons["panel-stroke"],in:app.scrollViews["panel-strip"]);app.buttons["panel-stroke"].tap()
+        let field=app.textFields["value-السماكة"];XCTAssertTrue(field.waitForExistence(timeout:5));XCTAssertEqual(field.value as? String,"0")
+        field.tap();field.typeText(String(repeating:"\u{8}",count:12)+"5");app.buttons["text-inspector-close"].tap()
+        reveal(app.buttons["text-add"],in:app.scrollViews["panel-strip"]);app.buttons["text-add"].tap();XCTAssertTrue(app.textViews["text-input"].waitForExistence(timeout:5));app.buttons["text-inspector-close"].tap()
+        reveal(app.buttons["panel-stroke"],in:app.scrollViews["panel-strip"]);app.buttons["panel-stroke"].tap();XCTAssertEqual(app.textFields["value-السماكة"].value as? String,"5");capture("fix-manual-done-remembers-outline")
     }
 
 }

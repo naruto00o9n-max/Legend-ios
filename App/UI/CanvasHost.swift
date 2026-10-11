@@ -105,7 +105,7 @@ struct CanvasHost:UIViewRepresentable {
         private func viewportHideColor(){(scroll as? CanvasViewport)?.colorFeedback.hide()}
         func sampleColor(at point:CGPoint){beginSampling(at:point);requestColor(at:point,commit:true)}
 
-        @objc func doubleTap(_ g:UITapGestureRecognizer){guard let layer=hit(g.location(in:canvas)),layer.kind == .text else{return};let action=UserDefaults.standard.string(forKey:"editor-double-tap") ?? "edit";model.selected=layer.id;if action=="edit"{model.tool = .text;model.panel = .content}else if action=="typer"{model.requestTyper=true}}
+        @objc func doubleTap(_ g:UITapGestureRecognizer){guard let layer=hit(g.location(in:canvas)),layer.kind == .text else{return};let action=model.stylePreviewLayer != nil ? "edit":UserDefaults.standard.string(forKey:"editor-double-tap") ?? "edit";model.selected=layer.id;if action=="edit"{model.tool = .text;model.panel = .content}else if action=="typer"{model.requestTyper=true}}
         @objc func longPress(_ g:UILongPressGestureRecognizer){
             let point=g.location(in:canvas)
             switch g.state{case .began:beginSampling(at:point);requestColor(at:point,commit:false);case .changed:requestColor(at:point,commit:false);case .ended:requestColor(at:point,commit:true);case .cancelled,.failed:colorGeneration=UUID();sampling=false;samplingPage=nil;colorTarget=nil;viewportHideColor();default:break}
