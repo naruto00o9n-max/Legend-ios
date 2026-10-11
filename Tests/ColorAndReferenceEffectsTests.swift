@@ -21,6 +21,15 @@ final class ColorAndReferenceEffectsTests:XCTestCase {
         try FileManager.default.createDirectory(at:destination,withIntermediateDirectories:true);try Data("keep".utf8).write(to:destination.appendingPathComponent("untouched.txt"))
         _ = try AppStorageManager.restore(archive,selected:["Colors"],at:destination);XCTAssertEqual(ColorLibraryStore(directory:destination.appendingPathComponent("Colors")).library,store.library);XCTAssertEqual(try String(contentsOf:destination.appendingPathComponent("untouched.txt")),"keep")
     }
+    @MainActor func testContinuousColorChoiceAvoidsHistoryChurnAndResetCannotResurrectQueuedColors()throws{
+        let root=root();defer{try? FileManager.default.removeItem(at:root)};let library=LibraryStore(root:root),page=try PageOperations.blank(title:"ألوان",width:64,height:64,color:"FFFFFF",transparent:false,root:root),model=EditorModel(page:page,library:library)
+        var layer=EditorLayer(kind:.text);layer.textOrigin = .manual;layer.style=TextStyle.plainText();model.page.layers=[layer];model.selected=layer.id
+        model.colorStore.beginChoice();for i in 1...128{model.change(persist:false){$0.style.color=String(format:"%06X",i)}};XCTAssertTrue(model.colorStore.library.colors.isEmpty)
+        model.colorStore.endChoice();XCTAssertTrue(model.confirmTextSettings());XCTAssertEqual(model.colorStore.library.colors.map(\.hex),["000080"]);try model.colorStore.flush()
+        let before=model.colorStore.revision;model.colorStore.record("112233");model.colorStore.discardPendingWrites();XCTAssertNotEqual(model.colorStore.revision,before);try FileManager.default.removeItem(at:model.colorStore.directory)
+        model.colorStore.record("FFFFFF");try model.colorStore.flush();XCTAssertFalse(FileManager.default.fileExists(atPath:model.colorStore.directory.path))
+        model.colorStore.reload();XCTAssertTrue(model.colorStore.library.colors.isEmpty);model.colorStore.record("ABCDEF");try model.colorStore.flush();XCTAssertEqual(ColorLibraryStore(directory:model.colorStore.directory).library.colors.map(\.hex),["ABCDEF"])
+    }
     func baselineAdvance(_ layer:EditorLayer)throws->CGFloat{
         let attributed=LayerRenderer.attributed(layer),path=CGPath(rect:CGRect(x:0,y:0,width:300,height:1000),transform:nil),frame=CTFramesetterCreateFrame(CTFramesetterCreateWithAttributedString(attributed),CFRange(location:0,length:0),path,nil)
         let lines=CTFrameGetLines(frame) as! [CTLine];XCTAssertGreaterThanOrEqual(lines.count,2);var origins=[CGPoint](repeating:.zero,count:lines.count);CTFrameGetLineOrigins(frame,CFRange(location:0,length:0),&origins);return abs(origins[0].y-origins[1].y)
@@ -33,8 +42,8 @@ final class ColorAndReferenceEffectsTests:XCTestCase {
     func testRGBAndGlitchRemainEditableDeterministicAndVisibleWithGradientAndOutline()throws{
         var layer=EditorLayer(kind:.text);layer.textContent="زيوس";layer.style=TextStyle.plainText(fontSize:72,boxWidth:260);layer.style.textGradient=["201040","AA32CC"];layer.style.strokeWidth=2;layer.style.strokeColor="FFFFFF"
         let plain=rgba(render(layer).cgImage!);layer.style.effectType = .chromatic;layer.style.art=TextArtSettings(distance:12,angle:0,order:0,bandHeight:18,strength:12,colorShift:4,seed:7)
-        let rgb=rgba(render(layer).cgImage!);XCTAssertNotEqual(rgb,plain);XCTAssertEqual(layer.textContent,"زيوس");XCTAssertEqual(layer.style.textGradient,["201040","AA32CC"])
-        layer.style.effectType = .glitch;let a=rgba(render(layer).cgImage!),b=rgba(render(layer).cgImage!);XCTAssertEqual(a,b);XCTAssertNotEqual(a,rgb);layer.style.art?.seed=8;XCTAssertNotEqual(rgba(render(layer).cgImage!),a)
+        let rgbSnapshot=render(layer),rgb=rgba(rgbSnapshot.cgImage!);let rgbAttachment=XCTAttachment(image:rgbSnapshot);rgbAttachment.name="colors-RGB-native";rgbAttachment.lifetime = .keepAlways;add(rgbAttachment);XCTAssertNotEqual(rgb,plain);XCTAssertEqual(layer.textContent,"زيوس");XCTAssertEqual(layer.style.textGradient,["201040","AA32CC"])
+        layer.style.effectType = .glitch;let glitchAttachment=XCTAttachment(image:render(layer));glitchAttachment.name="colors-glitch-native";glitchAttachment.lifetime = .keepAlways;add(glitchAttachment);let a=rgba(render(layer).cgImage!),b=rgba(render(layer).cgImage!);XCTAssertEqual(a,b);XCTAssertNotEqual(a,rgb);layer.style.art?.seed=8;XCTAssertNotEqual(rgba(render(layer).cgImage!),a)
         let reopened=try JSONDecoder().decode(EditorLayer.self,from:JSONEncoder().encode(layer));XCTAssertEqual(reopened,layer)
         layer.style.effectType = .none;XCTAssertEqual(rgba(render(layer).cgImage!),plain)
     }
@@ -51,6 +60,11 @@ final class ColorAndReferenceEffectsTests:XCTestCase {
             let result=try XCTUnwrap(CookiesDetectBubble(image,CGPoint(x:280,y:240)) as? [String:Any]);XCTAssertEqual(result["pin"] as? Bool,false);XCTAssertGreaterThan((result["width"] as? NSNumber)?.doubleValue ?? 0,240);XCTAssertEqual((result["y"] as? NSNumber)?.doubleValue ?? 0,130,accuracy:15)
             let outside=try XCTUnwrap(CookiesDetectBubble(image,CGPoint(x:25,y:25)) as? [String:Any]);XCTAssertEqual(outside["pin"] as? Bool,true)
         }
+    }
+    func testRealColoredDialogueSelectsTheFullInteriorInsteadOfATextFragment()throws{
+        let url=try XCTUnwrap(Bundle(for:Self.self).url(forResource:"colored-dialogue",withExtension:"png",subdirectory:"WhiteningFixtures")),original=try XCTUnwrap(UIImage(contentsOfFile:url.path)?.cgImage),tile=try XCTUnwrap(original.cropping(to:CGRect(x:1640,y:605,width:657,height:1000)))
+        let result=try XCTUnwrap(CookiesDetectBubble(UIImage(cgImage:tile),CGPoint(x:500,y:500)) as? [String:Any]);XCTAssertEqual(result["pin"] as? Bool,false);XCTAssertGreaterThan((result["width"] as? NSNumber)?.doubleValue ?? 0,180);XCTAssertGreaterThan((result["height"] as? NSNumber)?.doubleValue ?? 0,380)
+        let attachment=XCTAttachment(image:UIImage(cgImage:tile));attachment.name="colors-real-sniper-reference";attachment.lifetime = .keepAlways;add(attachment)
     }
     func testUniformColoredWhiteningCanRecoverOCRMissedLineAndProtectDecoration()throws{
         let f=UIGraphicsImageRendererFormat();f.scale=1;let image=UIGraphicsImageRenderer(size:CGSize(width:240,height:220),format:f).image{c in UIColor.white.setFill();c.fill(CGRect(x:0,y:0,width:240,height:220));UIColor(red:1,green:0.9,blue:0.6,alpha:1).setFill();UIBezierPath(ovalIn:CGRect(x:10,y:10,width:220,height:200)).fill();UIColor.black.setFill();for y in [85,125]{for x in [65,90,115,140]{c.fill(CGRect(x:x,y:y,width:12,height:14))}};c.fill(CGRect(x:180,y:45,width:6,height:6))}

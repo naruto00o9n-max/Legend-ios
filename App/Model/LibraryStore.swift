@@ -128,7 +128,7 @@ import SwiftUI
         }catch{self.error=error.localizedDescription}
     }
     func checkpoint() {undoStack.append(page.layers);undoDocuments.append(page);if undoStack.count>60{undoStack.removeFirst();undoDocuments.removeFirst()};redoStack=[];redoDocuments=[]}
-    func change(persist:Bool=true,_ body:(inout EditorLayer)->Void) {guard let i=page.layers.firstIndex(where:{$0.id==selected}),!page.layers[i].isLocked else{return};let previous=page.layers[i].style;body(&page.layers[i]);if page.layers[i].style != previous{let old=Set(previous.usedColors);for color in page.layers[i].style.usedColors where !old.contains(color){colorStore.record(color)}};page.modified=Date();if persist{scheduleEditSave()}}
+    func change(persist:Bool=true,_ body:(inout EditorLayer)->Void) {guard let i=page.layers.firstIndex(where:{$0.id==selected}),!page.layers[i].isLocked else{return};let previous=page.layers[i].style;body(&page.layers[i]);if page.layers[i].style != previous && !colorStore.isChoosing{let old=Set(previous.usedColors);for color in page.layers[i].style.usedColors where !old.contains(color){colorStore.record(color)}};page.modified=Date();if persist{scheduleEditSave()}}
     func add(_ kind:LayerKind,shape:Int=0) {
         let center = !EditorPreferences.smartPosition || visibleCenter == .zero ? CGPoint(x:Double(page.width)/2,y:200):visibleCenter
         var l=EditorLayer(kind:kind,name:kind == .text ? "نص جديد":"طبقة \(page.layers.count+1)");l.frame=Box(x:max(0,Double(center.x)-160),y:max(0,Double(center.y)-65),width:min(320,Double(page.width)),height:130);l.style.boxWidth=l.frame.width;l.style.fontSize=UserDefaults.standard.object(forKey:"default-text-size") as? Double ?? 48;l.shape=shape

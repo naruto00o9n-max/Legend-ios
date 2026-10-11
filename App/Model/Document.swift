@@ -98,7 +98,7 @@ extension UIColor {
 }
 
 extension TextStyle {
-    var usedColors:[String]{var values=textGradient.isEmpty ? [color]:textGradient;if strokeWidth>0{values+=strokeGradient.isEmpty ? [strokeColor]:strokeGradient};if shadowAlpha>0 && (shadowRadius>0 || shadowDx != 0 || shadowDy != 0){values+=shadowGradient.isEmpty ? [shadowColor]:shadowGradient};if backgroundAlpha>0{values.append(backgroundColor)};if effectType != .none{values.append(effectColor)};for outline in extraStrokes ?? []{values+=outline.gradient?.isEmpty==false ? outline.gradient!:[outline.color]};return Array(Set(values))}
+    var usedColors:[String]{var values=textGradient.isEmpty ? [color]:textGradient;if strokeWidth>0{values+=strokeGradient.isEmpty ? [strokeColor]:strokeGradient};if shadowAlpha>0 && (shadowRadius>0 || shadowDx != 0 || shadowDy != 0){values+=shadowGradient.isEmpty ? [shadowColor]:shadowGradient};if backgroundAlpha>0{values.append(backgroundColor)};if [.neon,.error].contains(effectType){values.append(effectColor)};values+=spans.compactMap(\.color);for outline in extraStrokes ?? []{values+=outline.gradient?.isEmpty==false ? outline.gradient!:[outline.color]};return Array(Set(values))}
 }
 struct TextArtSettings:Codable,Equatable {
     var distance=4.0

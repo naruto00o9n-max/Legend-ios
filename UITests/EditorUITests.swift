@@ -211,7 +211,7 @@ final class EditorUITests:XCTestCase {
         let width=app.textFields["value-السماكة"];XCTAssertTrue(width.waitForExistence(timeout:5));width.tap();width.typeText(String(repeating:"\u{8}",count:12)+"5")
         app.buttons["text-inspector-close"].tap();app.buttons["tag-editor-save"].tap()
         let confirm=app.buttons["تأكيد وحفظ"];XCTAssertTrue(confirm.waitForExistence(timeout:5));confirm.tap()
-        let open=app.buttons["tag-open-editor"];XCTAssertTrue(open.waitForExistence(timeout:8));revealVertical(open);open.tap();XCTAssertTrue(app.buttons["tag-editor-save"].waitForExistence(timeout:12))
+        let open=app.buttons["tag-open-editor"];XCTAssertTrue(open.waitForExistence(timeout:8));revealVertical(open);open.tap();XCTAssertTrue(app.buttons["tag-editor-save"].waitForExistence(timeout:12));XCTAssertTrue(app.scrollViews["canvas-scroll"].waitForExistence(timeout:20))
         reveal(app.buttons["panel-stroke"],in:app.scrollViews["panel-strip"]);app.buttons["panel-stroke"].tap();XCTAssertEqual(app.textFields["value-السماكة"].value as? String,"5")
         capture("fix-tag-full-editor-persisted-outline");app.buttons["tag-editor-cancel"].tap();XCTAssertTrue(app.buttons["tag-save"].waitForExistence(timeout:5))
     }
