@@ -12,7 +12,7 @@ assert info['CookiesServicesEnabled'] is (not local)
 configs=list(app.rglob('ReferenceService.json'))
 assert len(configs)==(0 if local else 1),'Unexpected service configuration in '+scheme
 schemes=[s for row in info.get('CFBundleURLTypes',[]) for s in row.get('CFBundleURLSchemes',[])]
-assert ('cookies-editor' not in schemes) if local else ('cookies-editor' in schemes)
+assert schemes==(['cookies-editor-local'] if local else ['cookies-editor']),schemes
 assert not (app/'embedded.mobileprovision').exists()
 assert not list(app.rglob('_CodeSignature'))
 pathlib.Path(record).write_text(json.dumps({'scheme':scheme,'bundle_id':bundle,'display_name':info['CFBundleDisplayName'],'source_commit':revision,'service_enabled':info['CookiesServicesEnabled'],'service_configuration_bundled':bool(configs),'url_schemes':schemes,'provisioning_profile':False,'code_signature_directory':False},indent=2)+'\n')

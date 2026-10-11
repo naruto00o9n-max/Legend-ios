@@ -94,10 +94,6 @@ targetTemplates:
           UTTypeTagSpecification:
             public.filename-extension:
             - cookies
-        CFBundleURLTypes:
-        - CFBundleURLName: Cookies Reference Login
-          CFBundleURLSchemes:
-          - cookies-editor
     settings:
       base:
         PRODUCT_NAME: CookiesEditor
@@ -174,6 +170,10 @@ targets:
       properties:
         CookiesServicesEnabled: true
         CFBundleDisplayName: Cookies Editor
+        CFBundleURLTypes:
+        - CFBundleURLName: Cookies Reference Login
+          CFBundleURLSchemes:
+          - cookies-editor
   CookiesLocal:
     templates:
     - CookiesBase

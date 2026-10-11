@@ -82,7 +82,13 @@ struct CanvasHost:UIViewRepresentable {
             if EditorPreferences.haptics{UISelectionFeedbackGenerator().selectionChanged()}
         }
         private func requestColor(at point:CGPoint,commit:Bool){
-            guard let viewport=scroll as? CanvasViewport,canvas.bounds.contains(point) else{if commit{viewportHideColor()};return}
+            guard let viewport=scroll as? CanvasViewport,canvas.bounds.contains(point) else{
+                // Ignore queued samples after the finger leaves the image. A
+                // cancelled pickup must not reappear or change text afterwards.
+                colorGeneration=UUID();viewportHideColor()
+                if commit{sampling=false;samplingPage=nil;colorTarget=nil}
+                return
+            }
             viewport.colorFeedback.show(at:canvas.convert(point,to:viewport),in:viewport.bounds,color:nil)
             viewport.bringSubviewToFront(viewport.colorFeedback)
             let token=colorGeneration,snapshot=samplingPage ?? model.canvasPage,target=colorTarget
@@ -90,7 +96,7 @@ struct CanvasHost:UIViewRepresentable {
                 guard let self,self.colorGeneration==token,let viewport=self.scroll as? CanvasViewport else{return}
                 if let color{viewport.colorFeedback.show(at:self.canvas.convert(point,to:viewport),in:viewport.bounds,color:color)}
                 if commit{
-                    self.sampling=false;self.samplingPage=nil
+                    self.sampling=false;self.samplingPage=nil;self.colorTarget=nil
                     if let color{self.model.brushColor=color.hex;if let target,self.model.selected==target,self.model.active?.style.color != color.hex{self.model.checkpoint();self.model.change{$0.style.color=color.hex}}}
                     DispatchQueue.main.asyncAfter(deadline:.now()+0.65){[weak self] in guard let self,self.colorGeneration==token,!self.sampling else{return};self.viewportHideColor()}
                 }
@@ -102,7 +108,7 @@ struct CanvasHost:UIViewRepresentable {
         @objc func doubleTap(_ g:UITapGestureRecognizer){guard let layer=hit(g.location(in:canvas)),layer.kind == .text else{return};let action=UserDefaults.standard.string(forKey:"editor-double-tap") ?? "edit";model.selected=layer.id;if action=="edit"{model.tool = .text;model.panel = .content}else if action=="typer"{model.requestTyper=true}}
         @objc func longPress(_ g:UILongPressGestureRecognizer){
             let point=g.location(in:canvas)
-            switch g.state{case .began:beginSampling(at:point);requestColor(at:point,commit:false);case .changed:requestColor(at:point,commit:false);case .ended:requestColor(at:point,commit:true);case .cancelled,.failed:colorGeneration=UUID();sampling=false;samplingPage=nil;viewportHideColor();default:break}
+            switch g.state{case .began:beginSampling(at:point);requestColor(at:point,commit:false);case .changed:requestColor(at:point,commit:false);case .ended:requestColor(at:point,commit:true);case .cancelled,.failed:colorGeneration=UUID();sampling=false;samplingPage=nil;colorTarget=nil;viewportHideColor();default:break}
         }
         @objc func pan(_ g:UIPanGestureRecognizer){let point=g.location(in:canvas)
             removeTextPrompt()

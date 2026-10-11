@@ -142,7 +142,7 @@ final class EditorUITests:XCTestCase {
         // switches. A row-center tap misses the actual RTL switch at the left.
         let candidates=matches.allElementsBoundByIndex.filter{ $0.isHittable }
         let toggle=candidates.min(by:{$0.frame.width<$1.frame.width}) ?? matches.firstMatch
-        print("Tap-text switch candidates:",candidates.map{["frame":NSStringFromCGRect($0.frame),"value":$0.value as? String ?? "nil"]})
+        print("Tap-text switch candidates:",candidates.map{["frame":String(describing:$0.frame),"value":$0.value as? String ?? "nil"]})
         XCTAssertEqual(toggle.value as? String,"0")
         if toggle.frame.width>100{toggle.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:30,dy:toggle.frame.height/2)).tap()}else{toggle.tap()};let enabled=XCTNSPredicateExpectation(predicate:NSPredicate(format:"value == %@","1"),object:toggle);XCTAssertEqual(XCTWaiter.wait(for:[enabled],timeout:3),.completed);app.buttons["workspace-settings-close"].tap();app.buttons["settings-close"].tap();openDemoFromLibrary()
         let canvas=app.scrollViews["canvas-scroll"];canvas.coordinate(withNormalizedOffset:CGVector(dx:0.45,dy:0.3)).tap();let confirm=app.buttons["canvas-add-text-confirm"];XCTAssertTrue(confirm.waitForExistence(timeout:5));XCTAssertTrue((canvas.value as? String ?? "").hasPrefix("0 طبقات"));capture("fix-text-add-confirmation");confirm.tap();XCTAssertTrue(app.textViews["text-input"].waitForExistence(timeout:5));XCTAssertTrue((canvas.value as? String ?? "").hasPrefix("1 طبقات"));XCTAssertFalse(confirm.exists)
