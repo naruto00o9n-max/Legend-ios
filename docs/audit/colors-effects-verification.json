@@ -3,7 +3,7 @@
   "source_commit": "8a6de123a013f780b30cd285b37ddeb2c31ec470",
   "run_id": 38170453483,
   "run_url": "https://github.com/naruto00o9n-max/Legend-ios/actions/runs/38170453483",
-  "native_verification": "core iPhone and iPad passed; interfaces pending",
+  "native_verification": "core both devices passed; iPhone full UI has three failed interactions; targeted correction pending",
   "reference_apk_sha256": "a3758bcdf50c802c25d9023c90456f6bdde922a94cda08fc3ce737c2a9b29789",
   "reference_video": {
     "drive_id": "1x1PyP-DA4mDWFbEqr_xMiO9RGxUi1AfT",
@@ -125,5 +125,50 @@
     "artifact_id": 11714285420,
     "zip_sha256": "f687151c637e6e71ba413308fe26fb9b23160dbebf68d0c78b31b4c6e4e2ecfe",
     "png_800x15000_bytes_unchanged": 48000000
+  },
+  "interfaces": {
+    "iphone": {
+      "source_commit": "8a6de123a013f780b30cd285b37ddeb2c31ec470",
+      "passed": 21,
+      "total": 24,
+      "failed": [
+        "testColorLibraryFavoritesAndNegativeLineSpacing",
+        "testCreateUserStyleAndApplyGlyphGradient",
+        "testOrganizedSettingsAndDetailedGuide"
+      ],
+      "real_service_tests_passed": 2,
+      "local_ui_passed": 1,
+      "local_ui_total": 2,
+      "local_failed": "testLocalPhotosEditingAndOriginalSizeExport: offscreen tool-text queried for hittability before bounds",
+      "artifacts": {
+        "interface": 11715346538,
+        "verification": 11715392099,
+        "gallery": 11715217612
+      }
+    },
+    "ipad": {
+      "source_commit": "8a6de123a013f780b30cd285b37ddeb2c31ec470",
+      "passed": 22,
+      "total": 24,
+      "failed": [
+        "testColorLibraryFavoritesAndNegativeLineSpacing",
+        "testCreateUserStyleAndApplyGlyphGradient"
+      ],
+      "real_service_tests_passed": 2,
+      "interface_artifact": 11715423702,
+      "local_ui": "not yet complete; superseded by the corrected full local round"
+    }
+  },
+  "followup": {
+    "product_changes": [
+      "Color row now includes empty label spacing in its hit target",
+      "Color library scroll gets an accessibility identifier"
+    ],
+    "test_corrections": [
+      "Reveal newly saved lazy style card by scrolling after real sheet dismissal",
+      "Drag the guide and color library from their blank edge to avoid activating navigation controls",
+      "Check local toolbar frame bounds before querying XCTest hittability"
+    ],
+    "retry_policy": "scripts/verify_control_retry.py permits only those two exact nonvisual product changes; native core, seven relevant connected UI cases, real services and the complete local edition/Photos round still run"
   }
 }

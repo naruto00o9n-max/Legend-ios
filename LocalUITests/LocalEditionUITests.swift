@@ -7,7 +7,7 @@ final class LocalEditionUITests:XCTestCase {
     private func reveal(_ element:XCUIElement){for _ in 0..<12{if element.exists && element.isHittable{return};app.scrollViews.firstMatch.swipeUp()};XCTAssertTrue(element.isHittable,app.debugDescription)}
     private func revealTool(_ element:XCUIElement){
         let strip=app.scrollViews["tool-strip"]
-        for _ in 0..<16{let visible=strip.frame.intersection(app.frame),frame=element.frame;if element.isHittable && frame.minX>=visible.minX && frame.maxX<=visible.maxX{return};let forward=frame.maxX>visible.maxX;let start=strip.coordinate(withNormalizedOffset:CGVector(dx:forward ? 0.72:0.28,dy:0.5)),end=strip.coordinate(withNormalizedOffset:CGVector(dx:forward ? 0.28:0.72,dy:0.5));start.press(forDuration:0.02,thenDragTo:end,withVelocity:.slow,thenHoldForDuration:0.12)}
+        for _ in 0..<16{let visible=strip.frame.intersection(app.frame),frame=element.frame;if frame.width>1 && frame.height>1 && frame.minX>=visible.minX && frame.maxX<=visible.maxX && element.isHittable{return};let forward=frame.maxX>visible.maxX;let start=strip.coordinate(withNormalizedOffset:CGVector(dx:forward ? 0.72:0.28,dy:0.5)),end=strip.coordinate(withNormalizedOffset:CGVector(dx:forward ? 0.28:0.72,dy:0.5));start.press(forDuration:0.02,thenDragTo:end,withVelocity:.slow,thenHoldForDuration:0.12)}
         XCTAssertTrue(element.isHittable,"Local editor tool must be reachable by scrolling: \(element.frame), strip \(strip.frame)")
     }
     private func capture(_ name:String){let attachment=XCTAttachment(screenshot:XCUIScreen.main.screenshot());attachment.name=name;attachment.lifetime = .keepAlways;add(attachment)}
