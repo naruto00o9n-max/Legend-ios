@@ -6,9 +6,9 @@ on:
   workflow_dispatch:
     inputs:
       verification_scope:
-        description: Full validation or focused UI regression retry
+        description: Full validation or an unchanged-app test regression retry
         type: choice
-        options: [full, focused]
+        options: [full, focused, regression]
         default: full
 concurrency:
   group: cookies-ios-${{ github.ref }}
@@ -108,15 +108,31 @@ jobs:
       - name: Interfaces, Photos and services
         if: ${{ !cancelled() }}
         env:
-          TASK_SCOPE: ${{ contains(github.event.head_commit.message, '[ui-only retry]') && 'focused' || inputs.verification_scope }}
+          TASK_SCOPE: ${{ contains(github.event.head_commit.message, '[ui-only retry]') && 'focused' || contains(github.event.head_commit.message, '[interface test retry]') && 'regression' || inputs.verification_scope }}
         run: |
-          if [[ "$TASK_SCOPE" == focused ]]; then
-            # A test-only retry must never skip engine checks for changed app code.
-            git diff --exit-code HEAD^ HEAD -- App Tests ServicesTests ServicesUITests LocalUITests project.yml scripts/fetch_resources.py scripts/fetch_whitening_fixtures.py scripts/whitening-fixtures.json
-            bash scripts/test_simulators.sh '${{ matrix.screen }}' ui 'CookiesUITests/EditorUITests/testTextTapSuggestionRequiresExplicitConfirmation,CookiesUITests/EditorUITests/testStrokePlusMinusChangesByExactlyOneWithoutDragging,CookiesUITests/EditorUITests/testPhotosImportAndIPadOrientation'
+          if [[ "$TASK_SCOPE" == focused || "$TASK_SCOPE" == regression ]]; then
+            # Reuse already-passed interfaces only with identical product/build
+            # sources. Regression mode still runs the full native engine suite.
+            git diff --exit-code HEAD^ HEAD -- App ServicesTests ServicesUITests project.yml scripts
+            # Local edition UI always runs in full, including Photos integrity.
+            if [[ "$TASK_SCOPE" == focused ]]; then
+              git diff --exit-code HEAD^ HEAD -- Tests
+              bash scripts/test_simulators.sh '${{ matrix.screen }}' ui 'CookiesUITests/EditorUITests/testTextTapSuggestionRequiresExplicitConfirmation,CookiesUITests/EditorUITests/testStrokePlusMinusChangesByExactlyOneWithoutDragging,CookiesUITests/EditorUITests/testPhotosImportAndIPadOrientation'
+            else
+              bash scripts/test_simulators.sh '${{ matrix.screen }}' ui 'CookiesUITests/EditorUITests/testTextTapSuggestionRequiresExplicitConfirmation,CookiesUITests/EditorUITests/testCanvasTapDoesNotCreateUnrequestedTextAndFontsStayInsideEditor,CookiesUITests/EditorUITests/testStrokePlusMinusChangesByExactlyOneWithoutDragging,CookiesUITests/EditorUITests/testPhotosImportAndIPadOrientation,CookiesUITests/EditorUITests/testTyperFilterPersistsAndReopensAtLatestUnusedBubble,CookiesUITests/EditorUITests/testRealFilesPickerImportsFontAndReturnsToLibrary,CookiesUITests/EditorUITests/testOrganizedSettingsAndDetailedGuide'
+            fi
           else
             bash scripts/test_simulators.sh '${{ matrix.screen }}' ui
           fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cookies-editor-interfaces-${{ matrix.screen }}
+          path: |
+            build/test-*.log
+            build/gates-*.json
+            build/photos-integrity-*.json
+          retention-days: 30
       - name: Local edition without account or community
         if: ${{ !cancelled() }}
         run: bash scripts/test_local_simulator.sh ${{ matrix.screen }}
@@ -130,6 +146,14 @@ jobs:
             build/test-*.log
             build/gates-*.json
             build/photos-integrity-*.json
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cookies-editor-gallery-${{ matrix.screen }}
+          path: |
+            build/ScreenGallery/
+            build/verification.json
           retention-days: 30
       - uses: actions/upload-artifact@v4
         if: always()

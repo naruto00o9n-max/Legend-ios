@@ -11,13 +11,17 @@ final class EditorUITests:XCTestCase {
         XCTAssertTrue(app.buttons["tool-text"].waitForExistence(timeout:15));capture("03-editor-long-image");assertLayout()
     }
     func reveal(_ button:XCUIElement,in strip:XCUIElement){
-        for _ in 0..<12{let frame=button.frame;if frame.width>1 && frame.height>1 && frame.minX>=app.frame.minX && frame.maxX<=app.frame.maxX{if button.isHittable{return}};let forward=frame.maxX>app.frame.maxX;let start=strip.coordinate(withNormalizedOffset:CGVector(dx:forward ? 0.75:0.25,dy:0.5)),end=strip.coordinate(withNormalizedOffset:CGVector(dx:forward ? 0.25:0.75,dy:0.5));start.press(forDuration:0.05,thenDragTo:end,withVelocity:.slow,thenHoldForDuration:0.25)}
-        XCTFail("Control did not become visible: \(button.identifier)")
+        // A presented iPad library is narrower than the application window.
+        // Compare to its real strip, not to the full-screen app frame.
+        for _ in 0..<16{let frame=button.frame,visible=strip.frame.intersection(app.frame);if frame.width>1 && frame.height>1 && frame.minX>=visible.minX && frame.maxX<=visible.maxX && button.isHittable{return};let forward=frame.maxX>visible.maxX;let start=strip.coordinate(withNormalizedOffset:CGVector(dx:forward ? 0.72:0.28,dy:0.5)),end=strip.coordinate(withNormalizedOffset:CGVector(dx:forward ? 0.28:0.72,dy:0.5));start.press(forDuration:0.02,thenDragTo:end,withVelocity:.slow,thenHoldForDuration:0.12)}
+        XCTFail("Control did not become visible: \(button.identifier), control \(button.frame), strip \(strip.frame)")
     }
     func revealVertical(_ element:XCUIElement,in view:XCUIElement?=nil){
         let scroll=view ?? app.scrollViews.firstMatch
-        for _ in 0..<16{if element.exists && element.isHittable && element.frame.minY>=scroll.frame.minY && element.frame.maxY<=scroll.frame.maxY{return};if element.exists && element.frame.minY<scroll.frame.minY{scroll.swipeDown()}else{scroll.swipeUp()}}
-        XCTAssertTrue(element.isHittable,"Control must be reachable by scrolling: "+element.identifier)
+        // Whole-view flicks can jump over a small row in the floating Typer and
+        // oscillate above/below it. Use a bounded drag within this viewport.
+        for _ in 0..<40{let visible=scroll.frame.intersection(app.frame);if element.exists && element.isHittable && element.frame.minY>=visible.minY && element.frame.maxY<=visible.maxY{return};let down=element.exists && element.frame.minY<visible.minY;let start=scroll.coordinate(withNormalizedOffset:CGVector(dx:0.5,dy:down ? 0.32:0.72)),end=scroll.coordinate(withNormalizedOffset:CGVector(dx:0.5,dy:down ? 0.72:0.32));start.press(forDuration:0.02,thenDragTo:end,withVelocity:.slow,thenHoldForDuration:0.12)}
+        XCTAssertTrue(element.isHittable,"Control must be reachable by scrolling: \(element.identifier), control \(element.frame), scroll \(scroll.frame)")
     }
     func tapVisible(_ name:String){let element=app.buttons[name];revealVertical(element);element.tap()}
     func tool(_ name:String){if app.buttons["object-back"].exists{app.buttons["object-back"].tap()};if name=="layers"{app.buttons["layers-header"].tap();return};if name != "text",app.buttons["text-back"].exists{app.buttons["text-back"].tap()};if !["brush","eraser"].contains(name),app.buttons["brush-back"].exists{app.buttons["brush-back"].tap()};let button=app.buttons["tool-"+name];reveal(button,in:app.scrollViews["tool-strip"]);button.tap()}
@@ -190,6 +194,7 @@ final class EditorUITests:XCTestCase {
         let done=app.buttons.matching(NSPredicate(format:"label == 'Done' OR label == 'تم' OR label == 'Open' OR label == 'فتح'")).firstMatch
         if done.exists && done.isHittable{done.tap()}
         XCTAssertTrue(app.buttons["font-close"].waitForExistence(timeout:20),"The document picker must dismiss after selection")
+        capture("fix-real-files-returned-before-filter")
         let filter=app.buttons["font-category-المستوردة"];reveal(filter,in:app.scrollViews["font-filter-strip"]);filter.tap()
         let installed=app.staticTexts.matching(filename).firstMatch;XCTAssertTrue(installed.waitForExistence(timeout:15),"Selected font must be installed and shown in the imported list");capture("fix-real-files-font-import");app.buttons["font-close"].tap();XCTAssertTrue(app.buttons["settings-font-library"].exists)
     }

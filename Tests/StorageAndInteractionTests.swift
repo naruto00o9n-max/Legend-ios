@@ -94,7 +94,7 @@ final class StorageAndInteractionTests:XCTestCase {
         await fulfillment(of:[picked],timeout:5)
         withExtendedLifetime((coordinator,viewport)){
             XCTAssertEqual(model.brushColor,"FF0000");XCTAssertEqual(model.active?.style.color,"FF0000");XCTAssertEqual(model.undoStack.count,1)
-            model.undo();XCTAssertEqual(model.active?.style.color,"000000")
+            model.undo();XCTAssertEqual(model.page.layers.first{$0.id==text.id}?.style.color,"000000")
         }
     }
 
