@@ -106,6 +106,7 @@ jobs:
             build/whitening-*/
           retention-days: 30
       - name: Interfaces, Photos and services
+        if: ${{ !cancelled() }}
         env:
           TASK_SCOPE: ${{ contains(github.event.head_commit.message, '[ui-only retry]') && 'focused' || inputs.verification_scope }}
         run: |
@@ -117,7 +118,7 @@ jobs:
             bash scripts/test_simulators.sh '${{ matrix.screen }}' ui
           fi
       - name: Local edition without account or community
-        if: always()
+        if: ${{ !cancelled() }}
         run: bash scripts/test_local_simulator.sh ${{ matrix.screen }}
       - run: python3 scripts/collect_evidence.py
         if: always()

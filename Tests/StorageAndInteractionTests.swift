@@ -81,12 +81,19 @@ final class StorageAndInteractionTests:XCTestCase {
         XCTAssertFalse(fm.fileExists(atPath:root.appendingPathComponent("reset-test.txt").path));XCTAssertNil(UserDefaults.standard.object(forKey:"welcome-complete"));XCTAssertNil(UserDefaults.standard.object(forKey:"fontFavorites"));XCTAssertNil(Keychain.read("session"));XCTAssertEqual(AppStorageManager.usage().rebuildable,0)
     }
 
-    @MainActor func testEyedropperSamplesCompositedPixelsForBrushAndSelectedText()throws {
+    @MainActor func testEyedropperSamplesCompositedPixelsForBrushAndSelectedText()async throws {
         let fm=FileManager.default,root=fm.temporaryDirectory.appendingPathComponent(UUID().uuidString);defer{try? fm.removeItem(at:root)}
         var page=try fixture(root,title:"red source"),text=EditorLayer(kind:.text,name:"text");text.frame=Box(x:150,y:150,width:100,height:60);text.style.color="000000";page.layers=[text]
         let model=EditorModel(page:page,library:LibraryStore(root:root));model.selected=text.id;model.tool = .eyedropper
-        let coordinator=CanvasHost.Coordinator(model);coordinator.canvas=DocumentCanvas(frame:CGRect(x:0,y:0,width:80,height:150));coordinator.sampleColor(at:CGPoint(x:20,y:20))
+        let viewport=CanvasViewport(frame:CGRect(x:0,y:0,width:390,height:650))
+        let coordinator=CanvasHost.Coordinator(model);coordinator.canvas=DocumentCanvas(frame:CGRect(x:0,y:0,width:80,height:150));coordinator.scroll=viewport;viewport.addSubview(coordinator.canvas)
+        let picked=XCTNSPredicateExpectation(predicate:NSPredicate{_,_ in model.brushColor=="FF0000" && model.active?.style.color=="FF0000"},object:model)
+        coordinator.sampleColor(at:CGPoint(x:20,y:20))
+        // Pixel decoding is asynchronous; the real viewport owns its feedback.
+        XCTAssertFalse(viewport.colorFeedback.isHidden)
+        await fulfillment(of:[picked],timeout:5)
         XCTAssertEqual(model.brushColor,"FF0000");XCTAssertEqual(model.active?.style.color,"FF0000");XCTAssertEqual(model.undoStack.count,1)
+        model.undo();XCTAssertEqual(model.active?.style.color,"000000")
     }
 
 }
