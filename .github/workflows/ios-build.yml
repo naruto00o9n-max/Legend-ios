@@ -129,7 +129,7 @@ jobs:
             # Local edition UI always runs in full, including Photos integrity.
             if [[ "$TASK_SCOPE" == focused ]]; then
               git diff --exit-code HEAD^ HEAD -- Tests
-              bash scripts/test_simulators.sh '${{ matrix.screen }}' ui 'CookiesUITests/EditorUITests/testTextTapSuggestionRequiresExplicitConfirmation,CookiesUITests/EditorUITests/testStrokePlusMinusChangesByExactlyOneWithoutDragging,CookiesUITests/EditorUITests/testPhotosImportAndIPadOrientation'
+              bash scripts/test_simulators.sh '${{ matrix.screen }}' ui 'CookiesUITests/EditorUITests/testCreateUserStyleAndApplyGlyphGradient,CookiesUITests/EditorUITests/testColorLibraryFavoritesAndNegativeLineSpacing,CookiesUITests/EditorUITests/testOrganizedSettingsAndDetailedGuide,CookiesUITests/EditorUITests/testRealFilesPickerImportsFontAndReturnsToLibrary,CookiesUITests/EditorUITests/testPhotosImportAndIPadOrientation'
             else
               bash scripts/test_simulators.sh '${{ matrix.screen }}' ui 'CookiesUITests/EditorUITests/testTextTapSuggestionRequiresExplicitConfirmation,CookiesUITests/EditorUITests/testCanvasTapDoesNotCreateUnrequestedTextAndFontsStayInsideEditor,CookiesUITests/EditorUITests/testStrokePlusMinusChangesByExactlyOneWithoutDragging,CookiesUITests/EditorUITests/testPhotosImportAndIPadOrientation,CookiesUITests/EditorUITests/testTyperFilterPersistsAndReopensAtLatestUnusedBubble,CookiesUITests/EditorUITests/testRealFilesPickerImportsFontAndReturnsToLibrary,CookiesUITests/EditorUITests/testOrganizedSettingsAndDetailedGuide'
             fi
