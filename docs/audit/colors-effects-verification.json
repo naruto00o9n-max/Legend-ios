@@ -1,9 +1,56 @@
 {
   "date": "2026-10-11",
-  "source_commit": "8a6de123a013f780b30cd285b37ddeb2c31ec470",
-  "run_id": 38170453483,
-  "run_url": "https://github.com/naruto00o9n-max/Legend-ios/actions/runs/38170453483",
-  "native_verification": "core both devices passed; iPhone full UI has three failed interactions; targeted correction pending",
+  "source_commit": "06321b5663547547283b6373c0d092fcdebc03cb",
+  "current_release": {
+    "verified_product_source": "06321b5663547547283b6373c0d092fcdebc03cb",
+    "harness_only_commit": "1b9d080b34eda795a6100abde698a38215148f4c",
+    "product_and_test_diff_from_verified_source": "empty; only isolated workflow added",
+    "main_run_conclusion": "failure: local iPad system Photos picker stayed Loading before asset selection",
+    "isolated_local_retry": {
+      "harness_commit": "1b9d080b34eda795a6100abde698a38215148f4c",
+      "product_checkout_commit": "06321b5663547547283b6373c0d092fcdebc03cb",
+      "run_id": 38183635459,
+      "run_url": "https://github.com/naruto00o9n-max/Legend-ios/actions/runs/38183635459",
+      "status": "local test step cancelled at configured job time budget; incomplete",
+      "unchanged_app_tests_scripts_verified": true,
+      "scope": "fresh standalone iPad library, exact same full local suite, real Photos bytes; no product/test assertion edits",
+      "job_id": 114601228737,
+      "verification_artifact_id": 11718649502,
+      "evidence_artifact_id": 11719297472,
+      "observed": "Picker asset appeared, actual asset tapped and Add tapped; waiting for imported project did not complete; no completed local test or Photos byte verification",
+      "product_compile": "compiled successfully before UI test began",
+      "counts_as_pass": false
+    },
+    "local_edition": {
+      "iphone": {
+        "passed": 2,
+        "total": 2,
+        "photos_repeat_passed": 1,
+        "artifact_id": 11718244241,
+        "photos_integrity": {
+          "width": 800,
+          "height": 15000,
+          "rgba_bytes_compared": 48000000,
+          "all_source_pixels_unchanged": true,
+          "rgba_sha256": "2e6f94c610d03b7ed0e06d2e0a89199797d4de874795879e3df1a840eba35832",
+          "source_extension": ".png",
+          "method": "Real PHPicker UI selection; compare application disk RGBA to seeded Photos fixture"
+        }
+      },
+      "ipad": {
+        "passed": 1,
+        "total": 2,
+        "failed": "testLocalPhotosEditingAndOriginalSizeExport: system PHPickerUnavailableView stayed Loading before any asset selection",
+        "artifact_id": 11718681642,
+        "diagnostic_artifact_id": 11718875754,
+        "source_integrity": "not reached; do not count as success"
+      }
+    },
+    "complete_local_ipad_verification": false,
+    "physical_device_fps_measured": false,
+    "old_failures_retained": true,
+    "release_scope": "Implemented features and unsigned binaries delivered; current local iPad import/export verification remains explicitly unresolved"
+  },
   "reference_apk_sha256": "a3758bcdf50c802c25d9023c90456f6bdde922a94cda08fc3ce737c2a9b29789",
   "reference_video": {
     "drive_id": "1x1PyP-DA4mDWFbEqr_xMiO9RGxUi1AfT",
@@ -46,20 +93,357 @@
     "outside_patch_pixels_preserved": true
   },
   "inventory": {
-    "items": 102,
-    "scope": "editor functions, source-inspected; no percentage of full application parity",
-    "file": "editor-inventory-oct11.json"
+    "items": 182,
+    "scope": "whole application, source-inspected; detailed editor subinventory contains 102 entries; no full visual parity claim",
+    "file": "application-inventory-oct11.json",
+    "editor_file": "editor-inventory-oct11.json"
   },
   "limits": [
     "No measured physical-device FPS",
     "No new Google sign-in verification",
     "Original de8 detector not ported",
     "Patterned backgrounds require review",
-    "Reference APK launch confirmed version only; no usable live screenshot produced"
+    "Reference APK launch confirmed version only; no usable live screenshot produced",
+    "Current local iPad complete import/export/Photos integrity gate incomplete: first system picker stayed Loading, standalone same-code attempt cancelled before test completion; connected iPad and both iPhone paths passed"
   ],
   "jobs": [],
   "artifacts": [],
-  "ipa_bundles": [
+  "followup": {
+    "product_changes": [
+      "Color row now includes empty label spacing in its hit target",
+      "Color library scroll gets an accessibility identifier"
+    ],
+    "test_corrections": [
+      "Reveal newly saved lazy style card by scrolling after real sheet dismissal",
+      "Drag the guide and color library from their blank edge to avoid activating navigation controls",
+      "Check local toolbar frame bounds before querying XCTest hittability"
+    ],
+    "retry_policy": "scripts/verify_control_retry.py permits only those two exact nonvisual product changes; native core, seven relevant connected UI cases, real services and the complete local edition/Photos round still run",
+    "source_commit": "f8a1401f26b75823b8f27f2f6209981e9431c3bf",
+    "run_id": 38176224092,
+    "run_url": "https://github.com/naruto00o9n-max/Legend-ios/actions/runs/38176224092",
+    "native_core": {
+      "ipad": {
+        "source_commit": "f8a1401f26b75823b8f27f2f6209981e9431c3bf",
+        "editor_tests": 118,
+        "service_mocks": 6,
+        "failed": 0,
+        "artifact_id": 11716730311
+      },
+      "iphone": {
+        "source_commit": "f8a1401f26b75823b8f27f2f6209981e9431c3bf",
+        "editor_tests": 118,
+        "service_mocks": 6,
+        "failed": 0,
+        "artifact_id": 11715994825
+      }
+    },
+    "targeted_interfaces": {
+      "ipad": {
+        "passed": 6,
+        "total": 7,
+        "failed": [
+          "style naming sheet did not close after automated Save"
+        ]
+      },
+      "iphone": {
+        "passed": 5,
+        "total": 7,
+        "failed": [
+          "style naming sheet did not close after automated Save",
+          "guide scrolling changed foreground destination"
+        ]
+      },
+      "real_services_each": 2
+    },
+    "local_edition": {
+      "ipad": {
+        "passed": 2,
+        "total": 2,
+        "photos_integrity": {
+          "width": 800,
+          "height": 15000,
+          "rgba_bytes_compared": 48000000,
+          "all_source_pixels_unchanged": true,
+          "rgba_sha256": "2e6f94c610d03b7ed0e06d2e0a89199797d4de874795879e3df1a840eba35832",
+          "source_extension": ".png",
+          "method": "Real PHPicker UI selection; compare application disk RGBA to seeded Photos fixture"
+        }
+      },
+      "iphone": "superseded; complete round required"
+    },
+    "unsigned_packages": {
+      "conclusion": "success",
+      "job_id": 114579103904,
+      "artifact_id": 11716450415,
+      "ipa_bundles": [
+        {
+          "edition": "connected",
+          "path": "/workspace/Cookies-Editor-f8a1401-unsigned.ipa",
+          "source_commit": "f8a1401f26b75823b8f27f2f6209981e9431c3bf",
+          "bundle_id": "com.cookies.editor.ios",
+          "display_name": "Cookies Editor",
+          "version": "1.1.0",
+          "build": "1.1.0",
+          "minimum_os": "17.0",
+          "url_schemes": [
+            "cookies-editor"
+          ],
+          "service_enabled": true,
+          "service_configuration_bundled": true,
+          "architecture": "arm64",
+          "unsigned": true,
+          "embedded_source_revision": "f8a1401f26b75823b8f27f2f6209981e9431c3bf",
+          "size": 15140728,
+          "sha256": "c357dbb8d23beb1ce5a61e6de9b4e00156143cdcaf52ae251687af029003aed3"
+        },
+        {
+          "edition": "local",
+          "path": "/workspace/Cookies-Editor-Local-f8a1401-unsigned.ipa",
+          "source_commit": "f8a1401f26b75823b8f27f2f6209981e9431c3bf",
+          "bundle_id": "com.cookies.editor.local",
+          "display_name": "Cookies Editor",
+          "version": "1.1.0",
+          "build": "1.1.0",
+          "minimum_os": "17.0",
+          "url_schemes": [
+            "cookies-editor-local"
+          ],
+          "service_enabled": false,
+          "service_configuration_bundled": false,
+          "architecture": "arm64",
+          "unsigned": true,
+          "embedded_source_revision": "f8a1401f26b75823b8f27f2f6209981e9431c3bf",
+          "size": 15140177,
+          "sha256": "47fcdb063cf275589043d902813975bc3da1e73abb8fa5d12299f77e209995e5"
+        }
+      ]
+    },
+    "unchanged_product_sources_guard": "passed locally after publishing",
+    "targeted_ipad_ui": {
+      "passed": 6,
+      "total": 7,
+      "failed": "testCreateUserStyleAndApplyGlyphGradient: naming sheet remains after Save; actual cause under diagnosis",
+      "services_passed": 2,
+      "local_edition": "2/2 and actual 48,000,000 RGBA bytes matched; read from artifact 11716293082"
+    }
+  },
+  "style_save_diagnostic": {
+    "source_commit": "311356b7389165f4ba1be2821ef1717c3ddd7f1a",
+    "product_sources_identical_to": "f8a1401f26b75823b8f27f2f6209981e9431c3bf",
+    "status": "completed; failures retained; targeted repairs being verified",
+    "scope": "actual save enabled/hittable, foreground hierarchy on failure; color/favorites/spacing/guide/Files/Photos and both full local rounds repeated",
+    "run_id": 38178821323,
+    "ui_results": {
+      "iphone": {
+        "passed": 2,
+        "total": 5,
+        "failed": [
+          "Save enabled/hittable assertion before action",
+          "guide drag navigation",
+          "Files fixture missing on focused run"
+        ]
+      },
+      "ipad": {
+        "passed": 3,
+        "total": 5,
+        "failed": [
+          "Save enabled/hittable assertion before action",
+          "Files fixture missing on focused run"
+        ]
+      },
+      "source_unchanged_from": "f8a1401f26b75823b8f27f2f6209981e9431c3bf"
+    },
+    "local_iphone": {
+      "passed": 2,
+      "total": 2,
+      "artifact_id": 11717905881,
+      "photos_integrity": {
+        "width": 800,
+        "height": 15000,
+        "rgba_bytes_compared": 48000000,
+        "all_source_pixels_unchanged": true,
+        "rgba_sha256": "2e6f94c610d03b7ed0e06d2e0a89199797d4de874795879e3df1a840eba35832",
+        "source_extension": ".png",
+        "method": "Real PHPicker UI selection; compare application disk RGBA to seeded Photos fixture"
+      }
+    }
+  },
+  "style_form_fix": {
+    "source_commit": "06321b5663547547283b6373c0d092fcdebc03cb",
+    "verification_branch": "verify/style-form-oct11",
+    "status": "feature core and targeted connected UI passed; local iPhone passed; current local iPad full gate remains incomplete",
+    "product_changes": "StyleDetailsDraft item carries initial name/group/layer together; form owns editing state and dismissal, scrolls and displays errors",
+    "test_harness": "Build-for-testing/install current app before required real Files fixture; execute already-built tests",
+    "guard": "scripts/verify_style_form_retry.py seals these two reviewed files and rejects other product/storage/services/native changes",
+    "gates": "124 native each; 7 connected UI each; real services; full local and actual Photos RGBA",
+    "run_id": 38180878082,
+    "run_url": "https://github.com/naruto00o9n-max/Legend-ios/actions/runs/38180878082",
+    "package": {
+      "job_id": 114592997905,
+      "conclusion": "success",
+      "artifact_id": 11718011252,
+      "ipa_bundles": [
+        {
+          "edition": "connected",
+          "path": "/workspace/Cookies-Editor-06321b5-unsigned.ipa",
+          "source_commit": "06321b5663547547283b6373c0d092fcdebc03cb",
+          "bundle_id": "com.cookies.editor.ios",
+          "display_name": "Cookies Editor",
+          "version": "1.1.0",
+          "build": "1.1.0",
+          "minimum_os": "17.0",
+          "url_schemes": [
+            "cookies-editor"
+          ],
+          "service_enabled": true,
+          "service_configuration_bundled": true,
+          "architecture": "arm64",
+          "unsigned": true,
+          "embedded_source_revision": "06321b5663547547283b6373c0d092fcdebc03cb",
+          "size": 15160290,
+          "sha256": "195579f85fab313664fc4111e3cf60c7af69ae66c3ad12048b407d22da715f60"
+        },
+        {
+          "edition": "local",
+          "path": "/workspace/Cookies-Editor-Local-06321b5-unsigned.ipa",
+          "source_commit": "06321b5663547547283b6373c0d092fcdebc03cb",
+          "bundle_id": "com.cookies.editor.local",
+          "display_name": "Cookies Editor",
+          "version": "1.1.0",
+          "build": "1.1.0",
+          "minimum_os": "17.0",
+          "url_schemes": [
+            "cookies-editor-local"
+          ],
+          "service_enabled": false,
+          "service_configuration_bundled": false,
+          "architecture": "arm64",
+          "unsigned": true,
+          "embedded_source_revision": "06321b5663547547283b6373c0d092fcdebc03cb",
+          "size": 15160373,
+          "sha256": "932e2e80834b540f62137e2efd8c36da7a1e8c5e8dd8989006cdcb473b371c5f"
+        }
+      ],
+      "zip_sha256": "b28abd8584a0e219bd358b79e347e8dc9eb00e2ccec5009f9d3b7fa75250f32a",
+      "png_800x15000_bytes_unchanged": 48000000
+    },
+    "native_core": {
+      "iphone": {
+        "editor_tests": 118,
+        "service_mocks": 6,
+        "new_feature_tests": 9,
+        "failed": 0,
+        "artifact_id": 11717887373
+      },
+      "ipad": {
+        "editor_tests": 118,
+        "service_mocks": 6,
+        "new_feature_tests": 9,
+        "failed": 0,
+        "artifact_id": 11718611054
+      }
+    },
+    "interfaces": {
+      "iphone": {
+        "passed": 7,
+        "total": 7,
+        "failed": 0,
+        "artifact_id": 11718243270,
+        "real_service_tests_passed": 2,
+        "photos_repeat_passed": 1,
+        "photos_integrity": {
+          "width": 800,
+          "height": 15000,
+          "rgba_bytes_compared": 48000000,
+          "all_source_pixels_unchanged": true,
+          "rgba_sha256": "2e6f94c610d03b7ed0e06d2e0a89199797d4de874795879e3df1a840eba35832",
+          "source_extension": ".png",
+          "method": "Real PHPicker UI selection; compare application disk RGBA to seeded Photos fixture"
+        },
+        "gates": {
+          "local_editor_and_photos_exit_code": 0,
+          "real_external_services_exit_code": 0,
+          "external_failure_does_not_discard_local_evidence": true
+        }
+      },
+      "ipad": {
+        "passed": 7,
+        "total": 7,
+        "failed": 0,
+        "artifact_id": 11718163644,
+        "real_service_tests_passed": 2,
+        "photos_repeat_passed": 1,
+        "photos_integrity": {
+          "width": 800,
+          "height": 15000,
+          "rgba_bytes_compared": 48000000,
+          "all_source_pixels_unchanged": true,
+          "rgba_sha256": "2e6f94c610d03b7ed0e06d2e0a89199797d4de874795879e3df1a840eba35832",
+          "source_extension": ".png",
+          "method": "Real PHPicker UI selection; compare application disk RGBA to seeded Photos fixture"
+        },
+        "gates": {
+          "local_editor_and_photos_exit_code": 0,
+          "real_external_services_exit_code": 0,
+          "external_failure_does_not_discard_local_evidence": true
+        }
+      }
+    },
+    "visual_review": {
+      "color_panel": "Actual iPad screenshots from f8a1401, color UI source unchanged in 06321b5; HEX/RGB/favorites and keyboard viewport internally inspected",
+      "artifact_id": 11716293082,
+      "style_form": "Actual 06321b5 iPhone first-presentation form and saved gradient style card internally inspected; Save visible, selected text initially populated, named preview present",
+      "style_gallery_artifact_id": 11718274148,
+      "ipad_style_form": "Actual 06321b5 iPad initial style form internally inspected; prefilled name, reachable Save, constrained-width glass fields",
+      "ipad_style_gallery_artifact_id": 11718164995
+    },
+    "local_edition": {
+      "iphone": {
+        "passed": 2,
+        "total": 2,
+        "photos_repeat_passed": 1,
+        "artifact_id": 11718244241,
+        "photos_integrity": {
+          "width": 800,
+          "height": 15000,
+          "rgba_bytes_compared": 48000000,
+          "all_source_pixels_unchanged": true,
+          "rgba_sha256": "2e6f94c610d03b7ed0e06d2e0a89199797d4de874795879e3df1a840eba35832",
+          "source_extension": ".png",
+          "method": "Real PHPicker UI selection; compare application disk RGBA to seeded Photos fixture"
+        }
+      },
+      "ipad": {
+        "passed": 1,
+        "total": 2,
+        "failed": "testLocalPhotosEditingAndOriginalSizeExport: system PHPickerUnavailableView stayed Loading before any asset selection",
+        "artifact_id": 11718681642,
+        "diagnostic_artifact_id": 11718875754,
+        "source_integrity": "not reached; do not count as success"
+      }
+    },
+    "isolated_local_retry": {
+      "harness_commit": "1b9d080b34eda795a6100abde698a38215148f4c",
+      "product_checkout_commit": "06321b5663547547283b6373c0d092fcdebc03cb",
+      "run_id": 38183635459,
+      "run_url": "https://github.com/naruto00o9n-max/Legend-ios/actions/runs/38183635459",
+      "status": "local test step cancelled at configured job time budget; incomplete",
+      "unchanged_app_tests_scripts_verified": true,
+      "scope": "fresh standalone iPad library, exact same full local suite, real Photos bytes; no product/test assertion edits",
+      "job_id": 114601228737,
+      "verification_artifact_id": 11718649502,
+      "evidence_artifact_id": 11719297472,
+      "observed": "Picker asset appeared, actual asset tapped and Add tapped; waiting for imported project did not complete; no completed local test or Photos byte verification",
+      "product_compile": "compiled successfully before UI test began",
+      "counts_as_pass": false
+    }
+  },
+  "baseline_source_commit": "8a6de123a013f780b30cd285b37ddeb2c31ec470",
+  "baseline_run_id": 38170453483,
+  "baseline_run_url": "https://github.com/naruto00o9n-max/Legend-ios/actions/runs/38170453483",
+  "baseline_native_verification": "core both devices passed; iPhone full UI has three failed interactions; targeted correction pending",
+  "baseline_ipa_bundles": [
     {
       "edition": "connected",
       "path": "/workspace/Cookies-Editor-8a6de12-unsigned.ipa",
@@ -101,7 +485,7 @@
       "sha256": "d46641527b3599bb79a5a48f72247648c99fed7cc4833948a64b745d875eb975"
     }
   ],
-  "native_core": {
+  "baseline_native_core": {
     "iphone": {
       "editor_tests": 118,
       "service_mocks": 6,
@@ -119,14 +503,14 @@
       "log": ".work/colors-8a6-test-ipad-core.log"
     }
   },
-  "package": {
+  "baseline_package": {
     "job_id": 114561805449,
     "conclusion": "success",
     "artifact_id": 11714285420,
     "zip_sha256": "f687151c637e6e71ba413308fe26fb9b23160dbebf68d0c78b31b4c6e4e2ecfe",
     "png_800x15000_bytes_unchanged": 48000000
   },
-  "interfaces": {
+  "baseline_interfaces": {
     "iphone": {
       "source_commit": "8a6de123a013f780b30cd285b37ddeb2c31ec470",
       "passed": 21,
@@ -159,16 +543,160 @@
       "local_ui": "not yet complete; superseded by the corrected full local round"
     }
   },
-  "followup": {
-    "product_changes": [
-      "Color row now includes empty label spacing in its hit target",
-      "Color library scroll gets an accessibility identifier"
+  "run_id": 38180878082,
+  "run_url": "https://github.com/naruto00o9n-max/Legend-ios/actions/runs/38180878082",
+  "native_core": {
+    "iphone": {
+      "editor_tests": 118,
+      "service_mocks": 6,
+      "new_feature_tests": 9,
+      "failed": 0,
+      "artifact_id": 11717887373
+    },
+    "ipad": {
+      "editor_tests": 118,
+      "service_mocks": 6,
+      "new_feature_tests": 9,
+      "failed": 0,
+      "artifact_id": 11718611054
+    }
+  },
+  "interfaces": {
+    "iphone": {
+      "passed": 7,
+      "total": 7,
+      "failed": 0,
+      "artifact_id": 11718243270,
+      "real_service_tests_passed": 2,
+      "photos_repeat_passed": 1,
+      "photos_integrity": {
+        "width": 800,
+        "height": 15000,
+        "rgba_bytes_compared": 48000000,
+        "all_source_pixels_unchanged": true,
+        "rgba_sha256": "2e6f94c610d03b7ed0e06d2e0a89199797d4de874795879e3df1a840eba35832",
+        "source_extension": ".png",
+        "method": "Real PHPicker UI selection; compare application disk RGBA to seeded Photos fixture"
+      },
+      "gates": {
+        "local_editor_and_photos_exit_code": 0,
+        "real_external_services_exit_code": 0,
+        "external_failure_does_not_discard_local_evidence": true
+      }
+    },
+    "ipad": {
+      "passed": 7,
+      "total": 7,
+      "failed": 0,
+      "artifact_id": 11718163644,
+      "real_service_tests_passed": 2,
+      "photos_repeat_passed": 1,
+      "photos_integrity": {
+        "width": 800,
+        "height": 15000,
+        "rgba_bytes_compared": 48000000,
+        "all_source_pixels_unchanged": true,
+        "rgba_sha256": "2e6f94c610d03b7ed0e06d2e0a89199797d4de874795879e3df1a840eba35832",
+        "source_extension": ".png",
+        "method": "Real PHPicker UI selection; compare application disk RGBA to seeded Photos fixture"
+      },
+      "gates": {
+        "local_editor_and_photos_exit_code": 0,
+        "real_external_services_exit_code": 0,
+        "external_failure_does_not_discard_local_evidence": true
+      }
+    }
+  },
+  "package": {
+    "job_id": 114592997905,
+    "conclusion": "success",
+    "artifact_id": 11718011252,
+    "ipa_bundles": [
+      {
+        "edition": "connected",
+        "path": "/workspace/Cookies-Editor-06321b5-unsigned.ipa",
+        "source_commit": "06321b5663547547283b6373c0d092fcdebc03cb",
+        "bundle_id": "com.cookies.editor.ios",
+        "display_name": "Cookies Editor",
+        "version": "1.1.0",
+        "build": "1.1.0",
+        "minimum_os": "17.0",
+        "url_schemes": [
+          "cookies-editor"
+        ],
+        "service_enabled": true,
+        "service_configuration_bundled": true,
+        "architecture": "arm64",
+        "unsigned": true,
+        "embedded_source_revision": "06321b5663547547283b6373c0d092fcdebc03cb",
+        "size": 15160290,
+        "sha256": "195579f85fab313664fc4111e3cf60c7af69ae66c3ad12048b407d22da715f60"
+      },
+      {
+        "edition": "local",
+        "path": "/workspace/Cookies-Editor-Local-06321b5-unsigned.ipa",
+        "source_commit": "06321b5663547547283b6373c0d092fcdebc03cb",
+        "bundle_id": "com.cookies.editor.local",
+        "display_name": "Cookies Editor",
+        "version": "1.1.0",
+        "build": "1.1.0",
+        "minimum_os": "17.0",
+        "url_schemes": [
+          "cookies-editor-local"
+        ],
+        "service_enabled": false,
+        "service_configuration_bundled": false,
+        "architecture": "arm64",
+        "unsigned": true,
+        "embedded_source_revision": "06321b5663547547283b6373c0d092fcdebc03cb",
+        "size": 15160373,
+        "sha256": "932e2e80834b540f62137e2efd8c36da7a1e8c5e8dd8989006cdcb473b371c5f"
+      }
     ],
-    "test_corrections": [
-      "Reveal newly saved lazy style card by scrolling after real sheet dismissal",
-      "Drag the guide and color library from their blank edge to avoid activating navigation controls",
-      "Check local toolbar frame bounds before querying XCTest hittability"
-    ],
-    "retry_policy": "scripts/verify_control_retry.py permits only those two exact nonvisual product changes; native core, seven relevant connected UI cases, real services and the complete local edition/Photos round still run"
-  }
+    "zip_sha256": "b28abd8584a0e219bd358b79e347e8dc9eb00e2ccec5009f9d3b7fa75250f32a",
+    "png_800x15000_bytes_unchanged": 48000000
+  },
+  "ipa_bundles": [
+    {
+      "edition": "connected",
+      "path": "/workspace/Cookies-Editor-06321b5-unsigned.ipa",
+      "source_commit": "06321b5663547547283b6373c0d092fcdebc03cb",
+      "bundle_id": "com.cookies.editor.ios",
+      "display_name": "Cookies Editor",
+      "version": "1.1.0",
+      "build": "1.1.0",
+      "minimum_os": "17.0",
+      "url_schemes": [
+        "cookies-editor"
+      ],
+      "service_enabled": true,
+      "service_configuration_bundled": true,
+      "architecture": "arm64",
+      "unsigned": true,
+      "embedded_source_revision": "06321b5663547547283b6373c0d092fcdebc03cb",
+      "size": 15160290,
+      "sha256": "195579f85fab313664fc4111e3cf60c7af69ae66c3ad12048b407d22da715f60"
+    },
+    {
+      "edition": "local",
+      "path": "/workspace/Cookies-Editor-Local-06321b5-unsigned.ipa",
+      "source_commit": "06321b5663547547283b6373c0d092fcdebc03cb",
+      "bundle_id": "com.cookies.editor.local",
+      "display_name": "Cookies Editor",
+      "version": "1.1.0",
+      "build": "1.1.0",
+      "minimum_os": "17.0",
+      "url_schemes": [
+        "cookies-editor-local"
+      ],
+      "service_enabled": false,
+      "service_configuration_bundled": false,
+      "architecture": "arm64",
+      "unsigned": true,
+      "embedded_source_revision": "06321b5663547547283b6373c0d092fcdebc03cb",
+      "size": 15160373,
+      "sha256": "932e2e80834b540f62137e2efd8c36da7a1e8c5e8dd8989006cdcb473b371c5f"
+    }
+  ],
+  "native_verification": "248 native tests and 14 targeted connected UI passed; service gates and connected Photos passed; local iPhone complete; current local iPad Photos gate incomplete"
 }
