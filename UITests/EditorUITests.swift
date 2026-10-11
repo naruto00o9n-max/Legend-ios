@@ -135,4 +135,19 @@ final class EditorUITests:XCTestCase {
         let canvas=app.scrollViews["canvas-scroll"];canvas.coordinate(withNormalizedOffset:CGVector(dx:0.45,dy:0.3)).tap();let confirm=app.buttons["canvas-add-text-confirm"];XCTAssertTrue(confirm.waitForExistence(timeout:5));XCTAssertTrue((canvas.value as? String ?? "").hasPrefix("0 طبقات"));capture("fix-text-add-confirmation");confirm.tap();XCTAssertTrue(app.textViews["text-input"].waitForExistence(timeout:5));XCTAssertTrue((canvas.value as? String ?? "").hasPrefix("1 طبقات"));XCTAssertFalse(confirm.exists)
     }
 
+    func testStrokePlusMinusChangesByExactlyOneWithoutDragging() {
+        openEditor();tool("text");app.buttons["text-inspector-close"].tap()
+        let panel=app.buttons["panel-stroke"];reveal(panel,in:app.scrollViews["panel-strip"]);panel.tap()
+        let field=app.textFields["value-السماكة"];XCTAssertTrue(field.waitForExistence(timeout:5))
+        let parser=NumberFormatter();parser.locale=Locale(identifier:"ar");parser.numberStyle = .decimal
+        let old=field.value as? String ?? "",before=parser.number(from:old)?.doubleValue ?? -100
+        let plus=app.buttons["زيادة القيمة"].firstMatch;XCTAssertTrue(plus.exists);plus.tap()
+        let changed=XCTNSPredicateExpectation(predicate:NSPredicate(format:"value != %@",old),object:field)
+        XCTAssertEqual(XCTWaiter.wait(for:[changed],timeout:3),.completed)
+        XCTAssertEqual(parser.number(from:field.value as? String ?? "")?.doubleValue ?? -100,before+1,accuracy:0.001)
+        let minus=app.buttons["إنقاص القيمة"].firstMatch;XCTAssertTrue(minus.isEnabled);minus.tap()
+        let restored=XCTNSPredicateExpectation(predicate:NSPredicate(format:"value == %@",old),object:field)
+        XCTAssertEqual(XCTWaiter.wait(for:[restored],timeout:3),.completed)
+    }
+
 }

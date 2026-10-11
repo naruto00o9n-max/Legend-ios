@@ -1,6 +1,7 @@
 import XCTest
 import SwiftUI
 import UniformTypeIdentifiers
+import CoreText
 @testable import CookiesEditor
 
 final class EditorQualityRegressionTests:XCTestCase {
@@ -59,6 +60,24 @@ final class EditorQualityRegressionTests:XCTestCase {
         XCTAssertFalse(shown);await fulfillment(of:[result],timeout:2);XCTAssertEqual(delivered,files)
         for url in delivered{XCTAssertEqual(try Data(contentsOf:url),Data("local provider copy".utf8))}
     }
+    @MainActor func testSelectedFontCopyIsInstalledAndReadableAfterPickerCloses()async throws {
+        let original=try XCTUnwrap(Bundle.main.urls(forResourcesWithExtension:"ttf",subdirectory:"Fonts")?.first)
+        let file=FileManager.default.temporaryDirectory.appendingPathComponent("picker-font-\(UUID()).ttf")
+        let installed=Fonts.userDirectory.appendingPathComponent(file.lastPathComponent)
+        defer{try? FileManager.default.removeItem(at:file);CTFontManagerUnregisterFontsForURL(installed as CFURL,.process,nil);try? FileManager.default.removeItem(at:installed);Fonts.register()}
+        try FileManager.default.copyItem(at:original,to:file)
+        var shown=true
+        let done=expectation(description:"Real font import from selected sandbox copy")
+        let view=DocumentFilePicker(types:[.data],multiple:false,presented:Binding(get:{shown},set:{shown=$0})) { result in
+            XCTAssertFalse(shown)
+            do { let url=try XCTUnwrap(result.get().first);_ = try FontPackage.importArchive(url) }
+            catch{XCTFail(error.localizedDescription)}
+            done.fulfill()
+        }
+        let coordinator=DocumentFilePicker.Coordinator(view),controller=UIDocumentPickerViewController(forOpeningContentTypes:[.data],asCopy:true)
+        coordinator.documentPicker(controller,didPickDocumentsAt:[file]);await fulfillment(of:[done],timeout:5)
+        XCTAssertEqual(try Data(contentsOf:installed),try Data(contentsOf:original));XCTAssertTrue(Fonts.userFiles.contains(installed))
+    }
     @MainActor func testEraserRingFollowsTouchAndActualDiameter()throws {
         let viewport=CanvasViewport(frame:CGRect(x:0,y:0,width:320,height:400))
         viewport.showEraser(at:CGPoint(x:90,y:120),diameter:48)
@@ -67,6 +86,27 @@ final class EditorQualityRegressionTests:XCTestCase {
         viewport.showEraser(at:CGPoint(x:140,y:180),diameter:80);XCTAssertEqual(ring.path!.boundingBox.width,80)
         viewport.showEraser(at:nil,diameter:80);XCTAssertNil(ring.path)
     }
+    func testLongSpeechTailDoesNotPullTypesettingOutOfBubbleBody()throws {
+        let outline=[Point(x:0,y:0),Point(x:200,y:0),Point(x:200,y:140),Point(x:110,y:140),Point(x:105,y:230),Point(x:100,y:140),Point(x:0,y:140)]
+        let target=SniperTarget(bounds:Box(x:20,y:23,width:160,height:184),outline:outline,point:Point(x:80,y:70))
+        var text=EditorLayer(kind:.text);text.textContent="عندما نستقر في هذا المكان سوف نتابع الرحلة إلى الجبال البعيدة ونحمي أصدقاءنا"
+        let result=try ContourTypesetter.fit(text,to:target)
+        XCTAssertLessThan(result.frame.y+result.frame.height/2,95)
+        XCTAssertEqual(result.textContent.split(whereSeparator:{$0.isWhitespace}),text.textContent.split(whereSeparator:{$0.isWhitespace}))
+    }
+    func testContourFitReservesSpaceForAdditionalOutlineAndShadow()throws {
+        let outline=(0..<80).map{i -> Point in let a=Double(i)*Double.pi*2/80;return Point(x:200+170*cos(a),y:180+130*sin(a))}
+        let target=SniperTarget(bounds:Box(x:64,y:76,width:272,height:208),outline:outline,point:Point(x:200,y:180))
+        var text=EditorLayer(kind:.text);text.textContent="سوف نتابع الرحلة إلى الجبال البعيدة ونحمي أصدقاءنا في هذا المكان";text.style.extraStrokes=[ExtraOutline(width:14,color:"FFFFFF")];text.style.shadowRadius=2;text.style.shadowDx=4;text.style.shadowAlpha=255
+        let fitted=try ContourTypesetter.fit(text,to:target),lines=fitted.textContent.components(separatedBy:"\n"),height=Double(LayerRenderer.bounds(fitted).height),step=height/Double(lines.count)
+        let interior=BubbleInterior(target:target)
+        for (row,line) in lines.enumerated() {
+            let width=Double((line as NSString).size(withAttributes:[.font:Fonts.font(fitted.style),.kern:fitted.style.letterSpacing]).width)
+            XCTAssertLessThanOrEqual(width,interior.width(at:fitted.frame.y+Double(row)*step,height:step,margin:22)+0.01)
+        }
+        XCTAssertEqual(fitted.textContent.split(whereSeparator:{$0.isWhitespace}),text.textContent.split(whereSeparator:{$0.isWhitespace}))
+        XCTAssertEqual(fitted.style.extraStrokes,text.style.extraStrokes)
+    }
     func testPartialOCRDoesNotLeaveSecondLineInFourWhiteBubbles()throws {
         for offset in [0,4,8,12] {
             let f=UIGraphicsImageRendererFormat();f.scale=1;f.opaque=true
@@ -74,6 +114,8 @@ final class EditorQualityRegressionTests:XCTestCase {
                 UIColor.white.setFill();c.fill(CGRect(x:0,y:0,width:240,height:220));UIColor.black.setStroke()
                 let frame=UIBezierPath(ovalIn:CGRect(x:10,y:10,width:220,height:200));frame.lineWidth=3;frame.stroke()
                 for y in [85,125] {for x in [65,90,115,140] { UIColor.gray.setFill();c.fill(CGRect(x:x-2,y:y-2,width:16,height:25));UIColor.black.setFill();c.fill(CGRect(x:x,y:y,width:12,height:21)) }}
+                // Detached dots on the undetected line must also disappear.
+                UIColor.black.setFill();c.fill(CGRect(x:92,y:118,width:4,height:3))
                 // Separate decoration: must not be mistaken for a missed line.
                 UIColor.black.setFill();c.fill(CGRect(x:180,y:45,width:6,height:6))
             }
@@ -81,7 +123,7 @@ final class EditorQualityRegressionTests:XCTestCase {
             let result=try XCTUnwrap(CookiesWhitenBubble(image,outline,[NSValue(cgRect:CGRect(x:63+offset,y:83,width:94-offset,height:25))]))
             let patch=pixels(try XCTUnwrap((result["patch"] as? UIImage)?.cgImage))
             for y in [85,125] {for x in [65,90,115,140] {let i=(y*240+x)*4;XCTAssertEqual(patch[i+3],255);XCTAssertGreaterThan(patch[i],245)}}
-            XCTAssertEqual(patch[(48*240+183)*4+3],0);XCTAssertEqual(patch[(110*240+10)*4+3],0)
+            XCTAssertEqual(patch[(119*240+94)*4+3],255);XCTAssertEqual(patch[(48*240+183)*4+3],0);XCTAssertEqual(patch[(110*240+10)*4+3],0)
         }
     }
 }

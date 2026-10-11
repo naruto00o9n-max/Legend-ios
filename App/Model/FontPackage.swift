@@ -4,6 +4,16 @@ import UIKit
 import ZIPFoundation
 
 enum FontPackage {
+    static func importArchive(_ url:URL)throws->[String:[String]] {
+        let access=url.startAccessingSecurityScopedResource();defer{if access{url.stopAccessingSecurityScopedResource()}}
+        let archive=url.pathExtension.lowercased()=="zip" ? try ChapterArchive.staging(url):nil
+        defer{if let archive{try? FileManager.default.removeItem(at:archive)}}
+        let candidates:[URL]
+        if let archive{candidates=(FileManager.default.enumerator(at:archive,includingPropertiesForKeys:nil)?.allObjects as? [URL] ?? []).filter{["ttf","otf"].contains($0.pathExtension.lowercased())}}else{candidates=[url]}
+        try importFiles(candidates)
+        if let archive,let data=try? Data(contentsOf:archive.appendingPathComponent("collections.json")){return (try? JSONDecoder().decode([String:[String]].self,from:data)) ?? [:]}
+        return [:]
+    }
     static func importFiles(_ candidates:[URL],directory:URL=Fonts.userDirectory)throws {
         guard !candidates.isEmpty,candidates.count<=200 else{throw ImageFailure.message("الحزمة يجب أن تحتوي من خط واحد إلى 200 خط")}
         for file in candidates{let size=(try file.resourceValues(forKeys:[.fileSizeKey])).fileSize ?? 0;guard size>0,size<=16*1024*1024,let provider=CGDataProvider(url:file as CFURL),CGFont(provider) != nil else{throw ImageFailure.message("خط غير صالح: "+file.lastPathComponent)}}

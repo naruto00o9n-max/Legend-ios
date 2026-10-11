@@ -118,7 +118,7 @@ NSDictionary<NSString *, id> *CookiesWhitenBubble(UIImage *source,NSArray<NSValu
         bool white=background[0]>=235&&background[1]>=235&&background[2]>=235;
         // Vision may detect only the top line. Ink in undetected lines must not
         // turn a genuinely white, uniform bubble into a textured-background case.
-        if(white&&(double)near/innerCount>=0.80)flat=true;
+        if(white&&(double)near/innerCount>=0.70)flat=true;
         if(!localized&&(!flat||!white))return nil;
         std::vector<cv::Mat> contrasts;
         if(localized&&!flat){
@@ -158,7 +158,7 @@ NSDictionary<NSString *, id> *CookiesWhitenBubble(UIImage *source,NSArray<NSValu
                 if(use){heights.push_back(stats.at<int>(i,cv::CC_STAT_HEIGHT));cv::Rect r(stats.at<int>(i,cv::CC_STAT_LEFT),stats.at<int>(i,cv::CC_STAT_TOP),stats.at<int>(i,cv::CC_STAT_WIDTH),stats.at<int>(i,cv::CC_STAT_HEIGHT));for(int y=r.y;y<r.y+r.height;y++)for(int x=r.x;x<r.x+r.width;x++)if(labels.at<int>(y,x)==i)mask.at<unsigned char>(y,x)=255;}
             }
         }
-        int spread=2;if(!heights.empty()){std::sort(heights.begin(),heights.end());double median=heights[heights.size()/2];if(heights.size()%2==0)median=(median+heights[heights.size()/2-1])/2;spread=std::max(2,std::min(18,(int)std::round(median*0.16)));}
+        double glyphHeight=8;int spread=2;if(!heights.empty()){std::sort(heights.begin(),heights.end());double median=heights[heights.size()/2];if(heights.size()%2==0)median=(median+heights[heights.size()/2-1])/2;glyphHeight=median;spread=std::max(2,std::min(18,(int)std::round(median*0.45)));}
         if(flat){
             // Follow weak antialiasing, stroke and shadow pixels connected to
             // validated glyphs. Never grow weak contrast throughout the bubble.
@@ -167,6 +167,10 @@ NSDictionary<NSString *, id> *CookiesWhitenBubble(UIImage *source,NSArray<NSValu
             cv::compare(delta,3,weak,cv::CMP_GE);cv::bitwise_and(weak,envelope,weak);cv::bitwise_and(weak,inside,weak);
             int count=cv::connectedComponentsWithStats(weak,labels,stats,centroids,8,CV_32S);std::vector<bool> seeded(count,false);
             for(int y=0;y<mask.rows;y++)for(int x=0;x<mask.cols;x++)if(mask.at<unsigned char>(y,x))seeded[labels.at<int>(y,x)]=true;
+            // Detached Arabic dots/diacritics in an OCR-missed line do not
+            // connect to the body of the letter. Accept only small components
+            // within the tight glyph envelope; distant decoration stays intact.
+            for(int i=1;i<count;i++)if(!seeded[i]&&flat&&white&&stats.at<int>(i,cv::CC_STAT_AREA)<=std::max(24.0,glyphHeight*glyphHeight*0.20))seeded[i]=true;
             for(int y=0;y<mask.rows;y++)for(int x=0;x<mask.cols;x++){int label=labels.at<int>(y,x);mask.at<unsigned char>(y,x)=label>0&&seeded[label]?255:0;}
         }
         if(flat&&localized){

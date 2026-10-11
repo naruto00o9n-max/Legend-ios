@@ -27,9 +27,27 @@ struct BubbleInterior {
     }
 }
 enum ContourTypesetter {
+    /// A long narrow speech tail should not pull the text toward the bottom
+    /// of the bounding box. Use the area centroid when it lies in the contour.
+    static func centeredTarget(_ target:SniperTarget)->SniperTarget {
+        var twiceArea=0.0,x=0.0,y=0.0
+        let points=target.outline
+        guard points.count>=3 else{return target}
+        let path=UIBezierPath();path.move(to:CGPoint(x:points[0].x,y:points[0].y))
+        for i in points.indices {
+            let a=points[i],b=points[(i+1)%points.count],cross=a.x*b.y-b.x*a.y
+            twiceArea+=cross;x+=(a.x+b.x)*cross;y+=(a.y+b.y)*cross
+            path.addLine(to:CGPoint(x:b.x,y:b.y))
+        };path.close()
+        guard abs(twiceArea)>1 else{return target}
+        let center=CGPoint(x:x/(3*twiceArea),y:y/(3*twiceArea))
+        guard center.x.isFinite,center.y.isFinite,path.contains(center) else{return target}
+        var result=target;result.bounds.x=center.x-target.bounds.width/2;result.bounds.y=center.y-target.bounds.height/2
+        return result
+    }
     static func fit(_ input:EditorLayer,to target:SniperTarget)throws->EditorLayer {
         guard !target.pin,target.outline.count>=3 else{throw ImageFailure.message("لم يُكتشف محيط مغلق؛ أعد تحديد الفقاعة أو استخدم التنسيق اليدوي")}
-        let interior=BubbleInterior(target:target),body=interior.body
+        let interior=BubbleInterior(target:centeredTarget(target)),body=interior.body
         let words=input.textContent.split(whereSeparator:{$0.isWhitespace})
         guard !words.isEmpty,words.count<=256,body.width>=24,body.height>=24 else{throw ImageFailure.message("الفقاعة صغيرة أو النص أطول من مساحة التنسيق")}
         // Detector already reserves 10% on all sides. Protect outlines/shadows too.

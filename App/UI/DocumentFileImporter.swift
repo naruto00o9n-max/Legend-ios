@@ -10,7 +10,10 @@ struct DocumentFilePicker: UIViewControllerRepresentable {
     let completion: (Result<[URL], Error>) -> Void
     func makeCoordinator() -> Coordinator { Coordinator(self) }
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
-        let picker = UIDocumentPickerViewController(forOpeningContentTypes: types, asCopy: true)
+        // Some providers report custom archives/fonts merely as public.data.
+        // Content validators in the importer decide validity, not a dynamic UTI.
+        let supported=types.contains(.data) ? types:types+[.data]
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: supported, asCopy: true)
         picker.allowsMultipleSelection = multiple
         picker.delegate = context.coordinator
         picker.shouldShowFileExtensions = true
@@ -28,7 +31,7 @@ struct DocumentFilePicker: UIViewControllerRepresentable {
             parent.presented = false
             // Deliver after dismissal. Views can then display progress/errors without
             // competing with the system picker presentation.
-            DispatchQueue.main.async {
+            DispatchQueue.main.asyncAfter(deadline:.now()+0.35) {
                 if urls.isEmpty { completion(.failure(ImageFailure.message("لم يُحدد ملف للاستيراد"))) }
                 else { completion(.success(urls)) }
             }

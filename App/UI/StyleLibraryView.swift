@@ -54,6 +54,8 @@ struct StylePreview:View {
     var body:some View{Group{if let image{Image(uiImage:image).resizable().scaledToFit()}else{ProgressView()}}.task(id:item){
         var layer=EditorLayer(kind:.text);layer.textContent="كوكيز Aa";layer.style=item.style;layer.style.boxWidth=360;layer.style.fontSize=min(48,layer.style.fontSize)
         let size=TextVisualBounds.rect(layer),format=UIGraphicsImageRendererFormat();format.scale=1
-        image=UIGraphicsImageRenderer(size:size.size,format:format).image{output in output.cgContext.translateBy(x:-size.minX,y:-size.minY);LayerRenderer.draw([layer],in:output.cgContext,directory:directory)}
+        let snapshot=layer,location=directory
+        let rendered=try? await BackgroundWork.run{UIGraphicsImageRenderer(size:size.size,format:format).image{output in output.cgContext.translateBy(x:-size.minX,y:-size.minY);LayerRenderer.draw([snapshot],in:output.cgContext,directory:location)}}
+        if !Task.isCancelled{image=rendered}
     }}
 }

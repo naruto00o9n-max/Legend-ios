@@ -18,7 +18,7 @@ struct TextInspector:View {
     func value(_ key:WritableKeyPath<TextStyle,Double>)->Binding<Double>{Binding(get:{style[keyPath:key]},set:{v in model.change{$0.style[keyPath:key]=v}})}
     func flag(_ key:WritableKeyPath<TextStyle,Bool>)->Binding<Bool>{Binding(get:{style[keyPath:key]},set:{v in model.change{$0.style[keyPath:key]=v}})}
     var body:some View {VStack(spacing:0){HStack{Text(panel.title).font(.system(size:15,weight:.semibold));Spacer();IconButton(icon:"checkmark",title:"تم"){model.commitTextMask();model.save();model.gradientTarget=nil;model.textMaskMode=false;if let close{close()}else{dismiss()}}.accessibilityIdentifier("text-inspector-close")}.padding(.horizontal,18).frame(height:52)
-        ScrollView{VStack(alignment:.leading,spacing:18*min(1.15,max(0.85,panelDensity))){content}.padding(.horizontal,20*min(1.15,max(0.85,panelDensity))).padding(.bottom,24)}.accessibilityIdentifier("text-inspector-scroll")
+        ScrollView{LazyVStack(alignment:.leading,spacing:18*min(1.15,max(0.85,panelDensity))){content}.padding(.horizontal,20*min(1.15,max(0.85,panelDensity))).padding(.bottom,24)}.accessibilityIdentifier("text-inspector-scroll")
     }.foregroundStyle(Palette.pale).background(Palette.ink.opacity(0.75)).glass(28).ignoresSafeArea(edges:.bottom).onAppear{model.checkpoint()}.onDisappear{if panel == .mask{model.commitTextMask()};model.save()}.scrollDismissesKeyboard(.interactively)
         .sheet(isPresented:$fontLibrary){FontLibraryView(onSelect:{name in model.change{$0.style.fontPath=name}},currentFont:style.fontPath)}
         .sheet(isPresented:$texturePicker){PhotoLibraryPicker{result in

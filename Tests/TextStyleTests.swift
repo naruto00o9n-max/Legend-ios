@@ -61,10 +61,25 @@ final class TextStyleTests:XCTestCase {
         model.cancelTextMask();XCTAssertEqual(model.page,page);XCTAssertTrue(model.undoStack.isEmpty)
         model.beginTextMask();model.checkpoint();model.change{$0.textMask=[Stroke(points:[Point(x:10,y:10)],width:8,color:"FFFFFF",erase:true)]};model.commitTextMask();XCTAssertEqual(model.undoStack.count,1);XCTAssertEqual(try library.load(page.id).layers[0].textMask?.count,1);model.undo();XCTAssertEqual(model.page.layers,[text])
     }
+    /// Independent native glyph draw at the same 2x sampling used by the
+    /// effect raster at document scale. Comparing 1x hinted glyphs against 2x
+    /// antialiasing would confuse improved edge coverage with rectangle leakage.
+    private func antialiasedGlyphReference(_ layer:EditorLayer,directory:URL)->[UInt8] {
+        let format=UIGraphicsImageRendererFormat();format.scale=2;format.opaque=false;format.preferredRange = .standard
+        let image=UIGraphicsImageRenderer(size:CGSize(width:400,height:240),format:format).image{r in
+            LayerRenderer.draw([layer],in:r.cgContext,directory:directory)
+        }
+        var bytes=[UInt8](repeating:0,count:400*240*4)
+        bytes.withUnsafeMutableBytes{buffer in
+            let c=CGContext(data:buffer.baseAddress,width:400,height:240,bitsPerComponent:8,bytesPerRow:400*4,space:ImagePipeline.space,bitmapInfo:CGImageAlphaInfo.premultipliedLast.rawValue)!
+            c.translateBy(x:0,y:240);c.scaleBy(x:1,y:-1)
+            UIGraphicsPushContext(c);image.draw(in:CGRect(x:0,y:0,width:400,height:240));UIGraphicsPopContext()
+        };return bytes
+    }
     func testGradientPreservesGlyphAlphaAndEmptyLetterHoles() throws {
         var layer=EditorLayer(kind:.text);layer.textContent="OO";layer.frame.x=50;layer.frame.y=40;layer.style.boxWidth=250;layer.style.fontSize=88;layer.style.strokeWidth=0;layer.style.color="FFFFFF"
         let dir=FileManager.default.temporaryDirectory
-        let plain=raster(layer,directory:dir)
+        let plain=antialiasedGlyphReference(layer,directory:dir)
         layer.style.textGradient=["FF0000","0000FF"]
         let gradient=raster(layer,directory:dir)
         var changed=0,painted=0

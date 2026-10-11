@@ -9,6 +9,7 @@ struct FontLibraryView:View {
     @State private var recent=UserDefaults.standard.stringArray(forKey:"fontRecent") ?? []
     @Environment(\.dismiss) var dismiss
     @State private var picker=false
+    @State private var importing=false
     @State private var version=0
     @State private var error:String?
     @State private var scripts:[String:Set<String>]=[:]
@@ -32,7 +33,8 @@ struct FontLibraryView:View {
             HStack{Text("\(selected.count) محدد");Spacer();Button("مجموعة جديدة"){naming=true}.disabled(selected.isEmpty);Button("تصدير"){exportFonts()}.disabled(selected.isEmpty);if let output{ShareLink(item:output){Image(systemName:"square.and.arrow.up")}}}.font(.system(size:12)).padding(14).glass(0)
         }}.foregroundStyle(Palette.pale).navigationTitle("مكتبة الخطوط").navigationBarTitleDisplayMode(.inline)
         .toolbar{ToolbarItem(placement:.topBarLeading){Button("إغلاق"){dismiss()}.accessibilityIdentifier("font-close")};ToolbarItem(placement:.topBarTrailing){Button{picker=true}label:{Image(systemName:"plus")}}}
-        .cookiesFileImporter(isPresented:$picker,allowedContentTypes:[.data]){result in do{try importFonts(result.get())}catch{self.error=error.localizedDescription}}
+        .disabled(importing).overlay{if importing{ProgressView("جارٍ استيراد الخطوط…").padding(20).glass(20)}}
+        .cookiesFileImporter(isPresented:$picker,allowedContentTypes:[.data]){result in do{importFonts(try result.get())}catch{self.error=error.localizedDescription}}
         .alert("مجموعة خطوط",isPresented:$naming){TextField("اسم المجموعة",text:$groupName);Button("حفظ"){let name=groupName.trimmingCharacters(in:.whitespacesAndNewlines);if !name.isEmpty{groups[name]=selected.sorted();saveGroups();filter=name;groupName=""}};Button("إلغاء",role:.cancel){}}
         .alert("مكتبة الخطوط",isPresented:Binding(get:{error != nil},set:{if !$0{error=nil}})){Button("حسنًا"){error=nil}}message:{Text(error ?? "")}.onAppear{classifyFonts()}.onChange(of:version){_,_ in classifyFonts()}.cookiesInterface()}
     }
@@ -48,15 +50,17 @@ struct FontLibraryView:View {
     private func choose(_ name:String){guard let onSelect else{return};recent.removeAll{$0==name};recent.insert(name,at:0);recent=Array(recent.prefix(30));UserDefaults.standard.set(recent,forKey:"fontRecent");onSelect(name)}
     private func classifyFonts(){var result:[String:Set<String>]=[:];for file in Fonts.files+Fonts.otf{var style=TextStyle();style.fontPath=file.lastPathComponent;let ui=Fonts.font(style),font=CTFontCreateWithName(ui.fontName as CFString,17,nil);var supported=Set<String>();for (label,code) in [("العربية",UniChar(0x0639)),("الإنجليزية",UniChar(0x0041))]{var character=code,glyph=CGGlyph();if CTFontGetGlyphsForCharacters(font,&character,&glyph,1),glyph != 0{supported.insert(label)}};result[file.lastPathComponent]=supported};scripts=result}
     private func saveGroups(){UserDefaults.standard.set(groups,forKey:"fontGroups")}
-    private func importFonts(_ url:URL)throws {
-        let access=url.startAccessingSecurityScopedResource();defer{if access{url.stopAccessingSecurityScopedResource()}}
-        let archive=url.pathExtension.lowercased()=="zip" ? try ChapterArchive.staging(url):nil
-        defer{if let archive{try? FileManager.default.removeItem(at:archive)}}
-        let candidates: [URL]
-        if let archive{candidates=(FileManager.default.enumerator(at:archive,includingPropertiesForKeys:nil)?.allObjects as? [URL] ?? []).filter{["ttf","otf"].contains($0.pathExtension.lowercased())}}else{candidates=[url]}
-        try FontPackage.importFiles(candidates)
-        if let archive,let data=try? Data(contentsOf:archive.appendingPathComponent("collections.json")),let imported=try? JSONDecoder().decode([String:[String]].self,from:data){let available=Set((Fonts.files+Fonts.otf).map(\.lastPathComponent));for (name,names) in imported{groups[name]=Array(Set((groups[name] ?? [])+names.filter{available.contains($0)})).sorted()};saveGroups()}
-        Fonts.register();version+=1
+    private func importFonts(_ url:URL) {
+        importing=true
+        Task {
+            defer{importing=false}
+            do{
+                let imported=try await BackgroundWork.run{try FontPackage.importArchive(url)}
+                let available=Set((Fonts.files+Fonts.otf).map(\.lastPathComponent))
+                for (name,names) in imported{groups[name]=Array(Set((groups[name] ?? [])+names.filter{available.contains($0)})).sorted()}
+                saveGroups();version+=1
+            }catch{self.error=error.localizedDescription}
+        }
     }
     private func exportFonts(){do{let folder=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString);try FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true);defer{try? FileManager.default.removeItem(at:folder)};for file in Fonts.files+Fonts.otf where selected.contains(file.lastPathComponent){try FileManager.default.copyItem(at:file,to:folder.appendingPathComponent(file.lastPathComponent))};try JSONEncoder().encode(groups.mapValues{$0.filter{selected.contains($0)}}).write(to:folder.appendingPathComponent("collections.json"));let zip=FileManager.default.temporaryDirectory.appendingPathComponent("Cookies-Fonts-\(UUID().uuidString.prefix(8)).zip");try FileManager.default.zipItem(at:folder,to:zip,shouldKeepParent:false);output=zip}catch{self.error=error.localizedDescription}}
 }

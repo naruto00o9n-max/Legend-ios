@@ -21,7 +21,7 @@ enum TextRaster {
         let raster:Raster
         if let cached=cache.object(forKey:key){raster=cached}else{
             var outputFrame=CGRect(x:-pad,y:-pad,width:size.width,height:size.height)
-            let format=UIGraphicsImageRendererFormat();format.scale=resolution;format.opaque=false
+            let format=UIGraphicsImageRendererFormat();format.scale=resolution;format.opaque=false;format.preferredRange = .standard
             let glyph=UIGraphicsImageRenderer(size:size,format:format).image{r in
                 let a=NSMutableAttributedString(attributedString:LayerRenderer.attributed(layer,color:.white))
                 a.draw(with:rect.offsetBy(dx:pad,dy:pad),options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)
