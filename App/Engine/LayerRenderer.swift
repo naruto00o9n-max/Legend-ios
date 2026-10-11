@@ -24,7 +24,7 @@ enum LayerRenderer {
     private static let boundsLock=NSLock()
     private static var textBounds:[UUID:(String,String,CGRect)]=[:]
     static func attributed(_ l:EditorLayer,color:UIColor?=nil)->NSAttributedString {
-        let s=l.style,p=NSMutableParagraphStyle();p.alignment=[NSTextAlignment.left,.center,.right,.justified][max(0,min(3,s.alignment))];p.baseWritingDirection = .rightToLeft;p.lineSpacing=CGFloat(s.lineSpacing);if let multiple=s.lineHeightMultiple{p.lineHeightMultiple=CGFloat(multiple)};p.lineBreakMode = .byWordWrapping
+        let s=l.style,p=NSMutableParagraphStyle();p.alignment=[NSTextAlignment.left,.center,.right,.justified][max(0,min(3,s.alignment))];p.baseWritingDirection = .rightToLeft;p.lineSpacing=CGFloat(max(0,s.lineSpacing));if s.lineSpacing<0{let height=max(2,Double(Fonts.font(s).lineHeight)*(s.lineHeightMultiple ?? 1)+s.lineSpacing);p.minimumLineHeight=CGFloat(height);p.maximumLineHeight=CGFloat(height)}else if let multiple=s.lineHeightMultiple{p.lineHeightMultiple=CGFloat(multiple)};p.lineBreakMode = .byWordWrapping
         var attributes:[NSAttributedString.Key:Any]=[.font:Fonts.font(s),.foregroundColor:color ?? UIColor(hex:s.color,alpha:CGFloat(s.innerOpacity ?? 1)),.paragraphStyle:p,.kern:s.letterSpacing]
         if s.isUnderline{attributes[.underlineStyle]=NSUnderlineStyle.single.rawValue};if s.isStrikeThrough{attributes[.strikethroughStyle]=NSUnderlineStyle.single.rawValue}
         let result=NSMutableAttributedString(string:l.textContent,attributes:attributes)
@@ -87,6 +87,7 @@ enum LayerRenderer {
         }
     }
     static func drawText(_ l:EditorLayer,rect:CGRect,context c:CGContext,directory:URL) {
+        if TextArtRenderer.draw(l,rect:rect,in:c,directory:directory){return}
         let s=l.style;let background=rect.insetBy(dx:-CGFloat(s.backgroundPaddingX),dy:-CGFloat(s.backgroundPaddingY))
         if s.backgroundAlpha>0{UIColor(hex:s.backgroundColor,alpha:CGFloat(s.backgroundAlpha)/255).setFill();UIBezierPath(roundedRect:background,cornerRadius:CGFloat(s.backgroundCornerRadius)).fill()}
         func text(_ color:UIColor?=nil,_ offset:CGPoint = .zero){attributed(l,color:color).draw(with:rect.offsetBy(dx:offset.x,dy:offset.y),options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)}

@@ -18,7 +18,7 @@ struct GradientControls:View {
             Picker("النوع",selection:Binding(get:{style[keyPath:type]},set:{v in model.change{$0.style[keyPath:type]=v}})){Text("خطي").tag(0);Text("دائري").tag(1);Text("منعكس").tag(2);Text("زاوي").tag(3)}.pickerStyle(.menu)
             GradientPreview(colors:values,stops:values.indices.map{position($0)},angle:style[keyPath:angle],type:style[keyPath:type],points:target=="stroke" ? style.strokeGradientPoints:target=="shadow" ? style.shadowGradientPoints:style.textGradientPoints).frame(height:60).clipShape(RoundedRectangle(cornerRadius:12))
             ForEach(Array(values.indices),id:\.self){index in HStack{
-                ColorPicker("لون \(index+1)",selection:Binding(get:{Color(uiColor:UIColor(hex:values[index]))},set:{color in model.change{$0.style[keyPath:colors][index]=UIColor(color).hex}}),supportsOpacity:false)
+                CookiesColorWell("لون \(index+1)",selection:Binding(get:{Color(uiColor:UIColor(hex:values[index]))},set:{color in model.change{$0.style[keyPath:colors][index]=UIColor(color).hex}}),supportsOpacity:false)
                 StepSlider(value:Binding(get:{position(index)},set:{value in var list=values.indices.map{position($0)};list[index]=value;model.change{$0.style[keyPath:stops]=list}}),in:0...1)
                 Button(role:.destructive){var list=values.indices.map{position($0)};list.remove(at:index);model.change{$0.style[keyPath:colors].remove(at:index);$0.style[keyPath:stops]=list}}label:{Image(systemName:"minus.circle")}.disabled(values.count<=2)
             }.font(.system(size:12))}

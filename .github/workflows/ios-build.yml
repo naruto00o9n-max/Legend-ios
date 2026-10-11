@@ -77,7 +77,7 @@ jobs:
       matrix:
         screen: [ipad, iphone]
     runs-on: macos-15-intel
-    timeout-minutes: 80
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v5
         with:

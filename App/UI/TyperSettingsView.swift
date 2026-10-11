@@ -52,17 +52,17 @@ struct DialogueTagView:View {
         SurfaceHeader(title:tag.title,subtitle:"هوية البطاقة ونمط الحوار عند الإدراج",icon:"tag")
         GlassSection("الاسم والبادئة",icon:"tag"){
             TextField("اسم الوسم",text:$tag.title).glassField();TextField("بادئة الوسم",text:$tag.prefix).autocorrectionDisabled().glassField();SettingToggle(title:"عنوان أو ملاحظة لا تُدرج",value:$tag.noPaste)
-            ColorPicker("لون الوسم في التايبر",selection:Binding(get:{Color(uiColor:UIColor(hex:tag.resolvedDisplayColor))},set:{tag.displayColor=UIColor($0).hex}),supportsOpacity:false).accessibilityIdentifier("tag-display-color")
+            CookiesColorWell("لون الوسم في التايبر",selection:Binding(get:{Color(uiColor:UIColor(hex:tag.resolvedDisplayColor))},set:{tag.displayColor=UIColor($0).hex}),supportsOpacity:false).accessibilityIdentifier("tag-display-color")
             HStack(spacing:10){Circle().fill(Color(uiColor:UIColor(hex:tag.resolvedDisplayColor))).frame(width:8,height:8);Text(tag.title).font(.system(size:12,weight:.medium));Spacer();Text("معاينة البطاقة").font(.system(size:10)).foregroundStyle(Palette.quiet)}.padding(14).glass(14)
         }
         GlassSection("نمط النص",icon:"textformat",subtitle:"هذا النمط يطبّق على الحروف داخل الصورة"){
             NavigationRow(title:"تصميم النمط داخل المحرر",subtitle:"كل أدوات النص، ومعاينة مباشرة، وحفظ للوسم",icon:"rectangle.and.pencil.and.ellipsis"){visualEditor=true}.accessibilityIdentifier("tag-open-editor")
             Picker("الخط",selection:$tag.style.fontPath){ForEach((Fonts.files+Fonts.otf).sorted{$0.lastPathComponent<$1.lastPathComponent},id:\.self){url in Text(url.deletingPathExtension().lastPathComponent).tag(url.lastPathComponent)}}.pickerStyle(.menu)
             value("الحجم",tag.style.fontSize);StepSlider(value:$tag.style.fontSize,in:8...160,step:1)
-            ColorPicker("لون النص",selection:Binding(get:{Color(uiColor:UIColor(hex:tag.style.color))},set:{tag.style.color=UIColor($0).hex}),supportsOpacity:false)
+            CookiesColorWell("لون النص",selection:Binding(get:{Color(uiColor:UIColor(hex:tag.style.color))},set:{tag.style.color=UIColor($0).hex}),supportsOpacity:false)
             SettingToggle(title:"غامق",value:$tag.style.isBold);SettingToggle(title:"مائل",value:$tag.style.isItalic)
             value("سمك الحد",tag.style.strokeWidth);StepSlider(value:$tag.style.strokeWidth,in:0...12,step:1)
-            ColorPicker("لون الحد",selection:Binding(get:{Color(uiColor:UIColor(hex:tag.style.strokeColor))},set:{tag.style.strokeColor=UIColor($0).hex}),supportsOpacity:false)
+            CookiesColorWell("لون الحد",selection:Binding(get:{Color(uiColor:UIColor(hex:tag.style.strokeColor))},set:{tag.style.strokeColor=UIColor($0).hex}),supportsOpacity:false)
         }
         if !styles.styles.isEmpty{GlassSection("نمط محفوظ",icon:"square.grid.2x2"){ForEach(styles.styles){item in Button{tag.style=item.style}label:{HStack{Text(item.title);Spacer();Image(systemName:"arrow.down.to.line").font(.system(size:12))}.padding(.vertical,6)}.buttonStyle(.plain)}}}
         GlassSection("معاينة الحروف",icon:"eye"){LayerThumbnail(layer:preview,directory:styles.directory,previewSize:240).frame(height:160).clipShape(RoundedRectangle(cornerRadius:16))}

@@ -11,7 +11,7 @@ enum StyleComponent:String,CaseIterable,Identifiable {
     case .outline:["strokeColor","strokeWidth","strokeGradient","strokeGradientAngle","strokeGradientStops","strokeGradientType","strokeGradientPoints","extraStrokes"]
     case .shadow:["shadowColor","shadowRadius","shadowDx","shadowDy","shadowAlpha","shadowGradient","shadowGradientAngle","shadowGradientStops","shadowGradientType","shadowGradientPoints"]
     case .background:["backgroundColor","backgroundAlpha","backgroundCornerRadius","backgroundPaddingX","backgroundPaddingY"]
-    case .effects:["effectType","effectColor","effectValue","effectAngle","effectDetail","effectSecondVal","effectThirdVal","blurDx","blurDy","blurType","threeDDepth","threeDColor","threeDDarken","fadeAmount","fadeAngle"]
+    case .effects:["art","effectType","effectColor","effectValue","effectAngle","effectDetail","effectSecondVal","effectThirdVal","blurDx","blurDy","blurType","threeDDepth","threeDColor","threeDDarken","fadeAmount","fadeAngle"]
     case .texture:["texturePath","textureScaleX","textureScaleY","textureRotation","textureTranslationX","textureTranslationY"]
     case .geometry:["perspectivePoints","isMeshMode","meshRows","meshCols","meshPoints","rotationX","rotationY"]
     }}

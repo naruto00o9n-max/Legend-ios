@@ -18,8 +18,8 @@ struct TextLayerTransform:Codable,Equatable {
 }
 struct ManualTextPreset:Codable,Equatable {var style:TextStyle;var transform=TextLayerTransform()}
 enum TextEffect: String, Codable, CaseIterable {
-    case none, blur, glitch, slice, neon, fade, warp, shadow, error
-    var title:String {switch self {case .none:"بلا تأثير";case .blur:"تمويه";case .glitch:"تشويش";case .slice:"تقطيع";case .neon:"توهج";case .fade:"تلاشي";case .warp:"تشويه";case .shadow:"ظل";case .error:"خلل"}}
+    case none, chromatic, blur, glitch, slice, neon, fade, warp, shadow, error
+    var title:String {switch self {case .none:"بلا تأثير";case .chromatic:"إزاحة قنوات RGB";case .blur:"تمويه";case .glitch:"تشويش";case .slice:"تقطيع";case .neon:"توهج";case .fade:"تلاشي";case .warp:"تشويه";case .shadow:"ظل";case .error:"خلل"}}
 }
 enum Blend: String, Codable, CaseIterable {
     case normal, multiply, screen, overlay, darken, lighten, difference, add
@@ -48,6 +48,7 @@ struct TextStyle: Codable, Equatable {
     var perspectivePoints: [Point] = []; var isMeshMode = false; var meshRows = 3; var meshCols = 3; var meshPoints: [Point] = []
     var tashkeelOffset:Double?
     var innerOpacity:Double?;var fadeAmount:Double?;var fadeAngle:Double?;var rulerEnabled:Bool?
+    var art:TextArtSettings?
     var extraStrokes:[ExtraOutline]?
     var spans: [TextRun] = []; var customWidth: Double?; var baseWidth = 0.0; var baseHeight = 0.0
 }
@@ -94,4 +95,17 @@ enum Panel: String, CaseIterable, Identifiable {
 extension UIColor {
     convenience init(hex: String, alpha: CGFloat = 1) {let v=UInt32(hex.replacingOccurrences(of:"#",with:""),radix:16) ?? 0xD4AF37;self.init(red:CGFloat((v>>16)&255)/255,green:CGFloat((v>>8)&255)/255,blue:CGFloat(v&255)/255,alpha:alpha)}
     var hex: String {var r:CGFloat=0,g:CGFloat=0,b:CGFloat=0,a:CGFloat=0;getRed(&r,green:&g,blue:&b,alpha:&a);return String(format:"%02X%02X%02X",Int(r*255),Int(g*255),Int(b*255))}
+}
+
+extension TextStyle {
+    var usedColors:[String]{var values=textGradient.isEmpty ? [color]:textGradient;if strokeWidth>0{values+=strokeGradient.isEmpty ? [strokeColor]:strokeGradient};if shadowAlpha>0 && (shadowRadius>0 || shadowDx != 0 || shadowDy != 0){values+=shadowGradient.isEmpty ? [shadowColor]:shadowGradient};if backgroundAlpha>0{values.append(backgroundColor)};if effectType != .none{values.append(effectColor)};for outline in extraStrokes ?? []{values+=outline.gradient?.isEmpty==false ? outline.gradient!:[outline.color]};return Array(Set(values))}
+}
+struct TextArtSettings:Codable,Equatable {
+    var distance=4.0
+    var angle=0.0
+    var order=0
+    var bandHeight=26.0
+    var strength=10.0
+    var colorShift=4.0
+    var seed:UInt32=7
 }

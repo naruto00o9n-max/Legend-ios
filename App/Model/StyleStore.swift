@@ -8,16 +8,22 @@ struct SavedTextStyle:Codable,Equatable,Identifiable {
     var group:String
     var style:TextStyle
     var modified=Date()
+    var favorite:Bool?
+    var lastUsed:Date?
+    var keywords:[String]?
+    var transform:TextLayerTransform?
 }
 struct StylePackage:Codable {
     var version=1
     var styles:[SavedTextStyle]
     var tags:[DialogueTag]
+    var folders:[String]?
 }
 
 /// Saved styles own their textures. Removing a project cannot invalidate a style.
 @MainActor final class StyleStore:ObservableObject {
     @Published private(set) var styles:[SavedTextStyle]=[]
+    @Published private(set) var folders:[String]=[]
     @Published var error:String?
     private(set) var copiedStyle:TextStyle?
     private var copiedDirectory:URL?
@@ -29,10 +35,11 @@ struct StylePackage:Codable {
             if directory==nil,ProcessInfo.processInfo.arguments.contains("-ui-tests"){try? FileManager.default.removeItem(at:self.directory)}
             try FileManager.default.createDirectory(at:self.directory,withIntermediateDirectories:true)
             let file=self.directory.appendingPathComponent("styles.json")
+            folders=try RecoveryFile.read([String].self,at:self.directory.appendingPathComponent("folders.json"))?.value ?? []
             if let saved=try RecoveryFile.read([SavedTextStyle].self,at:file){styles=saved.value;if saved.recovered{self.error="استُعيدت آخر نسخة سليمة من بياناتك."}}
         }catch{storageReadable=false;self.error=error.localizedDescription}
     }
-    var groups:[String]{Array(Set(styles.map(\.group))).sorted()}
+    var groups:[String]{Array(Set(styles.map(\.group)+folders)).sorted()}
     func manualTextPreset()throws->ManualTextPreset? {
         try RecoveryFile.read(ManualTextPreset.self,at:directory.appendingPathComponent("manual-text.json"))?.value
     }
@@ -64,7 +71,8 @@ struct StylePackage:Codable {
         style.spans=[]
         style.texturePath=try ownTexture(style.texturePath,from:assets)
         var item=SavedTextStyle(title:name,group:group.isEmpty ? "أنماطي":group,style:style)
-        if let replacing{item.id=replacing}
+        item.transform=TextLayerTransform(layer)
+        if let replacing{item.id=replacing;if let old=styles.first(where:{$0.id==replacing}){item.favorite=old.favorite;item.lastUsed=old.lastUsed;item.keywords=old.keywords}}
         var next=styles
         if let index=next.firstIndex(where:{$0.id==item.id}){next[index]=item}else{next.insert(item,at:0)}
         try commit(next);return item.id
@@ -84,6 +92,11 @@ struct StylePackage:Codable {
         var next=styles;guard let index=next.firstIndex(where:{$0.id==id}) else{return}
         next[index].title=title;next[index].group=group.isEmpty ? "أنماطي":group;next[index].modified=Date();try commit(next)
     }
+    func createFolder(_ title:String)throws{let value=title.trimmingCharacters(in:.whitespacesAndNewlines);guard storageReadable,!value.isEmpty else{throw ImageFailure.message("اكتب اسم المجلد")};let next=Array(Set(folders+[value])).sorted();try RecoveryFile.write(next,at:directory.appendingPathComponent("folders.json"));folders=next}
+    func toggleFavorite(_ id:UUID)throws{var next=styles;guard let i=next.firstIndex(where:{$0.id==id}) else{return};next[i].favorite = !(next[i].favorite ?? false);try commit(next)}
+    func updateKeywords(_ id:UUID,_ words:String)throws{var next=styles;guard let i=next.firstIndex(where:{$0.id==id}) else{return};next[i].keywords=words.split(separator:",").map{String($0).trimmingCharacters(in:.whitespacesAndNewlines)}.filter{!$0.isEmpty};try commit(next)}
+    func move(_ ids:Set<UUID>,to group:String)throws{try createFolder(group);var next=styles;for i in next.indices where ids.contains(next[i].id){next[i].group=group};try commit(next)}
+    func remove(_ ids:Set<UUID>)throws{try commit(styles.filter{!ids.contains($0.id)})}
     func duplicate(_ id:UUID)throws {
         guard var value=styles.first(where:{$0.id==id}) else{return};value.id=UUID();value.title+=" — نسخة";value.modified=Date();try commit([value]+styles)
     }
@@ -110,7 +123,8 @@ struct StylePackage:Codable {
             next.meshRows=current.meshRows;next.meshCols=current.meshCols
             next.rotationX=current.rotationX;next.rotationY=current.rotationY
         }
-        model.checkpoint();model.change{$0.style=next}
+        model.checkpoint();model.change{$0.style=next;if includeLayout{item.transform?.apply(to:&$0)}};for color in next.usedColors{model.colorStore.record(color)}
+        var updated=styles;if let i=updated.firstIndex(where:{$0.id==item.id}){updated[i].lastUsed=Date();try commit(updated)}
     }
     func copy(_ layer:EditorLayer,from assets:URL) {
         do{var style=layer.style;style.texturePath=try ownTexture(style.texturePath,from:assets);copiedStyle=style;copiedDirectory=directory;error=nil}catch{self.error=error.localizedDescription}
@@ -120,7 +134,8 @@ struct StylePackage:Codable {
         guard let current=model.active?.style,model.active?.isLocked==false,!components.isEmpty else{throw ImageFailure.message("حدد نصًا غير مقفل واختر خصائص اللصق")}
         let merged=try StyleComponent.merge(style,into:current,selected:components)
         let next=try resolved(merged,from:components.contains(.texture) ? source:model.directory,into:model.directory)
-        model.checkpoint();model.change{$0.style=next}
+        model.checkpoint();model.change{$0.style=next;if includeLayout{item.transform?.apply(to:&$0)}};for color in next.usedColors{model.colorStore.record(color)}
+        var updated=styles;if let i=updated.firstIndex(where:{$0.id==item.id}){updated[i].lastUsed=Date();try commit(updated)}
     }
     func export(ids:Set<UUID>=[],tags:[DialogueTag]=[])throws->URL {
         let selected=ids.isEmpty ? styles:styles.filter{ids.contains($0.id)}
@@ -135,7 +150,7 @@ struct StylePackage:Codable {
         }
         let fonts=Set(allStyles.map(\.fontPath))
         for font in Fonts.userFiles where fonts.contains(font.lastPathComponent){let folder=staging.appendingPathComponent("Fonts");try FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true);try FileManager.default.copyItem(at:font,to:folder.appendingPathComponent(font.lastPathComponent))}
-        try JSONEncoder().encode(StylePackage(styles:selected,tags:tags)).write(to:staging.appendingPathComponent("styles.json"))
+        try JSONEncoder().encode(StylePackage(styles:selected,tags:tags,folders:groups)).write(to:staging.appendingPathComponent("styles.json"))
         let output=FileManager.default.temporaryDirectory.appendingPathComponent("Cookies-Styles-\(UUID()).cookiesstyles")
         try FileManager.default.zipItem(at:staging,to:output,shouldKeepParent:false);return output
     }
@@ -154,6 +169,6 @@ struct StylePackage:Codable {
         for index in package.tags.indices {package.tags[index].id=UUID();package.tags[index].style.texturePath=try ownTexture(package.tags[index].style.texturePath,from:staging)}
         let fonts=(FileManager.default.enumerator(at:staging,includingPropertiesForKeys:nil)?.allObjects as? [URL] ?? []).filter{["ttf","otf"].contains($0.pathExtension.lowercased())}
         if !fonts.isEmpty{try FontPackage.importFiles(fonts)}
-        Fonts.register();try commit(package.styles+styles);return package.tags
+        Fonts.register();try commit(package.styles+styles);for folder in package.folders ?? []{try createFolder(folder)};return package.tags
     }
 }

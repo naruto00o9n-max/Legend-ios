@@ -91,7 +91,7 @@ struct BrushSheet:View {
             if model.drawingShape=="smudge"{Text("قوة الطمس: \(Int(model.smudgeStrength*100))%").font(.system(size:12));StepSlider(value:$model.smudgeStrength,in:0...1)}
             if model.drawingShape=="fill"{Text("تسامح اللون: \(Int(model.fillTolerance))").font(.system(size:12));StepSlider(value:$model.fillTolerance,in:0...80)}
             Toggle("تعبئة الشكل",isOn:$model.drawingFilled).disabled(!["rectangle","ellipse"].contains(model.drawingShape))
-            ColorPicker("لون الرسم",selection:Binding(get:{Color(uiColor:UIColor(hex:model.brushColor))},set:{model.brushColor=UIColor($0).hex}),supportsOpacity:false)
+            CookiesColorWell("لون الرسم",selection:Binding(get:{Color(uiColor:UIColor(hex:model.brushColor))},set:{model.brushColor=UIColor($0).hex}),supportsOpacity:false)
             Text("الحجم: \(Int(model.brushWidth)) بكسل").font(.system(size:12));StepSlider(value:$model.brushWidth,in:1...160,onEditingChanged:{model.brushSizePreview=$0});ZStack{Color.clear.frame(height:82);Circle().stroke(.white,lineWidth:1.5).frame(width:min(76,model.brushWidth),height:min(76,model.brushWidth));Text("\(Int(model.brushWidth)) px").font(.system(size:10,design:.monospaced)).offset(y:34)}
             Text("شفافية الضربة: \(Int(model.brushOpacity*100))%").font(.system(size:12));StepSlider(value:$model.brushOpacity,in:0...1)
             Button("مسح طبقة الرسم",role:.destructive){if model.active?.kind == .drawing{model.checkpoint();model.change{$0.strokes=[]}}}.disabled(model.active?.kind != .drawing)

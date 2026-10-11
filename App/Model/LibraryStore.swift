@@ -93,10 +93,11 @@ import SwiftUI
     @Published var requestTyper=false
     let library:LibraryStore; var visibleCenter=CGPoint.zero
     let manualTextStore:StyleStore
+    let colorStore:ColorLibraryStore
     var stylePreviewLayer:UUID?
     private var previewTask:Task<Void,Never>?
     private var editSaveTask:Task<Void,Never>?
-    init(page:EditorPage,library:LibraryStore){self.page=page;self.library=library;manualTextStore=StyleStore(directory:library.root.appendingPathComponent("Styles"))}
+    init(page:EditorPage,library:LibraryStore){self.page=page;self.library=library;colorStore=library.root.standardizedFileURL==AppStorageManager.root.standardizedFileURL ? .shared:ColorLibraryStore(directory:library.root.appendingPathComponent("Colors"));manualTextStore=StyleStore(directory:library.root.appendingPathComponent("Styles"))}
     var directory:URL {library.directory(page.id)}
     var active:EditorLayer? {page.layers.first{$0.id==selected}}
     @discardableResult func insertDialogues(_ values:[(String,TextStyle?)],targets:[SniperTarget]=[],bubbleLayout:BubbleLayoutRequest?=nil,preparedLayout:EditorLayer?=nil,preparedLayouts:[EditorLayer]=[],transforms:[TextLayerTransform]=[])throws->[UUID] {
@@ -127,7 +128,7 @@ import SwiftUI
         }catch{self.error=error.localizedDescription}
     }
     func checkpoint() {undoStack.append(page.layers);undoDocuments.append(page);if undoStack.count>60{undoStack.removeFirst();undoDocuments.removeFirst()};redoStack=[];redoDocuments=[]}
-    func change(persist:Bool=true,_ body:(inout EditorLayer)->Void) {guard let i=page.layers.firstIndex(where:{$0.id==selected}),!page.layers[i].isLocked else{return};body(&page.layers[i]);page.modified=Date();if persist{scheduleEditSave()}}
+    func change(persist:Bool=true,_ body:(inout EditorLayer)->Void) {guard let i=page.layers.firstIndex(where:{$0.id==selected}),!page.layers[i].isLocked else{return};let previous=page.layers[i].style;body(&page.layers[i]);if page.layers[i].style != previous{let old=Set(previous.usedColors);for color in page.layers[i].style.usedColors where !old.contains(color){colorStore.record(color)}};page.modified=Date();if persist{scheduleEditSave()}}
     func add(_ kind:LayerKind,shape:Int=0) {
         let center = !EditorPreferences.smartPosition || visibleCenter == .zero ? CGPoint(x:Double(page.width)/2,y:200):visibleCenter
         var l=EditorLayer(kind:kind,name:kind == .text ? "نص جديد":"طبقة \(page.layers.count+1)");l.frame=Box(x:max(0,Double(center.x)-160),y:max(0,Double(center.y)-65),width:min(320,Double(page.width)),height:130);l.style.boxWidth=l.frame.width;l.style.fontSize=UserDefaults.standard.object(forKey:"default-text-size") as? Double ?? 48;l.shape=shape
@@ -141,7 +142,7 @@ import SwiftUI
         checkpoint();page.layers.append(l);selected=l.id;save();if kind == .text{panel = .content}
     }
     @discardableResult func confirmTextSettings()->Bool {
-        do{if let active{try manualTextStore.rememberManualText(active,from:directory)};return true}catch{self.error=error.localizedDescription;return false}
+        do{if let active{try manualTextStore.rememberManualText(active,from:directory);for color in active.style.usedColors{colorStore.record(color)}};return true}catch{self.error=error.localizedDescription;return false}
     }
     func delete() {guard stylePreviewLayer==nil,let selected,active?.isLocked==false else{return};checkpoint();page.layers.removeAll{$0.id==selected};self.selected=nil;save()}
     func duplicate() {guard stylePreviewLayer==nil,var l=active else{return};checkpoint();l.id=UUID();l.frame.x+=20;l.frame.y+=20;page.layers.append(l);selected=l.id;save()}

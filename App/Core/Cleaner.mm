@@ -1,4 +1,5 @@
 #import "Cleaner.h"
+#include "BubbleBoundary.hpp"
 #include <algorithm>
 #include <cmath>
 #include <vector>
@@ -39,8 +40,9 @@ NSDictionary<NSString *, id> *CookiesDetectBubble(UIImage *source,CGPoint point)
         cv::floodFill(rgb,mask,cv::Point((int)point.x,(int)point.y),cv::Scalar(255),nullptr,cv::Scalar(15,15,15),cv::Scalar(15,15,15),261892);
         cv::subtract(inner,edges,inner);cv::morphologyEx(inner,inner,cv::MORPH_CLOSE,cv::getStructuringElement(cv::MORPH_ELLIPSE,cv::Size(15,15)));
         std::vector<std::vector<cv::Point>> contours;cv::findContours(inner,contours,cv::RETR_EXTERNAL,cv::CHAIN_APPROX_SIMPLE);
-        const std::vector<cv::Point> *best=nullptr;double bestArea=200;
-        for(auto &contour:contours){double area=cv::contourArea(contour);cv::Rect box=cv::boundingRect(contour);if(area>bestArea&&box.width<rgb.cols-5&&box.height<rgb.rows-5){best=&contour;bestArea=area;}}
+        auto exterior=CookiesOuterBoundary(gray,cv::Point((int)point.x,(int)point.y));
+        const std::vector<cv::Point> *best=exterior.empty()?nullptr:&exterior;double bestArea=exterior.empty()?200:cv::contourArea(exterior);
+        for(auto &contour:contours){double area=cv::contourArea(contour);cv::Rect box=cv::boundingRect(contour);if(exterior.empty()&&area>bestArea&&box.width<rgb.cols-5&&box.height<rgb.rows-5&&cv::pointPolygonTest(contour,cv::Point((int)point.x,(int)point.y),false)>=0){best=&contour;bestArea=area;}}
         if(!best)return @{ @"pin":@YES, @"x":@(point.x), @"y":@(point.y), @"width":@0, @"height":@0, @"points":@[] };
         std::vector<cv::Point> simplified;cv::approxPolyDP(*best,simplified,2,true);NSMutableArray *points=[NSMutableArray array];for(auto &p:simplified)[points addObject:@[@(p.x),@(p.y)]];
         cv::Rect box=cv::boundingRect(*best);
@@ -144,12 +146,12 @@ NSDictionary<NSString *, id> *CookiesWhitenBubble(UIImage *source,NSArray<NSValu
                 cv::Rect r(stats.at<int>(i,cv::CC_STAT_LEFT),stats.at<int>(i,cv::CC_STAT_TOP),w,h);
                 bool safe=true;int evidence=0;
                 for(int y=r.y;y<r.y+r.height&&safe;y++)for(int x=r.x;x<r.x+r.width;x++)if(labels.at<int>(y,x)==i){if(!inside.at<unsigned char>(y,x)){safe=false;break;}if(ocr.at<unsigned char>(y,x))evidence++;}
-                if(!safe||(localized&&!(flat&&white)&&evidence<area*0.65))continue;accepted.push_back(i);
+                if(!safe||(localized&&!flat&&evidence<area*0.65))continue;accepted.push_back(i);
             }
             if(!localized&&accepted.size()>2048)return nil;
             for(int i:accepted){
                 cv::Rect candidate(stats.at<int>(i,cv::CC_STAT_LEFT),stats.at<int>(i,cv::CC_STAT_TOP),stats.at<int>(i,cv::CC_STAT_WIDTH),stats.at<int>(i,cv::CC_STAT_HEIGHT));
-                bool use=localized&&(!(flat&&white)||cv::countNonZero(ocr(candidate))>0);
+                bool use=localized&&(!flat||cv::countNonZero(ocr(candidate))>0);
                 if(!use){int neighbors=0;double cy=centroids.at<double>(i,1),cx=centroids.at<double>(i,0);int h=stats.at<int>(i,cv::CC_STAT_HEIGHT),w=stats.at<int>(i,cv::CC_STAT_WIDTH);
                     for(int j:accepted){int otherH=stats.at<int>(j,cv::CC_STAT_HEIGHT),otherW=stats.at<int>(j,cv::CC_STAT_WIDTH);double dy=abs(centroids.at<double>(j,1)-cy),dx=abs(centroids.at<double>(j,0)-cx);
                         if(otherH>=h*0.30&&otherH<=h*3.5&&((dy<=std::max(h,otherH)*0.8&&dx<=box.width*0.85)||(dx<=std::max(w,otherW)*0.8&&dy<=box.height*0.85))){neighbors++;if(neighbors>=2)break;}
@@ -170,7 +172,7 @@ NSDictionary<NSString *, id> *CookiesWhitenBubble(UIImage *source,NSArray<NSValu
             // Detached Arabic dots/diacritics in an OCR-missed line do not
             // connect to the body of the letter. Accept only small components
             // within the tight glyph envelope; distant decoration stays intact.
-            for(int i=1;i<count;i++)if(!seeded[i]&&flat&&white&&stats.at<int>(i,cv::CC_STAT_AREA)<=std::max(24.0,glyphHeight*glyphHeight*0.20))seeded[i]=true;
+            for(int i=1;i<count;i++)if(!seeded[i]&&flat&&(white||localized)&&stats.at<int>(i,cv::CC_STAT_AREA)<=std::max(24.0,glyphHeight*glyphHeight*0.20))seeded[i]=true;
             for(int y=0;y<mask.rows;y++)for(int x=0;x<mask.cols;x++){int label=labels.at<int>(y,x);mask.at<unsigned char>(y,x)=label>0&&seeded[label]?255:0;}
         }
         if(flat&&localized){
@@ -187,6 +189,6 @@ NSDictionary<NSString *, id> *CookiesWhitenBubble(UIImage *source,NSArray<NSValu
         else{cv::inpaint(rgb,mask,cleaned,5,cv::INPAINT_TELEA);}
         cv::cvtColor(cleaned,patch,cv::COLOR_RGB2RGBA);
         for(int y=0;y<patch.rows;y++)for(int x=0;x<patch.cols;x++)patch.at<cv::Vec4b>(y,x)[3]=mask.at<unsigned char>(y,x);
-        return @{@"patch":patchImage(patch),@"removedPixels":@(removed),@"flat":@(flat),@"localized":@(localized),@"reviewRequired":@(!flat||!localized)};
+        return @{@"patch":patchImage(patch),@"removedPixels":@(removed),@"flat":@(flat),@"localized":@(localized),@"reviewRequired":@(!flat||!localized||!white)};
     }catch(const cv::Exception &){return nil;}}@catch(NSException *exception){return nil;}
 }

@@ -222,6 +222,7 @@ private extension String {
             return (text,style)
         }
         let layers=try model.insertDialogues(values,targets:targets,bubbleLayout:bubbleLayout,preparedLayout:preparedLayout,preparedLayouts:preparedLayouts,transforms:resolvedTags.map{$0.textTransform ?? TextLayerTransform()})
+        for value in values{for color in (value.1 ?? TextStyle()).usedColors{model.colorStore.record(color)}}
         do {
             var next=state;guard let c=next.chapters.firstIndex(where:{$0.id==chapter}) else{throw ImageFailure.message("لم يعد الفصل موجودًا")}
             for (bubble,layer) in zip(bubbles,layers) {if let i=next.chapters[c].bubbles.firstIndex(where:{$0.id==bubble.id}){next.chapters[c].bubbles[i].usedAt=Date();next.chapters[c].bubbles[i].usedOnPage=model.page.id;next.chapters[c].bubbles[i].usedLayer=layer}}

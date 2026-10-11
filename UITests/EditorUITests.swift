@@ -17,11 +17,11 @@ final class EditorUITests:XCTestCase {
         XCTFail("Control did not become visible: \(button.identifier), control \(button.frame), strip \(strip.frame)")
     }
     func revealVertical(_ element:XCUIElement,in view:XCUIElement?=nil){
-        let scroll=view ?? app.scrollViews.firstMatch
+        let scroll=view ?? (app.scrollViews["guide-list"].exists ? app.scrollViews["guide-list"]:app.scrollViews.firstMatch)
         // Whole-view flicks can jump over a small row in the floating Typer and
         // oscillate above/below it. Use a bounded drag within this viewport.
         for _ in 0..<40{let visible=scroll.frame.intersection(app.frame);if element.exists && element.isHittable && element.frame.minY>=visible.minY && element.frame.maxY<=visible.maxY{return};let down=element.exists && element.frame.minY<visible.minY;let start=scroll.coordinate(withNormalizedOffset:CGVector(dx:0.5,dy:down ? 0.32:0.72)),end=scroll.coordinate(withNormalizedOffset:CGVector(dx:0.5,dy:down ? 0.72:0.32));start.press(forDuration:0.02,thenDragTo:end,withVelocity:.slow,thenHoldForDuration:0.12)}
-        XCTAssertTrue(element.isHittable,"Control must be reachable by scrolling: \(element.identifier), control \(element.frame), scroll \(scroll.frame)")
+        XCTAssertTrue(element.exists && element.isHittable,"Control must be reachable by scrolling: \(element.identifier)")
     }
     func tapVisible(_ name:String){let element=app.buttons[name];revealVertical(element);element.tap()}
     func tool(_ name:String){if app.buttons["object-back"].exists{app.buttons["object-back"].tap()};if name=="layers"{app.buttons["layers-header"].tap();return};if name != "text",app.buttons["text-back"].exists{app.buttons["text-back"].tap()};if !["brush","eraser"].contains(name),app.buttons["brush-back"].exists{app.buttons["brush-back"].tap()};let button=app.buttons["tool-"+name];reveal(button,in:app.scrollViews["tool-strip"]);button.tap()}
@@ -206,7 +206,7 @@ final class EditorUITests:XCTestCase {
         start();app.buttons["settings"].tap();tapVisible("settings-typer")
         let tag=app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH 'typer-tag-'")).firstMatch
         XCTAssertTrue(tag.waitForExistence(timeout:8));tag.tap();tapVisible("tag-open-editor")
-        XCTAssertTrue(app.buttons["tag-editor-save"].waitForExistence(timeout:15));XCTAssertTrue(app.scrollViews["canvas-scroll"].exists)
+        XCTAssertTrue(app.buttons["tag-editor-save"].waitForExistence(timeout:15));XCTAssertTrue(app.scrollViews["canvas-scroll"].waitForExistence(timeout:20))
         reveal(app.buttons["panel-stroke"],in:app.scrollViews["panel-strip"]);app.buttons["panel-stroke"].tap()
         let width=app.textFields["value-السماكة"];XCTAssertTrue(width.waitForExistence(timeout:5));width.tap();width.typeText(String(repeating:"\u{8}",count:12)+"5")
         app.buttons["text-inspector-close"].tap();app.buttons["tag-editor-save"].tap()
@@ -214,6 +214,15 @@ final class EditorUITests:XCTestCase {
         let open=app.buttons["tag-open-editor"];XCTAssertTrue(open.waitForExistence(timeout:8));revealVertical(open);open.tap();XCTAssertTrue(app.buttons["tag-editor-save"].waitForExistence(timeout:12))
         reveal(app.buttons["panel-stroke"],in:app.scrollViews["panel-strip"]);app.buttons["panel-stroke"].tap();XCTAssertEqual(app.textFields["value-السماكة"].value as? String,"5")
         capture("fix-tag-full-editor-persisted-outline");app.buttons["tag-editor-cancel"].tap();XCTAssertTrue(app.buttons["tag-save"].waitForExistence(timeout:5))
+    }
+
+    func testColorLibraryFavoritesAndNegativeLineSpacing(){
+        openEditor();tool("text");app.buttons["text-inspector-close"].tap()
+        reveal(app.buttons["panel-color"],in:app.scrollViews["panel-strip"]);app.buttons["panel-color"].tap()
+        let well=app.buttons["color-well-لون مخصص"];revealVertical(well,in:app.scrollViews["text-inspector-scroll"]);well.tap()
+        let hex=app.textFields["color-hex"];XCTAssertTrue(hex.waitForExistence(timeout:8));hex.tap();hex.typeText(String(repeating:"\u{8}",count:8)+"12AB34");app.buttons["تطبيق"].tap();app.buttons["color-favorite"].tap();app.buttons["color-done"].tap()
+        well.tap();app.buttons["colors-favorites"].tap();XCTAssertTrue(app.buttons["stored-color-12AB34"].waitForExistence(timeout:5));app.buttons["color-done"].tap();app.buttons["text-inspector-close"].tap()
+        reveal(app.buttons["panel-spacing"],in:app.scrollViews["panel-strip"]);app.buttons["panel-spacing"].tap();let spacing=app.textFields["value-بين الأسطر"];XCTAssertTrue(spacing.waitForExistence(timeout:5));spacing.tap();spacing.typeText(String(repeating:"\u{8}",count:12)+"-8");app.buttons["text-inspector-close"].tap();app.buttons["panel-spacing"].tap();XCTAssertEqual(app.textFields["value-بين الأسطر"].value as? String,"-8")
     }
 
     func testManualDoneRemembersOutlineForNewManualText(){

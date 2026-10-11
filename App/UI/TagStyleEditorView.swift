@@ -32,6 +32,7 @@ import SwiftUI
 
 struct TagStyleEditorView:View {
     let tag:DialogueTag
+    var savingStyle=false
     let save:(EditorLayer,URL)throws->Void
     @EnvironmentObject private var styles:StyleStore
     @Environment(\.dismiss) private var dismiss
@@ -39,8 +40,8 @@ struct TagStyleEditorView:View {
     @State private var confirmation=false
     var body:some View {
         ZStack{Palette.ink.ignoresSafeArea();if let model=session.model{canvas(model)}else if session.error==nil{ProgressView("جارٍ فتح محرر النمط…").tint(Palette.gold)}}
-            .safeAreaInset(edge:.top,spacing:0){HStack(spacing:12){IconButton(icon:"xmark",title:"إلغاء"){dismiss()}.accessibilityIdentifier("tag-editor-cancel");VStack(alignment:.leading,spacing:3){Text("نمط · "+tag.title).font(.system(size:14,weight:.semibold));Text("أدوات النص كاملة · معاينة مباشرة").font(.system(size:10)).foregroundStyle(Palette.secondary)};Spacer(minLength:4);Button{confirmation=true}label:{Label("حفظ الوسم",systemImage:"checkmark")}.buttonStyle(CapsuleActionStyle(selected:true)).disabled(session.model?.active==nil).accessibilityIdentifier("tag-editor-save")}.padding(.horizontal,12).padding(.vertical,8).glass(0)}
-            .confirmationDialog("حفظ هذا المظهر للوسم؟",isPresented:$confirmation,titleVisibility:.visible){Button("تأكيد وحفظ"){guard let model=session.model,let layer=model.active else{return};do{try save(layer,model.directory);dismiss()}catch{session.error=error.localizedDescription}}.accessibilityIdentifier("tag-editor-confirm");Button("إلغاء",role:.cancel){}}message:{Text("يُحفظ الخط واللون والحدود والتدرجات والتأثيرات وبقية إعدادات النص لهذا الوسم. يبقى نمط النص اليدوي مستقلًا.")}
+            .safeAreaInset(edge:.top,spacing:0){HStack(spacing:12){IconButton(icon:"xmark",title:"إلغاء"){dismiss()}.accessibilityIdentifier("tag-editor-cancel");VStack(alignment:.leading,spacing:3){Text("نمط · "+tag.title).font(.system(size:14,weight:.semibold));Text("أدوات النص كاملة · معاينة مباشرة").font(.system(size:10)).foregroundStyle(Palette.secondary)};Spacer(minLength:4);Button{confirmation=true}label:{Label(savingStyle ? "حفظ النمط":"حفظ الوسم",systemImage:"checkmark")}.buttonStyle(CapsuleActionStyle(selected:true)).disabled(session.model?.active==nil).accessibilityIdentifier("tag-editor-save")}.padding(.horizontal,12).padding(.vertical,8).glass(0)}
+            .confirmationDialog(savingStyle ? "حفظ هذا النمط؟":"حفظ هذا المظهر للوسم؟",isPresented:$confirmation,titleVisibility:.visible){Button("تأكيد وحفظ"){guard let model=session.model,let layer=model.active else{return};do{try save(layer,model.directory);dismiss()}catch{session.error=error.localizedDescription}}.accessibilityIdentifier("tag-editor-confirm");Button("إلغاء",role:.cancel){}}message:{Text(savingStyle ? "يُحفظ المظهر الكامل وخاماته في مكتبة الأنماط؛ يبقى النص في مشروعك كما هو.":"يُحفظ الخط واللون والحدود والتدرجات والتأثيرات وبقية إعدادات النص لهذا الوسم. يبقى نمط النص اليدوي مستقلًا.")}
             .alert("محرر نمط الوسم",isPresented:Binding(get:{session.error != nil},set:{if !$0{session.error=nil}})){Button("حسنًا"){session.error=nil}}message:{Text(session.error ?? "")}
             .onAppear{session.prepare(tag,styles:styles)}.onDisappear{session.finish()}.cookiesInterface()
     }
