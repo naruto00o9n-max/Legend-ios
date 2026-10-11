@@ -21,3 +21,9 @@ Swift syntax parsing and diff whitespace checks passed locally (Linux). Six nati
 The preceding bbcafee run passed 103 editor tests and 6 service mocks on each device; its Typer reopen/filter interaction passed. Real Files UI still showed the system picker after a label tap, despite a background font-close element existing, so that assertion was not proof of dismissal/import. This revision verifies the foreground picker disappears, selects the real Files cell, and includes explicit UIKit dismissal after delivery. Full connected/UI and local-edition gates must be rerun after App changes.
 
 Initial native build 38148092332 rejected ambiguous CGFloat/Double arithmetic in the new preview centering expression before producing an IPA. Explicit Double coordinates correct it; the follow-up also verifies the manual Done → new text outline path in real UI. No successful runtime result is claimed for the failed build.
+
+## Native follow-up dbfa37a
+
+Source: `dbfa37a13234c4e7559bd8ad2aeab233e9dce67b`; [run 38148730485](https://github.com/naruto00o9n-max/Legend-ios/actions/runs/38148730485). The two unsigned Release arm64 builds passed. Actual downloaded IPA bundle contents, source revisions, URL schemes, service flags/configuration and absence of Mach-O signatures/provisioning were verified. The native PNG 800×15000 integrity gate passed.
+
+On each iPad/iPhone, 109 editor integration tests and 6 mocked service tests passed with zero failures, including all six new manual/tag regressions. Full connected interface tests and both local editions remain pending at this checkpoint. Package and core success alone are not an end-to-end interface success.

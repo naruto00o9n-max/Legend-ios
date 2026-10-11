@@ -1,0 +1,68 @@
+{
+  "source_commit": "dbfa37a13234c4e7559bd8ad2aeab233e9dce67b",
+  "run_id": 38148730485,
+  "run_url": "https://github.com/naruto00o9n-max/Legend-ios/actions/runs/38148730485",
+  "package_artifact": 11705781738,
+  "ipas": [
+    {
+      "edition": "connected",
+      "path": "/workspace/Cookies-Editor-dbfa37a-unsigned.ipa",
+      "source_commit": "dbfa37a13234c4e7559bd8ad2aeab233e9dce67b",
+      "bundle_id": "com.cookies.editor.ios",
+      "display_name": "Cookies Editor",
+      "version": "1.1.0",
+      "build": "1.1.0",
+      "minimum_os": "17.0",
+      "url_schemes": [
+        "cookies-editor"
+      ],
+      "service_enabled": true,
+      "service_configuration_bundled": true,
+      "architecture": "arm64",
+      "unsigned": true,
+      "embedded_source_revision": "dbfa37a13234c4e7559bd8ad2aeab233e9dce67b",
+      "size": 14912928,
+      "sha256": "8bb3023b6a3fa19689a0d5e90b70ed930a480e3bd67370bc4ac80edad6a775fb"
+    },
+    {
+      "edition": "local",
+      "path": "/workspace/Cookies-Editor-Local-dbfa37a-unsigned.ipa",
+      "source_commit": "dbfa37a13234c4e7559bd8ad2aeab233e9dce67b",
+      "bundle_id": "com.cookies.editor.local",
+      "display_name": "Cookies Editor",
+      "version": "1.1.0",
+      "build": "1.1.0",
+      "minimum_os": "17.0",
+      "url_schemes": [
+        "cookies-editor-local"
+      ],
+      "service_enabled": false,
+      "service_configuration_bundled": false,
+      "architecture": "arm64",
+      "unsigned": true,
+      "embedded_source_revision": "dbfa37a13234c4e7559bd8ad2aeab233e9dce67b",
+      "size": 14912511,
+      "sha256": "6a30f4adb4b0e3e9d1070056354fce3ebe0c7738222ea97d7d004d26fab5294a"
+    }
+  ],
+  "native_engine": {
+    "ipad": {
+      "editor_tests_passed": 109,
+      "service_mocks_passed": 6,
+      "actual_cases_passed": 115,
+      "failed_cases": [],
+      "new_text_workflows_passed": [],
+      "xcode_succeeded": true
+    },
+    "iphone": {
+      "editor_tests_passed": 109,
+      "service_mocks_passed": 6,
+      "actual_cases_passed": 115,
+      "failed_cases": [],
+      "new_text_workflows_passed": [],
+      "xcode_succeeded": true
+    }
+  },
+  "connected_interfaces": "pending",
+  "local_interfaces": "pending"
+}
