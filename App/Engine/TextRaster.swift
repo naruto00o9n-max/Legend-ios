@@ -79,7 +79,10 @@ enum TextRaster {
                 }
                 let previous=result;result=UIGraphicsImageRenderer(size:size,format:format).image{output in previous.draw(at:.zero);mask.draw(at:.zero,blendMode:.destinationIn,alpha:1)}
             }
-            if let cg=result.cgImage{
+            // Keep a pure color/outline raster untouched. A Core Image round trip
+            // is only needed for geometric or filter effects and can otherwise
+            // change premultiplied antialias coverage at glyph edges.
+            if (s.effectType == .blur || s.effectType == .fade || !PerspectiveGeometry.corners(s).isEmpty),let cg=result.cgImage{
                 let input=CIImage(cgImage:cg)
                 var processed=input
                 if s.effectType == .blur{processed=input.applyingFilter("CIGaussianBlur",parameters:[kCIInputRadiusKey:max(0,s.effectValue)*Double(resolution)])}

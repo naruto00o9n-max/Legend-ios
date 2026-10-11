@@ -66,14 +66,17 @@ final class TextStyleTests:XCTestCase {
     /// antialiasing would confuse improved edge coverage with rectangle leakage.
     private func antialiasedGlyphReference(_ layer:EditorLayer,directory:URL)->[UInt8] {
         let format=UIGraphicsImageRendererFormat();format.scale=2;format.opaque=false;format.preferredRange = .standard
-        let image=UIGraphicsImageRenderer(size:CGSize(width:400,height:240),format:format).image{r in
-            LayerRenderer.draw([layer],in:r.cgContext,directory:directory)
+        let bounds=LayerRenderer.bounds(layer),pad=CGFloat(TextVisualBounds.padding(layer.style,minimum:8))
+        let size=CGSize(width:ceil(bounds.width+pad*2),height:ceil(bounds.height+pad*2))
+        let image=UIGraphicsImageRenderer(size:size,format:format).image{_ in
+            LayerRenderer.attributed(layer,color:.white).draw(with:bounds.offsetBy(dx:pad,dy:pad),options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)
         }
         var bytes=[UInt8](repeating:0,count:400*240*4)
         bytes.withUnsafeMutableBytes{buffer in
             let c=CGContext(data:buffer.baseAddress,width:400,height:240,bitsPerComponent:8,bytesPerRow:400*4,space:ImagePipeline.space,bitmapInfo:CGImageAlphaInfo.premultipliedLast.rawValue)!
             c.translateBy(x:0,y:240);c.scaleBy(x:1,y:-1)
-            UIGraphicsPushContext(c);image.draw(in:CGRect(x:0,y:0,width:400,height:240));UIGraphicsPopContext()
+            c.concatenate(LayerRenderer.transform(layer))
+            UIGraphicsPushContext(c);image.draw(in:CGRect(x:-pad,y:-pad,width:size.width,height:size.height));UIGraphicsPopContext()
         };return bytes
     }
     func testGradientPreservesGlyphAlphaAndEmptyLetterHoles() throws {
