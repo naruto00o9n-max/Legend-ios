@@ -92,8 +92,10 @@ final class StorageAndInteractionTests:XCTestCase {
         // Pixel decoding is asynchronous; the real viewport owns its feedback.
         XCTAssertFalse(viewport.colorFeedback.isHidden)
         await fulfillment(of:[picked],timeout:5)
-        XCTAssertEqual(model.brushColor,"FF0000");XCTAssertEqual(model.active?.style.color,"FF0000");XCTAssertEqual(model.undoStack.count,1)
-        model.undo();XCTAssertEqual(model.active?.style.color,"000000")
+        withExtendedLifetime((coordinator,viewport)){
+            XCTAssertEqual(model.brushColor,"FF0000");XCTAssertEqual(model.active?.style.color,"FF0000");XCTAssertEqual(model.undoStack.count,1)
+            model.undo();XCTAssertEqual(model.active?.style.color,"000000")
+        }
     }
 
 }
