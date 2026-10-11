@@ -1,0 +1,70 @@
+name: Isolated local iPad Photos verification
+on:
+  push:
+    branches: [verify/style-form-oct11]
+    paths: ['.github/workflows/local-photos-retry.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  local-ipad:
+    runs-on: macos-15-intel
+    timeout-minutes: 35
+    steps:
+      # Keep the product, local tests and import/export code byte-for-byte equal
+      # to the already built 06321b5 IPAs. Only the simulator environment differs.
+      - uses: actions/checkout@v5
+        with:
+          ref: 06321b5663547547283b6373c0d092fcdebc03cb
+      - run: brew install xcodegen
+      - uses: actions/cache@v4
+        with:
+          path: |
+            .work/reference.apk
+            .work/opencv-ios.zip
+            App/Core/Vendor
+            App/Resources/cookies-logo.png
+          key: cookies-native-v45-opencv411-${{ hashFiles('scripts/vendor-hashes.json') }}
+      - run: python3 scripts/fetch_resources.py
+      - run: python3 scripts/fetch_whitening_fixtures.py
+      - run: xcodegen generate
+      - name: Seed a fresh standalone iPad Photos library
+        run: |
+          mkdir -p build .work
+          xcrun simctl list devices available -j > .work/devices.json
+          python3 - <<'PY'
+          import json,pathlib,struct,zlib
+          devices=[d for group in json.load(open('.work/devices.json'))['devices'].values() for d in group if d['isAvailable'] and 'iPad' in d['name']]
+          assert devices,'An iPad simulator is required'
+          device=next((d for d in devices if '11-inch' in d['name']),devices[0])
+          pathlib.Path('.work/simulator-id').write_text(device['udid'])
+          w,h=800,15000
+          chunk=lambda n,d:struct.pack('>I',len(d))+n+d+struct.pack('>I',zlib.crc32(n+d)&0xffffffff)
+          rows=b''.join(b'\0'+bytes((240-y%40,)*3)*w for y in range(h))
+          png=b'\x89PNG\r\n\x1a\n'+chunk(b'IHDR',struct.pack('>IIBBBBB',w,h,8,2,0,0,0))+chunk(b'IDAT',zlib.compress(rows))+chunk(b'IEND',b'')
+          pathlib.Path('.work/Photos-800x15000.png').write_bytes(png)
+          assert len(rows)==(800*3+1)*15000
+          PY
+          TASK_DEVICE=$(cat .work/simulator-id)
+          xcrun simctl boot "$TASK_DEVICE"
+          xcrun simctl bootstatus "$TASK_DEVICE" -b
+          xcrun simctl addmedia "$TASK_DEVICE" .work/Photos-800x15000.png
+      - name: Full unchanged local suite and actual source pixels
+        run: bash scripts/test_local_simulator.sh ipad
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: isolated-local-ipad-verification
+          path: |
+            build/test-ipad-local*.log
+            build/gates-ipad-local.json
+            build/photos-integrity-ipad-local.json
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: isolated-local-ipad-evidence
+          path: |
+            build/screenshots/ipad-local/
+            build/ipad-local.xcresult/
+          retention-days: 30
