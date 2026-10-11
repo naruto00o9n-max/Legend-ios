@@ -11,12 +11,12 @@ final class DocumentCanvas: UIView {
         let sample: Int
         init(rect: CGRect, sample: Int) {
             self.rect = rect; self.sample = sample
-            view.frame = rect; view.layer.magnificationFilter = .nearest
+            view.frame = rect; view.layer.magnificationFilter = .linear
             view.layer.minificationFilter = .linear
             view.isUserInteractionEnabled = false
         }
     }
-    private let worker = DispatchQueue(label: "cookies.canvas.tiles", qos: .userInitiated)
+    private let worker = DispatchQueue(label: "cookies.canvas.tiles", qos: .userInitiated, autoreleaseFrequency:.workItem)
     private let sourceCache = NSCache<NSString, UIImage>()
     private var tiles: [String: Tile] = [:]
     private let preview = UIImageView()
@@ -36,7 +36,7 @@ final class DocumentCanvas: UIView {
     private var interaction: LayerInteraction?
     private var drawingInteraction=false
     private var softwareStroke=false
-    private let inkWorker=DispatchQueue(label:"cookies.canvas.live-composite",qos:.userInteractive)
+    private let inkWorker=DispatchQueue(label:"cookies.canvas.live-composite",qos:.userInteractive,autoreleaseFrequency:.workItem)
     private var inkGeneration=UUID()
     private var inkRendering=false
     private var latestInk:(EditorPage,URL,CGRect,Int)?
@@ -78,7 +78,7 @@ final class DocumentCanvas: UIView {
         super.init(frame: frame)
         isOpaque = false; backgroundColor = .clear; clipsToBounds = false
         preview.frame = bounds; preview.isUserInteractionEnabled = false
-        preview.layer.magnificationFilter = .nearest; addSubview(preview)
+        preview.layer.magnificationFilter = .linear; addSubview(preview)
         sourceCache.totalCostLimit = 48 * 1024 * 1024
         liveInk.lineCap = .round; liveInk.lineJoin = .round
         liveInk.fillColor = UIColor.clear.cgColor; layer.addSublayer(liveInk)
@@ -181,7 +181,7 @@ final class DocumentCanvas: UIView {
             if let base, !page.layers.isEmpty {
                 let format = UIGraphicsImageRendererFormat(); format.scale = textResolution; format.opaque = false; format.preferredRange = .standard
                 composite = UIGraphicsImageRenderer(size: base.size, format: format).image { output in
-                    output.cgContext.interpolationQuality = .none
+                    output.cgContext.interpolationQuality = .high
                     base.draw(in: CGRect(origin: .zero, size: base.size))
                     let context = output.cgContext
                     context.scaleBy(x: base.size.width / tile.rect.width, y: base.size.height / tile.rect.height)
@@ -194,7 +194,7 @@ final class DocumentCanvas: UIView {
                 guard let self, self.sourceIdentity == identity, self.tiles[key] === tile else { return }
                 tile.pending = false
                 if read { self.sourceReads += 1 }
-                if requested == self.revision {
+                if requested >= tile.revision {
                     // Keep the previous contents until its replacement is complete.
                     if let composite {
                         if let commit = [self.strokeCommitRevision, self.interactionRevision,self.patchCommitRevision].compactMap({ $0 }).min(), requested >= commit { self.stagedImages[key] = composite }

@@ -17,7 +17,7 @@ struct CanvasHost:UIViewRepresentable {
         let longPress=UILongPressGestureRecognizer(target:context.coordinator,action:#selector(Coordinator.longPress(_:)));longPress.delegate=context.coordinator;s.addGestureRecognizer(longPress)
         return s
     }
-        func updateUIView(_ s:UIScrollView,context:Context){let c=context.coordinator;c.model=model;c.onBubble=onBubble;if let viewport=s as? CanvasViewport{viewport.showBrushSize(model.brushSizePreview ? CGFloat(model.brushWidth)*s.zoomScale:nil)};c.canvas.gradientMode=readOnly ? nil:model.gradientTarget;c.canvas.deformationMode = !readOnly && model.panel == .perspective;if let draft=c.gesturePage{c.canvas.previewGesture(page:draft,directory:model.directory,selected:model.selected,zoom:s.zoomScale)}else{c.canvas.update(page:model.canvasPage,directory:model.directory,selected:readOnly ? nil:model.selected,zoom:s.zoomScale)};c.canvas.showSniper(readOnly ? []:model.sniperTargets);s.accessibilityValue="\(model.page.layers.count) طبقات، \(model.page.layers.reduce(0){$0+$1.strokes.count}) خطوط رسم، الحجم \(String(format:"%.2f",model.active?.scaleX ?? 1))";s.panGestureRecognizer.minimumNumberOfTouches=(!readOnly && [Tool.brush,.eraser,.cleaner].contains(model.tool)) ? 2:1
+        func updateUIView(_ s:UIScrollView,context:Context){let c=context.coordinator;c.model=model;c.onBubble=onBubble;if let viewport=s as? CanvasViewport{viewport.showBrushSize(model.brushSizePreview ? CGFloat(model.brushWidth)*s.zoomScale:nil);if model.tool != .eraser{viewport.showEraser(at:nil,diameter:0)}};c.canvas.gradientMode=readOnly ? nil:model.gradientTarget;c.canvas.deformationMode = !readOnly && model.panel == .perspective;if let draft=c.gesturePage{c.canvas.previewGesture(page:draft,directory:model.directory,selected:model.selected,zoom:s.zoomScale)}else{c.canvas.update(page:model.canvasPage,directory:model.directory,selected:readOnly ? nil:model.selected,zoom:s.zoomScale)};c.canvas.showSniper(readOnly ? []:model.sniperTargets);s.accessibilityValue="\(model.page.layers.count) طبقات، \(model.page.layers.reduce(0){$0+$1.strokes.count}) خطوط رسم، الحجم \(String(format:"%.2f",model.active?.scaleX ?? 1))";s.panGestureRecognizer.minimumNumberOfTouches=(!readOnly && [Tool.brush,.eraser,.cleaner].contains(model.tool)) ? 2:1
         if !c.fitted{s.layoutIfNeeded();DispatchQueue.main.async{guard !c.fitted,s.bounds.width>0,s.bounds.height>0 else{return};let full=min(s.bounds.width/CGFloat(model.page.width),s.bounds.height/CGFloat(model.page.height));s.minimumZoomScale=max(0.002,full/4);let reading=s.bounds.width/CGFloat(model.page.width)*0.96;s.setZoomScale(reading,animated:false);c.fitted=true
             if c.readOnly,let saved=ReaderBookmark.viewport(page:c.model.page.id){s.setZoomScale(CGFloat(min(128,max(Double(s.minimumZoomScale),saved.zoom))),animated:false);s.setContentOffset(CGPoint(x:max(0,CGFloat(saved.x)*s.zoomScale-s.bounds.width/2),y:max(0,CGFloat(saved.y)*s.zoomScale-s.bounds.height/2)),animated:false)}
             c.updateCenter(recenter:true)}}else{c.updateCenter()}
@@ -93,6 +93,11 @@ struct CanvasHost:UIViewRepresentable {
                 };return
             }
             if [.brush,.eraser,.cleaner].contains(model.tool){
+                if model.tool == .eraser,let viewport=scroll as? CanvasViewport {
+                    let active = g.state == .began || g.state == .changed
+                    let scale=model.active.map{max(abs($0.scaleX),abs($0.scaleY))} ?? 1
+                    viewport.showEraser(at:active ? canvas.convert(point,to:viewport):nil,diameter:CGFloat(model.brushWidth*scale)*viewport.zoomScale)
+                }
                 if (g.state == .began || g.state == .changed),let loupe=(scroll as? CanvasViewport)?.loupe,loupe.shouldSample{var preview=model.canvasPage;if let stroke,let index=preview.layers.firstIndex(where:{$0.id==model.selected}){preview.layers[index].strokes.append(stroke)};loupe.show(page:preview,directory:model.directory,point:point)}
                 else if g.state == .ended || g.state == .cancelled{(scroll as? CanvasViewport)?.loupe.hide()}
             }
@@ -158,6 +163,13 @@ final class CanvasViewport:UIScrollView {
     var onViewportSizeChange:(()->Void)?
     override init(frame:CGRect){super.init(frame:frame);addSubview(loupe);layer.addSublayer(brushRing);brushRing.fillColor=UIColor.clear.cgColor;brushRing.strokeColor=UIColor.white.cgColor;brushRing.lineWidth=1.5;brushRing.shadowColor=UIColor.black.cgColor;brushRing.shadowRadius=2;brushRing.shadowOpacity=1}
     required init?(coder:NSCoder){fatalError()}
+    private let eraserRing=CAShapeLayer()
+    func showEraser(at point:CGPoint?,diameter:CGFloat){
+        CATransaction.begin();CATransaction.setDisableActions(true)
+        if eraserRing.superlayer==nil{eraserRing.fillColor=UIColor.clear.cgColor;eraserRing.strokeColor=UIColor(white:0.85,alpha:0.95).cgColor;eraserRing.lineWidth=1.5;eraserRing.shadowColor=UIColor.black.cgColor;eraserRing.shadowOpacity=0.8;eraserRing.shadowRadius=1;layer.addSublayer(eraserRing)}
+        eraserRing.path=point.map{UIBezierPath(ovalIn:CGRect(x:$0.x-diameter/2,y:$0.y-diameter/2,width:diameter,height:diameter)).cgPath}
+        CATransaction.commit()
+    }
     func showBrushSize(_ diameter:CGFloat?){guard let diameter else{brushRing.path=nil;return};brushRing.path=UIBezierPath(ovalIn:CGRect(x:bounds.midX-diameter/2,y:bounds.midY-diameter/2,width:diameter,height:diameter)).cgPath}
 
     private var previousSize:CGSize = .zero

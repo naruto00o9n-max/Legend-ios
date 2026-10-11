@@ -29,7 +29,7 @@ struct TyperLibraryView:View {
         .fullScreenCover(isPresented:$newChapter){ChapterSourceView(folder:folder)}
         .fullScreenCover(item:$editing){chapter in ChapterSourceView(chapter:chapter,folder:chapter.folder)}
         .fullScreenCover(item:$draft){chapter in ChapterSourceView(chapter:chapter,folder:chapter.folder,isDraft:true)}
-        .fileImporter(isPresented:$importing,allowedContentTypes:[.plainText,.json],allowsMultipleSelection:false){result in do{try typer.importFile(result.get()[0],folder:folder)}catch{typer.error=error.localizedDescription}}
+        .cookiesFileImporter(isPresented:$importing,allowedContentTypes:[.plainText,.json],allowsMultipleSelection:false){result in do{try typer.importFile(result.get()[0],folder:folder)}catch{typer.error=error.localizedDescription}}
         .alert("حذف الفصل؟",isPresented:Binding(get:{deletion != nil},set:{if !$0{deletion=nil}})){Button("حذف",role:.destructive){if let chapter=deletion{do{try typer.remove(chapter.id)}catch{typer.error=error.localizedDescription}};deletion=nil};Button("إلغاء",role:.cancel){deletion=nil}}message:{Text("سيُحذف النص وتقدّمه من التايبر. تبقى طبقات النص الموجودة في الصور.")}
         }.foregroundStyle(Palette.pale).cookiesInterface().typerErrors(typer)
     }

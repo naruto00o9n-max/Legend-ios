@@ -46,7 +46,7 @@ struct ChapterGalleryView:View {
         .toolbar{ToolbarItemGroup(placement:.topBarTrailing){Button{reading=true}label:{Image(systemName:"book")}.disabled(ids.isEmpty).accessibilityIdentifier("chapter-reader");Button{exporting=true}label:{Image(systemName:"square.and.arrow.up")}.disabled(chosen.isEmpty).accessibilityIdentifier("chapter-export-open")}}
         .overlay{if busy{VStack(spacing:12){ProgressView("جارٍ تجهيز الصفحات…");Button("إلغاء"){task?.cancel()}}.padding(24).glass(20)}}
         .sheet(isPresented:$photos){PhotoLibraryPicker(multiple:true){result in switch result{case .failure(let error):failure=error.localizedDescription;case .success(let urls):importFiles(urls,owned:true)}}}
-        .fileImporter(isPresented:$files,allowedContentTypes:[.image,.pdf,.zip,UTType(filenameExtension:"cookies") ?? .zip,UTType(filenameExtension:"cookieschapter") ?? .zip],allowsMultipleSelection:true){result in switch result{case .failure(let error):failure=error.localizedDescription;case .success(let urls):importFiles(urls)}}
+        .cookiesFileImporter(isPresented:$files,allowedContentTypes:[.image,.pdf,.zip,UTType(filenameExtension:"cookies") ?? .zip,UTType(filenameExtension:"cookieschapter") ?? .zip],allowsMultipleSelection:true){result in switch result{case .failure(let error):failure=error.localizedDescription;case .success(let urls):importFiles(urls)}}
         .sheet(isPresented:Binding(get:{operation != nil},set:{if !$0{operation=nil}})){PageOperationSheet(chapter:id,ids:chosen,operation:operation ?? "",completed:{operation=nil}).cookiesInterface()}
         .sheet(isPresented:$exporting){ChapterExportSheet(chapter:id,ids:chosen).cookiesInterface()}
         .fullScreenCover(isPresented:$reading){ChapterReaderView(chapter:id).cookiesInterface()}
@@ -140,7 +140,7 @@ struct ChapterExportSheet:View {
     var body:some View{NavigationStack{Form{
         Picker("الصيغة",selection:$format){ForEach(["PNG","JPEG","PSD","مشروع","فصل قابل للتعديل"],id:\.self){Text($0)}}
         TextField("بادئة أسماء الصفحات",text:$prefix)
-        if format=="JPEG"{Slider(value:$quality,in:0.1...1);Text("الجودة \(Int(quality*100))%")}
+        if format=="JPEG"{StepSlider(value:$quality,in:0.1...1);Text("الجودة \(Int(quality*100))%")}
         if format != "فصل قابل للتعديل"{Toggle("تصدير ذكي: دمج ثم تقطيع",isOn:$smart);if smart{TextField("طول الجزء px",value:$maxHeight,format:.number).keyboardType(.numberPad)}}
         if busy{ProgressView(value:Double(completed),total:Double(max(1,total)));Text("\(completed) / \(total)");Button("إلغاء"){task?.cancel()}}else{Button("تصدير \(ids.count) صفحة"){export()}.accessibilityIdentifier("chapter-export")}
         if let output{ShareLink(item:output){Label("حفظ أو مشاركة الحزمة",systemImage:"square.and.arrow.up")}.accessibilityIdentifier("chapter-export-share")}

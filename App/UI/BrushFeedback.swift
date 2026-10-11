@@ -4,7 +4,7 @@ import UIKit
 /// New touches coalesce while rendering, so drawing never waits for image decoding.
 final class BrushLoupe:UIView {
     private let image=UIImageView(),crosshair=CAShapeLayer()
-    private let worker=DispatchQueue(label:"cookies.brush.loupe",qos:.utility)
+    private let worker=DispatchQueue(label:"cookies.brush.loupe",qos:.utility,autoreleaseFrequency:.workItem)
     private var pending:(EditorPage,URL,CGPoint)?
     private var rendering=false
     private var lastSample:CFTimeInterval=0

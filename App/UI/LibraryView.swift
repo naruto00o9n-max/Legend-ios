@@ -37,7 +37,7 @@ struct LibraryView:View {
             switch result{case .success(let urls):Task{importing=true;defer{importing=false;for url in urls{try? FileManager.default.removeItem(at:url)}};if urls.count>1{do{let id=try library.createChapter("فصل مستورد",parent:parent);try await library.importPages(urls,chapter:id)}catch{library.error=error.localizedDescription}}else{for url in urls{await library.importImage(url,parent:parent)}}};case .failure(let error):library.error=error.localizedDescription}
         }}
 
-        .fileImporter(isPresented:$filePicker,allowedContentTypes:[UTType(filenameExtension:"cookies") ?? .zip,UTType(filenameExtension:"cookieschapter") ?? .zip,.zip,.pdf,.image],allowsMultipleSelection:true){result in
+        .cookiesFileImporter(isPresented:$filePicker,allowedContentTypes:[UTType(filenameExtension:"cookies") ?? .zip,UTType(filenameExtension:"cookieschapter") ?? .zip,.zip,.pdf,.image],allowsMultipleSelection:true){result in
             switch result{case .failure(let error):library.error=error.localizedDescription;case .success(let urls):Task{importing=true;for url in urls{await library.importImage(url,parent:parent)};importing=false}}
         }
         .alert("مجلد جديد",isPresented:$folderPrompt){TextField("اسم العمل أو الفصل",text:$name);Button("إنشاء"){if !name.trimmingCharacters(in:.whitespaces).isEmpty{library.createFolder(name,parent:parent);name=""}};Button("إلغاء",role:.cancel){}}

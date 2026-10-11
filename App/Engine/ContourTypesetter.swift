@@ -33,7 +33,19 @@ enum ContourTypesetter {
         let words=input.textContent.split(whereSeparator:{$0.isWhitespace})
         guard !words.isEmpty,words.count<=256,body.width>=24,body.height>=24 else{throw ImageFailure.message("الفقاعة صغيرة أو النص أطول من مساحة التنسيق")}
         // Detector already reserves 10% on all sides. Protect outlines/shadows too.
-        let margin=max(3,min(body.width,body.height)*0.04)+CGFloat(max(input.style.strokeWidth,input.style.fakeBoldWidth))
+        let outline=max(input.style.strokeWidth,input.style.fakeBoldWidth,(input.style.extraStrokes ?? []).map(\.width).max() ?? 0)
+        let shadow=input.style.shadowAlpha>0 ? max(abs(input.style.shadowDx),abs(input.style.shadowDy))+input.style.shadowRadius*2:0
+        let margin=max(4,min(body.width,body.height)*0.055)+CGFloat(outline+shadow)
+        let centerWidth=interior.width(at:Double(body.midY)-1,height:2,margin:0)
+        let edgeWidth=min(interior.width(at:Double(body.minY)+1,height:2,margin:0),interior.width(at:Double(body.maxY)-3,height:2,margin:0))
+        let curved=centerWidth>edgeWidth*1.15
+        func capacities(y:Double,step:Double,count:Int)->[Double] {
+            (0..<count).map { row in
+                let safe=min(maxWidth,interior.width(at:y+Double(row)*step,height:step,margin:Double(margin)))
+                let distance=abs(Double(row)-Double(count-1)/2)/max(1,Double(count-1)/2)
+                return curved ? min(safe,maxWidth*(1-0.24*distance*distance)):safe
+            }
+        }
         let maxWidth=max(20,Double(body.width)-2*Double(margin))
         var best:EditorLayer?,bestSize=0.0
         for count in 1...min(16,words.count){
@@ -48,15 +60,15 @@ enum ContourTypesetter {
                 layer.textContent=Array(repeating:"آHg",count:count).joined(separator:"\n")
                 let height=Double(LayerRenderer.bounds(layer).height),step=height/Double(count),y=Double(body.midY)-height/2
                 if height>Double(body.height)-2*Double(margin){high=size;continue}
-                let capacities=(0..<count).map{interior.width(at:y+Double($0)*step,height:step,margin:Double(margin))}
+                let widths=capacities(y:y,step:step,count:count)
                 let measure:(String)->Double={Double(($0 as NSString).size(withAttributes:[.font:font,.kern:layer.style.letterSpacing]).width)}
-                guard let lines=BubbleLayout.lines(input.textContent,widths:capacities.map{min(maxWidth,$0)},measure:measure) else{high=size;continue}
+                guard let lines=BubbleLayout.lines(input.textContent,widths:widths,measure:measure) else{high=size;continue}
                 layer.textContent=lines.joined(separator:"\n")
                 let actual=Double(LayerRenderer.bounds(layer).height)
                 // Font fallback and Arabic diacritics can change measured height.
                 let actualY=Double(body.midY)-actual/2,actualStep=actual/Double(count)
                 let valid=actual<=Double(body.height)-2*Double(margin) && lines.enumerated().allSatisfy{row,text in
-                    measure(text)<=min(maxWidth,interior.width(at:actualY+Double(row)*actualStep,height:actualStep,margin:Double(margin)))
+                    measure(text)<=capacities(y:actualY,step:actualStep,count:count)[row]
                 }
                 if valid{layer.frame=Box(x:body.midX-maxWidth/2,y:actualY,width:maxWidth,height:actual);candidate=layer;low=size}else{high=size}
             }

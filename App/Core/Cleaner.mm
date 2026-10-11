@@ -116,6 +116,9 @@ NSDictionary<NSString *, id> *CookiesWhitenBubble(UIImage *source,NSArray<NSValu
         }}
         bool flat=localized ? backgroundSamples>=innerCount*0.20&&(double)uniformSamples/backgroundSamples>=0.97:(double)near/innerCount>=0.80;
         bool white=background[0]>=235&&background[1]>=235&&background[2]>=235;
+        // Vision may detect only the top line. Ink in undetected lines must not
+        // turn a genuinely white, uniform bubble into a textured-background case.
+        if(white&&(double)near/innerCount>=0.80)flat=true;
         if(!localized&&(!flat||!white))return nil;
         std::vector<cv::Mat> contrasts;
         if(localized&&!flat){
@@ -141,11 +144,12 @@ NSDictionary<NSString *, id> *CookiesWhitenBubble(UIImage *source,NSArray<NSValu
                 cv::Rect r(stats.at<int>(i,cv::CC_STAT_LEFT),stats.at<int>(i,cv::CC_STAT_TOP),w,h);
                 bool safe=true;int evidence=0;
                 for(int y=r.y;y<r.y+r.height&&safe;y++)for(int x=r.x;x<r.x+r.width;x++)if(labels.at<int>(y,x)==i){if(!inside.at<unsigned char>(y,x)){safe=false;break;}if(ocr.at<unsigned char>(y,x))evidence++;}
-                if(!safe||(localized&&evidence<area*0.65))continue;accepted.push_back(i);
+                if(!safe||(localized&&!(flat&&white)&&evidence<area*0.65))continue;accepted.push_back(i);
             }
             if(!localized&&accepted.size()>2048)return nil;
             for(int i:accepted){
-                bool use=localized;
+                cv::Rect candidate(stats.at<int>(i,cv::CC_STAT_LEFT),stats.at<int>(i,cv::CC_STAT_TOP),stats.at<int>(i,cv::CC_STAT_WIDTH),stats.at<int>(i,cv::CC_STAT_HEIGHT));
+                bool use=localized&&(!(flat&&white)||cv::countNonZero(ocr(candidate))>0);
                 if(!use){int neighbors=0;double cy=centroids.at<double>(i,1),cx=centroids.at<double>(i,0);int h=stats.at<int>(i,cv::CC_STAT_HEIGHT),w=stats.at<int>(i,cv::CC_STAT_WIDTH);
                     for(int j:accepted){int otherH=stats.at<int>(j,cv::CC_STAT_HEIGHT),otherW=stats.at<int>(j,cv::CC_STAT_WIDTH);double dy=abs(centroids.at<double>(j,1)-cy),dx=abs(centroids.at<double>(j,0)-cx);
                         if(otherH>=h*0.30&&otherH<=h*3.5&&((dy<=std::max(h,otherH)*0.8&&dx<=box.width*0.85)||(dx<=std::max(w,otherW)*0.8&&dy<=box.height*0.85))){neighbors++;if(neighbors>=2)break;}

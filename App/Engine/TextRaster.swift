@@ -10,13 +10,18 @@ enum TextRaster {
         let s=layer.style
         let advanced = !s.shadowGradient.isEmpty || !(s.extraStrokes ?? []).isEmpty || !(layer.textMask ?? []).isEmpty || (s.fadeAmount ?? 0)>0 || !s.textGradient.isEmpty || !s.strokeGradient.isEmpty || !s.texturePath.isEmpty || !s.perspectivePoints.isEmpty || s.isMeshMode || s.rotationX != 0 || s.rotationY != 0 || s.effectType == .blur || s.effectType == .fade
         guard advanced,rect.width*rect.height<4_194_304 else{return false}
-        var glyphLayer=layer;glyphLayer.frame.x=0;glyphLayer.frame.y=0;glyphLayer.rotation=0;glyphLayer.scaleX=1;glyphLayer.scaleY=1;glyphLayer.shearX=nil;glyphLayer.opacity=1;glyphLayer.isLocked=false;glyphLayer.isVisible=true;let key=(directory.path+String(data:(try? JSONEncoder().encode(glyphLayer)) ?? Data(),encoding:.utf8)!) as NSString
+        let transform=c.ctm
+        let requested=max(2,hypot(transform.a,transform.b),hypot(transform.c,transform.d))
+        let padding=CGFloat(TextVisualBounds.padding(s,minimum:8))
+        let area=max(1,(rect.width+padding*2)*(rect.height+padding*2))
+        let resolution=max(1,min(8,pow(2,ceil(log2(requested))),sqrt(8_388_608/area)))
+        var glyphLayer=layer;glyphLayer.frame.x=0;glyphLayer.frame.y=0;glyphLayer.rotation=0;glyphLayer.scaleX=1;glyphLayer.scaleY=1;glyphLayer.shearX=nil;glyphLayer.opacity=1;glyphLayer.isLocked=false;glyphLayer.isVisible=true;let key=(directory.path+"|scale=\(resolution)|"+String(data:(try? JSONEncoder().encode(glyphLayer)) ?? Data(),encoding:.utf8)!) as NSString
         let pad=CGFloat(TextVisualBounds.padding(s,minimum:8))
         let size=CGSize(width:ceil(rect.width+pad*2),height:ceil(rect.height+pad*2))
         let raster:Raster
         if let cached=cache.object(forKey:key){raster=cached}else{
             var outputFrame=CGRect(x:-pad,y:-pad,width:size.width,height:size.height)
-            let format=UIGraphicsImageRendererFormat();format.scale=1;format.opaque=false
+            let format=UIGraphicsImageRendererFormat();format.scale=resolution;format.opaque=false
             let glyph=UIGraphicsImageRenderer(size:size,format:format).image{r in
                 let a=NSMutableAttributedString(attributedString:LayerRenderer.attributed(layer,color:.white))
                 a.draw(with:rect.offsetBy(dx:pad,dy:pad),options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)
@@ -37,14 +42,22 @@ enum TextRaster {
                     let fade=UIGraphicsImageRenderer(size:size,format:format).image{out in if let gradient=CGGradient(colorsSpace:CGColorSpaceCreateDeviceRGB(),colors:cg as CFArray,locations:[0,1]){let angle=(s.fadeAngle ?? 0)*Double.pi/180,dx=CGFloat(cos(angle))*size.width/2,dy=CGFloat(sin(angle))*size.height/2;out.cgContext.drawLinearGradient(gradient,start:CGPoint(x:size.width/2-dx,y:size.height/2-dy),end:CGPoint(x:size.width/2+dx,y:size.height/2+dy),options:[.drawsBeforeStartLocation,.drawsAfterEndLocation])}};fade.draw(at:.zero,blendMode:.destinationIn,alpha:1)
                 }
                 ctx.setBlendMode(.normal)
-                if s.strokeWidth>0{
-                    let outline=UIGraphicsImageRenderer(size:size,format:format).image{output in
-                        let a=LayerRenderer.outlineAttributed(layer,width:s.strokeWidth,color:.white);a.draw(with:rect.offsetBy(dx:pad,dy:pad),options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)
+
+            }
+            // Stroke is underneath the original fill, never painted across its interior.
+            if s.strokeWidth>0 {
+                let fill=result
+                result=UIGraphicsImageRenderer(size:size,format:format).image { output in
+                    let outline=UIGraphicsImageRenderer(size:size,format:format).image { _ in
+                        LayerRenderer.outlineAttributed(layer,width:s.strokeWidth*2,color:.white).draw(with:rect.offsetBy(dx:pad,dy:pad),options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)
                     }
-                    let colored=UIGraphicsImageRenderer(size:size,format:format).image{output in
-                        GradientPaint.draw(colors:s.strokeGradient.isEmpty ? [s.strokeColor,s.strokeColor]:s.strokeGradient,stops:s.strokeGradientStops,angle:s.strokeGradientAngle,type:s.strokeGradientType,rect:rect.offsetBy(dx:pad,dy:pad),points:s.strokeGradientPoints,in:output.cgContext)
+                    let colored=UIGraphicsImageRenderer(size:size,format:format).image { r in
+                        GradientPaint.draw(colors:s.strokeGradient.isEmpty ? [s.strokeColor,s.strokeColor]:s.strokeGradient,stops:s.strokeGradientStops,angle:s.strokeGradientAngle,type:s.strokeGradientType,rect:rect.offsetBy(dx:pad,dy:pad),points:s.strokeGradientPoints,in:r.cgContext)
                         outline.draw(at:.zero,blendMode:.destinationIn,alpha:1)
-                    };colored.draw(at:.zero)
+                        // Remove the entire glyph interior, even with a translucent fill.
+                        glyph.draw(at:.zero,blendMode:.destinationOut,alpha:1)
+                    }
+                    colored.draw(at:.zero);fill.draw(at:.zero)
                 }
             }
             if !(s.extraStrokes ?? []).isEmpty || s.threeDDepth>0{
@@ -52,8 +65,8 @@ enum TextRaster {
                 result=UIGraphicsImageRenderer(size:size,format:format).image{output in
                     for depth in stride(from:min(64,s.threeDDepth),through:1,by:-1){LayerRenderer.attributed(layer,color:UIColor(hex:s.threeDColor)).draw(with:rect.offsetBy(dx:pad+CGFloat(depth),dy:pad+CGFloat(depth)),options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)}
                     for outline in (s.extraStrokes ?? []).sorted(by:{$0.width>$1.width}) where outline.width>0{
-                        let mask=UIGraphicsImageRenderer(size:size,format:format).image{_ in let a=LayerRenderer.outlineAttributed(layer,width:outline.width,color:.white);a.draw(with:rect.offsetBy(dx:pad,dy:pad),options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)}
-                        let colored=UIGraphicsImageRenderer(size:size,format:format).image{r in GradientPaint.draw(colors:(outline.gradient ?? []).isEmpty ? [outline.color,outline.color]:outline.gradient!,stops:outline.stops ?? [],angle:outline.angle ?? 0,type:outline.gradientType ?? 0,rect:rect.offsetBy(dx:pad,dy:pad),in:r.cgContext);mask.draw(at:.zero,blendMode:.destinationIn,alpha:1)}
+                        let mask=UIGraphicsImageRenderer(size:size,format:format).image{_ in let a=LayerRenderer.outlineAttributed(layer,width:outline.width*2,color:.white);a.draw(with:rect.offsetBy(dx:pad,dy:pad),options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)}
+                        let colored=UIGraphicsImageRenderer(size:size,format:format).image{r in GradientPaint.draw(colors:(outline.gradient ?? []).isEmpty ? [outline.color,outline.color]:outline.gradient!,stops:outline.stops ?? [],angle:outline.angle ?? 0,type:outline.gradientType ?? 0,rect:rect.offsetBy(dx:pad,dy:pad),in:r.cgContext);mask.draw(at:.zero,blendMode:.destinationIn,alpha:1);glyph.draw(at:.zero,blendMode:.destinationOut,alpha:1)}
                         colored.draw(at:.zero)
                     }
                     fill.draw(at:.zero)
@@ -66,19 +79,21 @@ enum TextRaster {
                 }
                 let previous=result;result=UIGraphicsImageRenderer(size:size,format:format).image{output in previous.draw(at:.zero);mask.draw(at:.zero,blendMode:.destinationIn,alpha:1)}
             }
-            if let input=CIImage(image:result){
+            if let cg=result.cgImage{
+                let input=CIImage(cgImage:cg)
                 var processed=input
-                if s.effectType == .blur{processed=input.applyingFilter("CIGaussianBlur",parameters:[kCIInputRadiusKey:max(0,s.effectValue)])}
+                if s.effectType == .blur{processed=input.applyingFilter("CIGaussianBlur",parameters:[kCIInputRadiusKey:max(0,s.effectValue)*Double(resolution)])}
                 if s.effectType == .fade{processed=input.applyingFilter("CIFadeTransition",parameters:[kCIInputTargetImageKey:CIImage(color:.clear).cropped(to:input.extent),kCIInputTimeKey:min(1,max(0,s.effectValue/100))])}
                 let corners=PerspectiveGeometry.corners(s)
-                if corners.count==4,let extended=PerspectiveGeometry.extended(corners,width:Double(rect.width),height:Double(rect.height),padding:Double(pad)),extended.count==4{func vector(_ p:Point)->CIVector{CIVector(x:pad+CGFloat(p.x)*rect.width,y:size.height-pad-CGFloat(p.y)*rect.height)};processed=processed.applyingFilter("CIPerspectiveTransform",parameters:["inputTopLeft":vector(extended[0]),"inputTopRight":vector(extended[1]),"inputBottomRight":vector(extended[2]),"inputBottomLeft":vector(extended[3])])}
+                if corners.count==4,let extended=PerspectiveGeometry.extended(corners,width:Double(rect.width),height:Double(rect.height),padding:Double(pad)),extended.count==4{func vector(_ p:Point)->CIVector{CIVector(x:(pad+CGFloat(p.x)*rect.width)*resolution,y:(size.height-pad-CGFloat(p.y)*rect.height)*resolution)};processed=processed.applyingFilter("CIPerspectiveTransform",parameters:["inputTopLeft":vector(extended[0]),"inputTopRight":vector(extended[1]),"inputBottomRight":vector(extended[2]),"inputBottomLeft":vector(extended[3])])}
                 let extent=processed.extent.integral
-                if !extent.isInfinite,!extent.isNull,extent.width*extent.height<16_777_216,let cg=context.createCGImage(processed,from:extent){result=UIImage(cgImage:cg);outputFrame=CGRect(x:extent.minX-pad,y:size.height-extent.maxY-pad,width:extent.width,height:extent.height)}
+                if !extent.isInfinite,!extent.isNull,extent.width*extent.height<16_777_216,let cg=context.createCGImage(processed,from:extent){result=UIImage(cgImage:cg,scale:resolution,orientation:.up);outputFrame=CGRect(x:extent.minX/resolution-pad,y:size.height-extent.maxY/resolution-pad,width:extent.width/resolution,height:extent.height/resolution)}
             }
-            if !s.shadowGradient.isEmpty,let input=CIImage(image:result){
-                let extent=input.extent,blurred=input.applyingFilter("CIGaussianBlur",parameters:[kCIInputRadiusKey:max(0,s.shadowRadius)])
+            if !s.shadowGradient.isEmpty,let cg=result.cgImage{
+                let input=CIImage(cgImage:cg)
+                let extent=input.extent,blurred=input.applyingFilter("CIGaussianBlur",parameters:[kCIInputRadiusKey:max(0,s.shadowRadius)*Double(resolution)])
                 if let cg=context.createCGImage(blurred,from:extent){
-                    let mask=UIImage(cgImage:cg),foreground=result
+                    let mask=UIImage(cgImage:cg,scale:resolution,orientation:.up),foreground=result
                     let shadow=UIGraphicsImageRenderer(size:outputFrame.size,format:format).image{output in
                         GradientPaint.draw(colors:s.shadowGradient,stops:s.shadowGradientStops,angle:s.shadowGradientAngle,type:s.shadowGradientType,rect:CGRect(origin:.zero,size:outputFrame.size),points:s.shadowGradientPoints,in:output.cgContext)
                         let shifted=UIGraphicsImageRenderer(size:outputFrame.size,format:format).image{_ in mask.draw(at:CGPoint(x:s.shadowDx,y:s.shadowDy))}
@@ -87,7 +102,7 @@ enum TextRaster {
                     result=UIGraphicsImageRenderer(size:outputFrame.size,format:format).image{_ in shadow.draw(at:.zero);foreground.draw(at:.zero)}
                 }
             }
-            raster=Raster(result,outputFrame);cache.totalCostLimit=64*1024*1024;cache.setObject(raster,forKey:key,cost:Int(outputFrame.width*outputFrame.height)*4)
+            raster=Raster(result,outputFrame);cache.totalCostLimit=64*1024*1024;cache.setObject(raster,forKey:key,cost:Int(outputFrame.width*outputFrame.height*resolution*resolution)*4)
         }
         c.saveGState()
         if s.shadowGradient.isEmpty && (s.shadowRadius>0 || s.effectType == .neon || s.effectType == .shadow){c.setShadow(offset:CGSize(width:s.shadowDx,height:s.shadowDy),blur:CGFloat(s.effectType == .neon ? s.effectValue:s.shadowRadius),color:UIColor(hex:s.effectType == .neon ? s.effectColor:s.shadowColor,alpha:CGFloat(s.shadowAlpha)/255).cgColor)}

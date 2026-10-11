@@ -19,12 +19,12 @@ struct GradientControls:View {
             GradientPreview(colors:values,stops:values.indices.map{position($0)},angle:style[keyPath:angle],type:style[keyPath:type],points:target=="stroke" ? style.strokeGradientPoints:target=="shadow" ? style.shadowGradientPoints:style.textGradientPoints).frame(height:60).clipShape(RoundedRectangle(cornerRadius:12))
             ForEach(Array(values.indices),id:\.self){index in HStack{
                 ColorPicker("لون \(index+1)",selection:Binding(get:{Color(uiColor:UIColor(hex:values[index]))},set:{color in model.change{$0.style[keyPath:colors][index]=UIColor(color).hex}}),supportsOpacity:false)
-                Slider(value:Binding(get:{position(index)},set:{value in var list=values.indices.map{position($0)};list[index]=value;model.change{$0.style[keyPath:stops]=list}}),in:0...1)
+                StepSlider(value:Binding(get:{position(index)},set:{value in var list=values.indices.map{position($0)};list[index]=value;model.change{$0.style[keyPath:stops]=list}}),in:0...1)
                 Button(role:.destructive){var list=values.indices.map{position($0)};list.remove(at:index);model.change{$0.style[keyPath:colors].remove(at:index);$0.style[keyPath:stops]=list}}label:{Image(systemName:"minus.circle")}.disabled(values.count<=2)
             }.font(.system(size:12))}
             Button{var list=values.indices.map{position($0)};list.append(0.5);model.change{$0.style[keyPath:colors].append("FFFFFF");$0.style[keyPath:stops]=list}}label:{Label("إضافة لون",systemImage:"plus.circle")}.disabled(values.count>=16)
             HStack{Text("زاوية التدرج");TextField("الزاوية",value:Binding(get:{style[keyPath:angle]},set:{value in model.change{$0.style[keyPath:angle]=min(360,max(0,value));GradientGeometry.set([],target:target,style:&$0.style)}}),format:.number).keyboardType(.numbersAndPunctuation).multilineTextAlignment(.trailing)}.font(.system(size:12))
-            Slider(value:Binding(get:{style[keyPath:angle]},set:{value in model.change{$0.style[keyPath:angle]=value;GradientGeometry.set([],target:target,style:&$0.style)}}),in:0...360)
+            StepSlider(value:Binding(get:{style[keyPath:angle]},set:{value in model.change{$0.style[keyPath:angle]=value;GradientGeometry.set([],target:target,style:&$0.style)}}),in:0...360)
         }
     }.padding(12).glass(16)}
 }

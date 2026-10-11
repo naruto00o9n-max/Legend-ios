@@ -15,7 +15,7 @@ final class LayerInteraction {
             self.viewport=viewport
             signature = Self.signature(layer); rect = viewport ?? Self.rect(layer)
             view.isUserInteractionEnabled = false; view.isHidden = true
-            view.layer.magnificationFilter = layer.kind == .text ? .linear:.nearest
+            view.layer.magnificationFilter = .linear
             view.layer.minificationFilter = .trilinear
             view.image = Self.raster(signature, rect: rect, directory: directory,resolution:resolution)
             updateTransform(layer)

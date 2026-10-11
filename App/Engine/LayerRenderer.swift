@@ -22,7 +22,7 @@ enum Fonts {
 extension Bundle {func url(forResource name:String,deletingExtension:Bool)->URL?{url(forResource:name,withExtension:nil,subdirectory:"Fonts")}}
 enum LayerRenderer {
     private static let boundsLock=NSLock()
-    private static var textBounds:[UUID:(String,TextStyle,CGRect)]=[:]
+    private static var textBounds:[UUID:(String,String,CGRect)]=[:]
     static func attributed(_ l:EditorLayer,color:UIColor?=nil)->NSAttributedString {
         let s=l.style,p=NSMutableParagraphStyle();p.alignment=[NSTextAlignment.left,.center,.right,.justified][max(0,min(3,s.alignment))];p.baseWritingDirection = .rightToLeft;p.lineSpacing=CGFloat(s.lineSpacing);if let multiple=s.lineHeightMultiple{p.lineHeightMultiple=CGFloat(multiple)};p.lineBreakMode = .byWordWrapping
         var attributes:[NSAttributedString.Key:Any]=[.font:Fonts.font(s),.foregroundColor:color ?? UIColor(hex:s.color,alpha:CGFloat(s.innerOpacity ?? 1)),.paragraphStyle:p,.kern:s.letterSpacing]
@@ -43,11 +43,13 @@ enum LayerRenderer {
     }
     static func bounds(_ l:EditorLayer)->CGRect {
         if l.kind == .text {
+            let s=l.style
+            let metrics="\(s.fontPath)|\(s.fontSize)|\(s.isBold)|\(s.isItalic)|\(s.boxWidth)|\(s.alignment)|\(s.lineSpacing)|\(s.lineHeightMultiple ?? 1)|\(s.letterSpacing)|\(s.tashkeelOffset ?? 0)|"+s.spans.map{"\($0.start):\($0.end):\($0.fontSize ?? s.fontSize):\($0.isBold ?? s.isBold)"}.joined(separator:";")
             boundsLock.lock();let cached=textBounds[l.id];boundsLock.unlock()
-            if let cached,cached.0==l.textContent,cached.1==l.style{return cached.2}
+            if let cached,cached.0==l.textContent,cached.1==metrics{return cached.2}
             let b=attributed(l).boundingRect(with:CGSize(width:max(20,l.style.boxWidth),height:100000),options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)
             let rect=CGRect(x:0,y:0,width:max(20,l.style.boxWidth),height:max(24,ceil(b.height)))
-            boundsLock.lock();if textBounds.count>1024{textBounds.removeAll(keepingCapacity:true)};textBounds[l.id]=(l.textContent,l.style,rect);boundsLock.unlock();return rect
+            boundsLock.lock();if textBounds.count>1024{textBounds.removeAll(keepingCapacity:true)};textBounds[l.id]=(l.textContent,metrics,rect);boundsLock.unlock();return rect
         }
         return CGRect(x:0,y:0,width:l.frame.width,height:l.frame.height)
     }
@@ -89,11 +91,11 @@ enum LayerRenderer {
         if s.backgroundAlpha>0{UIColor(hex:s.backgroundColor,alpha:CGFloat(s.backgroundAlpha)/255).setFill();UIBezierPath(roundedRect:background,cornerRadius:CGFloat(s.backgroundCornerRadius)).fill()}
         func text(_ color:UIColor?=nil,_ offset:CGPoint = .zero){attributed(l,color:color).draw(with:rect.offsetBy(dx:offset.x,dy:offset.y),options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)}
         if TextRaster.draw(l,rect:rect,in:c,directory:directory){return}
-        for outline in (s.extraStrokes ?? []).sorted(by:{$0.width>$1.width}) where outline.width>0{let a=outlineAttributed(l,width:outline.width,color:UIColor(hex:outline.color));a.draw(with:rect,options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)}
+        for outline in (s.extraStrokes ?? []).sorted(by:{$0.width>$1.width}) where outline.width>0{let a=outlineAttributed(l,width:outline.width*2,color:UIColor(hex:outline.color));a.draw(with:rect,options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)}
         for depth in stride(from:min(64,s.threeDDepth),through:1,by:-1){text(UIColor(hex:s.threeDColor),CGPoint(x:depth,y:depth))}
         if s.shadowRadius>0||s.effectType == .shadow||s.effectType == .neon||s.effectType == .blur {c.setShadow(offset:CGSize(width:s.shadowDx,height:s.shadowDy),blur:CGFloat(s.effectType == .none ? s.shadowRadius:s.effectValue),color:UIColor(hex:s.effectType == .neon ? s.effectColor:s.shadowColor,alpha:CGFloat(s.shadowAlpha)/255).cgColor)}
         if s.strokeWidth>0||s.fakeBoldWidth>0 {
-            let a=outlineAttributed(l,width:max(s.strokeWidth,s.fakeBoldWidth),color:UIColor(hex:s.strokeColor));a.draw(with:rect,options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)
+            let a=outlineAttributed(l,width:max(s.strokeWidth*2,s.fakeBoldWidth),color:UIColor(hex:s.strokeColor));a.draw(with:rect,options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)
         }
         switch s.effectType {
         case .glitch,.error: text(UIColor(hex:s.effectColor),CGPoint(x:s.effectValue,y:0));text(UIColor(hex:s.strokeColor),CGPoint(x:-s.effectValue,y:0));text()

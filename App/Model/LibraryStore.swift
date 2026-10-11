@@ -93,6 +93,7 @@ import SwiftUI
     @Published var requestTyper=false
     let library:LibraryStore; var visibleCenter=CGPoint.zero
     private var previewTask:Task<Void,Never>?
+    private var editSaveTask:Task<Void,Never>?
     init(page:EditorPage,library:LibraryStore){self.page=page;self.library=library}
     var directory:URL {library.directory(page.id)}
     var active:EditorLayer? {page.layers.first{$0.id==selected}}
@@ -122,7 +123,7 @@ import SwiftUI
         }catch{self.error=error.localizedDescription}
     }
     func checkpoint() {undoStack.append(page.layers);undoDocuments.append(page);if undoStack.count>60{undoStack.removeFirst();undoDocuments.removeFirst()};redoStack=[];redoDocuments=[]}
-    func change(persist:Bool=true,_ body:(inout EditorLayer)->Void) {guard let i=page.layers.firstIndex(where:{$0.id==selected}),!page.layers[i].isLocked else{return};body(&page.layers[i]);page.modified=Date();if persist{save()}}
+    func change(persist:Bool=true,_ body:(inout EditorLayer)->Void) {guard let i=page.layers.firstIndex(where:{$0.id==selected}),!page.layers[i].isLocked else{return};body(&page.layers[i]);page.modified=Date();if persist{scheduleEditSave()}}
     func add(_ kind:LayerKind,shape:Int=0) {
         checkpoint();let center = !EditorPreferences.smartPosition || visibleCenter == .zero ? CGPoint(x:Double(page.width)/2,y:200):visibleCenter
         var l=EditorLayer(kind:kind,name:kind == .text ? "نص جديد":"طبقة \(page.layers.count+1)");l.frame=Box(x:max(0,Double(center.x)-160),y:max(0,Double(center.y)-65),width:min(320,Double(page.width)),height:130);l.style.boxWidth=l.frame.width;l.style.fontSize=UserDefaults.standard.object(forKey:"default-text-size") as? Double ?? 48;l.shape=shape
@@ -133,7 +134,15 @@ import SwiftUI
     func duplicate() {guard var l=active else{return};checkpoint();l.id=UUID();l.frame.x+=20;l.frame.y+=20;page.layers.append(l);selected=l.id;save()}
     func undo(){guard let previous=undoStack.popLast() else{return};redoStack.append(page.layers);redoDocuments.append(page);if let document=undoDocuments.popLast(){page=document}else{page.layers=previous};if textMaskDraft==nil{selected=nil};save()}
     func redo(){guard let next=redoStack.popLast() else{return};undoStack.append(page.layers);undoDocuments.append(page);if let document=redoDocuments.popLast(){page=document}else{page.layers=next};if textMaskDraft==nil{selected=nil};save()}
-    func save(){guard textMaskDraft==nil else{return};do{try library.persist(page)}catch{self.error=error.localizedDescription}
+    private func scheduleEditSave(){
+        editSaveTask?.cancel()
+        editSaveTask=Task { [weak self] in
+            try? await Task.sleep(nanoseconds:250_000_000)
+            guard !Task.isCancelled else{return}
+            self?.save()
+        }
+    }
+    func save(){editSaveTask?.cancel();editSaveTask=nil;guard textMaskDraft==nil else{return};do{try library.persist(page)}catch{self.error=error.localizedDescription}
         previewTask?.cancel();let snapshot=page,directory=self.directory
         let library=self.library
         previewTask=Task {try? await Task.sleep(nanoseconds:500_000_000);guard !Task.isCancelled else{return};do{try await Task.detached(priority:.utility){try ImagePipeline.projectThumbnail(snapshot,directory:directory)}.value;guard !Task.isCancelled else{return};library.objectWillChange.send()}catch{}}

@@ -32,7 +32,7 @@ struct FontLibraryView:View {
             HStack{Text("\(selected.count) محدد");Spacer();Button("مجموعة جديدة"){naming=true}.disabled(selected.isEmpty);Button("تصدير"){exportFonts()}.disabled(selected.isEmpty);if let output{ShareLink(item:output){Image(systemName:"square.and.arrow.up")}}}.font(.system(size:12)).padding(14).glass(0)
         }}.foregroundStyle(Palette.pale).navigationTitle("مكتبة الخطوط").navigationBarTitleDisplayMode(.inline)
         .toolbar{ToolbarItem(placement:.topBarLeading){Button("إغلاق"){dismiss()}.accessibilityIdentifier("font-close")};ToolbarItem(placement:.topBarTrailing){Button{picker=true}label:{Image(systemName:"plus")}}}
-        .fileImporter(isPresented:$picker,allowedContentTypes:[UTType(filenameExtension:"ttf") ?? .data,UTType(filenameExtension:"otf") ?? .data,.zip]){result in do{try importFonts(result.get())}catch{self.error=error.localizedDescription}}
+        .cookiesFileImporter(isPresented:$picker,allowedContentTypes:[.data]){result in do{try importFonts(result.get())}catch{self.error=error.localizedDescription}}
         .alert("مجموعة خطوط",isPresented:$naming){TextField("اسم المجموعة",text:$groupName);Button("حفظ"){let name=groupName.trimmingCharacters(in:.whitespacesAndNewlines);if !name.isEmpty{groups[name]=selected.sorted();saveGroups();filter=name;groupName=""}};Button("إلغاء",role:.cancel){}}
         .alert("مكتبة الخطوط",isPresented:Binding(get:{error != nil},set:{if !$0{error=nil}})){Button("حسنًا"){error=nil}}message:{Text(error ?? "")}.onAppear{classifyFonts()}.onChange(of:version){_,_ in classifyFonts()}.cookiesInterface()}
     }
