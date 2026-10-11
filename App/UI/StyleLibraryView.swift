@@ -7,10 +7,7 @@ struct StyleLibraryView:View {
     @ObservedObject var model:EditorModel
     @State private var query=""
     @State private var group="الكل"
-    @State private var naming=false
-    @State private var savingLayer:EditorLayer?
-    @State private var editing:SavedTextStyle?
-    @State private var name=""
+    @State private var details:StyleDetailsDraft?
     @State private var category="أنماطي"
     @State private var importer=false
     @State private var exported:URL?
@@ -26,11 +23,10 @@ struct StyleLibraryView:View {
     @State private var designID:UUID?
     @State private var bulk=false
     @State private var selected:Set<UUID>=[]
-    @State private var keywords=""
     var filtered:[SavedTextStyle]{store.styles.filter{(group=="الكل" || $0.group==group || $0.group.hasPrefix(group+"/")) && (section != "favorites" || $0.favorite==true) && (section != "recent" || $0.lastUsed != nil) && (query.isEmpty || ($0.title+" "+($0.keywords ?? []).joined(separator:" ")).localizedCaseInsensitiveContains(query))}.sorted{section=="recent" ? ($0.lastUsed ?? .distantPast)>($1.lastUsed ?? .distantPast):$0.modified>$1.modified}}
     var body:some View {
         VStack(alignment:.leading,spacing:14){
-            HStack{Button{editing=nil;savingLayer=model.active;keywords="";name=model.active?.textContent.prefix(20).description ?? "";naming=true}label:{Label("حفظ نمط جديد",systemImage:"plus")}.accessibilityIdentifier("style-create");Spacer();Menu{
+            HStack{Button{details=StyleDetailsDraft(title:model.active?.textContent.prefix(20).description ?? "",group:category,layer:model.active)}label:{Label("حفظ نمط جديد",systemImage:"plus")}.accessibilityIdentifier("style-create");Spacer();Menu{
                 Button{designID=nil;designing=DialogueTag(title:"نمط جديد",prefix:"",style:.plainText())}label:{Label("تصميم نمط في المحرر",systemImage:"textformat")}
                 Button{renamedFolder=nil;folderName="";folderNaming=true}label:{Label("إنشاء مجلد",systemImage:"folder.badge.plus")}
                 if group != "الكل"{Button("إعادة تسمية المجلد"){renamedFolder=group;folderName=group;folderNaming=true};Button("إزالة المجلد مع إبقاء أنماطه"){perform{try store.removeFolder(group);group="الكل"}}}
@@ -49,7 +45,7 @@ struct StyleLibraryView:View {
                 Button{if bulk{if selected.contains(item.id){selected.remove(item.id)}else{selected.insert(item.id)}}else{perform{try store.apply(item,to:model,includeLayout:includeLayout)}}}label:{VStack(alignment:.leading,spacing:6){StylePreview(item:item,directory:store.directory).frame(height:54);HStack{Text(item.title).font(.system(size:12));if item.favorite==true{Image(systemName:"star.fill").font(.system(size:10)).foregroundStyle(Palette.gold)};if selected.contains(item.id){Image(systemName:"checkmark.circle.fill").foregroundStyle(Palette.gold)}}.lineLimit(1);Text(item.group).font(.system(size:10)).foregroundStyle(Palette.quiet)}.padding(10).frame(maxWidth:.infinity).glass(12)}.accessibilityIdentifier("saved-style-\(item.id)").contextMenu{
                     Button(item.favorite==true ? "إزالة من المفضلة":"إضافة إلى المفضلة"){perform{try store.toggleFavorite(item.id)}}
                     Button("تحرير النمط بأدوات النص"){designID=item.id;category=item.group;designing=DialogueTag(title:item.title,prefix:"",style:item.style,textTransform:item.transform)}
-                    Button("تعديل الاسم والمجموعة"){editing=item;keywords=(item.keywords ?? []).joined(separator:", ");name=item.title;category=item.group;naming=true}
+                    Button("تعديل الاسم والمجموعة"){details=StyleDetailsDraft(title:item.title,group:item.group,keywords:(item.keywords ?? []).joined(separator:", "),styleID:item.id)}
                     Button("استبدال بالنص المحدد"){perform{if let layer=model.active{try store.save(title:item.title,group:item.group,layer:layer,from:model.directory,replacing:item.id)}}}
                     Button("نسخ النمط"){perform{try store.duplicate(item.id)}}
                     Button("تصدير النمط"){perform{exported=try store.export(ids:[item.id])}}
@@ -59,13 +55,13 @@ struct StyleLibraryView:View {
             if let exported{ShareLink(item:exported){Label("مشاركة الحزمة",systemImage:"square.and.arrow.up")}}
         }
         .sheet(isPresented:$pasteOptions){NavigationStack{List{ForEach(StyleComponent.allCases){component in Toggle(component.title,isOn:Binding(get:{components.contains(component)},set:{if $0{components.insert(component)}else{components.remove(component)}})).listRowBackground(Color.clear)}}.scrollContentBackground(.hidden).background(Palette.ink).navigationTitle("خصائص النمط").toolbar{ToolbarItem(placement:.cancellationAction){Button("إلغاء"){pasteOptions=false}};ToolbarItem(placement:.confirmationAction){Button("لصق"){perform{try store.paste(to:model,components:components);pasteOptions=false}}.disabled(components.isEmpty)}}}.preferredColorScheme(.dark)}
-        .sheet(isPresented:$naming){StyleDetailsSheet(title:name,group:category,keywords:keywords,editing:editing != nil){title,folder,words in
+        .sheet(item:$details){draft in StyleDetailsSheet(title:draft.title,group:draft.group,keywords:draft.keywords,editing:draft.styleID != nil){title,folder,words in
             let id:UUID
-            if let editing{id=editing.id;try store.rename(id,title:title,group:folder)}
-            else if let layer=savingLayer{id=try store.save(title:title,group:folder,layer:layer,from:model.directory)}
+            if let styleID=draft.styleID{id=styleID;try store.rename(id,title:title,group:folder)}
+            else if let layer=draft.layer{id=try store.save(title:title,group:folder,layer:layer,from:model.directory)}
             else{throw ImageFailure.message("حدد نصًا أو استخدم تصميم نمط في المحرر")}
             try store.updateKeywords(id,words)
-            name=title;category=folder;keywords=words
+            category=folder
         }}
         .alert(renamedFolder==nil ? "مجلد أنماط جديد":"تعديل المجلد",isPresented:$folderNaming){TextField("اسم المجلد",text:$folderName);Button("حفظ"){perform{if let old=renamedFolder{try store.renameFolder(old,to:folderName)}else{try store.createFolder(folderName)};group=folderName}};Button("إلغاء",role:.cancel){}}
         .fullScreenCover(item:$designing){tag in SavedStyleDesigner(tag:tag,replacing:designID,group:category)}
@@ -74,6 +70,17 @@ struct StyleLibraryView:View {
     }
     func perform(_ action:()throws->Void){do{try action()}catch{failure=error.localizedDescription}}
 }
+/// An item presentation carries the initial values and selected layer together;
+/// a boolean sheet can capture stale values on its first presentation.
+private struct StyleDetailsDraft:Identifiable {
+    let id=UUID()
+    var title:String
+    var group:String
+    var keywords=""
+    var styleID:UUID?
+    var layer:EditorLayer?
+}
+
 /// Keep editing state and dismissal in the presented form itself. Its presenter
 /// lives in a lazily laid out inspector and can reflow after a style is saved.
 private struct StyleDetailsSheet:View {

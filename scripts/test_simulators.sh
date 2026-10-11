@@ -46,19 +46,22 @@ png=b'\x89PNG\r\n\x1a\n'+chunk(b'IHDR',struct.pack('>IIBBBBB',w,h,8,2,0,0,0))+ch
 pathlib.Path('.work/Photos-800x15000.png').write_bytes(png)
 PYFIX
 xcrun simctl addmedia "$TASK_DEVICE" .work/Photos-800x15000.png
-# A real readable file in the app's shared Documents location, so the font UI
-# test exercises Apple's Files browser and its Done/selection callback.
-if TASK_DOCUMENTS_CONTAINER=$(xcrun simctl get_app_container "$TASK_DEVICE" com.cookies.editor.ios data 2>/dev/null); then
-  python3 - "$TASK_DOCUMENTS_CONTAINER" <<'PYFONT'
+# Build and install this revision before seeding Files. A focused UI run may
+# have no previously installed app; skipping the fixture silently is invalid.
+xcodebuild -project CookiesEditor.xcodeproj -scheme CookiesEditor -configuration Debug -destination "platform=iOS Simulator,id=$TASK_DEVICE" -parallel-testing-enabled NO -derivedDataPath .work/simulator ARCHS=x86_64 ONLY_ACTIVE_ARCH=YES build-for-testing > "build/test-$TASK_SCREEN-ui-build.log" 2>&1
+xcrun simctl install "$TASK_DEVICE" .work/simulator/Build/Products/Debug-iphonesimulator/CookiesEditor.app
+TASK_DOCUMENTS_CONTAINER=$(xcrun simctl get_app_container "$TASK_DEVICE" com.cookies.editor.ios data)
+python3 - "$TASK_DOCUMENTS_CONTAINER" <<'PYFONT'
 import pathlib,shutil,sys
 font=next(pathlib.Path('App/Resources/Fonts').glob('*.ttf'))
 target=pathlib.Path(sys.argv[1])/'Documents'/'Cookies-Import-Fixture.ttf'
 target.parent.mkdir(parents=True,exist_ok=True)
 shutil.copyfile(font,target)
+assert target.is_file() and target.stat().st_size==font.stat().st_size
+print('Files fixture installed in the tested application container')
 PYFONT
-fi
 TASK_STATUS=0
-xcodebuild -project CookiesEditor.xcodeproj -scheme CookiesEditor -configuration Debug -destination "platform=iOS Simulator,id=$TASK_DEVICE" -parallel-testing-enabled NO -derivedDataPath .work/simulator -resultBundlePath "build/$TASK_SCREEN.xcresult" "${TASK_UI_ARGUMENTS[@]}" ARCHS=x86_64 ONLY_ACTIVE_ARCH=YES test > "build/test-$TASK_SCREEN.log" 2>&1 || TASK_STATUS=$?
+xcodebuild -project CookiesEditor.xcodeproj -scheme CookiesEditor -configuration Debug -destination "platform=iOS Simulator,id=$TASK_DEVICE" -parallel-testing-enabled NO -derivedDataPath .work/simulator -resultBundlePath "build/$TASK_SCREEN.xcresult" "${TASK_UI_ARGUMENTS[@]}" ARCHS=x86_64 ONLY_ACTIVE_ARCH=YES test-without-building > "build/test-$TASK_SCREEN.log" 2>&1 || TASK_STATUS=$?
 if [[ "$TASK_STATUS" == 0 ]]; then
   # The full suite relaunches and clears test projects. Run Photos once last,
   # then inspect the real application container before another test resets it.
