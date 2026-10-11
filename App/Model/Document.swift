@@ -7,6 +7,16 @@ struct Box: Codable, Equatable {
     var cg: CGRect { CGRect(x:x,y:y,width:width,height:height) }
 }
 enum LayerKind: String, Codable, CaseIterable { case text, image, shape, drawing }
+enum TextOrigin:String,Codable {case manual,typer,tagPreview}
+/// Position and selected-character ranges belong to a particular dialogue.
+/// These reusable transforms, unlike a canvas position, are part of its look.
+struct TextLayerTransform:Codable,Equatable {
+    var opacity=1.0;var rotation=0.0;var scaleX=1.0;var scaleY=1.0;var shearX:Double?
+    init(){}
+    init(_ layer:EditorLayer){opacity=layer.opacity;rotation=layer.rotation;scaleX=layer.scaleX;scaleY=layer.scaleY;shearX=layer.shearX}
+    func apply(to layer:inout EditorLayer){layer.opacity=opacity;layer.rotation=rotation;layer.scaleX=scaleX;layer.scaleY=scaleY;layer.shearX=shearX}
+}
+struct ManualTextPreset:Codable,Equatable {var style:TextStyle;var transform=TextLayerTransform()}
 enum TextEffect: String, Codable, CaseIterable {
     case none, blur, glitch, slice, neon, fade, warp, shadow, error
     var title:String {switch self {case .none:"بلا تأثير";case .blur:"تمويه";case .glitch:"تشويش";case .slice:"تقطيع";case .neon:"توهج";case .fade:"تلاشي";case .warp:"تشويه";case .shadow:"ظل";case .error:"خلل"}}
@@ -55,6 +65,8 @@ struct EditorLayer: Codable, Equatable, Identifiable {
     var shearX:Double?
     var isVisible = true; var isLocked = false; var blend = Blend.normal
     var textContent = "نص جديد"; var style = TextStyle(); var imagePath = ""; var shape = 0
+    // Optional so existing projects retain their original appearance on decode.
+    var textOrigin:TextOrigin?
     var textMask:[Stroke]?
     var groupID:UUID?;var groupName:String?
     var strokes: [Stroke] = []; var isMaskEnabled = false; var maskX = 0.0; var maskY = 0.0; var maskRadius = 80.0

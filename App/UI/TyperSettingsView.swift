@@ -47,6 +47,7 @@ struct DialogueTagView:View {
     @Environment(\.dismiss) private var dismiss
     @State var tag:DialogueTag
     @State private var error:String?
+    @State private var visualEditor=false
     var body:some View{NavigationStack{ZStack{Ambient();ScrollView{VStack(alignment:.leading,spacing:18){
         SurfaceHeader(title:tag.title,subtitle:"هوية البطاقة ونمط الحوار عند الإدراج",icon:"tag")
         GlassSection("الاسم والبادئة",icon:"tag"){
@@ -55,6 +56,7 @@ struct DialogueTagView:View {
             HStack(spacing:10){Circle().fill(Color(uiColor:UIColor(hex:tag.resolvedDisplayColor))).frame(width:8,height:8);Text(tag.title).font(.system(size:12,weight:.medium));Spacer();Text("معاينة البطاقة").font(.system(size:10)).foregroundStyle(Palette.quiet)}.padding(14).glass(14)
         }
         GlassSection("نمط النص",icon:"textformat",subtitle:"هذا النمط يطبّق على الحروف داخل الصورة"){
+            NavigationRow(title:"تصميم النمط داخل المحرر",subtitle:"كل أدوات النص، ومعاينة مباشرة، وحفظ للوسم",icon:"rectangle.and.pencil.and.ellipsis"){visualEditor=true}.accessibilityIdentifier("tag-open-editor")
             Picker("الخط",selection:$tag.style.fontPath){ForEach((Fonts.files+Fonts.otf).sorted{$0.lastPathComponent<$1.lastPathComponent},id:\.self){url in Text(url.deletingPathExtension().lastPathComponent).tag(url.lastPathComponent)}}.pickerStyle(.menu)
             value("الحجم",tag.style.fontSize);StepSlider(value:$tag.style.fontSize,in:8...160,step:1)
             ColorPicker("لون النص",selection:Binding(get:{Color(uiColor:UIColor(hex:tag.style.color))},set:{tag.style.color=UIColor($0).hex}),supportsOpacity:false)
@@ -65,8 +67,8 @@ struct DialogueTagView:View {
         if !styles.styles.isEmpty{GlassSection("نمط محفوظ",icon:"square.grid.2x2"){ForEach(styles.styles){item in Button{tag.style=item.style}label:{HStack{Text(item.title);Spacer();Image(systemName:"arrow.down.to.line").font(.system(size:12))}.padding(.vertical,6)}.buttonStyle(.plain)}}}
         GlassSection("معاينة الحروف",icon:"eye"){LayerThumbnail(layer:preview,directory:styles.directory,previewSize:240).frame(height:160).clipShape(RoundedRectangle(cornerRadius:16))}
         if typer.state.tags.contains(where:{$0.id==tag.id}){Button("حذف الوسم",role:.destructive){do{try typer.removeTag(tag.id);dismiss()}catch{self.error=error.localizedDescription}}.font(.system(size:13)).padding(.vertical,10)}
-    }.padding(20).frame(maxWidth:700).frame(maxWidth:.infinity)}}.foregroundStyle(Palette.pale).navigationTitle("تحرير الوسم").navigationBarTitleDisplayMode(.inline).toolbar{ToolbarItem(placement:.topBarLeading){Button("إلغاء"){dismiss()}};ToolbarItem(placement:.topBarTrailing){Button("حفظ"){do{try typer.saveTag(tag);dismiss()}catch{self.error=error.localizedDescription}}.disabled(tag.title.trimmingCharacters(in:.whitespaces).isEmpty).accessibilityIdentifier("tag-save")}}.alert("تعذر حفظ الوسم",isPresented:Binding(get:{error != nil},set:{if !$0{error=nil}})){Button("حسنًا"){error=nil}}message:{Text(error ?? "")}}.cookiesInterface()}
-    private var preview:EditorLayer{var layer=EditorLayer(kind:.text);layer.textContent="حوار يصنع الحكاية";layer.style=tag.style;return layer}
+    }.padding(20).frame(maxWidth:700).frame(maxWidth:.infinity)}}.foregroundStyle(Palette.pale).navigationTitle("تحرير الوسم").navigationBarTitleDisplayMode(.inline).toolbar{ToolbarItem(placement:.topBarLeading){Button("إلغاء"){dismiss()}};ToolbarItem(placement:.topBarTrailing){Button("حفظ"){do{try typer.saveTag(tag);dismiss()}catch{self.error=error.localizedDescription}}.disabled(tag.title.trimmingCharacters(in:.whitespaces).isEmpty).accessibilityIdentifier("tag-save")}}.fullScreenCover(isPresented:$visualEditor){TagStyleEditorView(tag:tag){layer,assets in var value=tag;value.style=try styles.ownedReusableStyle(layer.style,from:assets);value.textTransform=TextLayerTransform(layer);try typer.saveTag(value);tag=value}}.alert("تعذر حفظ الوسم",isPresented:Binding(get:{error != nil},set:{if !$0{error=nil}})){Button("حسنًا"){error=nil}}message:{Text(error ?? "")}}.cookiesInterface()}
+    private var preview:EditorLayer{var layer=EditorLayer(kind:.text);layer.textContent="حوار يصنع الحكاية";layer.style=tag.style;tag.textTransform?.apply(to:&layer);return layer}
     private func value(_ name:String,_ amount:Double)->some View{HStack{Text(name);Spacer();Text("\(Int(amount)) px").font(.system(size:11,design:.monospaced)).foregroundStyle(Palette.secondary)}}
 }
 struct QuickFontsView:View {

@@ -92,22 +92,26 @@ import SwiftUI
     @Published var typerQuickFont:String?
     @Published var requestTyper=false
     let library:LibraryStore; var visibleCenter=CGPoint.zero
+    let manualTextStore:StyleStore
+    var stylePreviewLayer:UUID?
     private var previewTask:Task<Void,Never>?
     private var editSaveTask:Task<Void,Never>?
-    init(page:EditorPage,library:LibraryStore){self.page=page;self.library=library}
+    init(page:EditorPage,library:LibraryStore){self.page=page;self.library=library;manualTextStore=StyleStore(directory:library.root.appendingPathComponent("Styles"))}
     var directory:URL {library.directory(page.id)}
     var active:EditorLayer? {page.layers.first{$0.id==selected}}
-    @discardableResult func insertDialogues(_ values:[(String,TextStyle?)],targets:[SniperTarget]=[],bubbleLayout:BubbleLayoutRequest?=nil,preparedLayout:EditorLayer?=nil,preparedLayouts:[EditorLayer]=[])throws->[UUID] {
+    @discardableResult func insertDialogues(_ values:[(String,TextStyle?)],targets:[SniperTarget]=[],bubbleLayout:BubbleLayoutRequest?=nil,preparedLayout:EditorLayer?=nil,preparedLayouts:[EditorLayer]=[],transforms:[TextLayerTransform]=[])throws->[UUID] {
         let previous=page.layers;var next=page
         let center = !EditorPreferences.smartPosition || visibleCenter == .zero ? CGPoint(x:Double(page.width)/2,y:200):visibleCenter
         for (index,value) in values.enumerated() {
             var item=EditorLayer(kind:.text,name:value.0);item.textContent=value.0
+            item.textOrigin = .typer
             if let style=value.1{item.style=style}
             item.style.fontSize*=EditorPreferences.typerScale;item.style.boxWidth=min(item.style.boxWidth*EditorPreferences.typerScale,Double(page.width));let bounds=LayerRenderer.bounds(item);item.frame=Box(x:max(0,center.x-bounds.width/2),y:max(0,center.y-bounds.height/2),width:bounds.width,height:bounds.height)
             let prepared=preparedLayouts.indices.contains(index) ? preparedLayouts[index]:preparedLayout
             if let preparedLayout=prepared{item.textContent=preparedLayout.textContent;item.style.fontSize=preparedLayout.style.fontSize;item.style.boxWidth=preparedLayout.style.boxWidth;item.style.alignment=1;item.frame=preparedLayout.frame}
             else if let bubbleLayout{item=try BubbleLayout.fit(item,request:bubbleLayout)}
             if prepared==nil,index<targets.count{item=try SniperDetector.fitted(item,to:targets[index])}
+            if transforms.indices.contains(index){transforms[index].apply(to:&item)}
             next.layers.append(item)
         }
         next.modified=Date();try library.persist(next)
@@ -125,14 +129,23 @@ import SwiftUI
     func checkpoint() {undoStack.append(page.layers);undoDocuments.append(page);if undoStack.count>60{undoStack.removeFirst();undoDocuments.removeFirst()};redoStack=[];redoDocuments=[]}
     func change(persist:Bool=true,_ body:(inout EditorLayer)->Void) {guard let i=page.layers.firstIndex(where:{$0.id==selected}),!page.layers[i].isLocked else{return};body(&page.layers[i]);page.modified=Date();if persist{scheduleEditSave()}}
     func add(_ kind:LayerKind,shape:Int=0) {
-        checkpoint();let center = !EditorPreferences.smartPosition || visibleCenter == .zero ? CGPoint(x:Double(page.width)/2,y:200):visibleCenter
+        let center = !EditorPreferences.smartPosition || visibleCenter == .zero ? CGPoint(x:Double(page.width)/2,y:200):visibleCenter
         var l=EditorLayer(kind:kind,name:kind == .text ? "نص جديد":"طبقة \(page.layers.count+1)");l.frame=Box(x:max(0,Double(center.x)-160),y:max(0,Double(center.y)-65),width:min(320,Double(page.width)),height:130);l.style.boxWidth=l.frame.width;l.style.fontSize=UserDefaults.standard.object(forKey:"default-text-size") as? Double ?? 48;l.shape=shape
-        if kind == .text{l.style=TextStyle.plainText(fontSize:l.style.fontSize,boxWidth:l.frame.width)}
+        if kind == .text{
+            l.textOrigin = .manual;l.style=TextStyle.plainText(fontSize:l.style.fontSize,boxWidth:l.frame.width)
+            do{if let preset=try manualTextStore.manualTextPreset(){l.style=try manualTextStore.resolved(preset.style,from:manualTextStore.directory,into:directory);preset.transform.apply(to:&l)}
+                let bounds=LayerRenderer.bounds(l);l.frame=Box(x:Double(center.x)-Double(bounds.width)/2,y:Double(center.y)-Double(bounds.height)/2,width:bounds.width,height:bounds.height)
+            }catch{self.error=error.localizedDescription;return}
+        }
         if kind == .drawing{l.frame=Box(x:0,y:0,width:Double(page.width),height:Double(page.height))}
-        page.layers.append(l);selected=l.id;save();if kind == .text{panel = .content}
+        checkpoint();page.layers.append(l);selected=l.id;save();if kind == .text{panel = .content}
     }
-    func delete() {guard let selected,active?.isLocked==false else{return};checkpoint();page.layers.removeAll{$0.id==selected};self.selected=nil;save()}
-    func duplicate() {guard var l=active else{return};checkpoint();l.id=UUID();l.frame.x+=20;l.frame.y+=20;page.layers.append(l);selected=l.id;save()}
+    @discardableResult func confirmTextSettings()->Bool {
+        do{if let active{try manualTextStore.rememberManualText(active,from:directory)};return true}catch{self.error=error.localizedDescription;return false}
+    }
+    func delete() {guard stylePreviewLayer==nil,let selected,active?.isLocked==false else{return};checkpoint();page.layers.removeAll{$0.id==selected};self.selected=nil;save()}
+    func duplicate() {guard stylePreviewLayer==nil,var l=active else{return};checkpoint();l.id=UUID();l.frame.x+=20;l.frame.y+=20;page.layers.append(l);selected=l.id;save()}
+    func cancelPendingSaves(){editSaveTask?.cancel();editSaveTask=nil;previewTask?.cancel();previewTask=nil}
     func undo(){guard let previous=undoStack.popLast() else{return};redoStack.append(page.layers);redoDocuments.append(page);if let document=undoDocuments.popLast(){page=document}else{page.layers=previous};if textMaskDraft==nil{selected=nil};save()}
     func redo(){guard let next=redoStack.popLast() else{return};undoStack.append(page.layers);undoDocuments.append(page);if let document=redoDocuments.popLast(){page=document}else{page.layers=next};if textMaskDraft==nil{selected=nil};save()}
     private func scheduleEditSave(){

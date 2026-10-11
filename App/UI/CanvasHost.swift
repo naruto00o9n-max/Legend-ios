@@ -59,7 +59,7 @@ struct CanvasHost:UIViewRepresentable {
             if [.brush,.eraser,.cleaner].contains(model.tool){let drawingPoint=(model.tool != .cleaner && model.active?.kind == .drawing) ? point.applying(LayerRenderer.transform(model.active!).inverted()):point;let dot=Stroke(points:[Point(x:drawingPoint.x,y:drawingPoint.y)],width:model.brushWidth,color:model.brushColor,erase:model.tool == .eraser,brush:model.brushStyle,opacity:model.brushOpacity,texturePath:model.brushTexture,shape:model.drawingShape,filled:model.drawingFilled);if model.tool == .cleaner{Task{await model.clean(dot)}}else{if model.active?.kind != .drawing{model.add(.drawing)};model.checkpoint();model.change{$0.strokes.append(dot)}};return}
             if model.tool == .eyedropper{sampleColor(at:point)}
             else if let layer=hit(point){removeTextPrompt();model.selected=layer.id;if layer.kind == .text{model.tool = .text}}
-            else {model.selected=nil;if UserDefaults.standard.bool(forKey:"editor-tap-add-text"){showTextPrompt(at:point)}else{removeTextPrompt()}}
+            else {if model.stylePreviewLayer != nil{return};model.selected=nil;if UserDefaults.standard.bool(forKey:"editor-tap-add-text"){showTextPrompt(at:point)}else{removeTextPrompt()}}
         }
         var textPrompt:UIButton?
         var promptPoint:CGPoint = .zero

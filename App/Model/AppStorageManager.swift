@@ -60,7 +60,7 @@ enum AppStorageManager {
             let name=directory.lastPathComponent
             if let id=UUID(uuidString:name),let page=try? JSONDecoder().decode(EditorPage.self,from:Data(contentsOf:directory.appendingPathComponent("page.json"))){output.append(BackupUnit(id:name,title:items.first{$0.id==id}?.title ?? page.title,group:"المشاريع",paths:[name]))}
             else if name=="Fonts"{for font in (try? fm.contentsOfDirectory(at:directory,includingPropertiesForKeys:nil)) ?? []{output.append(BackupUnit(id:"font:"+font.lastPathComponent,title:font.lastPathComponent,group:"الخطوط",paths:["Fonts/"+font.lastPathComponent]))}}
-            else if (try? directory.resourceValues(forKeys:[.isDirectoryKey]).isDirectory)==true,!(fm.enumerator(at:directory,includingPropertiesForKeys:nil)?.allObjects.isEmpty ?? true){output.append(BackupUnit(id:name,title:name=="Styles" ? "الأنماط وخاماتها":name=="Typer" ? "فصول التايبر والوسوم":name=="ChapterHistory" ? "تاريخ الفصول":name=="Diagnostics" ? "تقارير الأداء والأعطال":name,group:"بيانات أخرى",paths:[name]))}
+            else if (try? directory.resourceValues(forKeys:[.isDirectoryKey]).isDirectory)==true,!(fm.enumerator(at:directory,includingPropertiesForKeys:nil)?.allObjects.isEmpty ?? true){output.append(BackupUnit(id:name,title:name=="Styles" ? "الأنماط والنص اليدوي وخاماتها":name=="Typer" ? "فصول التايبر والوسوم":name=="ChapterHistory" ? "تاريخ الفصول":name=="Diagnostics" ? "تقارير الأداء والأعطال":name,group:"بيانات أخرى",paths:[name]))}
         }
         output.append(BackupUnit(id:"gallery",title:"المجلدات وتنظيم المعرض",group:"المشاريع",paths:[]))
         output.append(BackupUnit(id:"settings",title:"الإعدادات والمفضلة وآخر استخدام",group:"الإعدادات",paths:[]))
@@ -136,7 +136,11 @@ enum AppStorageManager {
         for info in files {let destination=staging.appendingPathComponent(info.path);try fm.createDirectory(at:destination.deletingLastPathComponent(),withIntermediateDirectories:true);_ = try archive.extract(archive[info.path]!,to:destination);guard try hash(destination)==info.sha256 else{throw ImageFailure.message("فشل فحص سلامة النسخة؛ لم تتغير بياناتك")}}
         for unit in choices where UUID(uuidString:unit.id) != nil {let directory=staging.appendingPathComponent(unit.id);let page=try JSONDecoder().decode(EditorPage.self,from:Data(contentsOf:directory.appendingPathComponent("page.json")));guard validPage(page),page.id.uuidString==unit.id,safe(page.source),!page.source.contains("/"),safe(page.raw),!page.raw.contains("/"),fm.fileExists(atPath:directory.appendingPathComponent(page.source).path),LIValidatePNG(directory.appendingPathComponent(page.source).path,Int32(page.width),Int32(page.height))==1 else{throw ImageFailure.message("مشروع ناقص في النسخة")}}
         for unit in choices {
-            if unit.id=="Styles"{_ = try JSONDecoder().decode([SavedTextStyle].self,from:Data(contentsOf:staging.appendingPathComponent("Styles/styles.json")))}
+            if unit.id=="Styles"{
+                let stylesFile=staging.appendingPathComponent("Styles/styles.json"),manualFile=staging.appendingPathComponent("Styles/manual-text.json")
+                if fm.fileExists(atPath:stylesFile.path){_ = try JSONDecoder().decode([SavedTextStyle].self,from:Data(contentsOf:stylesFile))}
+                if fm.fileExists(atPath:manualFile.path){_ = try JSONDecoder().decode(ManualTextPreset.self,from:Data(contentsOf:manualFile))}
+            }
             if unit.id=="Typer"{_ = try JSONDecoder().decode(TyperState.self,from:Data(contentsOf:staging.appendingPathComponent("Typer/chapters.json")))}
             if unit.id.hasPrefix("font:"),let path=unit.paths.first{guard let provider=CGDataProvider(url:staging.appendingPathComponent(path) as CFURL),CGFont(provider) != nil else{throw ImageFailure.message("خط غير صالح في النسخة")}}
         }

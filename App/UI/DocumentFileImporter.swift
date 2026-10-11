@@ -17,6 +17,7 @@ struct DocumentFilePicker: UIViewControllerRepresentable {
         picker.allowsMultipleSelection = multiple
         picker.delegate = context.coordinator
         picker.shouldShowFileExtensions = true
+        picker.view.accessibilityIdentifier = "cookies-document-picker"
         return picker
     }
     func updateUIViewController(_ controller: UIDocumentPickerViewController, context: Context) {
@@ -24,11 +25,14 @@ struct DocumentFilePicker: UIViewControllerRepresentable {
     }
     final class Coordinator: NSObject, UIDocumentPickerDelegate {
         var parent: DocumentFilePicker
+        private var finished=false
         init(_ parent: DocumentFilePicker) { self.parent = parent }
-        func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) { parent.presented = false }
+        func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) { finished=true;parent.presented = false }
         func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+            guard !finished else{return};finished=true
             let completion = parent.completion
             parent.presented = false
+            controller.dismiss(animated:true)
             // Deliver after dismissal. Views can then display progress/errors without
             // competing with the system picker presentation.
             DispatchQueue.main.asyncAfter(deadline:.now()+0.35) {

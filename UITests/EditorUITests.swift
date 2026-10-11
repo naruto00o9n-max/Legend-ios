@@ -176,7 +176,7 @@ final class EditorUITests:XCTestCase {
         app.buttons["typer-panel-close"].tap();app.buttons["tool-assistant"].tap();XCTAssertEqual(app.buttons["typer-filter-unused"].value as? String,"مختار");let next=app.buttons["typer-bubble-21"];XCTAssertTrue(next.waitForExistence(timeout:8));let resumed=XCTNSPredicateExpectation(predicate:NSPredicate{_,_ in next.isHittable},object:next);XCTAssertEqual(XCTWaiter.wait(for:[resumed],timeout:5),.completed,"Opening must scroll to the dialogue after the latest used bubble, even when earlier bubbles were skipped");capture("fix-glass-typer-resumed");assertLayout()
     }
     func testOrganizedSettingsAndDetailedGuide(){
-        start();app.buttons["settings"].tap();XCTAssertTrue(app.buttons["settings-appearance"].exists);XCTAssertTrue(app.buttons["settings-typer"].exists);XCTAssertTrue(app.buttons["settings-storage"].exists);tapVisible("settings-appearance");XCTAssertTrue(app.buttons["workspace-category-appearance"].waitForExistence(timeout:5));capture("fix-appearance-sections");assertLayout();app.buttons["workspace-settings-close"].tap();tapVisible("settings-guide");XCTAssertTrue(app.buttons["guide-close"].waitForExistence(timeout:5));let topic=app.buttons["guide-topic-typer"];revealVertical(topic);topic.tap();XCTAssertTrue(app.staticTexts["ألوان الوسوم وأنماطها"].waitForExistence(timeout:5));capture("fix-detailed-guide");assertLayout()
+        start();app.buttons["settings"].tap();XCTAssertTrue(app.buttons["settings-appearance"].exists);XCTAssertTrue(app.buttons["settings-typer"].exists);XCTAssertTrue(app.buttons["settings-storage"].exists);tapVisible("settings-appearance");XCTAssertTrue(app.buttons["workspace-category-appearance"].waitForExistence(timeout:5));capture("fix-appearance-sections");assertLayout();app.buttons["workspace-settings-close"].tap();tapVisible("settings-guide");let opened=XCTNSPredicateExpectation(predicate:NSPredicate{_,_ in self.app.buttons["guide-close"].isHittable},object:nil);XCTAssertEqual(XCTWaiter.wait(for:[opened],timeout:8),.completed);let topic=app.buttons["guide-topic-typer"];revealVertical(topic);topic.tap();XCTAssertTrue(app.staticTexts["ألوان الوسوم وأنماطها"].waitForExistence(timeout:5));capture("fix-detailed-guide");assertLayout()
     }
     func testRealFilesPickerImportsFontAndReturnsToLibrary(){
         start();app.buttons["settings"].tap();tapVisible("settings-font-library");XCTAssertTrue(app.buttons["font-import"].waitForExistence(timeout:8));app.buttons["font-import"].tap()
@@ -190,13 +190,30 @@ final class EditorUITests:XCTestCase {
             XCTAssertTrue(local.waitForExistence(timeout:6),app.debugDescription);local.tap()
             let folder=app.staticTexts.matching(NSPredicate(format:"label == 'Cookies Editor' OR label == 'CookiesEditor'")).firstMatch;XCTAssertTrue(folder.waitForExistence(timeout:8),app.debugDescription);folder.tap()
         }
-        XCTAssertTrue(file.waitForExistence(timeout:8),app.debugDescription);file.tap()
+        XCTAssertTrue(file.waitForExistence(timeout:8),app.debugDescription)
+        let fileCell=app.cells.containing(.staticText,identifier:file.label).firstMatch
+        if fileCell.exists{fileCell.tap()}else{file.tap()}
         let done=app.buttons.matching(NSPredicate(format:"label == 'Done' OR label == 'تم' OR label == 'Open' OR label == 'فتح'")).firstMatch
         if done.exists && done.isHittable{done.tap()}
-        XCTAssertTrue(app.buttons["font-close"].waitForExistence(timeout:20),"The document picker must dismiss after selection")
+        let dismissed=XCTNSPredicateExpectation(predicate:NSPredicate{_,_ in !self.app.otherElements["cookies-document-picker"].exists && self.app.buttons["font-close"].isHittable},object:nil)
+        XCTAssertEqual(XCTWaiter.wait(for:[dismissed],timeout:25),.completed,"The real document picker must dismiss, not merely expose a background control")
         capture("fix-real-files-returned-before-filter")
         let filter=app.buttons["font-category-المستوردة"];reveal(filter,in:app.scrollViews["font-filter-strip"]);filter.tap()
         let installed=app.staticTexts.matching(filename).firstMatch;XCTAssertTrue(installed.waitForExistence(timeout:15),"Selected font must be installed and shown in the imported list");capture("fix-real-files-font-import");app.buttons["font-close"].tap();XCTAssertTrue(app.buttons["settings-font-library"].exists)
+    }
+
+    func testFullTagEditorSavesAndReopensItsRealTextTools(){
+        start();app.buttons["settings"].tap();tapVisible("settings-typer")
+        let tag=app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH 'typer-tag-'")).firstMatch
+        XCTAssertTrue(tag.waitForExistence(timeout:8));tag.tap();tapVisible("tag-open-editor")
+        XCTAssertTrue(app.buttons["tag-editor-save"].waitForExistence(timeout:15));XCTAssertTrue(app.scrollViews["canvas-scroll"].exists)
+        reveal(app.buttons["panel-stroke"],in:app.scrollViews["panel-strip"]);app.buttons["panel-stroke"].tap()
+        let width=app.textFields["value-السماكة"];XCTAssertTrue(width.waitForExistence(timeout:5));width.tap();width.typeText(String(repeating:"\u{8}",count:12)+"5")
+        app.buttons["text-inspector-close"].tap();app.buttons["tag-editor-save"].tap()
+        let confirm=app.buttons["تأكيد وحفظ"];XCTAssertTrue(confirm.waitForExistence(timeout:5));confirm.tap()
+        let open=app.buttons["tag-open-editor"];XCTAssertTrue(open.waitForExistence(timeout:8));revealVertical(open);open.tap();XCTAssertTrue(app.buttons["tag-editor-save"].waitForExistence(timeout:12))
+        reveal(app.buttons["panel-stroke"],in:app.scrollViews["panel-strip"]);app.buttons["panel-stroke"].tap();XCTAssertEqual(app.textFields["value-السماكة"].value as? String,"5")
+        capture("tag-full-editor-persisted-outline");app.buttons["tag-editor-cancel"].tap();XCTAssertTrue(app.buttons["tag-save"].waitForExistence(timeout:5))
     }
 
 }

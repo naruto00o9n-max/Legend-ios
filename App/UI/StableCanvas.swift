@@ -281,6 +281,7 @@ final class DocumentCanvas: UIView {
         handles["edit"]?.isHidden = item.kind != .text
         handles["styles"]?.isHidden = item.kind != .text
         handles["box-width"]?.isHidden = item.kind != .text
+        if item.textOrigin == .tagPreview{handles["delete"]?.isHidden=true;handles["duplicate"]?.isHidden=true}
         CATransaction.commit()
     }
     private func place(_ name: String, at point: CGPoint, size: CGFloat) {

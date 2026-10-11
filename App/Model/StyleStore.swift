@@ -33,6 +33,24 @@ struct StylePackage:Codable {
         }catch{storageReadable=false;self.error=error.localizedDescription}
     }
     var groups:[String]{Array(Set(styles.map(\.group))).sorted()}
+    func manualTextPreset()throws->ManualTextPreset? {
+        try RecoveryFile.read(ManualTextPreset.self,at:directory.appendingPathComponent("manual-text.json"))?.value
+    }
+    func rememberManualText(_ layer:EditorLayer,from assets:URL)throws {
+        guard layer.kind == .text,layer.textOrigin == .manual else{return}
+        guard storageReadable else{throw ImageFailure.message("تعذر قراءة الأنماط؛ لم تُستبدل إعدادات النص اليدوي")}
+        let style=try ownedReusableStyle(layer.style,from:assets)
+        try RecoveryFile.write(ManualTextPreset(style:style,transform:TextLayerTransform(layer)),at:directory.appendingPathComponent("manual-text.json"))
+    }
+    func resetManualText()throws {
+        let file=directory.appendingPathComponent("manual-text.json")
+        for url in [file,RecoveryFile.backup(file)]{if FileManager.default.fileExists(atPath:url.path){try FileManager.default.removeItem(at:url)}}
+    }
+    func ownedReusableStyle(_ input:TextStyle,from assets:URL)throws->TextStyle {
+        var style=input;style.spans=[]
+        style.texturePath=try ownTexture(style.texturePath,from:assets)
+        return style
+    }
     private func commit(_ next:[SavedTextStyle])throws {
         guard storageReadable else{throw ImageFailure.message("تعذر قراءة الأنماط؛ احتُفظ ببياناتك للاستعادة")};try RecoveryFile.write(next,at:directory.appendingPathComponent("styles.json"))
         styles=next
@@ -56,8 +74,10 @@ struct StylePackage:Codable {
         guard !filename.hasPrefix("/"),!filename.split(separator:"/").contains(".."),!filename.contains("\\") else{throw ImageFailure.message("مسار الخامة غير صالح")}
         let source=assets.appendingPathComponent(filename)
         guard FileManager.default.fileExists(atPath:source.path) else{throw ImageFailure.message("خامة النمط مفقودة")}
-        let name=UUID().uuidString+"."+source.pathExtension
-        try FileManager.default.copyItem(at:source,to:directory.appendingPathComponent(name));return name
+        if source.deletingLastPathComponent().standardizedFileURL==directory.standardizedFileURL{return filename}
+        let name="texture-"+(try AppStorageManager.hash(source))+"."+source.pathExtension
+        let destination=directory.appendingPathComponent(name)
+        if !FileManager.default.fileExists(atPath:destination.path){try FileManager.default.copyItem(at:source,to:destination)};return name
     }
     func rename(_ id:UUID,title:String,group:String)throws {
         guard !title.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty else{throw ImageFailure.message("اكتب اسم النمط")}
@@ -71,10 +91,12 @@ struct StylePackage:Codable {
     func resolved(_ style:TextStyle,from source:URL,into destination:URL)throws->TextStyle {
         var next=style
         if !style.texturePath.isEmpty {
+            guard AppStorageManager.safe(style.texturePath),!style.texturePath.contains("/") else{throw ImageFailure.message("مسار الخامة غير صالح")}
             let input=source.appendingPathComponent(style.texturePath)
             guard FileManager.default.fileExists(atPath:input.path) else{throw ImageFailure.message("خامة النمط مفقودة؛ استورد حزمة النمط كاملة")}
-            let name=UUID().uuidString+"."+input.pathExtension
-            try FileManager.default.copyItem(at:input,to:destination.appendingPathComponent(name));next.texturePath=name
+            let name="texture-"+(try AppStorageManager.hash(input))+"."+input.pathExtension
+            let output=destination.appendingPathComponent(name)
+            if !FileManager.default.fileExists(atPath:output.path){try FileManager.default.copyItem(at:input,to:output)};next.texturePath=name
         }
         guard (Fonts.files+Fonts.otf).contains(where:{$0.lastPathComponent==style.fontPath}) else{throw ImageFailure.message("خط النمط مفقود: "+style.fontPath)}
         return next

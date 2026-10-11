@@ -25,7 +25,7 @@ struct EditorView:View {
             if [.brush,.eraser,.cleaner].contains(model.tool){HStack(spacing:12){Button{brushSettings=true}label:{Circle().fill(Color(uiColor:UIColor(hex:model.brushColor))).frame(width:24,height:24).overlay(Circle().stroke(Palette.gold.opacity(0.5),lineWidth:1))}.accessibilityLabel("إعدادات الفرشاة");StepSlider(value:$model.brushWidth,in:1...160,onEditingChanged:{model.brushSizePreview=$0}).tint(Palette.gold);Text("\(Int(model.brushWidth))").font(.system(size:10,design:.monospaced)).frame(width:30)}.padding(.horizontal,16).frame(height:38)}
             if model.tool == .text {
                 ScrollView(.horizontal,showsIndicators:false){HStack(spacing:2){
-                    toolButton("chevron.right","رجوع",id:"text-back"){model.panel=nil;model.gradientTarget=nil;model.tool = .move}
+                    toolButton("chevron.right","رجوع",id:"text-back"){guard model.confirmTextSettings() else{return};model.panel=nil;model.gradientTarget=nil;model.tool = .move}
                     if model.active?.kind == .text{toolButton(Panel.styles.icon,Panel.styles.title,id:"panel-styles",selected:model.panel == .styles){model.panel=model.panel == .styles ? nil:.styles}}
                     toolButton("plus","إضافة نص",id:"text-add"){model.add(.text)}
                     if model.active?.kind == .text{ForEach(Panel.allCases.filter{$0 != .styles}){panel in toolButton(panel.icon,panel.title,id:"panel-\(panel.rawValue)",selected:model.panel==panel){model.panel = model.panel==panel ? nil:panel}}}
@@ -101,12 +101,13 @@ struct EditorView:View {
         guard var bubble=DialogueSequence.resume(chapter,cursor:preferences.cursor(in:chapter.id)) else{model.error="اكتمل وضع فقاعات هذا الفصل";return}
         guard !model.busy else{return};model.busy=true
         if preferences.uppercase{bubble.text=bubble.text.uppercased()}
-        var input=EditorLayer(kind:.text);input.textContent=bubble.text;input.style=(typer.tag(preferences.overrideTag) ?? typer.tag(bubble.tagID))?.style ?? TextStyle();if let font=preferences.quickFont{input.style.fontPath=font}
+        let input:EditorLayer
+        do{input=try typer.dialogueLayer(bubble)}catch{model.error=error.localizedDescription;model.busy=false;return}
         let request=BubbleLayoutRequest(bounds:rect,shape:shape),pageID=model.page.id,chapterID=chapter.id
         Task{defer{model.busy=false};do{
             let prepared=try await BackgroundWork.run{try BubbleLayout.fit(input,request:request)}
             guard model.page.id==pageID,typer.activeChapter?.id==chapterID,typer.activeChapter?.bubbles.first(where:{$0.id==bubble.id})?.used==false else{return}
-            try typer.place([bubble],chapter:chapterID,model:model,overrideTag:preferences.overrideTag,font:preferences.quickFont,styleAssets:styles.directory,preparedLayout:prepared)
+            try typer.place([bubble],chapter:chapterID,model:model,styleAssets:styles.directory,preparedLayout:prepared)
         }catch{model.error=error.localizedDescription}}
 
     }

@@ -31,7 +31,7 @@ struct FontLibraryView:View {
         NavigationStack{ZStack{Ambient();VStack(spacing:12){
             HStack{SurfaceHeader(title:"حروف تصنع الحوار",subtitle:"\(catalogue.count) خطوط · اسم واضح ومعاينة حقيقية",icon:"textformat.alt")}.padding(.horizontal,20)
             SearchBar(placeholder:"البحث في الخطوط",text:$query).padding(.horizontal,20)
-            ScrollView(.horizontal,showsIndicators:false){HStack{ForEach(["الكل","العربية","الإنجليزية","المفضلة","آخر استخدام","المستوردة"]+groups.keys.sorted(),id:\.self){name in Button(name){filter=name}.buttonStyle(CapsuleActionStyle(selected:filter==name)).accessibilityIdentifier("font-category-"+name).accessibilityLabel(name)}}.padding(.horizontal)}.accessibilityIdentifier("font-filter-strip")
+            ScrollView(.horizontal,showsIndicators:false){HStack{ForEach(["الكل","العربية","الإنجليزية","المفضلة","آخر استخدام","المستوردة"]+groups.keys.sorted(),id:\.self){name in Button(name){filter=name}.buttonStyle(CapsuleActionStyle(selected:filter==name)).accessibilityIdentifier("font-category-"+name).accessibilityLabel(name)}}.padding(.horizontal).padding(.vertical,8)}.frame(height:54).accessibilityIdentifier("font-filter-strip")
             List{ForEach(files,id:\.self){url in row(url)}}.id(version).listStyle(.plain).buttonStyle(.borderless).scrollContentBackground(.hidden)
             HStack{Text("\(selected.count) محدد");Spacer();Button("مجموعة جديدة"){naming=true}.disabled(selected.isEmpty);Button("تصدير"){exportFonts()}.disabled(selected.isEmpty);if let output{ShareLink(item:output){Image(systemName:"square.and.arrow.up")}}}.font(.system(size:12)).padding(14).glass(0)
         }}.foregroundStyle(Palette.pale).navigationTitle("مكتبة الخطوط").navigationBarTitleDisplayMode(.inline)

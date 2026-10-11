@@ -17,7 +17,7 @@ struct TextInspector:View {
     var style:TextStyle {model.active?.style ?? TextStyle()}
     func value(_ key:WritableKeyPath<TextStyle,Double>)->Binding<Double>{Binding(get:{style[keyPath:key]},set:{v in model.change{$0.style[keyPath:key]=v}})}
     func flag(_ key:WritableKeyPath<TextStyle,Bool>)->Binding<Bool>{Binding(get:{style[keyPath:key]},set:{v in model.change{$0.style[keyPath:key]=v}})}
-    var body:some View {VStack(spacing:0){HStack{Text(panel.title).font(.system(size:15,weight:.semibold));Spacer();IconButton(icon:"checkmark",title:"تم"){model.commitTextMask();model.save();model.gradientTarget=nil;model.textMaskMode=false;if let close{close()}else{dismiss()}}.accessibilityIdentifier("text-inspector-close")}.padding(.horizontal,18).frame(height:52)
+    var body:some View {VStack(spacing:0){HStack{Text(panel.title).font(.system(size:15,weight:.semibold));Spacer();IconButton(icon:"checkmark",title:"تم"){model.commitTextMask();guard model.confirmTextSettings() else{return};model.save();model.gradientTarget=nil;model.textMaskMode=false;if let close{close()}else{dismiss()}}.accessibilityIdentifier("text-inspector-close")}.padding(.horizontal,18).frame(height:52)
         ScrollView{LazyVStack(alignment:.leading,spacing:18*min(1.15,max(0.85,panelDensity))){content}.padding(.horizontal,20*min(1.15,max(0.85,panelDensity))).padding(.bottom,24)}.accessibilityIdentifier("text-inspector-scroll")
     }.foregroundStyle(Palette.pale).background(Palette.ink.opacity(0.75)).glass(28).ignoresSafeArea(edges:.bottom).onAppear{model.checkpoint()}.onDisappear{if panel == .mask{model.commitTextMask()};model.save()}.scrollDismissesKeyboard(.interactively)
         .sheet(isPresented:$fontLibrary){FontLibraryView(onSelect:{name in model.change{$0.style.fontPath=name}},currentFont:style.fontPath)}
@@ -64,7 +64,7 @@ struct TextInspector:View {
             knob("الموضع أفقيًا",Binding(get:{model.active?.frame.x ?? 0},set:{v in model.change{$0.frame.x=v}}),-Double(model.page.width)...Double(model.page.width))
             knob("الموضع رأسيًا",Binding(get:{model.active?.frame.y ?? 0},set:{v in model.change{$0.frame.y=v}}),-Double(model.page.height)...Double(model.page.height))
             Toggle("مسطرة حدود النص",isOn:Binding(get:{style.rulerEnabled ?? false},set:{v in model.change{$0.style.rulerEnabled=v}}))
-            if model.active?.kind == .text{Button("تحويل النص إلى طبقة PNG"){Task{await model.rasterizeText()}}}
+            if model.active?.kind == .text,model.stylePreviewLayer==nil{Button("تحويل النص إلى طبقة PNG"){Task{await model.rasterizeText()}}}
             HStack{Button("توسيط أفقي"){model.change{$0.frame.x=(Double(model.page.width)-Double(LayerRenderer.bounds($0).width))/2}};Button("توسيط رأسي"){model.change{$0.frame.y=(Double(model.page.height)-Double(LayerRenderer.bounds($0).height))/2}}}.font(.system(size:12))
             HStack{Button("قلب أفقي"){model.change{$0.scaleX *= -1}};Button("قلب رأسي"){model.change{$0.scaleY *= -1}};Button("←"){model.change{$0.frame.x-=1}};Button("→"){model.change{$0.frame.x+=1}};Button("↑"){model.change{$0.frame.y-=1}};Button("↓"){model.change{$0.frame.y+=1}}}.font(.system(size:12))
             knob("الدوران",Binding(get:{model.active?.rotation ?? 0},set:{v in model.change{$0.rotation=v}}),-180...180)

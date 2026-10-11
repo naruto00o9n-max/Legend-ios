@@ -11,6 +11,7 @@ struct DialogueTag: Codable, Equatable, Identifiable {
     var title: String
     var prefix: String
     var style = TextStyle()
+    var textTransform:TextLayerTransform?
     var noPaste = false
     // A tag's display color identifies it in the Typer, independently of ink.
     var displayColor: String?
@@ -126,6 +127,17 @@ private extension String {
     var activeChapter:DialogueChapter? {state.chapters.first{$0.id==state.active}}
     func chapter(_ id:UUID)->DialogueChapter? {state.chapters.first{$0.id==id}}
     func tag(_ id:UUID?)->DialogueTag? {state.tags.first{$0.id==id} ?? state.tagSets?.flatMap(\.tags).first{$0.id==id} ?? state.retiredTags?.first{$0.id==id}}
+    /// Resolve the bubble's real tag, including ordinary unmarked dialogue.
+    /// A saved quick-font/override choice must never replace this in auto-layout.
+    func insertionTag(for bubble:DialogueBubble)throws->DialogueTag {
+        if let id=bubble.tagID{guard let value=tag(id) else{throw ImageFailure.message("وسم الفقاعة مفقود؛ اختر وسمًا من إعدادات الفصل")};return value}
+        guard let value=state.tags.first(where:{$0.prefix.isEmpty && !$0.noPaste}) else{throw ImageFailure.message("أضف وسم الحوار العادي بلا بادئة")};return value
+    }
+    func dialogueLayer(_ bubble:DialogueBubble)throws->EditorLayer {
+        let tag=try insertionTag(for:bubble);var layer=EditorLayer(kind:.text,name:bubble.text)
+        layer.textContent=bubble.text;layer.textOrigin = .typer;layer.style=tag.style
+        tag.textTransform?.apply(to:&layer);return layer
+    }
     var tagSets:[DialogueTagSet]{state.tagSets ?? []}
     func savePanelPreferences(_ value:TyperPanelPreferences)throws {
         guard storageReadable else{throw ImageFailure.message("تعذر قراءة بيانات التايبر؛ لم تُستبدل بياناتك")}
@@ -187,7 +199,7 @@ private extension String {
             var chapter=try JSONDecoder().decode(DialogueChapter.self,from:bytes);chapter.id=UUID();chapter.folder=folder
             // Imported style IDs may belong to another library. Resolve ordinary
             // text to the local default rather than silently assigning wrong styles.
-            for i in chapter.bubbles.indices where tag(chapter.bubbles[i].tagID)==nil {chapter.bubbles[i].tagID=state.tags.first?.id}
+            for i in chapter.bubbles.indices where tag(chapter.bubbles[i].tagID)==nil {chapter.bubbles[i].tagID=state.tags.first(where:{$0.prefix.isEmpty && !$0.noPaste})?.id}
             var next=state;next.chapters.insert(chapter,at:0);next.active=chapter.id;try commit(next)
         }else {try saveChapter(title:url.deletingPathExtension().lastPathComponent,source:TranscriptParser.decode(bytes),separation:.lines,folder:folder)}
     }
@@ -199,15 +211,17 @@ private extension String {
         guard !bubbles.isEmpty else{return}
         let before=model.page
         let assets=styleAssets ?? directory.deletingLastPathComponent().appendingPathComponent("Styles")
+        let automatic = !targets.isEmpty || bubbleLayout != nil || preparedLayout != nil || !preparedLayouts.isEmpty
+        let resolvedTags=try bubbles.map{bubble -> DialogueTag in if !automatic,let chosen=tag(overrideTag){return chosen};return try insertionTag(for:bubble)}
         let values=try bubbles.map{bubble->(String,TextStyle?) in
-            let previous=tag(bubble.tagID);var style=(tag(overrideTag) ?? state.tags.first{$0.prefix==previous?.prefix} ?? previous)?.style ?? TextStyle()
-            if let font{style.fontPath=font}
-            if !style.texturePath.isEmpty{let source=assets.appendingPathComponent(style.texturePath);guard FileManager.default.fileExists(atPath:source.path) else{throw ImageFailure.message("خامة وسم التايبر مفقودة")};let name=UUID().uuidString+"."+source.pathExtension;try FileManager.default.copyItem(at:source,to:model.directory.appendingPathComponent(name));style.texturePath=name}
+            let original=try insertionTag(for:bubble);var style=(automatic ? original:tag(overrideTag) ?? original).style
+            if !automatic,let font{style.fontPath=font}
+            if !style.texturePath.isEmpty{guard AppStorageManager.safe(style.texturePath),!style.texturePath.contains("/") else{throw ImageFailure.message("مسار خامة الوسم غير صالح")};let source=assets.appendingPathComponent(style.texturePath);guard FileManager.default.fileExists(atPath:source.path) else{throw ImageFailure.message("خامة وسم التايبر مفقودة")};let name="texture-"+(try AppStorageManager.hash(source))+"."+source.pathExtension,destination=model.directory.appendingPathComponent(name);if !FileManager.default.fileExists(atPath:destination.path){try FileManager.default.copyItem(at:source,to:destination)};style.texturePath=name}
             let formatter=Typesetter(measure:{Double((($0 as NSString).size(withAttributes:[.font:Fonts.font(style)])).width)})
             let text=format=="box" ? formatter.box(bubble.text,width:style.boxWidth,tatweel:true):format=="circle" ? formatter.circle(bubble.text,width:style.boxWidth,fontSize:style.fontSize):bubble.text
             return (text,style)
         }
-        let layers=try model.insertDialogues(values,targets:targets,bubbleLayout:bubbleLayout,preparedLayout:preparedLayout,preparedLayouts:preparedLayouts)
+        let layers=try model.insertDialogues(values,targets:targets,bubbleLayout:bubbleLayout,preparedLayout:preparedLayout,preparedLayouts:preparedLayouts,transforms:resolvedTags.map{$0.textTransform ?? TextLayerTransform()})
         do {
             var next=state;guard let c=next.chapters.firstIndex(where:{$0.id==chapter}) else{throw ImageFailure.message("لم يعد الفصل موجودًا")}
             for (bubble,layer) in zip(bubbles,layers) {if let i=next.chapters[c].bubbles.firstIndex(where:{$0.id==bubble.id}){next.chapters[c].bubbles[i].usedAt=Date();next.chapters[c].bubbles[i].usedOnPage=model.page.id;next.chapters[c].bubbles[i].usedLayer=layer}}
