@@ -126,10 +126,21 @@ final class LayerInteraction {
         self.order = foreground.map(\.id); self.excluded = Set(order)
         for layer in foreground { sprites[layer.id] = Sprite(layer: layer, directory: directory,viewport:layer.kind == .drawing ? spriteRect(layer):nil,resolution:Sprite.resolution(for:layer,rect:spriteRect(layer),screenScale:screenScale)); sprites[layer.id]?.onReady={[weak self] in self?.onReady?()}; rasterizations += 1 }
     }
+    static func toolForeground(_ page:EditorPage,selected:UUID)->[EditorLayer]? {
+        guard let selectedIndex=page.layers.firstIndex(where:{$0.id==selected}) else{return nil}
+        let group=page.layers[selectedIndex].groupID
+        let index=group.flatMap{id in page.layers.firstIndex(where:{$0.groupID==id})} ?? selectedIndex
+        let foreground=Array(page.layers[index...]).filter(\.isVisible)
+        // Drawing sprites have a gesture-sized viewport. Do not retain that
+        // crop across unrelated long-page scrolling or complex blend stacks.
+        guard !foreground.isEmpty,foreground.allSatisfy({$0.blend == .normal && $0.kind != .drawing}) else{return nil}
+        return foreground
+    }
+    func matchesToolForeground(_ page:EditorPage)->Bool{Self.toolForeground(page,selected:selected)?.map(\.id)==order}
     func attach(to canvas: UIView) { for id in order { if let sprite = sprites[id] { canvas.addSubview(sprite.view) } } }
     func update(_ page: EditorPage,screenScale:CGFloat=1) {
         CATransaction.begin(); CATransaction.setDisableActions(true)
-        for item in page.layers { if sprites[item.id]?.update(item, directory: directory,screenScale:screenScale) == true { rasterizations += 1 } }
+        for item in page.layers { if sprites[item.id]?.update(item, directory: directory,screenScale:screenScale) == true { rasterizations += 1 };if phase == .active{sprites[item.id]?.view.isHidden = !item.isVisible} }
         CATransaction.commit()
     }
     func bringForward(in canvas: UIView) { for id in order { if let sprite = sprites[id] { canvas.bringSubviewToFront(sprite.view) } } }

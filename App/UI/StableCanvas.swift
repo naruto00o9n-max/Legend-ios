@@ -382,10 +382,11 @@ final class DocumentCanvas: UIView {
     }
     /// Keep the selected normal-blend text on a separate compositor surface
     /// throughout tool edits, not just finger movement. Other layers stay tiled.
-    func prepareTextEditing(_ id:UUID?) {
+    func prepareTextEditing(_ requested:UUID?) {
+        let id=requested.flatMap{value in page.flatMap{LayerInteraction.toolForeground($0,selected:value)} == nil ? nil:value}
         guard id != nil || editingText != nil else{return}
         editingText=id
-        if let interaction,interaction.selected==id,interaction.phase != .finishing{return}
+        if let interaction,interaction.selected==id,interaction.phase != .finishing,let page,interaction.matchesToolForeground(page){return}
         if let interaction {
             // Retain the old visible sprite until the complete tiled scene is ready.
             // Switching selections must not flash an empty text layer.
@@ -401,7 +402,7 @@ final class DocumentCanvas: UIView {
     var interactivePresentedFrames:Int{interaction?.presentedFrames ?? 0}
     func endLayerInteraction() {
         if let interaction,interaction.selected==editingText{return}
-        guard let interaction, let page, let directory else { return }
+        guard let interaction,interaction.phase != .finishing,let page,let directory else { return }
         interaction.phase = .finishing; interactionRevision = revision + 1
         update(page: page, directory: directory, selected: selected, zoom: zoom)
     }

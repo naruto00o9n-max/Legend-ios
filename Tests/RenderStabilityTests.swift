@@ -169,4 +169,19 @@ final class RenderStabilityTests:XCTestCase {
         XCTAssertFalse(RenderBudget.isInteractive);XCTAssertFalse(RenderBudget.isPreview)
     }
 
+    @MainActor func testPersistentToolPreviewHonorsHiddenReorderedAndDrawingForeground() throws {
+        let root=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer{try? FileManager.default.removeItem(at:root)}
+        var page=try ImagePipeline.fixture(root:root)
+        var text=EditorLayer(kind:.text);text.textContent="نص";text.style=TextStyle.plainText()
+        var shape=EditorLayer(kind:.shape);shape.frame=Box(x:20,y:20,width:100,height:100)
+        page.layers=[text,shape]
+        let preview=try XCTUnwrap(LayerInteraction(page:page,selected:text.id,directory:root))
+        XCTAssertTrue(preview.matchesToolForeground(page))
+        page.layers[1].isVisible=false;XCTAssertFalse(preview.matchesToolForeground(page))
+        page.layers=[shape,text];XCTAssertFalse(preview.matchesToolForeground(page))
+        page.layers=[text,EditorLayer(kind:.drawing)];XCTAssertNil(LayerInteraction.toolForeground(page,selected:text.id))
+        page.layers=[text,shape];page.layers[1].blend = .multiply;XCTAssertNil(LayerInteraction.toolForeground(page,selected:text.id))
+    }
+
 }
