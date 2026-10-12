@@ -242,10 +242,30 @@ final class EditorUITests:XCTestCase {
         let original=app.buttons["gradient-map-original"];revealVertical(original,in:app.scrollViews["text-inspector-scroll"]);XCTAssertTrue(original.isEnabled);original.tap();XCTAssertFalse(original.isEnabled);app.buttons["text-inspector-close"].tap()
         reveal(app.buttons["panel-color"],in:app.scrollViews["panel-strip"]);app.buttons["panel-color"].tap()
         let toggle=app.switches["تدرج لوني"];revealVertical(toggle,in:app.scrollViews["text-inspector-scroll"])
-        for _ in 0..<5{toggle.tap();if toggle.value as? String == "0"{toggle.coordinate(withNormalizedOffset:CGVector(dx:0.08,dy:0.5)).tap()};XCTAssertEqual(toggle.value as? String,"1");toggle.tap();XCTAssertEqual(toggle.value as? String,"0")}
+        for _ in 0..<5{toggle.coordinate(withNormalizedOffset:CGVector(dx:0.08,dy:0.5)).tap();XCTAssertEqual(toggle.value as? String,"1");toggle.coordinate(withNormalizedOffset:CGVector(dx:0.08,dy:0.5)).tap();XCTAssertEqual(toggle.value as? String,"0")}
         app.buttons["text-inspector-close"].tap();reveal(app.buttons["panel-effects"],in:app.scrollViews["panel-strip"]);app.buttons["panel-effects"].tap()
         let glitch=app.buttons["effect-card-glitch"];revealVertical(glitch,in:app.scrollViews["text-inspector-scroll"]);glitch.tap();XCTAssertTrue(app.textFields["value-ارتفاع الشرائح"].exists)
         revealVertical(app.buttons["effect-catalog"],in:app.scrollViews["text-inspector-scroll"]);app.buttons["effect-catalog"].tap();let none=app.buttons["effect-card-none"];revealVertical(none,in:app.scrollViews["text-inspector-scroll"]);none.tap();capture("performance-effect-cards");app.buttons["text-inspector-close"].tap();XCTAssertTrue(app.buttons["export"].exists)
+    }
+
+    func testCompoundGradientStyleAndPerspectiveControlsStayUsable(){
+        openEditor();tool("text");app.buttons["text-inspector-close"].tap()
+        func panel(_ name:String){let button=app.buttons["panel-"+name];reveal(button,in:app.scrollViews["panel-strip"]);button.tap()}
+        panel("gradientMap")
+        let preset=app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH 'gradient-preset-'")).firstMatch
+        revealVertical(preset,in:app.scrollViews["text-inspector-scroll"]);preset.tap();app.buttons["text-inspector-close"].tap()
+        panel("effects")
+        let effect=app.buttons["effect-card-bevelInner"];revealVertical(effect,in:app.scrollViews["text-inspector-scroll"]);effect.tap()
+        let radius=app.textFields["value-حجم الحافة"];XCTAssertTrue(radius.waitForExistence(timeout:5))
+        let slider=app.sliders.firstMatch;XCTAssertTrue(slider.isHittable)
+        for _ in 0..<3{slider.coordinate(withNormalizedOffset:CGVector(dx:0.2,dy:0.5)).press(forDuration:0.1,thenDragTo:slider.coordinate(withNormalizedOffset:CGVector(dx:0.7,dy:0.5)),withVelocity:.slow,thenHoldForDuration:0.1)}
+        app.buttons["text-inspector-close"].tap();panel("perspective")
+        XCTAssertTrue(app.images["geometry-text-preview"].waitForExistence(timeout:10))
+        let angle=app.textFields["value-دوران أفقي ثلاثي الأبعاد"];revealVertical(angle,in:app.scrollViews["text-inspector-scroll"])
+        let geometrySlider=app.sliders.firstMatch
+        geometrySlider.coordinate(withNormalizedOffset:CGVector(dx:0.45,dy:0.5)).press(forDuration:0.1,thenDragTo:geometrySlider.coordinate(withNormalizedOffset:CGVector(dx:0.65,dy:0.5)),withVelocity:.slow,thenHoldForDuration:0.1)
+        app.buttons["text-inspector-close"].tap();XCTAssertTrue(app.buttons["export"].exists)
+        reveal(app.buttons["text-add"],in:app.scrollViews["panel-strip"]);app.buttons["text-add"].tap();XCTAssertTrue(app.textViews["text-input"].waitForExistence(timeout:5))
     }
 
 }

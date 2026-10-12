@@ -44,6 +44,7 @@ jobs:
               catch (error) { if (![409, 422].includes(error.status)) throw error; }
             }
   package:
+    if: ${{ !contains(github.event.head_commit.message, '[render-control retry]') }}
     needs: supersede
     name: Two unsigned arm64 IPAs and PNG integrity
     runs-on: macos-15-intel
@@ -117,12 +118,13 @@ jobs:
         timeout-minutes: 35
         if: ${{ !cancelled() }}
         env:
+          RENDER_CONTROL_RETRY: ${{ contains(github.event.head_commit.message, '[render-control retry]') }}
           TASK_SCOPE: ${{ contains(github.event.head_commit.message, '[performance validation]') && 'performance' || contains(github.event.head_commit.message, '[style form retry]') && 'styles' || contains(github.event.head_commit.message, '[control hit-area retry]') && 'controls' || contains(github.event.head_commit.message, '[ui-only retry]') && 'focused' || contains(github.event.head_commit.message, '[interface test retry]') && 'regression' || inputs.verification_scope }}
         run: |
           if [[ "$TASK_SCOPE" == performance ]]; then
             # Product changes: run every engine test plus actual gradient teardown,
             # style controls, persistence, Files and original-resolution Photos.
-            bash scripts/test_simulators.sh '${{ matrix.screen }}' ui 'CookiesUITests/EditorUITests/testGradientPresetDisableRestoreAndEffectCardsDoNotTerminateEditor,CookiesUITests/EditorUITests/testCreateUserStyleAndApplyGlyphGradient,CookiesUITests/EditorUITests/testColorLibraryFavoritesAndNegativeLineSpacing,CookiesUITests/EditorUITests/testManualDoneRemembersOutlineForNewManualText,CookiesUITests/EditorUITests/testRealFilesPickerImportsFontAndReturnsToLibrary,CookiesUITests/EditorUITests/testPhotosImportAndIPadOrientation,CookiesUITests/EditorUITests/testStrokePlusMinusChangesByExactlyOneWithoutDragging,CookiesUITests/EditorUITests/testOrganizedSettingsAndDetailedGuide'
+            bash scripts/test_simulators.sh '${{ matrix.screen }}' ui 'CookiesUITests/EditorUITests/testCompoundGradientStyleAndPerspectiveControlsStayUsable,CookiesUITests/EditorUITests/testCreateUserStyleAndApplyGlyphGradient,CookiesUITests/EditorUITests/testColorLibraryFavoritesAndNegativeLineSpacing,CookiesUITests/EditorUITests/testManualDoneRemembersOutlineForNewManualText,CookiesUITests/EditorUITests/testRealFilesPickerImportsFontAndReturnsToLibrary,CookiesUITests/EditorUITests/testPhotosImportAndIPadOrientation,CookiesUITests/EditorUITests/testStrokePlusMinusChangesByExactlyOneWithoutDragging,CookiesUITests/EditorUITests/testOrganizedSettingsAndDetailedGuide'
           elif [[ "$TASK_SCOPE" == styles ]]; then
             python3 scripts/verify_style_form_retry.py
             bash scripts/test_simulators.sh '${{ matrix.screen }}' ui 'CookiesUITests/EditorUITests/testColorLibraryFavoritesAndNegativeLineSpacing,CookiesUITests/EditorUITests/testCreateUserStyleAndApplyGlyphGradient,CookiesUITests/EditorUITests/testOrganizedSettingsAndDetailedGuide,CookiesUITests/EditorUITests/testFullTagEditorSavesAndReopensItsRealTextTools,CookiesUITests/EditorUITests/testManualDoneRemembersOutlineForNewManualText,CookiesUITests/EditorUITests/testRealFilesPickerImportsFontAndReturnsToLibrary,CookiesUITests/EditorUITests/testPhotosImportAndIPadOrientation'
@@ -138,7 +140,12 @@ jobs:
             # Local edition UI always runs in full, including Photos integrity.
             if [[ "$TASK_SCOPE" == focused ]]; then
               git diff --exit-code HEAD^ HEAD -- Tests
-              bash scripts/test_simulators.sh '${{ matrix.screen }}' ui 'CookiesUITests/EditorUITests/testCreateUserStyleAndApplyGlyphGradient,CookiesUITests/EditorUITests/testColorLibraryFavoritesAndNegativeLineSpacing,CookiesUITests/EditorUITests/testOrganizedSettingsAndDetailedGuide,CookiesUITests/EditorUITests/testRealFilesPickerImportsFontAndReturnsToLibrary,CookiesUITests/EditorUITests/testPhotosImportAndIPadOrientation'
+              if [[ "$RENDER_CONTROL_RETRY" == true ]]; then
+                git diff --exit-code 07cbbe3b4f99818f4f523ed8ad360ec7c21627a1 HEAD -- App Tests ServicesTests ServicesUITests project.yml scripts
+                bash scripts/test_simulators.sh '${{ matrix.screen }}' ui 'CookiesUITests/EditorUITests/testGradientPresetDisableRestoreAndEffectCardsDoNotTerminateEditor'
+              else
+                bash scripts/test_simulators.sh '${{ matrix.screen }}' ui 'CookiesUITests/EditorUITests/testCreateUserStyleAndApplyGlyphGradient,CookiesUITests/EditorUITests/testColorLibraryFavoritesAndNegativeLineSpacing,CookiesUITests/EditorUITests/testOrganizedSettingsAndDetailedGuide,CookiesUITests/EditorUITests/testRealFilesPickerImportsFontAndReturnsToLibrary,CookiesUITests/EditorUITests/testPhotosImportAndIPadOrientation'
+              fi
             else
               bash scripts/test_simulators.sh '${{ matrix.screen }}' ui 'CookiesUITests/EditorUITests/testTextTapSuggestionRequiresExplicitConfirmation,CookiesUITests/EditorUITests/testCanvasTapDoesNotCreateUnrequestedTextAndFontsStayInsideEditor,CookiesUITests/EditorUITests/testStrokePlusMinusChangesByExactlyOneWithoutDragging,CookiesUITests/EditorUITests/testPhotosImportAndIPadOrientation,CookiesUITests/EditorUITests/testTyperFilterPersistsAndReopensAtLatestUnusedBubble,CookiesUITests/EditorUITests/testRealFilesPickerImportsFontAndReturnsToLibrary,CookiesUITests/EditorUITests/testOrganizedSettingsAndDetailedGuide'
             fi
@@ -156,7 +163,7 @@ jobs:
           retention-days: 30
       - name: Local edition without account or community
         timeout-minutes: 25
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && !contains(github.event.head_commit.message, '[render-control retry]') }}
         run: bash scripts/test_local_simulator.sh ${{ matrix.screen }}
       - run: python3 scripts/collect_evidence.py
         if: always()

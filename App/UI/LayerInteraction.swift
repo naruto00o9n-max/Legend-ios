@@ -17,6 +17,9 @@ final class LayerInteraction {
         var rendering=false
         var latest:(EditorLayer,CGRect,URL,CGFloat)?
         var onReady:(()->Void)?
+        var presentedFrames=0
+        private var displayedRect:CGRect?
+        private var currentLayer:EditorLayer?
         init(layer: EditorLayer, directory: URL,viewport:CGRect?=nil,resolution:CGFloat=1) {
             self.resolution=resolution
             self.viewport=viewport
@@ -31,12 +34,17 @@ final class LayerInteraction {
             generation+=1;latest=(layer,rect,directory,resolution);renderLatest()
         }
         private func renderLatest(){
-            guard !rendering,let request=latest else{return};latest=nil;rendering=true;let token=generation
+            guard !rendering,let request=latest else{return};latest=nil;rendering=true
             LayerInteraction.worker.async{[weak self] in
+                guard self != nil else{return}
                 let image=RenderBudget.screen{Self.raster(request.0,rect:request.1,directory:request.2,resolution:request.3)}
                 DispatchQueue.main.async{[weak self] in guard let self else{return};self.rendering=false
                     // Keep the previous image while a more recent size/style renders.
-                    if self.generation==token || self.view.image==nil{self.view.image=image;self.onReady?()}
+                    // Publish completed work even while another knob value is pending.
+                    // Rejecting every intermediate generation starves a continuous drag.
+                    self.view.image=image;self.displayedRect=request.1;self.presentedFrames+=1
+                    if let layer=self.currentLayer{self.updateTransform(layer)}
+                    self.onReady?()
                     self.renderLatest()
                 }
             }
@@ -76,6 +84,8 @@ final class LayerInteraction {
             return max(0.125,min(8,bucket,sqrt(RenderBudget.previewPixels/max(1,rect.width*rect.height))))
         }
         private func updateTransform(_ layer: EditorLayer) {
+            currentLayer=layer
+            let rect=displayedRect ?? self.rect
             let transform = LayerRenderer.transform(layer)
             view.bounds = CGRect(origin: .zero, size: rect.size)
             view.center = CGPoint(x: rect.midX, y: rect.midY).applying(transform)
@@ -114,5 +124,6 @@ final class LayerInteraction {
     func bringForward(in canvas: UIView) { for id in order { if let sprite = sprites[id] { canvas.bringSubviewToFront(sprite.view) } } }
     func reveal() { sprites.values.forEach { $0.view.isHidden = false }; phase = .active }
     func remove() { sprites.values.forEach { $0.view.removeFromSuperview() } }
+    var presentedFrames:Int{sprites.values.reduce(0){$0+$1.presentedFrames}}
     var center: CGPoint? { sprites[selected]?.view.center }
 }

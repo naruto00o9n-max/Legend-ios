@@ -150,7 +150,14 @@ import SwiftUI
     func cancelPendingSaves(){editSaveTask?.cancel();editSaveTask=nil;previewTask?.cancel();previewTask=nil}
     func undo(){guard let previous=undoStack.popLast() else{return};redoStack.append(page.layers);redoDocuments.append(page);if let document=undoDocuments.popLast(){page=document}else{page.layers=previous};if textMaskDraft==nil{selected=nil};save()}
     func redo(){guard let next=redoStack.popLast() else{return};undoStack.append(page.layers);undoDocuments.append(page);if let document=redoDocuments.popLast(){page=document}else{page.layers=next};if textMaskDraft==nil{selected=nil};save()}
+    private var continuousEditing=false
+    func setContinuousEditing(_ editing:Bool){
+        continuousEditing=editing
+        if editing{editSaveTask?.cancel();editSaveTask=nil;previewTask?.cancel();previewTask=nil}
+        else{scheduleEditSave()}
+    }
     private func scheduleEditSave(){
+        guard !continuousEditing else{return}
         editSaveTask?.cancel()
         editSaveTask=Task { [weak self] in
             try? await Task.sleep(nanoseconds:250_000_000)
@@ -158,7 +165,7 @@ import SwiftUI
             self?.save()
         }
     }
-    func save(){editSaveTask?.cancel();editSaveTask=nil;guard textMaskDraft==nil else{return};do{try library.persist(page)}catch{self.error=error.localizedDescription}
+    func save(){editSaveTask?.cancel();editSaveTask=nil;guard textMaskDraft==nil,!continuousEditing else{return};do{try library.persist(page)}catch{self.error=error.localizedDescription}
         previewTask?.cancel();let snapshot=page,directory=self.directory
         let library=self.library
         previewTask=Task {try? await Task.sleep(nanoseconds:500_000_000);guard !Task.isCancelled else{return};do{try await Task.detached(priority:.utility){try RenderBudget.screen{try ImagePipeline.projectThumbnail(snapshot,directory:directory)}}.value;guard !Task.isCancelled else{return};library.thumbnailRevision+=1}catch{}}

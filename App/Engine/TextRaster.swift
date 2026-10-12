@@ -5,6 +5,10 @@ import CoreImage
 enum TextRaster {
     final class Raster {let image:UIImage;let frame:CGRect;init(_ image:UIImage,_ frame:CGRect){self.image=image;self.frame=frame}}
     static let cache=NSCache<TextRenderKey,Raster>()
+    static let baseCache=NSCache<TextRenderKey,UIImage>()
+    private static let countLock=NSLock()
+    private static var baseBuilds=0
+    static var baseRasterBuilds:Int{countLock.lock();defer{countLock.unlock()};return baseBuilds}
     static let context=CIContext(options:[.cacheIntermediates:false])
     static func draw(_ layer:EditorLayer,rect:CGRect,in c:CGContext,directory:URL)->Bool {
         let s=layer.style
@@ -24,12 +28,17 @@ enum TextRaster {
         if let cached=cache.object(forKey:key){raster=cached}else{
             var outputFrame=CGRect(x:-pad,y:-pad,width:size.width,height:size.height)
             let format=UIGraphicsImageRendererFormat();format.scale=resolution;format.opaque=false;format.preferredRange = .standard
-            let glyph=UIGraphicsImageRenderer(size:size,format:format).image{r in
-                let a=NSMutableAttributedString(attributedString:LayerRenderer.attributed(layer,color:.white))
-                a.draw(with:rect.offsetBy(dx:pad,dy:pad),options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)
-
+            var unwarped=cacheLayer
+            unwarped.style.perspectivePoints=[];unwarped.style.rotationX=0;unwarped.style.rotationY=0
+            unwarped.style.isMeshMode=false;unwarped.style.meshPoints=[];unwarped.style.meshRows=3;unwarped.style.meshCols=3
+            let baseKey=TextRenderKey(unwarped,directory:directory,resolution:resolution,size:rect.size)
+            var result:UIImage
+            if let cached=baseCache.object(forKey:baseKey){result=cached}else{
+            let mask=TextGlyphMask.image(layer,rect:rect,resolution:resolution,directory:directory)
+            let glyph=UIGraphicsImageRenderer(size:size,format:format).image{_ in
+                mask.draw(at:CGPoint(x:pad,y:pad))
             }
-            var result=UIGraphicsImageRenderer(size:size,format:format).image{r in
+            result=UIGraphicsImageRenderer(size:size,format:format).image{r in
                 let ctx=r.cgContext
                 if s.textGradient.isEmpty && s.texturePath.isEmpty{var fill=layer;fill.style.innerOpacity=1;LayerRenderer.attributed(fill).draw(with:rect.offsetBy(dx:pad,dy:pad),options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)}else{GradientPaint.draw(colors:s.textGradient.isEmpty ? [s.color,s.color]:s.textGradient,stops:s.textGradientStops,angle:s.textGradientAngle,type:s.textGradientType,rect:rect.offsetBy(dx:pad,dy:pad),points:s.textGradientPoints,in:ctx)}
                 if !s.texturePath.isEmpty,let texture=ImagePipeline.asset(directory.appendingPathComponent(s.texturePath)){
@@ -82,6 +91,10 @@ enum TextRaster {
                 }
                 let previous=result;result=UIGraphicsImageRenderer(size:size,format:format).image{output in previous.draw(at:.zero);mask.draw(at:.zero,blendMode:.destinationIn,alpha:1)}
             }
+            countLock.lock();baseBuilds+=1;countLock.unlock()
+            baseCache.totalCostLimit=RenderBudget.textCacheBytes/2
+            baseCache.setObject(result,forKey:baseKey,cost:Int(size.width*size.height*resolution*resolution)*4)
+            }
             // Keep a pure color/outline raster untouched. A Core Image round trip
             // is only needed for geometric or filter effects and can otherwise
             // change premultiplied antialias coverage at glyph edges.
@@ -93,7 +106,16 @@ enum TextRaster {
                 let corners=PerspectiveGeometry.corners(s)
                 if corners.count==4,let extended=PerspectiveGeometry.extended(corners,width:Double(rect.width),height:Double(rect.height),padding:Double(pad)),extended.count==4{func vector(_ p:Point)->CIVector{CIVector(x:(pad+CGFloat(p.x)*rect.width)*resolution,y:(size.height-pad-CGFloat(p.y)*rect.height)*resolution)};processed=processed.applyingFilter("CIPerspectiveTransform",parameters:["inputTopLeft":vector(extended[0]),"inputTopRight":vector(extended[1]),"inputBottomRight":vector(extended[2]),"inputBottomLeft":vector(extended[3])])}
                 let extent=processed.extent.integral
-                if !extent.isInfinite,!extent.isNull,extent.width*extent.height<16_777_216,let cg=context.createCGImage(processed,from:extent){result=UIImage(cgImage:cg,scale:resolution,orientation:.up);outputFrame=CGRect(x:extent.minX/resolution-pad,y:size.height-extent.maxY/resolution-pad,width:extent.width/resolution,height:extent.height/resolution)}
+                if !extent.isInfinite,!extent.isNull,extent.width>0,extent.height>0,extent.width*extent.height<16_777_216{
+                    // Perspective may enlarge a bounded input dramatically. Bound
+                    // the final preview allocation as well; export is unchanged.
+                    let reduction=RenderBudget.isPreview ? min(1,sqrt(RenderBudget.previewPixels/(extent.width*extent.height))):1
+                    let output=processed.transformed(by:CGAffineTransform(scaleX:reduction,y:reduction))
+                    if let cg=context.createCGImage(output,from:extent.applying(CGAffineTransform(scaleX:reduction,y:reduction))){
+                        result=UIImage(cgImage:cg,scale:resolution*reduction,orientation:.up)
+                        outputFrame=CGRect(x:extent.minX/resolution-pad,y:size.height-extent.maxY/resolution-pad,width:extent.width/resolution,height:extent.height/resolution)
+                    }
+                }
             }
             if !s.shadowGradient.isEmpty,let cg=result.cgImage{
                 let input=CIImage(cgImage:cg)

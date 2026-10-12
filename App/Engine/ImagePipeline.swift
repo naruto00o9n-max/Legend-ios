@@ -23,7 +23,7 @@ enum ImagePipeline {
         excludeDecodedFromSystemBackup(url)
     }
     static func excludeDecodedFromSystemBackup(_ input:URL){var url=input,values=URLResourceValues();values.isExcludedFromBackup=true;try? url.setResourceValues(values)}
-    static func clearMemoryCaches(){assets.removeAllObjects();spaces.removeAllObjects();TextRaster.cache.removeAllObjects();TextArtRenderer.cache.removeAllObjects()}
+    static func clearMemoryCaches(){assets.removeAllObjects();spaces.removeAllObjects();TextRaster.cache.removeAllObjects();TextRaster.baseCache.removeAllObjects();TextGlyphMask.cache.removeAllObjects();TextArtRenderer.cache.removeAllObjects()}
     private static let assets=NSCache<NSString,UIImage>()
     private static let assetLock=NSLock()
     static func asset(_ url:URL)->UIImage? {assetLock.lock();defer{assetLock.unlock()};if let image=assets.object(forKey:url.path as NSString){return image};guard let image=UIImage(contentsOfFile:url.path) else{return nil};assets.totalCostLimit=RenderBudget.textCacheBytes;assets.setObject(image,forKey:url.path as NSString,cost:Int(image.size.width*image.size.height)*4);return image}

@@ -34,6 +34,7 @@ final class DocumentCanvas: UIView {
     private var patchCommitRevision:Int?
     private var stagedImages: [String: UIImage] = [:]
     private var interaction: LayerInteraction?
+    private var editingText:UUID?
     private var drawingInteraction=false
     private var softwareStroke=false
     private let inkWorker=DispatchQueue(label:"cookies.canvas.live-composite",qos:.userInteractive,autoreleaseFrequency:.workItem)
@@ -374,7 +375,21 @@ final class DocumentCanvas: UIView {
         inkGeneration=UUID();latestInk=nil;if page.layers==renderedLayers{showPatch(nil)}else{commitPatch()}
         update(page:page,directory:directory,selected:selected,zoom:zoom);endLayerInteraction()
     }
+    /// Keep the selected normal-blend text on a separate compositor surface
+    /// throughout tool edits, not just finger movement. Other layers stay tiled.
+    func prepareTextEditing(_ id:UUID?) {
+        guard id != nil || editingText != nil else{return}
+        editingText=id
+        if let interaction,interaction.selected==id,interaction.phase != .finishing{return}
+        if interaction != nil {
+            interaction?.remove();interaction=nil;interactionRevision=nil
+            if let page,let directory{update(page:page,directory:directory,selected:selected,zoom:zoom)}
+        }
+        if let id{_ = beginLayerInteraction(id)}
+    }
+    var interactivePresentedFrames:Int{interaction?.presentedFrames ?? 0}
     func endLayerInteraction() {
+        if let interaction,interaction.selected==editingText{return}
         guard let interaction, let page, let directory else { return }
         interaction.phase = .finishing; interactionRevision = revision + 1
         update(page: page, directory: directory, selected: selected, zoom: zoom)

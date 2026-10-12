@@ -70,4 +70,81 @@ final class RenderStabilityTests:XCTestCase {
 
     func testStainedGlassProceduralKernelCompilesOnTheNativeRuntime(){XCTAssertTrue(StyleEffectRenderer.glassKernelAvailable)}
 
+    func testCompoundedGradientEffectReusesGlyphsAndDecoratedBaseWhilePerspectiveChanges(){
+        ImagePipeline.clearMemoryCaches()
+        var layer=EditorLayer(kind:.text);layer.textContent="حوار متدرج\nبتأثير ومنظور"
+        layer.style=TextStyle.plainText(fontSize:42,boxWidth:260)
+        layer.style.textGradient=["442299","CC4488"];layer.style.strokeWidth=3
+        layer.style.effectType = .bevelInner;layer.style.styleEffect=StyleEffectSettings()
+        let glyphs=TextGlyphMask.buildCount,bases=TextRaster.baseRasterBuilds
+        let f=UIGraphicsImageRendererFormat();f.scale=2;f.opaque=false
+        func render(){RenderBudget.screen{_ = UIGraphicsImageRenderer(size:CGSize(width:500,height:350),format:f).image{out in out.cgContext.translateBy(x:80,y:80);LayerRenderer.drawText(layer,rect:LayerRenderer.bounds(layer),context:out.cgContext,directory:FileManager.default.temporaryDirectory)}}}
+        render()
+        for index in 1...12{let inset=Double(index)/200;layer.style.perspectivePoints=[Point(x:inset,y:0),Point(x:1-inset,y:0),Point(x:1,y:1),Point(x:0,y:1)];render()}
+        XCTAssertEqual(TextGlyphMask.buildCount-glyphs,1,"Perspective must not reshape the same glyphs")
+        XCTAssertEqual(TextRaster.baseRasterBuilds-bases,1,"Perspective must reuse gradient, outline and style filtering")
+        for index in 1...8{layer.style.textGradientAngle=Double(index)*10;render()}
+        XCTAssertEqual(TextGlyphMask.buildCount-glyphs,1,"Gradient controls reuse typography")
+        XCTAssertGreaterThan(TextRaster.baseRasterBuilds-bases,1,"Actual color edits still invalidate decoration")
+        layer.style.fontSize+=1;render();XCTAssertGreaterThan(TextGlyphMask.buildCount-glyphs,1)
+    }
+    @MainActor func testToolEditsKeepTilesStableAndPresentIntermediateCompoundFrames() async throws {
+        let root=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer{try? FileManager.default.removeItem(at:root)}
+        let library=LibraryStore(root:root);var page=try ImagePipeline.fixture(root:root)
+        var text=EditorLayer(kind:.text);text.textContent="حوار متدرج";text.frame.x=50;text.frame.y=50
+        text.style=TextStyle.plainText(fontSize:42,boxWidth:240)
+        text.style.textGradient=["442299","CC4488"];text.style.strokeWidth=3
+        text.style.effectType = .bevelInner;text.style.styleEffect=StyleEffectSettings()
+        page.layers=[text]
+        let canvas=DocumentCanvas(frame:CGRect(x:0,y:0,width:800,height:15000)),directory=library.directory(page.id)
+        canvas.update(page:page,directory:directory,selected:text.id,zoom:1)
+        canvas.refreshVisible(CGRect(x:0,y:0,width:400,height:600));canvas.prepareTextEditing(text.id)
+        for _ in 0..<200{if canvas.interactivePresentedFrames>0{break};try await Task.sleep(nanoseconds:50_000_000)}
+        XCTAssertGreaterThan(canvas.interactivePresentedFrames,0)
+        let revision=canvas.revision,frames=canvas.interactivePresentedFrames,reads=canvas.sourceReads
+        let start=Date()
+        for index in 0..<60{
+            page.layers[0].style.styleEffect?.radius=Double(index%8)+1
+            let inset=Double(index%10)/100
+            page.layers[0].style.perspectivePoints=[Point(x:inset,y:0),Point(x:1,y:0),Point(x:1-inset,y:1),Point(x:0,y:1)]
+            page.layers[0].frame.x=50+Double(index)
+            canvas.update(page:page,directory:directory,selected:text.id,zoom:1)
+            try await Task.sleep(nanoseconds:30_000_000)
+        }
+        XCTAssertEqual(canvas.revision,revision,"Tool sliders must not rebuild the image tiles")
+        XCTAssertEqual(canvas.sourceReads,reads,"Tool edits must not reread the original image")
+        XCTAssertGreaterThan(canvas.interactivePresentedFrames,frames,"Completed previews must appear before the continuous edit ends")
+        print("COMPOUND_PREVIEW edits=60 presented=\(canvas.interactivePresentedFrames-frames) elapsed=\(Date().timeIntervalSince(start))")
+        canvas.prepareTextEditing(nil);XCTAssertGreaterThan(canvas.revision,revision)
+    }
+    @MainActor func testContinuousSliderEditingDefersDocumentWritesUntilRelease() async throws {
+        let root=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer{try? FileManager.default.removeItem(at:root)}
+        let library=LibraryStore(root:root);var page=try ImagePipeline.fixture(root:root)
+        var layer=EditorLayer(kind:.text);layer.textContent="نص";page.layers=[layer];try library.persist(page)
+        let model=EditorModel(page:page,library:library);defer{model.cancelPendingSaves()};model.selected=layer.id
+        model.setContinuousEditing(true);model.change{$0.style.textGradientAngle=123}
+        try await Task.sleep(nanoseconds:400_000_000)
+        let stored=try JSONDecoder().decode(EditorPage.self,from:Data(contentsOf:model.directory.appendingPathComponent("page.json")))
+        XCTAssertEqual(stored.layers[0].style.textGradientAngle,0)
+        model.setContinuousEditing(false)
+        try await Task.sleep(nanoseconds:400_000_000)
+        let saved=try JSONDecoder().decode(EditorPage.self,from:Data(contentsOf:model.directory.appendingPathComponent("page.json")))
+        XCTAssertEqual(saved.layers[0].style.textGradientAngle,123)
+    }
+
+    @MainActor func testGeometryInspectorDoesNotRenderCompoundTextOnMainThread() async throws {
+        var layer=EditorLayer(kind:.text);layer.textContent="معاينة المنظور"
+        layer.style=TextStyle.plainText(fontSize:42,boxWidth:240)
+        layer.style.textGradient=["442299","CC4488"];layer.style.strokeWidth=3
+        layer.style.effectType = .bevelInner;layer.style.styleEffect=StyleEffectSettings()
+        let view=GeometryPreviewImageView(),directory=FileManager.default.temporaryDirectory
+        for index in 0..<40{layer.style.rotationY=Double(index);view.submit(layer,directory:directory,size:CGSize(width:260,height:148));try await Task.sleep(nanoseconds:30_000_000)}
+        for _ in 0..<200{if view.presentedFrames>0{break};try await Task.sleep(nanoseconds:50_000_000)}
+        XCTAssertNotNil(view.image);XCTAssertFalse(view.renderedOnMain)
+        let frames=view.presentedFrames;view.cancel();view.submit(layer,directory:directory,size:CGSize(width:300,height:148))
+        try await Task.sleep(nanoseconds:150_000_000);XCTAssertEqual(view.presentedFrames,frames)
+    }
+
 }
