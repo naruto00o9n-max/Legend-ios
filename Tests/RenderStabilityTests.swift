@@ -45,12 +45,12 @@ final class RenderStabilityTests:XCTestCase {
         XCTAssertFalse(RenderBudget.isPreview);RenderBudget.screen{XCTAssertTrue(RenderBudget.isPreview);RenderBudget.screen{XCTAssertTrue(RenderBudget.isPreview)};XCTAssertTrue(RenderBudget.isPreview)};XCTAssertFalse(RenderBudget.isPreview)
     }
     func testEveryStyleFilterRendersChangesAndRoundTripsWithoutFlatteningText()throws{
-        var layer=EditorLayer(kind:.text);layer.textContent="كوكيز";layer.style=TextStyle.plainText(fontSize:64,boxWidth:240);layer.style.color="331188"
+        var layer=EditorLayer(kind:.text);layer.textContent="كوكيز";layer.style=TextStyle.plainText(fontSize:64,boxWidth:240);layer.style.color="331188";layer.style.textGradient=["331188","882299"];layer.style.effectValue=16
         let f=UIGraphicsImageRendererFormat();f.scale=1;f.opaque=false
         func render(_ value:EditorLayer)->Data{let image=RenderBudget.screen{UIGraphicsImageRenderer(size:CGSize(width:480,height:280),format:f).image{out in out.cgContext.translateBy(x:100,y:90);LayerRenderer.drawText(value,rect:LayerRenderer.bounds(value),context:out.cgContext,directory:FileManager.default.temporaryDirectory)}};return image.pngData()!}
         let original=render(layer)
         XCTAssertEqual(TextEffect.styleCases.count,15)
-        for effect in TextEffect.styleCases{
+        for effect in TextEffect.allCases where effect != .none{
             layer.style.effectType=effect;var settings=StyleEffectSettings();settings.color="E09010";settings.radius=6;settings.softness=2;settings.depth=14;layer.style.styleEffect=settings
             let output=render(layer);XCTAssertNotEqual(output,original,effect.rawValue)
             let reopened=try JSONDecoder().decode(EditorLayer.self,from:JSONEncoder().encode(layer));XCTAssertEqual(reopened,layer);XCTAssertEqual(render(reopened),output,effect.rawValue)

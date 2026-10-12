@@ -15,15 +15,16 @@ enum TextArtRenderer {
         return (Double(bits % 2001)/1000-1)*max(0,strength)
     }
     static func draw(_ layer:EditorLayer,rect:CGRect,in c:CGContext,directory:URL)->Bool {
-        guard layer.style.effectType == .chromatic || layer.style.effectType == .glitch else{return false}
+        guard layer.style.effectType == .chromatic || layer.style.effectType == .glitch || layer.style.effectType == .error else{return false}
         let art=layer.style.art ?? TextArtSettings()
-        var base=layer;base.style.effectType = .none;base.style.art=nil
+        var base=layer;base.style.effectType = .none;base.style.art=nil;base.style.styleEffect=nil;base.style.effectValue=0
         let area=TextVisualBounds.rect(base)
         guard area.width.isFinite,area.height.isFinite,area.width>0,area.height>0 else{return true}
         let requested=max(1,hypot(c.ctm.a,c.ctm.b),hypot(c.ctm.c,c.ctm.d))
         let pixels=RenderBudget.isPreview ? RenderBudget.previewPixels:8_388_608
         let resolution=max(0.125,min(8,pow(2,ceil(log2(requested))),sqrt(pixels/max(1,area.width*area.height))))
-        let key=TextRenderKey(base,directory:directory,resolution:resolution,size:area.size)
+        var keyLayer=base;keyLayer.style.effectType=layer.style.effectType == .error ? .error:.chromatic
+        let key=TextRenderKey(keyLayer,directory:directory,resolution:resolution,size:area.size)
         let images:Images
         if let cached=cache.object(forKey:key){images=cached}else{
             let format=UIGraphicsImageRendererFormat();format.scale=resolution;format.opaque=false;format.preferredRange = .standard
@@ -33,7 +34,8 @@ enum TextArtRenderer {
             let original=image(base)
             var foreground=base;foreground.style.backgroundAlpha=0;foreground.style.shadowAlpha=0;foreground.style.shadowRadius=0;foreground.style.shadowGradient=[]
             let alpha=image(foreground)
-            let channels=[UIColor.red,UIColor.green,UIColor.blue].map{color in UIGraphicsImageRenderer(size:area.size,format:format).image{out in alpha.draw(at:.zero);out.cgContext.setBlendMode(.sourceIn);out.cgContext.setFillColor(color.cgColor);out.cgContext.fill(CGRect(origin:.zero,size:area.size))}}
+            let colors=layer.style.effectType == .error ? [UIColor(hex:layer.style.effectColor),UIColor(hex:layer.style.strokeColor),UIColor.clear]:[UIColor.red,UIColor.green,UIColor.blue]
+            let channels=colors.map{color in UIGraphicsImageRenderer(size:area.size,format:format).image{out in alpha.draw(at:.zero);out.cgContext.setBlendMode(.sourceIn);out.cgContext.setFillColor(color.cgColor);out.cgContext.fill(CGRect(origin:.zero,size:area.size))}}
             images=Images(original:original,channels:channels,frame:area)
             cache.totalCostLimit=RenderBudget.textCacheBytes;cache.setObject(images,forKey:key,cost:(original.cgImage.map{$0.bytesPerRow*$0.height} ?? 0)*4)
             countLock.lock();cacheBuilds+=1;countLock.unlock()
@@ -43,7 +45,7 @@ enum TextArtRenderer {
             for position in 0..<3{let d=Double(position-1)*max(0,distance);images.channels[order[position]].draw(in:images.frame.offsetBy(dx:shift+cos(theta)*d,dy:sin(theta)*d))}
             images.original.draw(in:images.frame.offsetBy(dx:shift,dy:0))
         }
-        if layer.style.effectType == .chromatic{channels(distance:art.distance,angle:art.angle)}else{
+        if layer.style.effectType == .error{images.channels[0].draw(in:images.frame.offsetBy(dx:layer.style.effectValue,dy:0));images.channels[1].draw(in:images.frame.offsetBy(dx:-layer.style.effectValue,dy:0));images.original.draw(in:images.frame)}else if layer.style.effectType == .chromatic{channels(distance:art.distance,angle:art.angle)}else{
             let height=max(2,min(420,art.bandHeight)),clip=c.boundingBoxOfClipPath
             let first=max(Int(floor(area.minY/height)),Int(floor(clip.minY/height))),last=min(Int(ceil(area.maxY/height)),Int(ceil(clip.maxY/height)))
             if first<last{for band in first..<last{let slice=CGRect(x:area.minX-CGFloat(art.strength+art.colorShift),y:Double(band)*height,width:area.width+CGFloat(2*(art.strength+art.colorShift)),height:height);guard slice.intersects(clip) else{continue};c.saveGState();c.clip(to:slice);channels(distance:art.colorShift,angle:0,shift:bandOffset(band,seed:art.seed,strength:art.strength));c.restoreGState()}}

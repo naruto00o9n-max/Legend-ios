@@ -12,11 +12,13 @@ enum TextRaster {
         guard advanced,rect.width*rect.height<4_194_304 else{return false}
         let transform=c.ctm
         let requested=max(2,hypot(transform.a,transform.b),hypot(transform.c,transform.d))
-        let padding=CGFloat(TextVisualBounds.padding(s,minimum:8))
+        var cacheLayer=layer
+        if s.effectType == .slice || s.effectType == .warp{cacheLayer.style.effectValue=0;cacheLayer.style.effectDetail=0}
+        let padding=CGFloat(TextVisualBounds.padding(cacheLayer.style,minimum:8))
         let area=max(1,(rect.width+padding*2)*(rect.height+padding*2))
         let resolution=max(RenderBudget.isPreview ? 0.125:1,min(8,pow(2,ceil(log2(requested))),sqrt((RenderBudget.isPreview ? RenderBudget.previewPixels:8_388_608)/area)))
-        let key=TextRenderKey(layer,directory:directory,resolution:resolution,size:CGSize(width:rect.width,height:rect.height))
-        let pad=CGFloat(TextVisualBounds.padding(s,minimum:8))
+        let key=TextRenderKey(cacheLayer,directory:directory,resolution:resolution,size:CGSize(width:rect.width,height:rect.height))
+        let pad=padding
         let size=CGSize(width:ceil(rect.width+pad*2),height:ceil(rect.height+pad*2))
         let raster:Raster
         if let cached=cache.object(forKey:key){raster=cached}else{
@@ -109,8 +111,9 @@ enum TextRaster {
             raster=Raster(result,outputFrame);cache.totalCostLimit=RenderBudget.textCacheBytes;cache.setObject(raster,forKey:key,cost:Int(outputFrame.width*outputFrame.height*resolution*resolution)*4)
         }
         c.saveGState()
-        if s.shadowGradient.isEmpty && (s.shadowRadius>0 || s.effectType == .neon || s.effectType == .shadow){c.setShadow(offset:CGSize(width:s.shadowDx,height:s.shadowDy),blur:CGFloat(s.effectType == .neon ? s.effectValue:s.shadowRadius),color:UIColor(hex:s.effectType == .neon ? s.effectColor:s.shadowColor,alpha:CGFloat(s.shadowAlpha)/255).cgColor)}
-        if s.isMeshMode,MeshGeometry.valid(s){drawMesh(raster.image,imageRect:raster.frame,textRect:rect,style:s,in:c)}else{raster.image.draw(in:raster.frame)}
+        if s.shadowGradient.isEmpty && (s.shadowRadius>0 || s.effectType == .neon || s.effectType == .shadow){c.setShadow(offset:CGSize(width:s.shadowDx,height:s.shadowDy),blur:CGFloat(s.effectType == .neon || s.effectType == .shadow ? s.effectValue:s.shadowRadius),color:UIColor(hex:s.effectType == .neon ? s.effectColor:s.shadowColor,alpha:CGFloat(s.shadowAlpha)/255).cgColor)}
+        func paint(){if s.isMeshMode,MeshGeometry.valid(s){drawMesh(raster.image,imageRect:raster.frame,textRect:rect,style:s,in:c)}else{raster.image.draw(in:raster.frame)}}
+        if s.effectType == .warp{c.concatenate(CGAffineTransform(a:1,b:0,c:CGFloat(s.effectValue)/100,d:1,tx:0,ty:0));paint()}else if s.effectType == .slice{let count=max(2,min(30,Int(s.effectDetail)));for i in 0..<count{c.saveGState();let dy=rect.height*CGFloat(i)/CGFloat(count),height=rect.height/CGFloat(count);c.clip(to:CGRect(x:raster.frame.minX-abs(s.effectValue),y:dy,width:raster.frame.width+abs(s.effectValue)*2,height:height));c.translateBy(x:i%2==0 ? s.effectValue:-s.effectValue,y:0);paint();c.restoreGState()}}else{paint()}
         c.restoreGState();return true
     }
     static func drawMesh(_ image:UIImage,imageRect:CGRect,textRect:CGRect,style:TextStyle,in c:CGContext){
