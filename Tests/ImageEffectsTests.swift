@@ -156,5 +156,8 @@ final class ImageEffectsTests:XCTestCase {
         XCTAssertGreaterThan(canvas.imagePresentedFrames,0,"Publish intermediate image frames before input stops")
         XCTAssertEqual(canvas.revision,revision,"Knob changes must not enqueue detail tiles for every update")
         model.setContinuousEditing(false);canvas.finishImageSettings();XCTAssertGreaterThan(canvas.revision,revision)
+        let deadline=Date().addingTimeInterval(10)
+        while !canvas.visibleTilesReady && Date()<deadline{try await Task.sleep(nanoseconds:30_000_000)}
+        XCTAssertTrue(canvas.visibleTilesReady,"Closing image tools must resume any deferred detail tiles")
     }
 }

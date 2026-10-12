@@ -218,6 +218,7 @@ final class DocumentCanvas: UIView {
             guard self != nil else{return}
             let cancel={ [weak self] in DispatchQueue.main.async {
                 guard let self,self.tiles[key] === tile,tile.request==request else{return};tile.pending=false
+                if !self.imageToolPreview,tile.revision != self.revision,let latest=self.page,let directory=self.directory{self.render(tile,key:key,page:self.rasterPage(latest),directory:directory)}
             }}
             guard !gate.isSuspended else{cancel();return}
             let base: UIImage?
