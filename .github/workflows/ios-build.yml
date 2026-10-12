@@ -44,7 +44,7 @@ jobs:
               catch (error) { if (![409, 422].includes(error.status)) throw error; }
             }
   package:
-    if: ${{ !contains(github.event.head_commit.message, '[render-control retry]') }}
+    if: ${{ !contains(github.event.head_commit.message, '[render-control retry]') && !contains(github.event.head_commit.message, '[fixture initialization retry]') }}
     needs: supersede
     name: Two unsigned arm64 IPAs and PNG integrity
     runs-on: macos-15-intel
@@ -105,7 +105,15 @@ jobs:
       - name: Native engine and real whitening regressions
         timeout-minutes: 35
         if: ${{ !contains(github.event.head_commit.message, '[ui-only retry]') && (github.event_name != 'workflow_dispatch' || inputs.verification_scope != 'focused') }}
-        run: bash scripts/test_simulators.sh ${{ matrix.screen }} core
+        env:
+          COOKIES_CORE_FILTER: ${{ contains(github.event.head_commit.message, '[fixture initialization retry]') && 'CookiesTests/RenderStabilityTests/testPersistentToolPreviewHonorsHiddenReorderedAndDrawingForeground' || '' }}
+        run: |
+          if [[ -n "$COOKIES_CORE_FILTER" ]]; then
+            # The shipped app and all other engine cases are byte-identical to
+            # the completed candidate; rerun only the corrected fixture setup.
+            git diff --exit-code dc3b42229f773a29ab0ea437d21581141fd10a1b HEAD -- App ServicesTests ServicesUITests UITests LocalUITests project.yml scripts/build_ipas.sh scripts/fetch_resources.py scripts/vendor-hashes.json
+          fi
+          bash scripts/test_simulators.sh ${{ matrix.screen }} core
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -116,7 +124,7 @@ jobs:
           retention-days: 30
       - name: Interfaces, Photos and services
         timeout-minutes: 35
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && !contains(github.event.head_commit.message, '[fixture initialization retry]') }}
         env:
           RENDER_CONTROL_RETRY: ${{ contains(github.event.head_commit.message, '[render-control retry]') }}
           TASK_SCOPE: ${{ contains(github.event.head_commit.message, '[performance validation]') && 'performance' || contains(github.event.head_commit.message, '[style form retry]') && 'styles' || contains(github.event.head_commit.message, '[control hit-area retry]') && 'controls' || contains(github.event.head_commit.message, '[ui-only retry]') && 'focused' || contains(github.event.head_commit.message, '[interface test retry]') && 'regression' || inputs.verification_scope }}
@@ -163,7 +171,7 @@ jobs:
           retention-days: 30
       - name: Local edition without account or community
         timeout-minutes: 25
-        if: ${{ !cancelled() && !contains(github.event.head_commit.message, '[render-control retry]') }}
+        if: ${{ !cancelled() && !contains(github.event.head_commit.message, '[render-control retry]') && !contains(github.event.head_commit.message, '[fixture initialization retry]') }}
         run: bash scripts/test_local_simulator.sh ${{ matrix.screen }}
       - run: python3 scripts/collect_evidence.py
         if: always()

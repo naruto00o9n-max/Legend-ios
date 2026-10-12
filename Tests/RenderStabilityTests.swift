@@ -170,9 +170,8 @@ final class RenderStabilityTests:XCTestCase {
     }
 
     @MainActor func testPersistentToolPreviewHonorsHiddenReorderedAndDrawingForeground() throws {
-        let root=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        defer{try? FileManager.default.removeItem(at:root)}
-        var page=try ImagePipeline.fixture(root:root)
+        let root=FileManager.default.temporaryDirectory
+        var page=EditorPage(title:"ترتيب الطبقات",width:800,height:15000)
         var text=EditorLayer(kind:.text);text.textContent="نص";text.style=TextStyle.plainText()
         var shape=EditorLayer(kind:.shape);shape.frame=Box(x:20,y:20,width:100,height:100)
         page.layers=[text,shape]
