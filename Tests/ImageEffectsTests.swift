@@ -50,6 +50,19 @@ final class ImageEffectsTests:XCTestCase {
         }
         XCTAssertNil(provider.error);XCTAssertLessThanOrEqual(provider.largestRequestPixels,256*256)
     }
+    func testBlurModesAndEffectSpecificParametersActuallyChangePixels()throws{
+        let (page,_,root,raw)=try fixture();defer{try? FileManager.default.removeItem(at:root)}
+        let source=CIImage(cgImage:try XCTUnwrap(ImagePipeline.image(raw,width:page.width,height:page.height))),size=CGSize(width:page.width,height:page.height),rect=CGRect(origin:.zero,size:size),original=pixels(source,rect)
+        for mode in 0...4{var effect=ImageEffect(.blur);effect.parameter1=Double(mode);XCTAssertNotEqual(pixels(ImageEffectGraph.apply(source,effects:[effect],size:size),rect),original,"Blur mode \(mode)")}
+        for kind in [ImageEffectKind.chromatic,.slice,.fade,.halftone,.mirror,.vignette,.grain]{
+            var effect=ImageEffect(kind);let first=pixels(ImageEffectGraph.apply(source,effects:[effect],size:size),rect)
+            switch kind{case .mirror:effect.parameter1=1;case .vignette:effect.parameter1=0;case .grain:effect.parameter1=8;default:effect.angle=67}
+            XCTAssertNotEqual(pixels(ImageEffectGraph.apply(source,effects:[effect],size:size),rect),first,kind.rawValue)
+        }
+        var fade=ImageEffect(.fade);let first=pixels(ImageEffectGraph.apply(source,effects:[fade],size:size),rect);fade.parameter2=20
+        XCTAssertNotEqual(pixels(ImageEffectGraph.apply(source,effects:[fade],size:size),rect),first)
+    }
+
     func testStackOrderAndGlitchColorsAreActualRenderingInputs()throws{
         let (page,_,root,raw)=try fixture();defer{try? FileManager.default.removeItem(at:root)}
         let source=CIImage(cgImage:try XCTUnwrap(ImagePipeline.image(raw,width:page.width,height:page.height))),size=CGSize(width:page.width,height:page.height),rect=CGRect(origin:.zero,size:size)
@@ -102,6 +115,18 @@ final class ImageEffectsTests:XCTestCase {
         XCTAssertEqual(before.dataProvider?.data as Data?,after.dataProvider?.data as Data?,"Cropping must preserve global effect coordinates")
         let oldPath=try XCTUnwrap(model.active?.imagePath);await model.replaceBackground(dir.appendingPathComponent(page.source));XCTAssertNil(model.error)
         XCTAssertNotEqual(model.page.layers.first?.imagePath,oldPath);XCTAssertEqual(model.page.layers.first?.imageEffects?.first?.id,id);XCTAssertTrue(model.page.baseHidden==true)
+    }
+
+    func testWorkingImagePreservesWideGamutProfileWithoutEffects()throws{
+        var (page,dir,root,raw)=try fixture(width:64,height:64);defer{try? FileManager.default.removeItem(at:root)}
+        let space=try XCTUnwrap(CGColorSpace(name:CGColorSpace.displayP3))
+        let source=try XCTUnwrap(ImagePipeline.image(raw,width:64,height:64,colorSpace:space))
+        try XCTUnwrap(UIImage(cgImage:source).pngData()).write(to:dir.appendingPathComponent(page.source))
+        var layer=EditorLayer(kind:.image);layer.imagePath=page.source;layer.isWorkingImage=true;layer.imagePixelFile=page.raw;layer.imagePixelWidth=64;layer.imagePixelHeight=64;layer.frame=Box(x:0,y:0,width:64,height:64);page.layers=[layer];page.baseHidden=true
+        let rendered=try ImagePipeline.compositeRegion(page,directory:dir,rect:CGRect(x:0,y:0,width:64,height:64))
+        XCTAssertTrue(CFEqual(rendered.colorSpace,ImagePipeline.colorSpace(dir.appendingPathComponent(page.source))))
+        let output=try XCTUnwrap(rendered.dataProvider?.data) as Data
+        for y in 16..<48{for x in 16..<48{let index=(y*64+x)*4;for c in 0..<3{XCTAssertEqual(Double(output[index+c]),Double(raw[index+c]),accuracy:2,"Unchanged wide-gamut image must retain its RGB values")}}}
     }
 
     func testLongSourceUsesBoundedProviderRequests()throws{
