@@ -36,7 +36,8 @@ enum TextRaster {
             if let cached=baseCache.object(forKey:baseKey){result=cached}else{
             let mask=TextGlyphMask.image(layer,rect:rect,resolution:resolution,directory:directory)
             let glyph=UIGraphicsImageRenderer(size:size,format:format).image{_ in
-                mask.draw(at:CGPoint(x:pad,y:pad))
+                let glyphPad=TextGlyphMask.padding(layer.style)
+                mask.draw(at:CGPoint(x:pad-glyphPad,y:pad-glyphPad))
             }
             result=UIGraphicsImageRenderer(size:size,format:format).image{r in
                 let ctx=r.cgContext

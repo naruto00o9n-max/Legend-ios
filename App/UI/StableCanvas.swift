@@ -225,7 +225,10 @@ final class DocumentCanvas: UIView {
             strokeCommitRevision = pendingInk.map(\.revision).min()
             if let target = interactionRevision, revision >= target {
                 if interaction?.phase == .preparing { interaction?.reveal() }
-                else if interaction?.phase == .finishing { interaction?.remove(); interaction = nil }
+                else if interaction?.phase == .finishing {
+                    interaction?.remove();interaction=nil
+                    if editingText != nil{DispatchQueue.main.async{[weak self] in guard let self else{return};self.prepareTextEditing(self.editingText)}}
+                }
                 interactionRevision = nil
             }
             if let target=patchCommitRevision,revision>=target{showPatch(nil);patchCommitRevision=nil}
@@ -381,9 +384,14 @@ final class DocumentCanvas: UIView {
         guard id != nil || editingText != nil else{return}
         editingText=id
         if let interaction,interaction.selected==id,interaction.phase != .finishing{return}
-        if interaction != nil {
-            interaction?.remove();interaction=nil;interactionRevision=nil
-            if let page,let directory{update(page:page,directory:directory,selected:selected,zoom:zoom)}
+        if let interaction {
+            // Retain the old visible sprite until the complete tiled scene is ready.
+            // Switching selections must not flash an empty text layer.
+            if interaction.phase != .finishing{
+                interaction.phase = .finishing;interactionRevision=revision+1
+                if let page,let directory{update(page:page,directory:directory,selected:selected,zoom:zoom)}
+            }
+            return
         }
         if let id{_ = beginLayerInteraction(id)}
     }

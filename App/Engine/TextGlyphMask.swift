@@ -7,6 +7,7 @@ enum TextGlyphMask {
     private static let lock=NSLock()
     private static var builds=0
     static var buildCount:Int{lock.lock();defer{lock.unlock()};return builds}
+    static func padding(_ style:TextStyle)->CGFloat{min(128,max(8,ceil(CGFloat(style.fontSize)/2+CGFloat(abs(style.tashkeelOffset ?? 0))))) }
     static func image(_ layer:EditorLayer,rect:CGRect,resolution:CGFloat,directory:URL)->UIImage {
         var mask=layer
         let s=layer.style
@@ -22,12 +23,13 @@ enum TextGlyphMask {
         if let value=cache.object(forKey:key){return value}
         let format=UIGraphicsImageRendererFormat();format.scale=resolution
         format.opaque=false;format.preferredRange = .standard
-        let image=UIGraphicsImageRenderer(size:rect.size,format:format).image{_ in
-            LayerRenderer.attributed(mask,color:.white).draw(with:CGRect(origin:.zero,size:rect.size),options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)
+        let pad=padding(layer.style),size=CGSize(width:rect.width+pad*2,height:rect.height+pad*2)
+        let image=UIGraphicsImageRenderer(size:size,format:format).image{_ in
+            LayerRenderer.attributed(mask,color:.white).draw(with:CGRect(x:pad,y:pad,width:rect.width,height:rect.height),options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)
         }
         lock.lock();builds+=1;lock.unlock()
         cache.totalCostLimit=RenderBudget.textCacheBytes/2
-        cache.setObject(image,forKey:key,cost:Int(ceil(rect.width*resolution)*ceil(rect.height*resolution))*4)
+        cache.setObject(image,forKey:key,cost:Int(ceil(size.width*resolution)*ceil(size.height*resolution))*4)
         return image
     }
 }

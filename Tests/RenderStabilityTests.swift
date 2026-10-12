@@ -147,4 +147,14 @@ final class RenderStabilityTests:XCTestCase {
         try await Task.sleep(nanoseconds:150_000_000);XCTAssertEqual(view.presentedFrames,frames)
     }
 
+    func testCachedGlyphMaskKeepsItalicOverhangAndTashkeelOutsideLayoutBox(){
+        var layer=EditorLayer(kind:.text);layer.textContent="فَكّرْ Aa";layer.style=TextStyle.plainText(fontSize:64,boxWidth:240)
+        layer.style.isItalic=true;layer.style.tashkeelOffset=18
+        let rect=LayerRenderer.bounds(layer),resolution:CGFloat=2,pad=TextGlyphMask.padding(layer.style)
+        let mask=TextGlyphMask.image(layer,rect:rect,resolution:resolution,directory:FileManager.default.temporaryDirectory)
+        let f=UIGraphicsImageRendererFormat();f.scale=resolution;f.opaque=false;f.preferredRange = .standard
+        let reference=UIGraphicsImageRenderer(size:CGSize(width:rect.width+pad*2,height:rect.height+pad*2),format:f).image{_ in LayerRenderer.attributed(layer,color:.white).draw(with:rect.offsetBy(dx:pad,dy:pad),options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)}
+        XCTAssertEqual(mask.pngData(),reference.pngData(),"Caching must preserve accents and italic glyph overhang")
+    }
+
 }
