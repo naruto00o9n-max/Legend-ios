@@ -245,7 +245,7 @@ final class EditorUITests:XCTestCase {
         for _ in 0..<5{toggle.tap();if toggle.value as? String == "0"{toggle.coordinate(withNormalizedOffset:CGVector(dx:0.08,dy:0.5)).tap()};XCTAssertEqual(toggle.value as? String,"1");toggle.tap();XCTAssertEqual(toggle.value as? String,"0")}
         app.buttons["text-inspector-close"].tap();reveal(app.buttons["panel-effects"],in:app.scrollViews["panel-strip"]);app.buttons["panel-effects"].tap()
         let glitch=app.buttons["effect-card-glitch"];revealVertical(glitch,in:app.scrollViews["text-inspector-scroll"]);glitch.tap();XCTAssertTrue(app.textFields["value-ارتفاع الشرائح"].exists)
-        let none=app.buttons["effect-card-none"];revealVertical(none,in:app.scrollViews["text-inspector-scroll"]);none.tap();capture("performance-effect-cards");app.buttons["text-inspector-close"].tap();XCTAssertTrue(app.buttons["export"].exists)
+        revealVertical(app.buttons["effect-catalog"],in:app.scrollViews["text-inspector-scroll"]);app.buttons["effect-catalog"].tap();let none=app.buttons["effect-card-none"];revealVertical(none,in:app.scrollViews["text-inspector-scroll"]);none.tap();capture("performance-effect-cards");app.buttons["text-inspector-close"].tap();XCTAssertTrue(app.buttons["export"].exists)
     }
 
 }

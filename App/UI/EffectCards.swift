@@ -2,9 +2,16 @@ import SwiftUI
 
 struct EffectCards:View {
     @ObservedObject var model:EditorModel
-    var body:some View{LazyVGrid(columns:[GridItem(.adaptive(minimum:130),spacing:10)],spacing:10){ForEach(TextEffect.allCases,id:\.self){effect in
-        Button{model.checkpoint();model.change{$0.style.effectType=effect;if effect.isStyle && $0.style.styleEffect==nil{$0.style.styleEffect=StyleEffectSettings()}}}label:{VStack(alignment:.leading,spacing:8){EffectCardPreview(effect:effect).frame(height:78).clipped().clipShape(RoundedRectangle(cornerRadius:10));HStack{Text(effect.title).font(.system(size:11,weight:.medium)).lineLimit(2);Spacer(minLength:2);if model.active?.style.effectType==effect{Image(systemName:"checkmark.circle.fill").foregroundStyle(Palette.gold)}}.frame(minHeight:28)}.padding(10).glass(16).overlay{RoundedRectangle(cornerRadius:16).stroke(model.active?.style.effectType==effect ? Palette.gold.opacity(0.7):.clear,lineWidth:1)}}.buttonStyle(.plain).accessibilityIdentifier("effect-card-"+effect.rawValue)
-    }}}
+    @State private var expanded=true
+    var selected:TextEffect{model.active?.style.effectType ?? .none}
+    var body:some View{VStack(alignment:.leading,spacing:12){
+        if !expanded{HStack(spacing:12){EffectCardPreview(effect:selected).frame(width:104,height:62).clipShape(RoundedRectangle(cornerRadius:10));VStack(alignment:.leading,spacing:8){Text(selected.title).font(.system(size:13,weight:.semibold));Button{expanded=true}label:{Label("تغيير التأثير",systemImage:"square.grid.2x2")}.font(.system(size:11)).accessibilityIdentifier("effect-catalog")};Spacer(minLength:0)}.padding(10).glass(16)}else{
+            LazyVGrid(columns:[GridItem(.adaptive(minimum:130),spacing:10)],spacing:10){ForEach(TextEffect.allCases,id:\.self){effect in
+                Button{model.checkpoint();model.change{$0.style.effectType=effect;if effect.isStyle && $0.style.styleEffect==nil{$0.style.styleEffect=StyleEffectSettings()}};expanded=false}label:{VStack(alignment:.leading,spacing:8){EffectCardPreview(effect:effect).frame(height:78).clipped().clipShape(RoundedRectangle(cornerRadius:10));HStack{Text(effect.title).font(.system(size:11,weight:.medium)).lineLimit(2);Spacer(minLength:2);if selected==effect{Image(systemName:"checkmark.circle.fill").foregroundStyle(Palette.gold)}}.frame(minHeight:28)}.padding(10).glass(16).overlay{RoundedRectangle(cornerRadius:16).stroke(selected==effect ? Palette.gold.opacity(0.7):.clear,lineWidth:1)}}.buttonStyle(.plain).accessibilityIdentifier("effect-card-"+effect.rawValue)
+            }}
+        }
+    }.onAppear{expanded=selected == .none}}
+
 }
 private struct EffectCardPreview:View {
     let effect:TextEffect
