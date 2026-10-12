@@ -77,6 +77,33 @@ final class ImageEffectsTests:XCTestCase {
         XCTAssertEqual(try Data(contentsOf:dir.appendingPathComponent(page.raw)),Data(raw));model.save()
         let reopened=try JSONDecoder().decode(EditorPage.self,from:Data(contentsOf:dir.appendingPathComponent("page.json")));XCTAssertEqual(reopened.layers,model.page.layers)
     }
+    func testEveryEffectExportsAllBandsAndRetainsOriginalDimensions()throws{
+        var (page,dir,root,_)=try fixture(width:96,height:540);defer{try? FileManager.default.removeItem(at:root)}
+        let original=try Data(contentsOf:dir.appendingPathComponent(page.source))
+        var layer=EditorLayer(kind:.image);layer.imagePath=page.source;layer.isWorkingImage=true;layer.imagePixelFile=page.raw;layer.imagePixelWidth=page.width;layer.imagePixelHeight=page.height;layer.frame=Box(x:0,y:0,width:Double(page.width),height:Double(page.height));page.baseHidden=true
+        for kind in ImageEffectKind.allCases{
+            layer.imageEffects=[ImageEffect(kind)];page.layers=[layer]
+            let whole=try ImagePipeline.compositeRegion(page,directory:dir,rect:CGRect(x:0,y:0,width:page.width,height:page.height))
+            let expected=try XCTUnwrap(whole.dataProvider?.data) as Data
+            let output=try ImagePipeline.exportPNG(page,directory:dir),decoded=dir.appendingPathComponent("effect-export.rgba");defer{try? FileManager.default.removeItem(at:output)}
+            var w:Int32=0,h:Int32=0,error=[CChar](repeating:0,count:512)
+            XCTAssertEqual(LIImportPNG(output.path,decoded.path,&w,&h,&error,error.count),1);XCTAssertEqual(Int(w),page.width);XCTAssertEqual(Int(h),page.height)
+            XCTAssertEqual(try Data(contentsOf:decoded),expected,"PNG bands must equal the full-resolution compositor: \(kind.rawValue)")
+        }
+        XCTAssertEqual(try Data(contentsOf:dir.appendingPathComponent(page.source)),original)
+    }
+    @MainActor func testImageEffectsRemainEditableAfterSplitAndBackgroundReplacement()async throws{
+        let (page,dir,root,_)=try fixture(width:96,height:540);defer{try? FileManager.default.removeItem(at:root)}
+        let library=LibraryStore(root:root);library.add(page,parent:nil);let model=EditorModel(page:page,library:library);await model.openImageEffects();let id=try XCTUnwrap(model.addImageEffect(.vignette))
+        let cropped=try PageOperations.cropped(model.page,rect:CGRect(x:0,y:200,width:96,height:200),root:root)
+        XCTAssertEqual(cropped.layers.first?.imageEffects?.first?.id,id)
+        let before=try ImagePipeline.compositeRegion(model.page,directory:dir,rect:CGRect(x:0,y:200,width:96,height:200))
+        let after=try ImagePipeline.compositeRegion(cropped,directory:root.appendingPathComponent(cropped.id.uuidString),rect:CGRect(x:0,y:0,width:96,height:200))
+        XCTAssertEqual(before.dataProvider?.data as Data?,after.dataProvider?.data as Data?,"Cropping must preserve global effect coordinates")
+        let oldPath=try XCTUnwrap(model.active?.imagePath);await model.replaceBackground(dir.appendingPathComponent(page.source));XCTAssertNil(model.error)
+        XCTAssertNotEqual(model.page.layers.first?.imagePath,oldPath);XCTAssertEqual(model.page.layers.first?.imageEffects?.first?.id,id);XCTAssertTrue(model.page.baseHidden==true)
+    }
+
     func testLongSourceUsesBoundedProviderRequests()throws{
         let (page,dir,root,raw)=try fixture(width:800,height:15000);defer{try? FileManager.default.removeItem(at:root)}
         let provider=ImagePixelProvider(url:dir.appendingPathComponent(page.raw),width:800,height:15000,colorSpace:CGColorSpace(name:CGColorSpace.sRGB)!)

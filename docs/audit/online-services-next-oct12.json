@@ -1,0 +1,133 @@
+{
+  "date": "2026-10-12",
+  "authorization": "Finish current image-effects work first; next add Android online-service features only to connected edition; exclude community. Confirmed in user clarification.",
+  "status": "queued_after_image_effects_validation",
+  "excluded": [
+    "F126",
+    "F127",
+    "F128",
+    "F129",
+    "F130",
+    "F131",
+    "F132"
+  ],
+  "edition": "com.cookies.editor.ios",
+  "constraints": [
+    "No account/community/service configuration in com.cookies.editor.local",
+    "Normal original public/authenticated APIs only; no administrator credentials or entitlement changes",
+    "Complete integration, save/reopen/error recovery and reachable UI before marking complete",
+    "Do not replace real server features with fabricated points, subscriptions or local placeholders"
+  ],
+  "inventory": [
+    {
+      "id": "F003",
+      "group": "الحساب والبداية",
+      "feature": "إنشاء الحساب والتأكيد وإعادة إرسال التأكيد",
+      "original_evidence": "/auth/v1/signup وresend؛ رسالة الاختبار وصلت",
+      "current_status": "جزئي",
+      "ios_evidence": "AccountView; ReferenceService signup/resend",
+      "remaining": "واجهات إنشاء الحساب والتأكيد وإعادة الإرسال موجودة؛ وصول كل رسالة والتحقق الكامل على جهاز فعلي غير مثبتين لهذه الدفعة.",
+      "review_basis": "قراءة المصدر الحالي؛ الاختبار المحدد إن ذكر، لا تحقق جهاز فعلي شامل"
+    },
+    {
+      "id": "F004",
+      "group": "الحساب والبداية",
+      "feature": "الدخول باستخدام Google والعودة إلى التطبيق",
+      "original_evidence": "العميل الأصلي يستخدم Google ID token؛ صورة المستخدم localhost",
+      "current_status": "اعتماد خادم",
+      "ios_evidence": "ReferenceService.google؛ web PKCE",
+      "remaining": "لم يثبت نجاح Google؛ قبول cookies-editor://auth/callback أو تسجيل عميل iOS رسمي مطلوب",
+      "review_basis": "قراءة المصدر الحالي؛ الاختبار المحدد إن ذكر، لا تحقق جهاز فعلي شامل"
+    },
+    {
+      "id": "F006",
+      "group": "الحساب والبداية",
+      "feature": "ربط Discord وعرض الحساب المرتبط",
+      "original_evidence": "dialog_discord_link؛ dashboard؛ strings discord",
+      "current_status": "ناقص",
+      "ios_evidence": "—",
+      "remaining": "واجهة الربط والعودة والتحقق من الحساب غير موجودة",
+      "review_basis": "قراءة المصدر الحالي؛ الاختبار المحدد إن ذكر، لا تحقق جهاز فعلي شامل"
+    },
+    {
+      "id": "F042",
+      "group": "التايبر والقنص",
+      "feature": "ذخيرة القنص وربط الاستحقاقات والحساب",
+      "original_evidence": "Prefs sniper_ammo؛ typer/w.java deductions",
+      "current_status": "اعتماد خادم",
+      "ios_evidence": "ReferenceService entitlements",
+      "remaining": "لا تُغيّر ذخيرة أو نقاط الخادم؛ الأدوات المحلية مجانية.",
+      "review_basis": "الجرد التفصيلي المحدث للمحرر"
+    },
+    {
+      "id": "F133",
+      "group": "المجتمع والملف",
+      "feature": "ملف شخصي: الاسم والصورة والعضوية والنقاط والفقاعات",
+      "original_evidence": "dashboard profile stats؛ vw_user_profiles",
+      "current_status": "جزئي",
+      "ios_evidence": "ProfileView; ReferenceService user profile/stats",
+      "remaining": "عرض هوية وإحصاءات وحساب موجود؛ تحرير الاسم/الصورة وكل أقسام ملف الأصل غير موجودة.",
+      "review_basis": "قراءة المصدر الحالي؛ الاختبار المحدد إن ذكر، لا تحقق جهاز فعلي شامل"
+    },
+    {
+      "id": "F134",
+      "group": "المجتمع والملف",
+      "feature": "قائمة المتصدرين والموسم والإحصاءات",
+      "original_evidence": "LeaderboardScreenKt؛ leaderboard_title؛ season_bubbles",
+      "current_status": "ناقص",
+      "ios_evidence": "No leaderboard/rewards UI in App",
+      "remaining": "المتصدرون والموسم والمكافآت اليومية/المواظبة/الدعوات غير منفذة؛ ما يموله الخادم يحتاج واجهاته واستحقاقاته الرسمية.",
+      "review_basis": "قراءة المصدر الحالي؛ الاختبار المحدد إن ذكر، لا تحقق جهاز فعلي شامل"
+    },
+    {
+      "id": "F135",
+      "group": "المجتمع والملف",
+      "feature": "المكافآت اليومية/المواظبة/الدعوات",
+      "original_evidence": "DailyRewardsScreenKt؛ InviteScreenKt؛ لقطة Rewards05",
+      "current_status": "ناقص",
+      "ios_evidence": "No leaderboard/rewards UI in App",
+      "remaining": "المتصدرون والموسم والمكافآت اليومية/المواظبة/الدعوات غير منفذة؛ ما يموله الخادم يحتاج واجهاته واستحقاقاته الرسمية.",
+      "review_basis": "قراءة المصدر الحالي؛ الاختبار المحدد إن ذكر، لا تحقق جهاز فعلي شامل"
+    },
+    {
+      "id": "F136",
+      "group": "المجتمع والملف",
+      "feature": "متجر نقاط/ثيمات/أدوات/اشتراكات/فرق/إعلانات",
+      "original_evidence": "StoreActivity؛ StoreScreenKt؛ Store schema",
+      "current_status": "اعتماد خادم",
+      "ios_evidence": "—",
+      "remaining": "واجهة المتجر وإثبات مشتريات iOS/الاشتراك وربط الفريق بالخدمة",
+      "review_basis": "قراءة المصدر الحالي؛ الاختبار المحدد إن ذكر، لا تحقق جهاز فعلي شامل"
+    },
+    {
+      "id": "F137",
+      "group": "السحابة والإشعارات",
+      "feature": "مشاريع سحابية رفع/عرض/تنزيل/حذف/حدود التخزين",
+      "original_evidence": "dialog_cloud_manager؛ ProjectsActivity loadProjectFromDrive",
+      "current_status": "اعتماد خادم",
+      "ios_evidence": "—",
+      "remaining": "توافق مشروع وحساب Drive ونطاق صلاحيات وسياسة مزامنة",
+      "review_basis": "قراءة المصدر الحالي؛ الاختبار المحدد إن ذكر، لا تحقق جهاز فعلي شامل"
+    },
+    {
+      "id": "F138",
+      "group": "السحابة والإشعارات",
+      "feature": "مزامنة الإعدادات والوسوم/الخطوط/الأنماط",
+      "original_evidence": "pushSettingsToCloud؛ AUTO_SYNC_FONTS/STYLES",
+      "current_status": "اعتماد خادم",
+      "ios_evidence": "كل التفضيلات محلية",
+      "remaining": "فهم شكل البيانات والتعارض وسجل آخر مزامنة والإلغاء",
+      "review_basis": "قراءة المصدر الحالي؛ الاختبار المحدد إن ذكر، لا تحقق جهاز فعلي شامل"
+    },
+    {
+      "id": "F139",
+      "group": "السحابة والإشعارات",
+      "feature": "إشعارات FCM/أحداث الخدمة وتنزيلات الخلفية",
+      "original_evidence": "Manifest FirebaseMessagingService؛ download service",
+      "current_status": "اعتماد خادم",
+      "ios_evidence": "—",
+      "remaining": "APNs/FCM iOS وتهيئة Backend وتوقيع/Entitlements",
+      "review_basis": "قراءة المصدر الحالي؛ الاختبار المحدد إن ذكر، لا تحقق جهاز فعلي شامل"
+    }
+  ]
+}

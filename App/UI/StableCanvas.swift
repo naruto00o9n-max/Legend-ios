@@ -82,7 +82,7 @@ final class DocumentCanvas: UIView {
             DispatchQueue.main.async{[weak self] in guard let self else{return};self.inkRendering=false
                 if self.inkGeneration==generation{
                     if let failure{self.onRenderError?(failure)}
-                    if let image,!(self.softwareCommitRevision.map{self.revision >= $0 && self.visibleTilesReady} ?? false){self.showPatch(image,rect:input.2);if self.imageToolPreview{self.imagePresentedFrames+=1};if let target=self.softwareCommitRevision{self.patchCommitRevision=target}}
+                    if let image,!(self.softwareCommitRevision.map{self.revision >= $0 && self.visibleTilesReady} ?? false){if self.imageToolPreview{self.interaction?.remove();self.interaction=nil;self.interactionRevision=nil;self.editingText=nil;self.imagePresentedFrames+=1};self.showPatch(image,rect:input.2);if let target=self.softwareCommitRevision{self.patchCommitRevision=target}}
                     self.renderLatestInk()
                 }else{self.renderLatestInk()}
             }

@@ -1,4 +1,6 @@
 import SwiftUI
+import UIKit
+import CoreImage
 
 struct ImageEffectsPanel:View {
     @ObservedObject var model:EditorModel
@@ -8,7 +10,7 @@ struct ImageEffectsPanel:View {
     var body:some View {
         VStack(spacing:0){
             HStack(spacing:12){Image(systemName:"photo.stack").foregroundStyle(Palette.gold);VStack(alignment:.leading,spacing:3){Text("تأثيرات الصورة").font(.system(size:16,weight:.semibold));Text(model.active?.name ?? "الصورة").font(.system(size:11)).foregroundStyle(Palette.secondary)};Spacer();IconButton(icon:"checkmark",title:"تم"){model.imageEffectsOpen=false;model.save()}.accessibilityIdentifier("image-effects-close")}.padding(16)
-            HStack(spacing:10){Button{catalog=true}label:{Label("المكتبة",systemImage:"square.grid.2x2")}.buttonStyle(CapsuleActionStyle(selected:catalog)).accessibilityIdentifier("image-effects-library");Button{catalog=false}label:{Label("التأثيرات · \(effects.count)",systemImage:"square.3.layers.3d")}.buttonStyle(CapsuleActionStyle(selected:!catalog)).accessibilityIdentifier("image-effects-stack");Spacer();Button{model.clearImageEffects();focused=nil;catalog=true}label:{Label("الأصل",systemImage:"arrow.uturn.backward")}.disabled(effects.isEmpty).accessibilityIdentifier("image-effects-original")}.font(.system(size:12)).padding(.horizontal,16).padding(.bottom,12)
+            HStack(spacing:10){Button{catalog=true}label:{Label("المكتبة",systemImage:"square.grid.2x2")}.buttonStyle(CapsuleActionStyle(selected:catalog)).accessibilityIdentifier("image-effects-library");Button{catalog=false}label:{Label("التأثيرات · \(effects.count)",systemImage:"square.3.layers.3d")}.buttonStyle(CapsuleActionStyle(selected:!catalog)).accessibilityIdentifier("image-effects-stack");Spacer();Button{model.clearImageEffects();focused=nil;catalog=true}label:{Label("الأصل",systemImage:"arrow.uturn.backward")}.disabled(effects.isEmpty || model.active?.isLocked==true).accessibilityIdentifier("image-effects-original")}.font(.system(size:12)).padding(.horizontal,16).padding(.bottom,12)
             ScrollView{LazyVStack(alignment:.leading,spacing:14){
                 if catalog{LazyVGrid(columns:[GridItem(.adaptive(minimum:125),spacing:12)],spacing:12){ForEach(ImageEffectKind.allCases){kind in Button{focused=model.addImageEffect(kind);catalog=false}label:{VStack(alignment:.leading,spacing:8){ImageEffectThumbnail(kind:kind).frame(height:68).clipShape(RoundedRectangle(cornerRadius:12));Label(kind.title,systemImage:kind.icon).font(.system(size:11,weight:.medium)).lineLimit(1)}.padding(10).glass(16)}.buttonStyle(.plain).disabled(model.active?.isLocked==true).accessibilityIdentifier("image-effect-card-"+kind.rawValue)}}}
                 else if effects.isEmpty{VStack(spacing:12){Image(systemName:"photo.on.rectangle.angled").font(.system(size:28));Text("صورتك دون تأثيرات").font(.system(size:15,weight:.semibold));Text("اختر تأثيرًا من المكتبة؛ يبقى الأصل محفوظًا.").font(.system(size:12)).foregroundStyle(Palette.secondary);Button("فتح المكتبة"){catalog=true}.buttonStyle(GoldButtonStyle())}.frame(maxWidth:.infinity).padding(18).glass(20)}
@@ -21,7 +23,7 @@ struct ImageEffectsPanel:View {
                 }}
                 Text("التأثيرات تُطبّق بالترتيب المعروض وتُحفظ مع المشروع. أثناء السحب تظهر معاينة خفيفة، ثم تعود الدقة الكاملة عند الاستقرار.").font(.system(size:11)).foregroundStyle(Palette.secondary).lineSpacing(4)
             }.padding(.horizontal,16).padding(.bottom,24)}.accessibilityIdentifier("image-effects-scroll")
-        }.foregroundStyle(Palette.pale).glass(26).onAppear{model.checkpoint();focused=effects.last?.id;catalog=effects.isEmpty}.onChange(of:model.selected){_,_ in focused=effects.last?.id;catalog=effects.isEmpty}.onDisappear{model.imageEffectsOpen=false;model.setContinuousEditing(false);model.save()}.environment(\.editorSliderEditing,{model.setContinuousEditing($0)})
+        }.foregroundStyle(Palette.pale).glass(26).onAppear{model.checkpoint();focused=effects.last?.id;catalog=effects.isEmpty}.onChange(of:model.selected){_,_ in focused=effects.last?.id;catalog=effects.isEmpty}.onDisappear{model.imageEffectsOpen=false;model.setContinuousEditing(false);model.save()}.environment(\.editorSliderEditing,{if $0{model.checkpoint()};model.setContinuousEditing($0)})
     }
 }
 private struct ImageEffectControls:View {
@@ -34,7 +36,7 @@ private struct ImageEffectControls:View {
     var body:some View{VStack(spacing:12){
         if effect.kind == .blur{Picker("نوع التمويه",selection:Binding(get:{Int(effect.parameter1)},set:{v in model.editImageEffect(id){$0.parameter1=Double(v)}})){ForEach(Array(["ناعم","صلب","تكبير","دوران","حركة"].enumerated()),id:\.offset){i,name in Text(name).tag(i)}}.pickerStyle(.menu).accessibilityIdentifier("image-blur-mode")}
         if effect.kind != .duotone{knob(effect.kind.intensityLabel,\.intensity,effect.kind.range)}
-        if [.chromatic,.slice,.fade,.halftone].contains(effect.kind) || (effect.kind == .blur && effect.parameter1>=2){knob("الزاوية",\.angle,effect.kind == .halftone ? 0...90:0...360)}
+        if [.chromatic,.slice,.fade,.halftone].contains(effect.kind) || (effect.kind == .blur && effect.parameter1==4){knob("الزاوية",\.angle,effect.kind == .halftone ? 0...90:0...360)}
         if effect.kind == .vignette{knob("المنطقة الداخلية",\.parameter1,0...100)}
         if effect.kind == .grain{knob("حجم الحبيبات",\.parameter1,1...10)}
         if effect.kind == .fade{knob("جزيئات التلاشي",\.parameter2,0...100)}

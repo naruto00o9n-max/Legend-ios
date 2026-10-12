@@ -23,6 +23,7 @@ enum PSDWriter {
             var copy=layer;copy.isVisible=true;copy.opacity=1;copy.blend = .normal
             for y in stride(from:0,to:Int(rect.height),by:256){let rows=min(256,Int(rect.height)-y);var bytes=[UInt8](repeating:0,count:Int(rect.width)*rows*4)
                 let ok=bytes.withUnsafeMutableBytes{buffer->Bool in guard let ctx=CGContext(data:buffer.baseAddress,width:Int(rect.width),height:rows,bitsPerComponent:8,bytesPerRow:Int(rect.width)*4,space:documentSpace,bitmapInfo:CGImageAlphaInfo.premultipliedLast.rawValue) else{return false};ctx.translateBy(x:-rect.minX,y:CGFloat(rows)+rect.minY+CGFloat(y));ctx.scaleBy(x:1,y:-1);LayerRenderer.draw([copy],in:ctx,directory:directory);return true}
+                if let error=ImageLayerRenderer.takeError(){throw ImageFailure.message(error)}
                 guard ok else{throw ImageFailure.message("تعذر رسم طبقة PSD")}
                 for offset in stride(from:0,to:bytes.count,by:4){let alpha=Int(bytes[offset+3]);if alpha>0{for channel in 0..<3{bytes[offset+channel]=UInt8(min(255,(Int(bytes[offset+channel])*255+alpha/2)/alpha))}}}
                 try file.write(contentsOf:Data(bytes))

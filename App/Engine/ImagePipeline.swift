@@ -73,6 +73,7 @@ enum ImagePipeline {
         let preview=UIGraphicsImageRenderer(size:CGSize(width:cg.width,height:cg.height),format:format).image{renderer in
             if page.baseHidden != true{UIImage(cgImage:cg).draw(in:CGRect(x:0,y:0,width:cg.width,height:cg.height))};renderer.cgContext.scaleBy(x:1/CGFloat(sample),y:1/CGFloat(sample));LayerRenderer.draw(page.layers,in:renderer.cgContext,directory:directory)
         }
+        if let error=ImageLayerRenderer.takeError(){throw ImageFailure.message(error)}
         try preview.pngData()?.write(to:directory.appendingPathComponent("thumbnail.png"),options:.atomic)
     }
     static func thumbnail(_ source:URL,to output:URL) {

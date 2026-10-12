@@ -2,10 +2,16 @@ import UIKit
 import CoreImage
 
 enum ImageLayerRenderer {
-    private static let context=CIContext(options:[.cacheIntermediates:false,.workingColorSpace:CGColorSpace(name:CGColorSpace.sRGB)!])
+    private static let contexts=NSCache<ImageContextKey,CIContext>()
+    private static func context(_ space:CGColorSpace)->CIContext {
+        let key=ImageContextKey(space)
+        if let hit=contexts.object(forKey:key){return hit}
+        let value=CIContext(options:[.cacheIntermediates:false,.workingColorSpace:space,.outputColorSpace:space])
+        contexts.countLimit=3;contexts.setObject(value,forKey:key);return value
+    }
     private static let cache=NSCache<ImageRasterKey,CGImage>()
     private static let errorKey="cookies.image.render-error"
-    static func clear(){cache.removeAllObjects()}
+    static func clear(){cache.removeAllObjects();contexts.removeAllObjects();ImageAssetPixels.clear()}
     static func takeError()->String?{let value=Thread.current.threadDictionary[errorKey] as? String;Thread.current.threadDictionary.removeObject(forKey:errorKey);return value}
     static func draw(_ layer:EditorLayer,rect:CGRect,in c:CGContext,directory:URL){
         guard rect.width>0,rect.height>0 else{return}
@@ -25,7 +31,7 @@ enum ImageLayerRenderer {
                 guard ImageEffectGraph.kernelsAvailable else{throw ImageFailure.message("تعذر تشغيل محرك تأثيرات الصورة")}
                 let graph=ImageEffectGraph.apply(provider.image,effects:layer.effectiveImageEffects,size:CGSize(width:provider.width,height:provider.height))
                 let reduction=CGAffineTransform(scaleX:scale,y:scale)
-                guard let rendered=context.createCGImage(graph.transformed(by:reduction),from:sourceRect.applying(reduction)),provider.error==nil else{throw ImageFailure.message(provider.error ?? "تعذر تجهيز تأثير الصورة")}
+                guard let rendered=context(provider.colorSpace).createCGImage(graph.transformed(by:reduction),from:sourceRect.applying(reduction),format:.RGBA8,colorSpace:provider.colorSpace),provider.error==nil else{throw ImageFailure.message(provider.error ?? "تعذر تجهيز تأثير الصورة")}
                 image=rendered;cache.totalCostLimit=RenderBudget.textCacheBytes/2;cache.setObject(image,forKey:key,cost:image.width*image.height*4)
             }
             let destination=CGRect(x:rect.minX+sourceRect.minX/sx,y:rect.minY+(CGFloat(provider.height)-sourceRect.maxY)/sy,width:sourceRect.width/sx,height:sourceRect.height/sy)
@@ -43,4 +49,11 @@ private final class ImageRasterKey:NSObject {
     }
     override var hash:Int{value}
     override func isEqual(_ object:Any?)->Bool{guard let other=object as? ImageRasterKey else{return false};return layer==other.layer && source==other.source && area==other.area && scale==other.scale && tier==other.tier}
+}
+
+private final class ImageContextKey:NSObject {
+    let space:CGColorSpace
+    init(_ space:CGColorSpace){self.space=space}
+    override var hash:Int{Int(bitPattern:CFHash(space))}
+    override func isEqual(_ object:Any?)->Bool{guard let other=object as? ImageContextKey else{return false};return CFEqual(space,other.space)}
 }

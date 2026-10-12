@@ -4,7 +4,7 @@ extension EditorModel {
     func openImageEffects() async {
         guard !busy else{return}
         if let active,active.kind == .image {guard !active.isLocked else{return};imageEffectsOpen=true;return}
-        if let existing=page.layers.first(where:{$0.isWorkingImage==true && $0.isVisible}){selected=existing.id;tool = .move;imageEffectsOpen=true;return}
+        if let existing=page.layers.first(where:{$0.isWorkingImage==true && $0.isVisible}){guard !existing.isLocked else{error="افتح قفل طبقة صورة العمل لتعديل التأثيرات";return};selected=existing.id;tool = .move;imageEffectsOpen=true;return}
         busy=true;defer{busy=false}
         let before=page,directory=self.directory,name="working-\(UUID().uuidString).png"
         do {
