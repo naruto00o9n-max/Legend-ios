@@ -54,8 +54,20 @@ final class RenderStabilityTests:XCTestCase {
             layer.style.effectType=effect;var settings=StyleEffectSettings();settings.color="E09010";settings.radius=6;settings.softness=2;settings.depth=14;layer.style.styleEffect=settings
             let output=render(layer);XCTAssertNotEqual(output,original,effect.rawValue)
             let reopened=try JSONDecoder().decode(EditorLayer.self,from:JSONEncoder().encode(layer));XCTAssertEqual(reopened,layer);XCTAssertEqual(render(reopened),output,effect.rawValue)
+            if effect.isStyle{layer.style.styleEffect?.opacity=0;XCTAssertEqual(render(layer),original,"Zero effect opacity must restore the original glyph fill: \(effect.rawValue)")}
             layer.style.effectType = .none;XCTAssertEqual(render(layer),original,"Removing \(effect.rawValue) must preserve text, font, and fill")
         }
     }
+
+    func testBrushCullingKeepsSoftNeonAndFilledShapeExtents(){
+        let clip=CGRect(x:0,y:0,width:100,height:100)
+        var stroke=Stroke(points:[Point(x:500,y:500)],width:20,color:"000000")
+        XCTAssertFalse(BrushRenderer.visible(stroke,in:clip));stroke.brush="texture";XCTAssertTrue(BrushRenderer.visible(stroke,in:clip))
+        stroke.brush="neon";stroke.points=[Point(x:150,y:50)];XCTAssertTrue(BrushRenderer.visible(stroke,in:clip))
+        stroke.brush="soft";stroke.points=[Point(x:105,y:50)];XCTAssertTrue(BrushRenderer.visible(stroke,in:clip))
+        stroke.shape="rectangle";stroke.filled=true;stroke.points=[Point(x:-100,y:-100),Point(x:200,y:200)];XCTAssertTrue(BrushRenderer.visible(stroke,in:clip))
+    }
+
+    func testStainedGlassProceduralKernelCompilesOnTheNativeRuntime(){XCTAssertTrue(StyleEffectRenderer.glassKernelAvailable)}
 
 }

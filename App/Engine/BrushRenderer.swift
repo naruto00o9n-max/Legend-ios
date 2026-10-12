@@ -10,8 +10,18 @@ enum BrushRenderer {
         path.lineWidth=CGFloat(s.width);path.lineCapStyle=s.brush=="marker" ? .square:.round;path.lineJoinStyle = .round
         return path
     }
+    static func visible(_ s:Stroke,in clip:CGRect)->Bool {
+        guard !s.points.isEmpty else{return false}
+        // A texture can have an arbitrary aspect ratio; its stamp extents are
+        // not inferred from brush width, so this fast rejection does not apply.
+        guard s.brush != "texture" else{return true}
+        var minX=Double.infinity,minY=Double.infinity,maxX = -Double.infinity,maxY = -Double.infinity
+        for point in s.points{minX=min(minX,point.x);minY=min(minY,point.y);maxX=max(maxX,point.x);maxY=max(maxY,point.y)}
+        let margin=max(2,abs(s.width)*(s.brush == "neon" ? 4:0.75)+2)
+        return CGRect(x:minX-margin,y:minY-margin,width:maxX-minX+margin*2,height:maxY-minY+margin*2).intersects(clip)
+    }
     static func draw(_ s:Stroke,in ctx:CGContext,directory:URL){
-        guard let first=s.points.first else{return};ctx.saveGState();defer{ctx.restoreGState()}
+        guard let first=s.points.first,visible(s,in:ctx.boundingBoxOfClipPath) else{return};ctx.saveGState();defer{ctx.restoreGState()}
         let path=path(s),alpha=min(1,max(0,s.opacity ?? 1))*(s.brush=="water" ? 0.25:s.brush=="marker" ? 0.55:1)
         ctx.setAlpha(CGFloat(alpha));if s.erase{ctx.setBlendMode(.clear)}
         UIColor(hex:s.color).setStroke();UIColor(hex:s.color).setFill()

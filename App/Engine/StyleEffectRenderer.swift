@@ -4,7 +4,18 @@ import CoreImage
 /// Glyph-local, nondestructive style filters. Inputs and intermediate extents
 /// stay bounded to the text raster; source images are never modified.
 enum StyleEffectRenderer {
+    // Nine neighbouring Voronoi sites, unrolled once when the kernel is built.
+    // No per-cell UIKit loop or chapter-sized procedural texture is allocated.
+    private static let glassKernel:CIColorKernel? = {
+        var source="kernel vec4 cookiesGlass(vec2 origin, float cell, float border, float seed, float saturation, vec4 edgeColor) { vec2 p=(destCoord()-origin)/cell; vec2 tile=floor(p); vec2 f=fract(p); float nearest=100.0; float second=100.0; vec2 winner=tile;"
+        for y in -1...1{for x in -1...1{source+="{ vec2 n=tile+vec2(\(x).0,\(y).0); vec2 h=fract(sin(vec2(dot(n,vec2(127.1,311.7)),dot(n,vec2(269.5,183.3)))+seed)*43758.5453); float d=length(vec2(\(x).0,\(y).0)+vec2(0.15)+h*0.7-f); if(d<nearest){second=nearest;nearest=d;winner=n;}else if(d<second){second=d;} }"}}
+        source+="float hue=fract(sin(dot(winner,vec2(127.1,311.7))+seed)*43758.5453); vec3 q=abs(fract(vec3(hue)+vec3(0.0,0.6666667,0.3333333))*6.0-3.0); vec3 rgb=0.9*mix(vec3(1.0),clamp(q-1.0,0.0,1.0),saturation); return (second-nearest)*cell<border ? edgeColor:vec4(rgb,1.0); }"
+        return CIColorKernel(source:source)
+    }()
+
+    static var glassKernelAvailable:Bool{glassKernel != nil}
     static func apply(_ input:CIImage,mask:CIImage,effect:TextEffect,settings:StyleEffectSettings,scale:CGFloat)->CIImage {
+        guard settings.opacity>0 else{return input}
         let extent=input.extent
         let radius=max(0,min(80,settings.radius))*Double(scale),softness=max(0,min(60,settings.softness))*Double(scale)
         let opacity=max(0,min(1,settings.opacity)),theta=settings.angle*Double.pi/180
@@ -65,16 +76,12 @@ enum StyleEffectRenderer {
             return over(input,blur(rays,softness))
         case .stainedGlass:
             let cell=max(4,min(160,settings.cellSize))*Double(scale)
-            let noise=CIImage(color:CIColor(red:0.5,green:0.5,blue:0.5,alpha:1)).cropped(to:extent)
-            // Deterministic colored glass cells, with configurable borders and a
-            // reproducible seed. Bitmap is glyph-local, not a chapter-sized texture.
-            let format=UIGraphicsImageRendererFormat();format.scale=1;format.opaque=false
-            let bitmap=UIGraphicsImageRenderer(size:extent.size,format:format).image{out in
-                let columns=Int(ceil(extent.width/cell)),rows=Int(ceil(extent.height/cell));guard columns*rows<10000 else{return}
-                for y in 0...rows{for x in 0...columns{let id=y*(columns+1)+x;let hue=(TextArtRenderer.bandOffset(id,seed:settings.seed,strength:1)+1)/2;UIColor(hue:hue,saturation:CGFloat(max(0,min(1,settings.saturation))),brightness:0.9,alpha:1).setFill();let rect=CGRect(x:Double(x)*cell,y:Double(y)*cell,width:cell,height:cell);out.fill(rect);out.cgContext.setStrokeColor(UIColor(hex:settings.color).cgColor);out.cgContext.setLineWidth(max(0.5,radius));out.cgContext.stroke(rect)}}
-            }
-            let cells=bitmap.cgImage.map{CIImage(cgImage:$0).transformed(by:CGAffineTransform(translationX:extent.minX,y:extent.minY))} ?? noise
-            return over(inside(cells.applyingFilter("CIColorMatrix",parameters:["inputAVector":CIVector(x:0,y:0,z:0,w:opacity)])),input)
+            let color=CIColor(color:UIColor(hex:settings.color)),edge=CIVector(x:color.red,y:color.green,z:color.blue,w:1)
+            if let cells=glassKernel?.apply(extent:extent,arguments:[CIVector(x:extent.midX,y:extent.midY),cell,radius,Double(settings.seed),max(0,min(1,settings.saturation)),edge]){return over(inside(cells.applyingFilter("CIColorMatrix",parameters:["inputAVector":CIVector(x:0,y:0,z:0,w:opacity)])),input)}
+            // Preserve the source if the runtime cannot compile the kernel.
+            // The native release gate separately requires successful compilation.
+            return input
+
         default:return input
         }
     }

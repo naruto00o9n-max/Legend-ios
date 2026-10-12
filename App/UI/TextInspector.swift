@@ -74,7 +74,7 @@ struct TextInspector:View {
         case .threeD:knob("عمق البروز",Binding(get:{Double(style.threeDDepth)},set:{v in model.change{$0.style.threeDDepth=Int(v)}}),0...40);swatches("لون البروز",\.threeDColor)
         case .effects:
             EffectCards(model:model)
-            if style.effectType.isStyle{styleEffectControls}else if style.effectType == .chromatic || style.effectType == .glitch{artControls}else if style.effectType != .none{knob("القوة",value(\.effectValue),style.effectType == .fade ? 0...100:0...50);knob("التفاصيل",value(\.effectDetail),2...20);swatches("لون التأثير",\.effectColor)}
+            if style.effectType.isStyle{styleEffectControls}else if style.effectType == .chromatic || style.effectType == .glitch{artControls}else{legacyEffectControls}
         case .opacity:
             knob("شفافية الحروف",Binding(get:{style.innerOpacity ?? 1},set:{v in model.change{$0.style.innerOpacity=v}}),0...1)
             knob("تلاشي الحروف",Binding(get:{style.fadeAmount ?? 0},set:{v in model.change{$0.style.fadeAmount=v}}),0...1)
@@ -108,6 +108,19 @@ struct TextInspector:View {
     func replaceSelection(_ value:String,range:NSRange?=nil){guard let layer=model.active else{return};let result=TextRanges.replacement(layer.textContent,range:range ?? textRange,with:value,spans:layer.style.spans);model.change{$0.textContent=result.0;$0.style.spans=result.1};textRange=result.2;model.textSelection=result.2;model.textSelectionLayer=model.selected}
     func changeCase(upper:Bool){guard let layer=model.active else{return};let source=layer.textContent as NSString,start=min(source.length,max(0,textRange.location)),length=min(textRange.length,source.length-start),range=length>0 ? NSRange(location:start,length:length):NSRange(location:0,length:source.length);let selected=source.substring(with:range);replaceSelection(upper ? selected.uppercased():selected.lowercased(),range:range)}
     func knob(_ label:String,_ source:Binding<Double>,_ range:ClosedRange<Double>)->some View{let binding=Binding<Double>(get:{min(range.upperBound,max(range.lowerBound,source.wrappedValue))},set:{source.wrappedValue=min(range.upperBound,max(range.lowerBound,$0))});return VStack(alignment:.leading,spacing:8){HStack{Text(label).font(.system(size:12));Spacer();TextField(label,value:binding,format:.number.precision(.fractionLength(0...1))).font(.system(size:12,design:.monospaced)).multilineTextAlignment(.trailing).keyboardType(.numbersAndPunctuation).frame(width:70).accessibilityIdentifier("value-\(label)")};StepSlider(value:binding,in:range).tint(Palette.gold)}.padding(12).glass(16)}
+    @ViewBuilder var legacyEffectControls:some View{
+        switch style.effectType{
+        case .none:EmptyView()
+        case .fade:knob("التلاشي",value(\.effectValue),0...100)
+        case .blur:knob("نعومة التمويه",value(\.effectValue),0...50)
+        case .slice:knob("إزاحة الشرائح",value(\.effectValue),0...50);knob("عدد الشرائح",value(\.effectDetail),2...30)
+        case .warp:knob("الميل",value(\.effectValue),-50...50)
+        case .neon:knob("حجم التوهج",value(\.effectValue),0...50);swatches("لون التوهج",\.effectColor)
+        case .error:knob("إزاحة الخلل",value(\.effectValue),0...50);swatches("لون الحافة الأولى",\.effectColor);swatches("لون الحافة الثانية",\.strokeColor)
+        case .shadow:knob("نعومة الظل",value(\.effectValue),0...50);knob("إزاحة أفقية",value(\.shadowDx),-80...80);knob("إزاحة رأسية",value(\.shadowDy),-80...80);swatches("لون الظل",\.shadowColor);knob("شفافية الظل",Binding(get:{Double(style.shadowAlpha)},set:{v in model.change{$0.style.shadowAlpha=Int(v)}}),0...255);GradientControls(model:model,colors:\.shadowGradient,stops:\.shadowGradientStops,angle:\.shadowGradientAngle,type:\.shadowGradientType)
+        default:EmptyView()
+        }
+    }
     func styleEffectValue(_ key:WritableKeyPath<StyleEffectSettings,Double>)->Binding<Double>{Binding(get:{(style.styleEffect ?? StyleEffectSettings())[keyPath:key]},set:{v in model.change{var settings=$0.style.styleEffect ?? StyleEffectSettings();settings[keyPath:key]=v;$0.style.styleEffect=settings}})}
     func styleEffectColor(_ label:String,_ key:WritableKeyPath<StyleEffectSettings,String>)->some View{CookiesColorWell(label,selection:Binding(get:{Color(uiColor:UIColor(hex:(style.styleEffect ?? StyleEffectSettings())[keyPath:key]))},set:{color in model.change{var settings=$0.style.styleEffect ?? StyleEffectSettings();settings[keyPath:key]=UIColor(color).hex;$0.style.styleEffect=settings}}),supportsOpacity:false)}
     @ViewBuilder var styleEffectControls:some View{

@@ -46,7 +46,7 @@ enum TextRaster {
                 ctx.setBlendMode(.normal)
 
             }
-            if s.effectType.isStyle,let cg=result.cgImage,let mask=glyph.cgImage{let styled=StyleEffectRenderer.apply(CIImage(cgImage:cg),mask:CIImage(cgImage:mask),effect:s.effectType,settings:s.styleEffect ?? StyleEffectSettings(),scale:resolution);if let output=context.createCGImage(styled,from:styled.extent){result=UIImage(cgImage:output,scale:resolution,orientation:.up)}}
+            if s.effectType.isStyle,(s.styleEffect?.opacity ?? 0.8)>0,let cg=result.cgImage,let mask=glyph.cgImage{let styled=StyleEffectRenderer.apply(CIImage(cgImage:cg),mask:CIImage(cgImage:mask),effect:s.effectType,settings:s.styleEffect ?? StyleEffectSettings(),scale:resolution);if let output=context.createCGImage(styled,from:styled.extent){result=UIImage(cgImage:output,scale:resolution,orientation:.up)}}
             // Stroke is underneath the original fill, never painted across its interior.
             if s.strokeWidth>0 {
                 let fill=result
@@ -97,7 +97,7 @@ enum TextRaster {
             }
             if !s.shadowGradient.isEmpty,let cg=result.cgImage{
                 let input=CIImage(cgImage:cg)
-                let extent=input.extent,blurred=input.applyingFilter("CIGaussianBlur",parameters:[kCIInputRadiusKey:max(0,s.shadowRadius)*Double(resolution)])
+                let extent=input.extent,blurred=input.applyingFilter("CIGaussianBlur",parameters:[kCIInputRadiusKey:max(0,s.effectType == .shadow ? s.effectValue:s.shadowRadius)*Double(resolution)])
                 if let cg=context.createCGImage(blurred,from:extent){
                     let mask=UIImage(cgImage:cg,scale:resolution,orientation:.up),foreground=result
                     let shadow=UIGraphicsImageRenderer(size:outputFrame.size,format:format).image{output in

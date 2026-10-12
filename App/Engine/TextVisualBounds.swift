@@ -6,7 +6,7 @@ enum TextVisualBounds {
         let outline:Double=max(style.strokeWidth,extraWidth)
         let offset:Double=max(abs(style.shadowDx),abs(style.shadowDy))
         let shadow:Double=style.shadowRadius*3+offset
-        let effect:Double=style.effectValue*3+Double(style.threeDDepth)
+        let effect:Double=abs(style.effectValue)*3+Double(style.threeDDepth)
         let background:Double=max(style.backgroundPaddingX,style.backgroundPaddingY)
         let art=style.art ?? TextArtSettings();let shift=style.effectType == .chromatic ? art.distance:style.effectType == .glitch ? art.strength+art.colorShift:0
         let settings=style.styleEffect ?? StyleEffectSettings();let stylePadding=style.effectType.isStyle ? settings.radius+settings.softness*3+settings.depth:0
