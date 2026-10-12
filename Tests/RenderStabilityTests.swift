@@ -75,6 +75,7 @@ final class RenderStabilityTests:XCTestCase {
         var layer=EditorLayer(kind:.text);layer.textContent="حوار متدرج\nبتأثير ومنظور"
         layer.style=TextStyle.plainText(fontSize:42,boxWidth:260)
         layer.style.textGradient=["442299","CC4488"];layer.style.strokeWidth=3
+        layer.style.strokeGradient=["FFFFFF","DDCCFF"];layer.style.shadowGradient=["221144","9966AA"];layer.style.shadowRadius=4;layer.style.shadowDy=3
         layer.style.effectType = .bevelInner;layer.style.styleEffect=StyleEffectSettings()
         let glyphs=TextGlyphMask.buildCount,bases=TextRaster.baseRasterBuilds
         let f=UIGraphicsImageRendererFormat();f.scale=2;f.opaque=false
@@ -95,6 +96,7 @@ final class RenderStabilityTests:XCTestCase {
         var text=EditorLayer(kind:.text);text.textContent="حوار متدرج";text.frame.x=50;text.frame.y=50
         text.style=TextStyle.plainText(fontSize:42,boxWidth:240)
         text.style.textGradient=["442299","CC4488"];text.style.strokeWidth=3
+        text.style.strokeGradient=["FFFFFF","DDCCFF"];text.style.shadowGradient=["221144","9966AA"];text.style.shadowRadius=4;text.style.shadowDy=3
         text.style.effectType = .bevelInner;text.style.styleEffect=StyleEffectSettings()
         page.layers=[text]
         let canvas=DocumentCanvas(frame:CGRect(x:0,y:0,width:800,height:15000)),directory=library.directory(page.id)
@@ -139,6 +141,7 @@ final class RenderStabilityTests:XCTestCase {
         var layer=EditorLayer(kind:.text);layer.textContent="معاينة المنظور"
         layer.style=TextStyle.plainText(fontSize:42,boxWidth:240)
         layer.style.textGradient=["442299","CC4488"];layer.style.strokeWidth=3
+        layer.style.strokeGradient=["FFFFFF","DDCCFF"];layer.style.shadowGradient=["221144","9966AA"];layer.style.shadowRadius=4;layer.style.shadowDy=3
         layer.style.effectType = .bevelInner;layer.style.styleEffect=StyleEffectSettings()
         let view=GeometryPreviewImageView(),directory=FileManager.default.temporaryDirectory
         for index in 0..<40{layer.style.rotationY=Double(index);view.submit(layer,directory:directory,size:CGSize(width:260,height:148));try await Task.sleep(nanoseconds:30_000_000)}

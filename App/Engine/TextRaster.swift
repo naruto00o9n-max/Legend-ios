@@ -120,19 +120,21 @@ enum TextRaster {
                 }
             }
             if !s.shadowGradient.isEmpty,let cg=result.cgImage{
+                let shadowScale=result.scale
+                let shadowFormat=UIGraphicsImageRendererFormat();shadowFormat.scale=shadowScale;shadowFormat.opaque=false;shadowFormat.preferredRange = .standard
                 let input=CIImage(cgImage:cg)
-                let extent=input.extent,blurred=input.applyingFilter("CIGaussianBlur",parameters:[kCIInputRadiusKey:max(0,s.effectType == .shadow ? s.effectValue:s.shadowRadius)*Double(resolution)])
+                let extent=input.extent,blurred=input.applyingFilter("CIGaussianBlur",parameters:[kCIInputRadiusKey:max(0,s.effectType == .shadow ? s.effectValue:s.shadowRadius)*Double(shadowScale)])
                 if let cg=context.createCGImage(blurred,from:extent){
-                    let mask=UIImage(cgImage:cg,scale:resolution,orientation:.up),foreground=result
-                    let shadow=UIGraphicsImageRenderer(size:outputFrame.size,format:format).image{output in
+                    let mask=UIImage(cgImage:cg,scale:shadowScale,orientation:.up),foreground=result
+                    let shadow=UIGraphicsImageRenderer(size:outputFrame.size,format:shadowFormat).image{output in
                         GradientPaint.draw(colors:s.shadowGradient,stops:s.shadowGradientStops,angle:s.shadowGradientAngle,type:s.shadowGradientType,rect:CGRect(origin:.zero,size:outputFrame.size),points:s.shadowGradientPoints,in:output.cgContext)
-                        let shifted=UIGraphicsImageRenderer(size:outputFrame.size,format:format).image{_ in mask.draw(at:CGPoint(x:s.shadowDx,y:s.shadowDy))}
+                        let shifted=UIGraphicsImageRenderer(size:outputFrame.size,format:shadowFormat).image{_ in mask.draw(at:CGPoint(x:s.shadowDx,y:s.shadowDy))}
                         shifted.draw(at:.zero,blendMode:.destinationIn,alpha:CGFloat(s.shadowAlpha)/255)
                     }
-                    result=UIGraphicsImageRenderer(size:outputFrame.size,format:format).image{_ in shadow.draw(at:.zero);foreground.draw(at:.zero)}
+                    result=UIGraphicsImageRenderer(size:outputFrame.size,format:shadowFormat).image{_ in shadow.draw(at:.zero);foreground.draw(at:.zero)}
                 }
             }
-            raster=Raster(result,outputFrame);cache.totalCostLimit=RenderBudget.textCacheBytes;cache.setObject(raster,forKey:key,cost:Int(outputFrame.width*outputFrame.height*resolution*resolution)*4)
+            raster=Raster(result,outputFrame);cache.totalCostLimit=RenderBudget.textCacheBytes;cache.setObject(raster,forKey:key,cost:(result.cgImage.map{$0.width*$0.height*4} ?? 0))
         }
         c.saveGState()
         if s.shadowGradient.isEmpty && (s.shadowRadius>0 || s.effectType == .neon || s.effectType == .shadow){c.setShadow(offset:CGSize(width:s.shadowDx,height:s.shadowDy),blur:CGFloat(s.effectType == .neon || s.effectType == .shadow ? s.effectValue:s.shadowRadius),color:UIColor(hex:s.effectType == .neon ? s.effectColor:s.shadowColor,alpha:CGFloat(s.shadowAlpha)/255).cgColor)}
