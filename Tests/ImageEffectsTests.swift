@@ -68,6 +68,17 @@ final class ImageEffectsTests:XCTestCase {
         XCTAssertNotEqual(pixels(ImageEffectGraph.apply(source,effects:[fade],size:size),rect),first)
     }
 
+    func testProviderMatchesNativePartialTransparencyAndKeepsSourceBytes()throws{
+        let (page,dir,root,initial)=try fixture();defer{try? FileManager.default.removeItem(at:root)}
+        var raw=initial;for i in stride(from:0,to:raw.count,by:4){raw[i+3]=UInt8((i/4)%256)}
+        try Data(raw).write(to:dir.appendingPathComponent(page.raw))
+        let provider=ImagePixelProvider(url:dir.appendingPathComponent(page.raw),width:page.width,height:page.height,colorSpace:ImagePipeline.space)
+        let expected=CIImage(cgImage:try XCTUnwrap(ImagePipeline.image(raw,width:page.width,height:page.height))),rect=CGRect(x:0,y:0,width:page.width,height:page.height)
+        let a=pixels(provider.image,rect),b=pixels(expected,rect),delta=zip(a,b).map{abs(Int($0)-Int($1))}.max() ?? 0
+        XCTAssertLessThanOrEqual(delta,1,"Provider alpha conversion must agree with native Core Image precision")
+        XCTAssertEqual(try Data(contentsOf:dir.appendingPathComponent(page.raw)),Data(raw))
+    }
+
     func testStackOrderAndGlitchColorsAreActualRenderingInputs()throws{
         let (page,_,root,raw)=try fixture();defer{try? FileManager.default.removeItem(at:root)}
         let source=CIImage(cgImage:try XCTUnwrap(ImagePipeline.image(raw,width:page.width,height:page.height))),size=CGSize(width:page.width,height:page.height),rect=CGRect(origin:.zero,size:size)

@@ -24,7 +24,7 @@ final class ImagePixelProvider:NSObject {
         guard LIReadRegion(url.path,Int32(width),Int32(height),Int32(x),Int32(y),Int32(rw),Int32(rh),1,&pixels)==1 else{lock.lock();failure="تعذر قراءة جزء من الصورة؛ احتُفظ بالأصل";lock.unlock();return}
         lock.lock();largestRequestPixels=max(largestRequestPixels,w*h);lock.unlock()
         // Provider coordinates/rows are top-left, as specified by CIImageProvider.h.
-        for i in stride(from:0,to:pixels.count,by:4){let a=Int(pixels[i+3]);for channel in 0..<3{pixels[i+channel]=UInt8((Int(pixels[i+channel])*a+127)/255)}}
+        let count=pixels.count/4;LIPremultiplyRGBA(&pixels,count)
         let value=Data(pixels) as NSData;tiles.totalCostLimit=2*1024*1024;tiles.setObject(value,forKey:key,cost:value.length)
         for row in 0..<rh{data.advanced(by:row*bytesPerRow).copyMemory(from:value.bytes.advanced(by:row*rw*4),byteCount:rw*4)}
     }

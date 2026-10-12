@@ -217,3 +217,17 @@ done:
   fclose(file);return (uint8_t *)result;
 }
 void LIFreeBuffer(void *buffer){free(buffer);}
+
+/* Convert only the transient provider buffer. Source files remain straight RGBA.
+   Most comic pixels are opaque and need no multiplication at all. */
+void LIPremultiplyRGBA(uint8_t *rgba, size_t pixels) {
+  if (!rgba) return;
+  for (size_t i=0; i<pixels; ++i, rgba+=4) {
+    const unsigned a=rgba[3];
+    if (a==255) continue;
+    if (a==0) { rgba[0]=rgba[1]=rgba[2]=0; continue; }
+    rgba[0]=(uint8_t)((rgba[0]*a+127)/255);
+    rgba[1]=(uint8_t)((rgba[1]*a+127)/255);
+    rgba[2]=(uint8_t)((rgba[2]*a+127)/255);
+  }
+}
