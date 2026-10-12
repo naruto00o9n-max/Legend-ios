@@ -7,6 +7,7 @@ final class DocumentCanvas: UIView {
         let view = UIImageView()
         var revision = -1
         var pending = false
+        var request=UUID()
         let rect: CGRect
         let sample: Int
         init(rect: CGRect, sample: Int) {
@@ -42,6 +43,7 @@ final class DocumentCanvas: UIView {
     private var inkRendering=false
     private var latestInk:(EditorPage,URL,CGRect,Int)?
     private var imageToolPreview=false
+    private let detailGate=CanvasDetailGate()
     private var imageRefinement:DispatchWorkItem?
     private var imagePreviewPage:EditorPage?
     private var inkInteractive=false
@@ -49,7 +51,7 @@ final class DocumentCanvas: UIView {
     var onRenderError:((String)->Void)?
     func previewImageSettings(page:EditorPage,directory:URL,selected:UUID?,zoom:CGFloat){
         let changed = !imageToolPreview || imagePreviewPage != page || self.directory != directory
-        if !imageToolPreview{inkGeneration=UUID();imageToolPreview=true}
+        if !imageToolPreview{inkGeneration=UUID();imageToolPreview=true;detailGate.setSuspended(true)}
         self.page=page;self.directory=directory;self.selected=selected;self.zoom=zoom;imagePreviewPage=page;updateSelection()
         if changed{requestImagePreview()}
     }
@@ -70,8 +72,9 @@ final class DocumentCanvas: UIView {
     }
     func finishImageSettings(){
         guard imageToolPreview,let page,let directory else{return}
-        imageToolPreview=false;imagePreviewPage=nil;imageRefinement?.cancel();imageRefinement=nil;inkInteractive=false
+        imageToolPreview=false;detailGate.setSuspended(false);imagePreviewPage=nil;imageRefinement?.cancel();imageRefinement=nil;inkInteractive=false
         finishGesture(page:page,directory:directory,selected:selected,zoom:zoom)
+        if !visible.isEmpty{refreshVisible(visible)}
     }
     private var softwareCommitRevision:Int?
     private func renderLatestInk(){
@@ -206,11 +209,17 @@ final class DocumentCanvas: UIView {
         }
     }
     private func render(_ tile: Tile, key: String, page: EditorPage, directory: URL) {
-        tile.pending = true
+        guard !imageToolPreview else{return}
+        tile.pending = true;tile.request=UUID()
+        let request=tile.request,gate=detailGate
         let requested = revision, identity = sourceIdentity, cache = sourceCache
         let textResolution=max(1,min(4,ceil(zoom*traitCollection.displayScale)))
         worker.async { [weak self] in
             guard self != nil else{return}
+            let cancel={ [weak self] in DispatchQueue.main.async {
+                guard let self,self.tiles[key] === tile,tile.request==request else{return};tile.pending=false
+            }}
+            guard !gate.isSuspended else{cancel();return}
             let base: UIImage?
             var read = false
             let cacheKey = (identity + "|\(tile.sample):\(Int(tile.rect.minX)):\(Int(tile.rect.minY))") as NSString
@@ -221,6 +230,7 @@ final class DocumentCanvas: UIView {
                 base = cg.map { UIImage(cgImage: $0) }
                 if let base { cache.setObject(base, forKey: cacheKey, cost: Int(base.size.width * base.size.height) * 4) }
             }
+            guard !gate.isSuspended else{cancel();return}
             var composite = base
             if let base, !page.layers.isEmpty {
                 let format = UIGraphicsImageRendererFormat(); format.scale = textResolution; format.opaque = false; format.preferredRange = .standard
@@ -235,7 +245,7 @@ final class DocumentCanvas: UIView {
                 }
             }
             DispatchQueue.main.async {
-                guard let self, self.sourceIdentity == identity, self.tiles[key] === tile else { return }
+                guard let self, self.sourceIdentity == identity, self.tiles[key] === tile,tile.request==request else { return }
                 tile.pending = false
                 if read { self.sourceReads += 1 }
                 if requested >= tile.revision {
@@ -467,4 +477,13 @@ final class DocumentCanvas: UIView {
             label.frame=CGRect(x:target.point.x-12*unit,y:target.point.y-12*unit,width:24*unit,height:24*unit);sniperOverlay.addSublayer(label)
         }
     }
+}
+
+/// Workers may already be queued when an image inspector opens. Suspend their
+/// expensive detail composites while its coalesced interactive render takes over.
+private final class CanvasDetailGate {
+    private let lock=NSLock()
+    private var suspended=false
+    var isSuspended:Bool{lock.lock();defer{lock.unlock()};return suspended}
+    func setSuspended(_ value:Bool){lock.lock();suspended=value;lock.unlock()}
 }

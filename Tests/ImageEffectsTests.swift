@@ -150,10 +150,11 @@ final class ImageEffectsTests:XCTestCase {
         let (page,dir,root,_)=try fixture(width:800,height:2000);defer{try? FileManager.default.removeItem(at:root)}
         let library=LibraryStore(root:root);library.add(page,parent:nil);let model=EditorModel(page:page,library:library);await model.openImageEffects();let id=try XCTUnwrap(model.addImageEffect(.grain))
         let canvas=DocumentCanvas(frame:CGRect(x:0,y:0,width:800,height:2000));canvas.update(page:model.page,directory:dir,selected:model.selected,zoom:1);canvas.refreshVisible(CGRect(x:0,y:0,width:800,height:600))
-        let revision=canvas.revision
+        let revision=canvas.revision,start=Date();model.setContinuousEditing(true)
         for i in 0..<50{model.editImageEffect(id){$0.intensity=Double(i+20)};canvas.previewImageSettings(page:model.page,directory:dir,selected:model.selected,zoom:1);try await Task.sleep(nanoseconds:30_000_000)}
+        print("IMAGE_LIVE frames=\(canvas.imagePresentedFrames) duration=\(Date().timeIntervalSince(start))")
         XCTAssertGreaterThan(canvas.imagePresentedFrames,0,"Publish intermediate image frames before input stops")
         XCTAssertEqual(canvas.revision,revision,"Knob changes must not enqueue detail tiles for every update")
-        canvas.finishImageSettings();XCTAssertGreaterThan(canvas.revision,revision)
+        model.setContinuousEditing(false);canvas.finishImageSettings();XCTAssertGreaterThan(canvas.revision,revision)
     }
 }

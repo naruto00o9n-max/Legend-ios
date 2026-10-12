@@ -69,7 +69,7 @@ final class WorkspaceExperienceTests:XCTestCase {
     }
     func testGuideIsSearchableAndLocalEditionOmitsServiceTopic()throws{
         let local=GuideCatalogue.topics(services:false),connected=GuideCatalogue.topics(services:true)
-        XCTAssertEqual(local.count,10);XCTAssertEqual(connected.count,11);XCTAssertFalse(local.contains{$0.serviceOnly});XCTAssertEqual(Set(connected.map(\.id)).count,connected.count)
+        XCTAssertEqual(local.count,11);XCTAssertEqual(connected.count,12);XCTAssertTrue(local.contains{$0.id=="image-effects"});XCTAssertFalse(local.contains{$0.serviceOnly});XCTAssertEqual(Set(connected.map(\.id)).count,connected.count)
         XCTAssertTrue(local.contains{$0.matches("القطارة")});XCTAssertTrue(local.contains{$0.matches("بادئة")});XCTAssertTrue(local.allSatisfy{!$0.entries.isEmpty && $0.entries.allSatisfy{!$0.text.isEmpty}})
         XCTAssertEqual(try JSONDecoder().decode(TyperPanelPreferences.self,from:Data("{}".utf8)),TyperPanelPreferences())
     }
