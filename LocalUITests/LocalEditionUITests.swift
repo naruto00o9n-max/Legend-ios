@@ -3,7 +3,7 @@ import XCTest
 final class LocalEditionUITests:XCTestCase {
     private var app:XCUIApplication!
     override func setUp(){continueAfterFailure=false;app=XCUIApplication();app.launchArguments=["-ui-tests"];app.launch()}
-    private func start(){let start=app.buttons["welcome-start"];XCTAssertTrue(start.waitForExistence(timeout:15));XCTAssertTrue(start.label.contains("ابدأ الإبداع"));start.tap();XCTAssertTrue(app.buttons["demo-project"].waitForExistence(timeout:10));XCTAssertFalse(app.textFields["account-email"].exists);XCTAssertFalse(app.buttons["account-google"].exists)}
+    private func start(){let start=app.buttons["welcome-start"];XCTAssertTrue(start.waitForExistence(timeout:15));XCTAssertTrue(start.label.contains("ابدأ الإبداع"));start.tap();XCTAssertTrue(app.buttons["demo-project"].waitForExistence(timeout:10));XCTAssertFalse(app.buttons["account-workspace"].exists);XCTAssertFalse(app.textFields["account-email"].exists);XCTAssertFalse(app.buttons["account-google"].exists)}
     private func reveal(_ element:XCUIElement){for _ in 0..<12{if element.exists && element.isHittable{return};app.scrollViews.firstMatch.swipeUp()};XCTAssertTrue(element.isHittable,app.debugDescription)}
     private func revealTool(_ element:XCUIElement){
         let strip=app.scrollViews["tool-strip"]

@@ -234,6 +234,14 @@ final class EditorUITests:XCTestCase {
         reveal(app.buttons["panel-stroke"],in:app.scrollViews["panel-strip"]);app.buttons["panel-stroke"].tap();XCTAssertEqual(app.textFields["value-السماكة"].value as? String,"5");capture("fix-manual-done-remembers-outline")
     }
 
+    func testOnlineAccountPortalAndActualLeaderboardOutsideCommunity(){
+        start();let portal=app.buttons["account-workspace"];revealVertical(portal);XCTAssertTrue(portal.isHittable);portal.tap()
+        XCTAssertTrue(app.buttons["account-workspace-close"].waitForExistence(timeout:8));XCTAssertTrue(app.buttons["account-workspace-login"].exists)
+        let board=app.buttons["account-leaderboard"];revealVertical(board);board.tap()
+        XCTAssertTrue(app.buttons["leaderboard-close"].waitForExistence(timeout:8));XCTAssertTrue(app.otherElements["leaderboard-row-1"].waitForExistence(timeout:40) || app.descendants(matching:.any)["leaderboard-row-1"].exists)
+        app.buttons["leaderboard-close"].tap();XCTAssertTrue(app.buttons["account-discord"].waitForExistence(timeout:8));app.buttons["account-workspace-close"].tap();XCTAssertTrue(app.buttons["tool-text"].exists || app.buttons["demo-project"].exists)
+    }
+
     func testImageEffectsStackControlsResetAndReopen(){
         openEditor();tool("image-effects")
         XCTAssertTrue(app.buttons["image-effects-close"].waitForExistence(timeout:20))

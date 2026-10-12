@@ -128,9 +128,11 @@ jobs:
         if: ${{ !cancelled() && !contains(github.event.head_commit.message, '[fixture initialization retry]') }}
         env:
           RENDER_CONTROL_RETRY: ${{ contains(github.event.head_commit.message, '[render-control retry]') }}
-          TASK_SCOPE: ${{ contains(github.event.head_commit.message, '[image effects validation]') && 'image-effects' || contains(github.event.head_commit.message, '[performance validation]') && 'performance' || contains(github.event.head_commit.message, '[style form retry]') && 'styles' || contains(github.event.head_commit.message, '[control hit-area retry]') && 'controls' || contains(github.event.head_commit.message, '[ui-only retry]') && 'focused' || contains(github.event.head_commit.message, '[interface test retry]') && 'regression' || inputs.verification_scope }}
+          TASK_SCOPE: ${{ contains(github.event.head_commit.message, '[online services validation]') && 'online-services' || contains(github.event.head_commit.message, '[image effects validation]') && 'image-effects' || contains(github.event.head_commit.message, '[performance validation]') && 'performance' || contains(github.event.head_commit.message, '[style form retry]') && 'styles' || contains(github.event.head_commit.message, '[control hit-area retry]') && 'controls' || contains(github.event.head_commit.message, '[ui-only retry]') && 'focused' || contains(github.event.head_commit.message, '[interface test retry]') && 'regression' || inputs.verification_scope }}
         run: |
-          if [[ "$TASK_SCOPE" == image-effects ]]; then
+          if [[ "$TASK_SCOPE" == online-services ]]; then
+            bash scripts/test_simulators.sh '${{ matrix.screen }}' ui 'CookiesUITests/EditorUITests/testOnlineAccountPortalAndActualLeaderboardOutsideCommunity,CookiesUITests/EditorUITests/testImageEffectsStackControlsResetAndReopen,CookiesUITests/EditorUITests/testRealFilesPickerImportsFontAndReturnsToLibrary,CookiesUITests/EditorUITests/testPhotosImportAndIPadOrientation'
+          elif [[ "$TASK_SCOPE" == image-effects ]]; then
             # Full native engine gates remain mandatory for this product change.
             bash scripts/test_simulators.sh '${{ matrix.screen }}' ui 'CookiesUITests/EditorUITests/testImageEffectsStackControlsResetAndReopen,CookiesUITests/EditorUITests/testCompoundGradientStyleAndPerspectiveControlsStayUsable,CookiesUITests/EditorUITests/testPhotosImportAndIPadOrientation,CookiesUITests/EditorUITests/testRealFilesPickerImportsFontAndReturnsToLibrary'
           elif [[ "$TASK_SCOPE" == performance ]]; then

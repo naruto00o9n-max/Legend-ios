@@ -1,7 +1,7 @@
 {
   "date": "2026-10-12",
   "authorization": "Finish current image-effects work first; next add Android online-service features only to connected edition; exclude community. Confirmed in user clarification.",
-  "status": "queued_after_image_effects_validation",
+  "status": "implementation_started_after_image_effects_release",
   "excluded": [
     "F126",
     "F127",
@@ -137,5 +137,14 @@
     "season_and_arena": "create_arena_challenge / accept_arena_challenge / get_my_arena_challenge; inspect confirmation and rules before integration",
     "settings_sync": "CloudSyncManager push/pull own profile settings",
     "Drive_projects_fonts_styles_tags": "DriveSyncManager uses Google Drive account scopes; requires iOS-compatible client authorization, not anonymous Supabase storage substitution"
-  }
+  },
+  "active_group": [
+    "own profile and real name readback",
+    "Discord command generation/owned server update/return refresh",
+    "actual leaderboard outside community",
+    "original logarithmic rank and season/account stats"
+  ],
+  "image_effects_release_source": "9ef49fc6dbd0cceb35aeaa3a487fc1fd50447d71",
+  "image_effects_release_run": 38288933715,
+  "current_code_status": "unvalidated_candidate"
 }

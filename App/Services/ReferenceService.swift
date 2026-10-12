@@ -26,12 +26,12 @@ enum NetworkPolicy {
     override init(){super.init();if NetworkPolicy.enabled,let data=Keychain.read("session"),let saved=try? JSONDecoder().decode(ServiceSession.self,from:data){session=saved}}
     init(configuration:ReferenceConfig,urlSession:URLSession,initialSession:ServiceSession?=nil,persistSession:Bool=false){super.init();configured=configuration;transport=urlSession;session=initialSession;persistAuthentication=persistSession}
     var config:ReferenceConfig? {if let configured{return configured};guard NetworkPolicy.enabled,let url=Bundle.main.url(forResource:"ReferenceService",withExtension:"json"),let data=try? Data(contentsOf:url) else{return nil};return try? JSONDecoder().decode(ReferenceConfig.self,from:data)}
-    func request(_ path:String,method:String="GET",body:[String:Any]?=nil,authenticated:Bool=false) async throws->Data {
+    func request(_ path:String,method:String="GET",body:[String:Any]?=nil,authenticated:Bool=false,returnRepresentation:Bool=false) async throws->Data {
         guard configured != nil || NetworkPolicy.enabled else{throw ImageFailure.message("هذه النسخة تعمل محليًا دون اتصال")}
         guard let config,let url=URL(string:config.url+path) else{throw ImageFailure.message("لم يُجهّز اتصال الخدمة")}
         if authenticated,let token=session?.access_token,!path.hasPrefix("/auth/v1/token"),Self.tokenExpiry(token)<Date().timeIntervalSince1970+60{try await refresh()}
         if authenticated&&session==nil{throw ImageFailure.message("سجّل الدخول إلى حسابك أولًا")}
-        var r=URLRequest(url:url);r.httpMethod=method;r.timeoutInterval=25;r.setValue(config.key,forHTTPHeaderField:"apikey");r.setValue("Bearer "+(session.flatMap{Self.tokenExpiry($0.access_token)>Date().timeIntervalSince1970 ? $0.access_token:nil} ?? config.key),forHTTPHeaderField:"Authorization");r.setValue("application/json",forHTTPHeaderField:"Content-Type");if let body{r.httpBody=try JSONSerialization.data(withJSONObject:body)}
+        var r=URLRequest(url:url);r.httpMethod=method;r.timeoutInterval=25;r.setValue(config.key,forHTTPHeaderField:"apikey");r.setValue("Bearer "+(session.flatMap{Self.tokenExpiry($0.access_token)>Date().timeIntervalSince1970 ? $0.access_token:nil} ?? config.key),forHTTPHeaderField:"Authorization");r.setValue("application/json",forHTTPHeaderField:"Content-Type");if returnRepresentation{r.setValue("return=representation",forHTTPHeaderField:"Prefer")};if let body{r.httpBody=try JSONSerialization.data(withJSONObject:body)}
         let (data,response)=try await readResponse(r)
         guard let http=response as? HTTPURLResponse else{throw ImageFailure.message("تعذر قراءة استجابة الخادم")}
         guard (200..<300).contains(http.statusCode) else{

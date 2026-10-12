@@ -16,7 +16,7 @@ struct SettingsView:View {
     @State private var category=WorkspaceSettingsCategory.editing
     var body:some View{NavigationStack{ZStack{Ambient();ScrollView{VStack(alignment:.leading,spacing:20){
         SurfaceHeader(title:"على طريقتك",subtitle:"إعدادات واضحة، ومساحة عمل تناسبك",icon:"slider.horizontal.3")
-        if NetworkPolicy.enabled{Button{if service.session==nil{account=true}else{profile=true}}label:{HStack(spacing:14){SurfaceSymbol(icon:"person.crop.circle",size:54);VStack(alignment:.leading,spacing:6){Text(service.session==nil ? "تسجيل الدخول":"حسابك في كوكيز").font(.system(size:17,weight:.semibold));Text(service.session?.user.email ?? "ملفك الشخصي وأعمالك في المجتمع").font(.system(size:12)).foregroundStyle(Palette.secondary).lineLimit(1)};Spacer(minLength:4);Image(systemName:"chevron.left").font(.system(size:11)).foregroundStyle(Palette.quiet)}.padding(20).glass(24)}.buttonStyle(.plain).accessibilityIdentifier("settings-account")}
+        if NetworkPolicy.enabled{Button{if service.session==nil{account=true}else{profile=true}}label:{HStack(spacing:14){SurfaceSymbol(icon:"person.crop.circle",size:54);VStack(alignment:.leading,spacing:6){Text(service.session==nil ? "تسجيل الدخول":"حسابك في كوكيز").font(.system(size:17,weight:.semibold));Text(service.session?.user.email ?? "ملفك الشخصي والخدمات المتصلة").font(.system(size:12)).foregroundStyle(Palette.secondary).lineLimit(1)};Spacer(minLength:4);Image(systemName:"chevron.left").font(.system(size:11)).foregroundStyle(Palette.quiet)}.padding(20).glass(24)}.buttonStyle(.plain).accessibilityIdentifier("settings-account")}
         GlassSection("المظهر والتحرير",icon:"sparkles",subtitle:"مقاسات الواجهة وسلوك أدواتك"){
             NavigationRow(title:"المظهر والمؤثرات",subtitle:"المقاسات، الحركة، ومعاينة الواجهة",icon:"sparkles"){category = .appearance;workspaceSettings=true}.accessibilityIdentifier("settings-appearance")
             NavigationRow(title:"مساحة العمل",subtitle:"إضافة النص، المقابض، المحاذاة، والقطارة",icon:"slider.horizontal.3"){category = .editing;workspaceSettings=true}.accessibilityIdentifier("settings-workspace")
@@ -31,7 +31,8 @@ struct SettingsView:View {
             NavigationRow(title:"المساحة والنسخ الاحتياطي",subtitle:"قياس البيانات، نسخة انتقائية، واستعادة وحذف",icon:"externaldrive"){storage=true}.accessibilityIdentifier("settings-storage")
             NavigationRow(title:"تقارير الأعطال والأداء",subtitle:"مراجعة التقارير ومشاركتها عند الحاجة",icon:"doc.text.magnifyingglass"){diagnostics=true}.accessibilityIdentifier("settings-diagnostics")
         }
-        if NetworkPolicy.enabled{GlassSection("المجتمع والحساب",icon:"person.2"){
+        if NetworkPolicy.enabled{GlassSection("الحساب والخدمات",icon:"person.crop.circle"){
+            NavigationRow(title:"الحساب والخدمات",subtitle:"الملف الشخصي، الترتيب، وربط Discord",icon:"square.grid.2x2"){profile=true}.accessibilityIdentifier("settings-account-workspace")
             NavigationRow(title:"المجتمع",subtitle:"الأعمال والمنشورات والنقاشات",icon:"person.2"){hub=true}.accessibilityIdentifier("settings-community")
             NavigationRow(title:service.session==nil ? "تسجيل الدخول":"الملف الشخصي",icon:"person.crop.circle"){if service.session==nil{account=true}else{profile=true}}
         }}
