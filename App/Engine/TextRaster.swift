@@ -89,7 +89,7 @@ enum TextRaster {
                 let input=CIImage(cgImage:cg)
                 var processed=input
                 if s.effectType == .blur{processed=input.applyingFilter("CIGaussianBlur",parameters:[kCIInputRadiusKey:max(0,s.effectValue)*Double(resolution)])}
-                if s.effectType == .fade{processed=input.applyingFilter("CIFadeTransition",parameters:[kCIInputTargetImageKey:CIImage(color:.clear).cropped(to:input.extent),kCIInputTimeKey:min(1,max(0,s.effectValue/100))])}
+                if s.effectType == .fade{processed=input.applyingFilter("CIDissolveTransition",parameters:[kCIInputTargetImageKey:CIImage(color:.clear).cropped(to:input.extent),kCIInputTimeKey:min(1,max(0,s.effectValue/100))])}
                 let corners=PerspectiveGeometry.corners(s)
                 if corners.count==4,let extended=PerspectiveGeometry.extended(corners,width:Double(rect.width),height:Double(rect.height),padding:Double(pad)),extended.count==4{func vector(_ p:Point)->CIVector{CIVector(x:(pad+CGFloat(p.x)*rect.width)*resolution,y:(size.height-pad-CGFloat(p.y)*rect.height)*resolution)};processed=processed.applyingFilter("CIPerspectiveTransform",parameters:["inputTopLeft":vector(extended[0]),"inputTopRight":vector(extended[1]),"inputBottomRight":vector(extended[2]),"inputBottomLeft":vector(extended[3])])}
                 let extent=processed.extent.integral

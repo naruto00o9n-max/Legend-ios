@@ -87,6 +87,7 @@ enum LayerRenderer {
         }
     }
     static func drawText(_ l:EditorLayer,rect:CGRect,context c:CGContext,directory:URL) {
+        if l.style.effectType.isStyle,(l.style.styleEffect?.opacity ?? 0.8)<=0{var plain=l;plain.style.effectType = .none;drawText(plain,rect:rect,context:c,directory:directory);return}
         if TextArtRenderer.draw(l,rect:rect,in:c,directory:directory){return}
         let s=l.style;let background=rect.insetBy(dx:-CGFloat(s.backgroundPaddingX),dy:-CGFloat(s.backgroundPaddingY))
         if s.backgroundAlpha>0{UIColor(hex:s.backgroundColor,alpha:CGFloat(s.backgroundAlpha)/255).setFill();UIBezierPath(roundedRect:background,cornerRadius:CGFloat(s.backgroundCornerRadius)).fill()}
