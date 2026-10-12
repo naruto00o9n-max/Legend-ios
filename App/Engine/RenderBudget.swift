@@ -7,10 +7,10 @@ enum RenderBudget {
     static var isPreview:Bool{Thread.current.threadDictionary[flag] as? Bool ?? false}
     static var previewPixels:CGFloat{ProcessInfo.processInfo.physicalMemory<=4_294_967_296 ? 1_048_576:2_097_152}
     static var textCacheBytes:Int{ProcessInfo.processInfo.physicalMemory<=4_294_967_296 ? 16*1024*1024:32*1024*1024}
-    static func screen<T>(_ body:()->T)->T {
+    static func screen<T>(_ body:()throws->T)rethrows->T {
         let old=Thread.current.threadDictionary[flag];Thread.current.threadDictionary[flag]=true
         defer{if let old{Thread.current.threadDictionary[flag]=old}else{Thread.current.threadDictionary.removeObject(forKey:flag)}}
-        return body()
+        return try body()
     }
 }
 
