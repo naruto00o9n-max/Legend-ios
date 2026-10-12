@@ -1,0 +1,98 @@
+import XCTest
+import UIKit
+import CoreImage
+@testable import CookiesEditor
+
+final class ImageEffectsTests:XCTestCase {
+    private let context=CIContext(options:[.cacheIntermediates:false,.workingColorSpace:CGColorSpace(name:CGColorSpace.sRGB)!])
+    private func pixels(_ image:CIImage,_ rect:CGRect)->[UInt8]{
+        var result=[UInt8](repeating:0,count:Int(rect.width*rect.height)*4)
+        context.render(image,toBitmap:&result,rowBytes:Int(rect.width)*4,bounds:rect,format:.RGBA8,colorSpace:CGColorSpace(name:CGColorSpace.sRGB)!);return result
+    }
+    private func fixture(width:Int=96,height:Int=180)throws->(EditorPage,URL,URL,[UInt8]){
+        let root=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        var page=EditorPage(title:"اختبار التأثيرات",width:width,height:height)
+        let directory=root.appendingPathComponent(page.id.uuidString)
+        try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
+        var raw=[UInt8](repeating:0,count:width*height*4)
+        for y in 0..<height{for x in 0..<width{let i=(y*width+x)*4;raw[i]=UInt8((x*17+y*3)%256);raw[i+1]=UInt8((x*3+y*7)%256);raw[i+2]=UInt8((x*11+y*13)%256);raw[i+3]=(x<8 || y<8 || x>=width-8 || y>=height-8) ? 0:255}}
+        try Data(raw).write(to:directory.appendingPathComponent(page.raw))
+        let cg=try XCTUnwrap(ImagePipeline.image(raw,width:width,height:height))
+        try XCTUnwrap(UIImage(cgImage:cg).pngData()).write(to:directory.appendingPathComponent(page.source))
+        page.modified=Date();return(page,directory,root,raw)
+    }
+    func testAllThirteenEffectsRenderAndSurviveSerialization()throws{
+        XCTAssertTrue(ImageEffectGraph.kernelsAvailable,"Every custom kernel must compile on iOS")
+        let (page,dir,root,raw)=try fixture();defer{try? FileManager.default.removeItem(at:root)}
+        let source=CIImage(cgImage:try XCTUnwrap(ImagePipeline.image(raw,width:page.width,height:page.height))),size=CGSize(width:page.width,height:page.height),rect=CGRect(origin:.zero,size:size),original=pixels(source,rect)
+        XCTAssertEqual(ImageEffectKind.allCases.count,13)
+        for kind in ImageEffectKind.allCases{
+            let effect=ImageEffect(kind),result=ImageEffectGraph.apply(source,effects:[effect],size:size)
+            XCTAssertNotEqual(pixels(result,rect),original,kind.rawValue)
+            var layer=EditorLayer(kind:.image);layer.imagePath=page.source;layer.imageEffects=[effect]
+            let reopened=try JSONDecoder().decode(EditorLayer.self,from:JSONEncoder().encode(layer))
+            XCTAssertEqual(reopened,layer);XCTAssertEqual(pixels(ImageEffectGraph.apply(source,effects:reopened.effectiveImageEffects,size:size),rect),pixels(result,rect))
+            var disabled=effect;disabled.enabled=false;XCTAssertEqual(pixels(ImageEffectGraph.apply(source,effects:[disabled],size:size),rect),original)
+            disabled.enabled=true;disabled.opacity=0;XCTAssertEqual(pixels(ImageEffectGraph.apply(source,effects:[disabled],size:size),rect),original)
+        }
+        XCTAssertEqual(try Data(contentsOf:dir.appendingPathComponent(page.raw)),Data(raw))
+    }
+    func testProviderOrientationAndTiledGraphMatchWholeImage()throws{
+        let (page,dir,root,raw)=try fixture();defer{try? FileManager.default.removeItem(at:root)}
+        let provider=ImagePixelProvider(url:dir.appendingPathComponent(page.raw),width:page.width,height:page.height,colorSpace:CGColorSpace(name:CGColorSpace.sRGB)!)
+        let source=CIImage(cgImage:try XCTUnwrap(ImagePipeline.image(raw,width:page.width,height:page.height))),size=CGSize(width:page.width,height:page.height),rect=CGRect(origin:.zero,size:size)
+        XCTAssertEqual(pixels(provider.image,rect),pixels(source,rect),"Provider rows must preserve source orientation")
+        for kind in ImageEffectKind.allCases{
+            let graph=ImageEffectGraph.apply(provider.image,effects:[ImageEffect(kind)],size:size),whole=pixels(graph,rect)
+            var tiled=[UInt8]()
+            for y in stride(from:0,to:page.height,by:30){tiled += pixels(graph,CGRect(x:0,y:y,width:page.width,height:min(30,page.height-y)))}
+            XCTAssertEqual(tiled,whole,"Global coordinates and halo reads must cross tile boundaries: \(kind.rawValue)")
+        }
+        XCTAssertNil(provider.error);XCTAssertLessThanOrEqual(provider.largestRequestPixels,256*256)
+    }
+    func testStackOrderAndGlitchColorsAreActualRenderingInputs()throws{
+        let (page,_,root,raw)=try fixture();defer{try? FileManager.default.removeItem(at:root)}
+        let source=CIImage(cgImage:try XCTUnwrap(ImagePipeline.image(raw,width:page.width,height:page.height))),size=CGSize(width:page.width,height:page.height),rect=CGRect(origin:.zero,size:size)
+        let duo=ImageEffect(.duotone),grain=ImageEffect(.grain)
+        XCTAssertNotEqual(pixels(ImageEffectGraph.apply(source,effects:[duo,grain],size:size),rect),pixels(ImageEffectGraph.apply(source,effects:[grain,duo],size:size),rect))
+        var glitch=ImageEffect(.glitch);let original=pixels(ImageEffectGraph.apply(source,effects:[glitch],size:size),rect);glitch.color="FFFF00";glitch.color2="0011FF"
+        XCTAssertNotEqual(pixels(ImageEffectGraph.apply(source,effects:[glitch],size:size),rect),original)
+    }
+    @MainActor func testSourceEffectsUndoResetArchiveAndOriginalBytes()async throws{
+        let (page,dir,root,raw)=try fixture();defer{try? FileManager.default.removeItem(at:root)}
+        let library=LibraryStore(root:root);library.add(page,parent:nil);let model=EditorModel(page:page,library:library)
+        let original=try Data(contentsOf:dir.appendingPathComponent(page.source))
+        await model.openImageEffects();XCTAssertNil(model.error);XCTAssertEqual(model.page.layers.count,1);XCTAssertTrue(model.page.baseHidden==true)
+        let layerID=try XCTUnwrap(model.selected),duo=try XCTUnwrap(model.addImageEffect(.duotone)),grain=try XCTUnwrap(model.addImageEffect(.grain))
+        model.moveImageEffect(grain,by:-1);XCTAssertEqual(model.active?.imageEffects?.first?.id,grain)
+        model.undo();model.selected=layerID;XCTAssertEqual(model.active?.imageEffects?.first?.id,duo)
+        model.redo();model.selected=layerID;XCTAssertEqual(model.active?.imageEffects?.first?.id,grain)
+        let archive=try ProjectArchive.export(model.page,directory:dir);defer{try? FileManager.default.removeItem(at:archive)}
+        let restored=try ProjectArchive.importFile(archive,root:root);XCTAssertEqual(restored.layers,model.page.layers)
+        let a=try ImagePipeline.compositeRegion(model.page,directory:dir,rect:CGRect(x:0,y:0,width:page.width,height:page.height))
+        let b=try ImagePipeline.compositeRegion(restored,directory:root.appendingPathComponent(restored.id.uuidString),rect:CGRect(x:0,y:0,width:page.width,height:page.height))
+        XCTAssertEqual(a.dataProvider?.data as Data?,b.dataProvider?.data as Data?)
+        model.clearImageEffects();let exported=try ImagePipeline.exportPNG(model.page,directory:dir);defer{try? FileManager.default.removeItem(at:exported)}
+        XCTAssertEqual(try Data(contentsOf:exported),original,"Restore original must preserve every original PNG byte")
+        XCTAssertEqual(try Data(contentsOf:dir.appendingPathComponent(page.raw)),Data(raw));model.save()
+        let reopened=try JSONDecoder().decode(EditorPage.self,from:Data(contentsOf:dir.appendingPathComponent("page.json")));XCTAssertEqual(reopened.layers,model.page.layers)
+    }
+    func testLongSourceUsesBoundedProviderRequests()throws{
+        let (page,dir,root,raw)=try fixture(width:800,height:15000);defer{try? FileManager.default.removeItem(at:root)}
+        let provider=ImagePixelProvider(url:dir.appendingPathComponent(page.raw),width:800,height:15000,colorSpace:CGColorSpace(name:CGColorSpace.sRGB)!)
+        let graph=ImageEffectGraph.apply(provider.image,effects:[ImageEffect(.mirror),ImageEffect(.grain)],size:CGSize(width:800,height:15000))
+        for y in [0,7420,14872]{XCTAssertFalse(pixels(graph,CGRect(x:20,y:y,width:128,height:128)).isEmpty)}
+        XCTAssertNil(provider.error);XCTAssertLessThanOrEqual(provider.largestRequestPixels,65_536)
+        XCTAssertEqual(try Data(contentsOf:dir.appendingPathComponent(page.raw)),Data(raw));XCTAssertEqual(page.width,800);XCTAssertEqual(page.height,15000)
+    }
+    @MainActor func testLiveImageSettingsPublishDuringContinuousChangesWithoutInvalidatingSource()async throws{
+        let (page,dir,root,_)=try fixture(width:800,height:2000);defer{try? FileManager.default.removeItem(at:root)}
+        let library=LibraryStore(root:root);library.add(page,parent:nil);let model=EditorModel(page:page,library:library);await model.openImageEffects();let id=try XCTUnwrap(model.addImageEffect(.grain))
+        let canvas=DocumentCanvas(frame:CGRect(x:0,y:0,width:800,height:2000));canvas.update(page:model.page,directory:dir,selected:model.selected,zoom:1);canvas.refreshVisible(CGRect(x:0,y:0,width:800,height:600))
+        let revision=canvas.revision
+        for i in 0..<50{model.editImageEffect(id){$0.intensity=Double(i+20)};canvas.previewImageSettings(page:model.page,directory:dir,selected:model.selected,zoom:1);try await Task.sleep(nanoseconds:30_000_000)}
+        XCTAssertGreaterThan(canvas.imagePresentedFrames,0,"Publish intermediate image frames before input stops")
+        XCTAssertEqual(canvas.revision,revision,"Knob changes must not enqueue detail tiles for every update")
+        canvas.finishImageSettings();XCTAssertGreaterThan(canvas.revision,revision)
+    }
+}

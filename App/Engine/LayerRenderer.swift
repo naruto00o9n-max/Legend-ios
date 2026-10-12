@@ -75,7 +75,7 @@ enum LayerRenderer {
             if l.isMaskEnabled{ctx.addEllipse(in:CGRect(x:l.maskX-l.maskRadius,y:l.maskY-l.maskRadius,width:l.maskRadius*2,height:l.maskRadius*2));ctx.clip()}
             switch l.kind {
             case .text:drawText(l,rect:b,context:ctx,directory:directory)
-            case .image:if let image=ImagePipeline.asset(directory.appendingPathComponent(l.imagePath)){image.draw(in:b)}
+            case .image:ImageLayerRenderer.draw(l,rect:b,in:ctx,directory:directory)
             case .shape:
                 let path=shapePath(l.shape,rect:b);UIColor(hex:l.style.color).setFill();path.fill();if l.style.strokeWidth>0{UIColor(hex:l.style.strokeColor).setStroke();path.lineWidth=CGFloat(l.style.strokeWidth);path.stroke()}
             case .drawing:

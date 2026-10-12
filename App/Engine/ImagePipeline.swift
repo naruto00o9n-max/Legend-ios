@@ -23,7 +23,7 @@ enum ImagePipeline {
         excludeDecodedFromSystemBackup(url)
     }
     static func excludeDecodedFromSystemBackup(_ input:URL){var url=input,values=URLResourceValues();values.isExcludedFromBackup=true;try? url.setResourceValues(values)}
-    static func clearMemoryCaches(){assets.removeAllObjects();spaces.removeAllObjects();TextRaster.cache.removeAllObjects();TextRaster.baseCache.removeAllObjects();TextGlyphMask.cache.removeAllObjects();TextArtRenderer.cache.removeAllObjects()}
+    static func clearMemoryCaches(){ImageLayerRenderer.clear();assets.removeAllObjects();spaces.removeAllObjects();TextRaster.cache.removeAllObjects();TextRaster.baseCache.removeAllObjects();TextGlyphMask.cache.removeAllObjects();TextArtRenderer.cache.removeAllObjects()}
     private static let assets=NSCache<NSString,UIImage>()
     private static let assetLock=NSLock()
     static func asset(_ url:URL)->UIImage? {assetLock.lock();defer{assetLock.unlock()};if let image=assets.object(forKey:url.path as NSString){return image};guard let image=UIImage(contentsOfFile:url.path) else{return nil};assets.totalCostLimit=RenderBudget.textCacheBytes;assets.setObject(image,forKey:url.path as NSString,cost:Int(image.size.width*image.size.height)*4);return image}
@@ -82,6 +82,10 @@ enum ImagePipeline {
     static func exportPNG(_ page:EditorPage,directory:URL)throws->URL {
         let output=FileManager.default.temporaryDirectory.appendingPathComponent("Cookies-\(page.id.uuidString)-\(UUID().uuidString).png")
         let original=directory.appendingPathComponent(page.source)
+        let visible=page.layers.filter(\.isVisible)
+        if page.baseHidden==true,visible.count==1,let layer=visible.first,layer.isWorkingImage==true,layer.effectiveImageEffects.isEmpty,layer.blend == .normal,layer.opacity==1,layer.rotation==0,layer.scaleX==1,layer.scaleY==1,(layer.shearX ?? 0)==0,layer.frame==Box(x:0,y:0,width:Double(page.width),height:Double(page.height)),layer.imagePixelWidth==page.width,layer.imagePixelHeight==page.height {
+            try FileManager.default.copyItem(at:directory.appendingPathComponent(layer.imagePath),to:output);return output
+        }
         if page.baseHidden != true && page.layers.allSatisfy({!$0.isVisible}){try FileManager.default.copyItem(at:original,to:output);return output}
         var error=[CChar](repeating:0,count:512)
         guard let writer=LIWriterOpen(original.path,output.path,Int32(page.width),Int32(page.height),&error,error.count) else{throw ImageFailure.message("تعذر بدء التصدير")}
@@ -97,6 +101,7 @@ enum ImagePipeline {
                     ctx.translateBy(x:0,y:CGFloat(rows));ctx.scaleBy(x:1,y:-1);ctx.translateBy(x:0,y:-CGFloat(y))
                     LayerRenderer.draw([isolated],in:ctx,directory:directory);return true
                 }
+                if let error=ImageLayerRenderer.takeError(){throw ImageFailure.message(error)}
                 guard rendered else{throw ImageFailure.message("تعذر رسم الطبقات")}
                 let mode=Int32(Blend.allCases.firstIndex(of:layer.blend) ?? 0)
                 LICompositeBlend(&base,&overlay,base.count/4,mode)
@@ -129,7 +134,7 @@ extension ImagePipeline {
         guard width>0,height>0,width*height<=4_194_304 else{throw ImageFailure.message("منطقة المعالجة كبيرة جدًا")}
         var base=page.baseHidden==true ? [UInt8](repeating:0,count:width*height*4):(try tile(directory.appendingPathComponent(page.raw),width:page.width,height:page.height,rect:region,sample:sample))
         for layer in page.layers where layer.isVisible{var overlay=[UInt8](repeating:0,count:base.count);var isolated=layer;isolated.blend = .normal
-            let drawn=overlay.withUnsafeMutableBytes{bytes->Bool in guard let c=CGContext(data:bytes.baseAddress,width:width,height:height,bitsPerComponent:8,bytesPerRow:width*4,space:colorSpace(directory.appendingPathComponent(page.source)),bitmapInfo:CGImageAlphaInfo.premultipliedLast.rawValue) else{return false};c.translateBy(x:0,y:CGFloat(height));c.scaleBy(x:1/CGFloat(sample),y:-1/CGFloat(sample));c.translateBy(x:-region.minX,y:-region.minY);LayerRenderer.draw([isolated],in:c,directory:directory);return true};guard drawn else{throw ImageFailure.message("تعذر تركيب منطقة المعالجة")};LICompositeBlend(&base,&overlay,width*height,Int32(Blend.allCases.firstIndex(of:layer.blend) ?? 0))
+            let drawn=overlay.withUnsafeMutableBytes{bytes->Bool in guard let c=CGContext(data:bytes.baseAddress,width:width,height:height,bitsPerComponent:8,bytesPerRow:width*4,space:colorSpace(directory.appendingPathComponent(page.source)),bitmapInfo:CGImageAlphaInfo.premultipliedLast.rawValue) else{return false};c.translateBy(x:0,y:CGFloat(height));c.scaleBy(x:1/CGFloat(sample),y:-1/CGFloat(sample));c.translateBy(x:-region.minX,y:-region.minY);LayerRenderer.draw([isolated],in:c,directory:directory);return true};if let error=ImageLayerRenderer.takeError(){throw ImageFailure.message(error)};guard drawn else{throw ImageFailure.message("تعذر تركيب منطقة المعالجة")};LICompositeBlend(&base,&overlay,width*height,Int32(Blend.allCases.firstIndex(of:layer.blend) ?? 0))
         }
         guard let result=image(base,width:width,height:height,colorSpace:colorSpace(directory.appendingPathComponent(page.source))) else{throw ImageFailure.message("تعذر قراءة منطقة المعالجة")};return result
     }

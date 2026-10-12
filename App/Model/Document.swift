@@ -77,6 +77,11 @@ struct EditorLayer: Codable, Equatable, Identifiable, Hashable {
     var isVisible = true; var isLocked = false; var blend = Blend.normal
     var textContent = "نص جديد"; var style = TextStyle(); var imagePath = ""; var shape = 0
     // Optional so existing projects retain their original appearance on decode.
+    var imageEffects:[ImageEffect]?
+    var isWorkingImage:Bool?
+    var imagePixelFile:String?
+    var imagePixelWidth:Int?
+    var imagePixelHeight:Int?
     var textOrigin:TextOrigin?
     var gradientMapBaseline:GradientMapBaseline?
     var textMask:[Stroke]?

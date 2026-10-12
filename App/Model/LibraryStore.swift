@@ -59,6 +59,7 @@ import SwiftUI
     @Published var selected:UUID?
     @Published var tool:Tool = .move
     @Published var panel:Panel?
+    @Published var imageEffectsOpen=false
     @Published var brushWidth = 12.0
     @Published var brushColor = "D4AF37"
     @Published var brushStyle = "normal"

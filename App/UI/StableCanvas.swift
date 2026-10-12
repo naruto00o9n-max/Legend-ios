@@ -41,14 +41,48 @@ final class DocumentCanvas: UIView {
     private var inkGeneration=UUID()
     private var inkRendering=false
     private var latestInk:(EditorPage,URL,CGRect,Int)?
+    private var imageToolPreview=false
+    private var imageRefinement:DispatchWorkItem?
+    private var imagePreviewPage:EditorPage?
+    private var inkInteractive=false
+    private(set) var imagePresentedFrames=0
+    var onRenderError:((String)->Void)?
+    func previewImageSettings(page:EditorPage,directory:URL,selected:UUID?,zoom:CGFloat){
+        let changed = !imageToolPreview || imagePreviewPage != page || self.directory != directory
+        if !imageToolPreview{inkGeneration=UUID();imageToolPreview=true}
+        self.page=page;self.directory=directory;self.selected=selected;self.zoom=zoom;imagePreviewPage=page;updateSelection()
+        if changed{requestImagePreview()}
+    }
+    private func requestImagePreview(){
+        guard imageToolPreview,let page,let directory else{return}
+        let area=visible.integral.intersection(bounds)
+        guard !area.isEmpty,!area.isNull else{return}
+        softwareCommitRevision=nil;inkInteractive=true
+        latestInk=(page,directory,area,max(1,Int(ceil(sqrt(area.width*area.height/65_536)))))
+        renderLatestInk();imageRefinement?.cancel()
+        let generation=inkGeneration
+        let task=DispatchWorkItem{[weak self] in
+            guard let self,self.imageToolPreview,self.inkGeneration==generation,self.page==page else{return}
+            self.inkInteractive=false
+            self.latestInk=(page,directory,area,max(1,Int(ceil(sqrt(area.width*area.height/1_048_576)))))
+            self.renderLatestInk()
+        };imageRefinement=task;DispatchQueue.main.asyncAfter(deadline:.now()+0.3,execute:task)
+    }
+    func finishImageSettings(){
+        guard imageToolPreview,let page,let directory else{return}
+        imageToolPreview=false;imagePreviewPage=nil;imageRefinement?.cancel();imageRefinement=nil;inkInteractive=false
+        finishGesture(page:page,directory:directory,selected:selected,zoom:zoom)
+    }
     private var softwareCommitRevision:Int?
     private func renderLatestInk(){
-        guard !inkRendering,let input=latestInk else{return};latestInk=nil;inkRendering=true;let generation=inkGeneration
+        guard !inkRendering,let input=latestInk else{return};latestInk=nil;inkRendering=true;let generation=inkGeneration,interactive=inkInteractive
         inkWorker.async{[weak self] in
-            let image=RenderBudget.screen{(try? ImagePipeline.compositeRegion(input.0,directory:input.1,rect:input.2,sample:input.3)).map{UIImage(cgImage:$0)}}
+            var failure:String?
+            let image:UIImage?=RenderBudget.screen(interactive:interactive){do{return UIImage(cgImage:try ImagePipeline.compositeRegion(input.0,directory:input.1,rect:input.2,sample:input.3))}catch{failure=error.localizedDescription;return nil}}
             DispatchQueue.main.async{[weak self] in guard let self else{return};self.inkRendering=false
                 if self.inkGeneration==generation{
-                    if let image,!(self.softwareCommitRevision.map{self.revision >= $0 && self.visibleTilesReady} ?? false){self.showPatch(image,rect:input.2);if let target=self.softwareCommitRevision{self.patchCommitRevision=target}}
+                    if let failure{self.onRenderError?(failure)}
+                    if let image,!(self.softwareCommitRevision.map{self.revision >= $0 && self.visibleTilesReady} ?? false){self.showPatch(image,rect:input.2);if self.imageToolPreview{self.imagePresentedFrames+=1};if let target=self.softwareCommitRevision{self.patchCommitRevision=target}}
                     self.renderLatestInk()
                 }else{self.renderLatestInk()}
             }
@@ -128,6 +162,7 @@ final class DocumentCanvas: UIView {
     }
     func refreshVisible(_ rect: CGRect) {
         guard let fullPage = page, let directory else { return }
+        if imageToolPreview{let changed=visible != rect;visible=rect;if changed{requestImagePreview()};return}
         let page = rasterPage(fullPage)
         visible = rect
         let imageBounds = CGRect(x: 0, y: 0, width: page.width, height: page.height)

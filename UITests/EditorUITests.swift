@@ -234,6 +234,23 @@ final class EditorUITests:XCTestCase {
         reveal(app.buttons["panel-stroke"],in:app.scrollViews["panel-strip"]);app.buttons["panel-stroke"].tap();XCTAssertEqual(app.textFields["value-السماكة"].value as? String,"5");capture("fix-manual-done-remembers-outline")
     }
 
+    func testImageEffectsStackControlsResetAndReopen(){
+        openEditor();tool("image-effects")
+        XCTAssertTrue(app.buttons["image-effects-close"].waitForExistence(timeout:20))
+        let scroll=app.scrollViews["image-effects-scroll"]
+        let grain=app.buttons["image-effect-card-grain"];revealVertical(grain,in:scroll);grain.tap()
+        XCTAssertTrue(app.buttons["image-effect-edit-grain"].waitForExistence(timeout:8))
+        let enabled=app.switches["image-effect-enabled-grain"];XCTAssertTrue(enabled.exists);enabled.tap();enabled.tap()
+        app.buttons["image-effects-library"].tap();let duo=app.buttons["image-effect-card-duotone"];revealVertical(duo,in:scroll);duo.tap()
+        let up=app.buttons["image-effect-up-duotone"];revealVertical(up,in:scroll);XCTAssertTrue(up.isEnabled);up.tap();XCTAssertFalse(up.isEnabled)
+        capture("image-effects-ordered-stack");app.buttons["image-effects-close"].tap()
+        let open=app.buttons["image-effects-open"];reveal(open,in:app.scrollViews["object-strip"]);open.tap()
+        XCTAssertTrue(app.buttons["image-effect-edit-duotone"].waitForExistence(timeout:8));XCTAssertTrue(app.buttons["image-effect-edit-grain"].exists)
+        app.buttons["image-effects-original"].tap();XCTAssertFalse(app.buttons["image-effects-original"].isEnabled)
+        XCTAssertFalse(app.buttons["image-effect-edit-duotone"].exists);app.buttons["image-effects-close"].tap()
+        XCTAssertTrue(app.buttons["undo"].isEnabled);XCTAssertTrue(app.buttons["export"].exists)
+    }
+
     func testGradientPresetDisableRestoreAndEffectCardsDoNotTerminateEditor(){
         openEditor();tool("text");app.buttons["text-inspector-close"].tap()
         reveal(app.buttons["panel-gradientMap"],in:app.scrollViews["panel-strip"]);app.buttons["panel-gradientMap"].tap()

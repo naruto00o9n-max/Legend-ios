@@ -30,8 +30,13 @@ xcrun simctl boot "$TASK_DEVICE" || true
 xcrun simctl bootstatus "$TASK_DEVICE" -b
 open -a Simulator --args -CurrentDeviceUDID "$TASK_DEVICE"
 if [[ "$TASK_STAGE" == core ]]; then
+  TASK_CORE_ARGUMENTS=(-only-testing:CookiesTests -only-testing:CookiesServicesTests -skip-testing:CookiesServicesTests/ServiceTests/testOriginalPublicAPIFromNativeClient)
+  if [[ -n "${COOKIES_CORE_FILTER:-}" ]]; then
+    [[ "$COOKIES_CORE_FILTER" == CookiesTests/RenderStabilityTests/testPersistentToolPreviewHonorsHiddenReorderedAndDrawingForeground ]] || { echo "Invalid native fixture retry selector"; exit 2; }
+    TASK_CORE_ARGUMENTS=("-only-testing:$COOKIES_CORE_FILTER")
+  fi
   TASK_STATUS=0
-  xcodebuild -project CookiesEditor.xcodeproj -scheme CookiesEditor -configuration Debug -destination "platform=iOS Simulator,id=$TASK_DEVICE" -parallel-testing-enabled NO -derivedDataPath .work/simulator -resultBundlePath "build/$TASK_SCREEN-core.xcresult" -only-testing:CookiesTests -only-testing:CookiesServicesTests -skip-testing:CookiesServicesTests/ServiceTests/testOriginalPublicAPIFromNativeClient ARCHS=x86_64 ONLY_ACTIVE_ARCH=YES test > "build/test-$TASK_SCREEN-core.log" 2>&1 || TASK_STATUS=$?
+  xcodebuild -project CookiesEditor.xcodeproj -scheme CookiesEditor -configuration Debug -destination "platform=iOS Simulator,id=$TASK_DEVICE" -parallel-testing-enabled NO -derivedDataPath .work/simulator -resultBundlePath "build/$TASK_SCREEN-core.xcresult" "${TASK_CORE_ARGUMENTS[@]}" ARCHS=x86_64 ONLY_ACTIVE_ARCH=YES test > "build/test-$TASK_SCREEN-core.log" 2>&1 || TASK_STATUS=$?
   rg -n "\.swift:[0-9]+: error:|Test Case .* failed|Executed .* failures" "build/test-$TASK_SCREEN-core.log" | tail -35 || true
   xcrun xcresulttool export attachments --path "build/$TASK_SCREEN-core.xcresult" --output-path "build/whitening-$TASK_SCREEN" || true
   exit "$TASK_STATUS"

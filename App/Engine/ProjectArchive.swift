@@ -24,7 +24,7 @@ enum ProjectArchive {
         do {
             try FileManager.default.unzipItem(at:input,to:destination)
             var page=try JSONDecoder().decode(EditorPage.self,from:Data(contentsOf:destination.appendingPathComponent("page.json")))
-            guard [page.source,page.raw].allSatisfy({!$0.isEmpty && !$0.contains("/") && !$0.contains("..")}),page.layers.allSatisfy({l in ([l.imagePath,l.style.texturePath]+l.strokes.compactMap(\.texturePath)).allSatisfy{$0.isEmpty || (!$0.contains("/") && !$0.contains(".."))}}) else{throw ImageFailure.message("مسارات أصول المشروع غير صالحة")}
+            guard [page.source,page.raw].allSatisfy({!$0.isEmpty && !$0.contains("/") && !$0.contains("..")}),page.layers.allSatisfy({l in ([l.imagePath,l.style.texturePath,l.imagePixelFile ?? ""]+l.strokes.compactMap(\.texturePath)).allSatisfy{$0.isEmpty || (!$0.contains("/") && !$0.contains(".."))}}) else{throw ImageFailure.message("مسارات أصول المشروع غير صالحة")}
             let fontFolder=destination.appendingPathComponent("Fonts",isDirectory:true)
             let fonts=((try? FileManager.default.contentsOfDirectory(at:fontFolder,includingPropertiesForKeys:nil)) ?? []).filter{["ttf","otf"].contains($0.pathExtension.lowercased())}
             page.id=UUID(uuidString:destination.lastPathComponent)!

@@ -46,7 +46,7 @@ enum AppStorageManager {
     }
     static func safe(_ path:String)->Bool{!path.isEmpty && !path.hasPrefix("/") && !path.contains("\\") && !path.split(separator:"/").contains(where:{$0==".." || $0=="."})}
     static func validPage(_ page:EditorPage)->Bool {
-        page.width>0 && page.width<=32768 && page.height>0 && page.height<=1000000 && [page.source,page.raw].allSatisfy{safe($0) && !$0.contains("/")} && page.layers.allSatisfy{layer in ([layer.imagePath,layer.style.texturePath]+layer.strokes.compactMap(\.texturePath)).allSatisfy{$0.isEmpty || (safe($0) && !$0.contains("/"))}}
+        page.width>0 && page.width<=32768 && page.height>0 && page.height<=1000000 && [page.source,page.raw].allSatisfy{safe($0) && !$0.contains("/")} && page.layers.allSatisfy{layer in ([layer.imagePath,layer.style.texturePath,layer.imagePixelFile ?? ""]+layer.strokes.compactMap(\.texturePath)).allSatisfy{$0.isEmpty || (safe($0) && !$0.contains("/"))}}
     }
     static func hash(_ file:URL)throws->String {
         let handle=try FileHandle(forReadingFrom:file);defer{try? handle.close()};var hash=SHA256()

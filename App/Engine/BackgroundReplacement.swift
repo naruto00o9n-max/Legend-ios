@@ -8,7 +8,12 @@ extension EditorModel {
             guard page==before else{return};let id=UUID().uuidString,source=id+".png",raw=id+".rgba"
             try FileManager.default.copyItem(at:folder.appendingPathComponent(imported.source),to:directory.appendingPathComponent(source))
             do{try FileManager.default.copyItem(at:folder.appendingPathComponent(imported.raw),to:directory.appendingPathComponent(raw))}catch{try? FileManager.default.removeItem(at:directory.appendingPathComponent(source));throw error}
-            checkpoint();page.source=source;page.raw=raw;page.baseHidden=false;save()
+            checkpoint();page.source=source;page.raw=raw;page.baseHidden=false
+            for index in page.layers.indices where page.layers[index].isWorkingImage==true {
+                page.layers[index].imagePath=source;page.layers[index].imagePixelFile=raw
+                page.layers[index].imagePixelWidth=before.width;page.layers[index].imagePixelHeight=before.height
+                if page.layers[index].isVisible{page.baseHidden=true}
+            };save()
         }catch{self.error=error.localizedDescription}
     }
 }
