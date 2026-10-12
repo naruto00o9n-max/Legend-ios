@@ -19,7 +19,13 @@ enum ImageEffectGraph {
     private static let halftone=CIKernel(source:"""
     kernel vec4 imageHalftone(sampler source,float radius,float angle){vec2 p=destCoord();float c=cos(angle),s=sin(angle);vec2 q=vec2(c*p.x-s*p.y,s*p.x+c*p.y);float cell=radius*1.5;float row=floor(q.y/cell);float stagger=mod(row,2.0)*cell*0.5;vec2 center=vec2(floor((q.x-stagger)/cell)*cell+stagger,row*cell);vec2 samplePoint=vec2(c*center.x+s*center.y,-s*center.x+c*center.y);vec4 original=sample(source,samplerTransform(source,p));vec4 color=sample(source,samplerTransform(source,samplePoint));float lum=dot(color.rgb/max(color.a,0.00001),vec3(0.299,0.587,0.114));float dotRadius=lum*radius*0.9;float inside=1.0-smoothstep(max(0.0,dotRadius-0.6),dotRadius+0.6,distance(q,center));return mix(original,color,inside*step(0.5,dotRadius));}
     """)
-    static var kernelsAvailable:Bool{vignette != nil && grain != nil && fade != nil && duotone != nil && halftone != nil}
+    private static let pixelate=CIKernel(source:"""
+    kernel vec4 imagePixelate(sampler source,float cell){vec2 q=floor(destCoord()/max(1.0,cell))*max(1.0,cell)+vec2(max(1.0,cell)*0.5);return sample(source,samplerTransform(source,q));}
+    """)
+    private static func pixelated(_ image:CIImage,cell:Double,extent:CGRect)->CIImage {
+        pixelate?.apply(extent:extent,roiCallback:{_,r in r.insetBy(dx:-CGFloat(cell*2),dy:-CGFloat(cell*2))},arguments:[image.clampedToExtent(),cell]) ?? image
+    }
+    static var kernelsAvailable:Bool{vignette != nil && grain != nil && fade != nil && duotone != nil && halftone != nil && pixelate != nil}
     static func apply(_ input:CIImage,effects:[ImageEffect],size:CGSize)->CIImage {
         let extent=CGRect(origin:.zero,size:size),center=CIVector(x:size.width/2,y:size.height/2)
         var result=input
@@ -28,7 +34,7 @@ enum ImageEffectGraph {
             switch effect.kind {
             case .blur:
                 switch Int(effect.parameter1){
-                case 1:result=result.applyingFilter("CIPixellate",parameters:[kCIInputScaleKey:1/max(0.04,1-i/105),kCIInputCenterKey:CIVector(x:0,y:0)])
+                case 1:result=pixelated(result,cell:1/max(0.04,1-i/105),extent:extent)
                 case 2:result=result.clampedToExtent().applyingFilter("CIZoomBlur",parameters:[kCIInputAmountKey:i,kCIInputCenterKey:center])
                 case 3:
                     var spun=result;let count=RenderBudget.isInteractive ? 4:14
@@ -51,7 +57,7 @@ enum ImageEffectGraph {
                 let blurred=result.clampedToExtent().applyingFilter("CIGaussianBlur",parameters:[kCIInputRadiusKey:max(0.1,i*0.12)])
                 let tinted=tint(blurred,color:effect.color,amount:min(1,i/100))
                 result=tinted.applyingFilter("CIAdditionCompositing",parameters:[kCIInputBackgroundImageKey:result])
-            case .pixelate:result=result.applyingFilter("CIPixellate",parameters:[kCIInputScaleKey:max(2,i),kCIInputCenterKey:CIVector(x:0,y:0)])
+            case .pixelate:result=pixelated(result,cell:max(2,i),extent:extent)
             case .halftone:
                 let radius=max(2,i/5)
                 if let value=halftone?.apply(extent:extent,roiCallback:{_,r in r.insetBy(dx:-CGFloat(radius*3),dy:-CGFloat(radius*3))},arguments:[result,radius,angle]){result=value}
