@@ -1,7 +1,8 @@
 # جرد التطبيق المحدث — 11 أكتوبر 2026
 
-هذه مقارنة وظيفية من **182 بندًا** مع YTyper V4.5: 102 بندًا مفصلًا للمحرر و80 لما حوله. مرجع المصدر `06321b5663547547283b6373c0d092fcdebc03cb`. تستند إلى الكود الأصلي المفكك والكود الحالي؛ نجاح الجهاز الفعلي أو المطابقة البصرية لكل شاشة ليسا ضمن معنى «موجود». نتائج الاختبارات منفصلة في [تقرير الدفعة](colors-effects-oct11.md). لا يغير هذا دفتر الدفعة القديمة الموقوفة.
+هذه مقارنة وظيفية من **182 بندًا** مع YTyper V4.5: 102 بندًا مفصلًا للمحرر و80 لما حوله. مرجع المصدر `9ef49fc6dbd0cceb35aeaa3a487fc1fd50447d71`. تستند إلى الكود الأصلي المفكك والكود الحالي؛ نجاح الجهاز الفعلي أو المطابقة البصرية لكل شاشة ليسا ضمن معنى «موجود». نتائج الاختبارات منفصلة في [تقرير الدفعة](colors-effects-oct11.md). لا يغير هذا دفتر الدفعة القديمة الموقوفة.
 
+تحديث 12 أكتوبر: اكتملت F094 وF170–F182 وظيفيًا؛ [التفاصيل والأدلة](image-effects-oct12.md). بقيت فروق خوارزميات الرسم موثقة، وبقية الجرد كما هي.
 صححنا البنود القديمة التي بقيت «ناقصة» رغم وجود الفصول متعددة الصفحات وPDF والدمج/التقسيم والسحب والقارئ ومجموعات الوسوم والمسودات وإعدادات التحرير فعليًا. لا تعني مهملات التايبر وجود سلة مشاريع، ولا يعني تصدير PSD دعم استيراده بطبقاته.
 
 ## النواقص الأوضح خارج المحرر
@@ -13,7 +14,7 @@
 - التدريب التفاعلي ولغات متعددة وكل ثيم/خلفية وإعداد مطابق للأصل غير مكتمل.
 - تسجيل Google على الجهاز الفعلي ما زال غير مثبت؛ إثبات المستخدم الأخير يخص البريد وكلمة المرور.
 
-[الجرد المفصل للمحرر](editor-inventory-oct11.md) يسجل 35 ناقصًا و16 جزئيًا للمحرر، ولا يضم هذه الأرقام إلى 139 بندًا قديمًا على أنها نسبة إنجاز جديدة.
+[الجرد المفصل للمحرر](editor-inventory-oct11.md) يسجل 21 ناقصًا و16 جزئيًا للمحرر، ولا يضم هذه الأرقام إلى 139 بندًا قديمًا على أنها نسبة إنجاز جديدة.
 
 ## التوزيع الوظيفي
 
@@ -22,8 +23,8 @@
 | موجود | 33 |
 | جزئي | 33 |
 | اعتماد خادم | 7 |
-| موجود مع فروق | 62 |
-| ناقص | 44 |
+| موجود مع فروق | 76 |
+| ناقص | 30 |
 | بديل iOS | 1 |
 | اعتماد خارجي | 1 |
 | غير متحقق | 1 |
@@ -125,7 +126,7 @@
 | F091 | الصور والأشكال · منظور الصورة وعتامتها ومزجها | جزئي | EditorView object opacity/position; LayerRenderer | عتامة ومزج وتحويل الصورة موجود؛ منظور رباعي/شبكي خاص بالصورة غير موصل كأداة كاملة. |
 | F092 | الصور والأشكال · سطوع/تباين/تشبع/تعريض/حرارة/صبغة/ظل/إضاءة/درجة/حواف | ناقص | No image adjustment/effect stack model or ImageEffectsPanel equivalent in App | ضبط وفلاتر وتكديس تأثيرات الصور، الفرشاة السحرية، قناع حر لمسح/استرجاع الصورة، ومسودات الصور غير مكتملة/غير موجودة. قناع النص منفصل. |
 | F093 | الصور والأشكال · فلاتر الصورة وقوالبها | ناقص | No image adjustment/effect stack model or ImageEffectsPanel equivalent in App | ضبط وفلاتر وتكديس تأثيرات الصور، الفرشاة السحرية، قناع حر لمسح/استرجاع الصورة، ومسودات الصور غير مكتملة/غير موجودة. قناع النص منفصل. |
-| F094 | الصور والأشكال · تأثيرات الصورة: 13 نوعًا مع تكديس وترتيب/تعطيل | ناقص | No image adjustment/effect stack model or ImageEffectsPanel equivalent in App | ضبط وفلاتر وتكديس تأثيرات الصور، الفرشاة السحرية، قناع حر لمسح/استرجاع الصورة، ومسودات الصور غير مكتملة/غير موجودة. قناع النص منفصل. |
+| F094 | الصور والأشكال · تأثيرات الصورة: 13 نوعًا مع تكديس وترتيب/تعطيل | موجود مع فروق | ImageEffects/ImageEffectEditing; ImageEffectsPanel; ImageEffectGraph/ImagePixelProvider/ImageLayerRenderer; ImageEffectsTests (11), 151 native cases passed per iPad/iPhone; reachable stack UI and source/Photos integrity, run 38288933715 | المطابقة البكسلية لمحرك Android غير مدّعاة؛ Core Image للتمويه/التوهج والحافة، وحبيبات ثابتة قابلة لإعادة التوزيع. الوظيفة والتحكم والتكديس والحفظ/التراجع/التصدير مكتملة ومختبرة. |
 | F095 | الصور والأشكال · الفرشاة السحرية: مؤثر موضعي بقناع | ناقص | No image adjustment/effect stack model or ImageEffectsPanel equivalent in App | ضبط وفلاتر وتكديس تأثيرات الصور، الفرشاة السحرية، قناع حر لمسح/استرجاع الصورة، ومسودات الصور غير مكتملة/غير موجودة. قناع النص منفصل. |
 | F096 | الصور والأشكال · مسح واسترجاع الصورة بقناع | ناقص | No image adjustment/effect stack model or ImageEffectsPanel equivalent in App | ضبط وفلاتر وتكديس تأثيرات الصور، الفرشاة السحرية، قناع حر لمسح/استرجاع الصورة، ومسودات الصور غير مكتملة/غير موجودة. قناع النص منفصل. |
 | F097 | الصور والأشكال · مسودات الصور وإدارة المحفوظات | ناقص | No image adjustment/effect stack model or ImageEffectsPanel equivalent in App | ضبط وفلاتر وتكديس تأثيرات الصور، الفرشاة السحرية، قناع حر لمسح/استرجاع الصورة، ومسودات الصور غير مكتملة/غير موجودة. قناع النص منفصل. |
@@ -201,16 +202,16 @@
 | F167 | كتالوج تأثيرات النص · PLASMA_SHADER | ناقص | TextEffect enum lacks these cases | تأثيرات النص المتقدمة/shaders غير موجودة في iOS. |
 | F168 | كتالوج تأثيرات النص · HOLOGRAPHIC_SHADER | ناقص | TextEffect enum lacks these cases | تأثيرات النص المتقدمة/shaders غير موجودة في iOS. |
 | F169 | كتالوج تأثيرات النص · ELECTRIC_SHADER | ناقص | TextEffect enum lacks these cases | تأثيرات النص المتقدمة/shaders غير موجودة في iOS. |
-| F170 | كتالوج تأثيرات الصور · BLUR | ناقص | No image effect stack | تأثيرات الصورة ليست تأثيرات النص؛ إضافة RGB للنص لا تنجز CHROMATIC للصورة. |
-| F171 | كتالوج تأثيرات الصور · CHROMATIC | ناقص | No image effect stack | تأثيرات الصورة ليست تأثيرات النص؛ إضافة RGB للنص لا تنجز CHROMATIC للصورة. |
-| F172 | كتالوج تأثيرات الصور · GLITCH | ناقص | No image effect stack | تأثيرات الصورة ليست تأثيرات النص؛ إضافة RGB للنص لا تنجز CHROMATIC للصورة. |
-| F173 | كتالوج تأثيرات الصور · VIGNETTE | ناقص | No image effect stack | تأثيرات الصورة ليست تأثيرات النص؛ إضافة RGB للنص لا تنجز CHROMATIC للصورة. |
-| F174 | كتالوج تأثيرات الصور · GRAIN | ناقص | No image effect stack | تأثيرات الصورة ليست تأثيرات النص؛ إضافة RGB للنص لا تنجز CHROMATIC للصورة. |
-| F175 | كتالوج تأثيرات الصور · GLOW | ناقص | No image effect stack | تأثيرات الصورة ليست تأثيرات النص؛ إضافة RGB للنص لا تنجز CHROMATIC للصورة. |
-| F176 | كتالوج تأثيرات الصور · PIXELATE | ناقص | No image effect stack | تأثيرات الصورة ليست تأثيرات النص؛ إضافة RGB للنص لا تنجز CHROMATIC للصورة. |
-| F177 | كتالوج تأثيرات الصور · HALFTONE | ناقص | No image effect stack | تأثيرات الصورة ليست تأثيرات النص؛ إضافة RGB للنص لا تنجز CHROMATIC للصورة. |
-| F178 | كتالوج تأثيرات الصور · SLICE | ناقص | No image effect stack | تأثيرات الصورة ليست تأثيرات النص؛ إضافة RGB للنص لا تنجز CHROMATIC للصورة. |
-| F179 | كتالوج تأثيرات الصور · FADE | ناقص | No image effect stack | تأثيرات الصورة ليست تأثيرات النص؛ إضافة RGB للنص لا تنجز CHROMATIC للصورة. |
-| F180 | كتالوج تأثيرات الصور · DUOTONE | ناقص | No image effect stack | تأثيرات الصورة ليست تأثيرات النص؛ إضافة RGB للنص لا تنجز CHROMATIC للصورة. |
-| F181 | كتالوج تأثيرات الصور · MIRROR | ناقص | No image effect stack | تأثيرات الصورة ليست تأثيرات النص؛ إضافة RGB للنص لا تنجز CHROMATIC للصورة. |
-| F182 | كتالوج تأثيرات الصور · OUTLINE | ناقص | No image effect stack | تأثيرات الصورة ليست تأثيرات النص؛ إضافة RGB للنص لا تنجز CHROMATIC للصورة. |
+| F170 | كتالوج تأثيرات الصور · BLUR | موجود مع فروق | ImageEffects/ImageEffectEditing; ImageEffectsPanel; ImageEffectGraph/ImagePixelProvider/ImageLayerRenderer; ImageEffectsTests (11), 151 native cases passed per iPad/iPhone; reachable stack UI and source/Photos integrity, run 38288933715 | المطابقة البكسلية لمحرك Android غير مدّعاة؛ Core Image للتمويه/التوهج والحافة، وحبيبات ثابتة قابلة لإعادة التوزيع. الوظيفة والتحكم والتكديس والحفظ/التراجع/التصدير مكتملة ومختبرة. |
+| F171 | كتالوج تأثيرات الصور · CHROMATIC | موجود مع فروق | ImageEffects/ImageEffectEditing; ImageEffectsPanel; ImageEffectGraph/ImagePixelProvider/ImageLayerRenderer; ImageEffectsTests (11), 151 native cases passed per iPad/iPhone; reachable stack UI and source/Photos integrity, run 38288933715 | المطابقة البكسلية لمحرك Android غير مدّعاة؛ Core Image للتمويه/التوهج والحافة، وحبيبات ثابتة قابلة لإعادة التوزيع. الوظيفة والتحكم والتكديس والحفظ/التراجع/التصدير مكتملة ومختبرة. |
+| F172 | كتالوج تأثيرات الصور · GLITCH | موجود مع فروق | ImageEffects/ImageEffectEditing; ImageEffectsPanel; ImageEffectGraph/ImagePixelProvider/ImageLayerRenderer; ImageEffectsTests (11), 151 native cases passed per iPad/iPhone; reachable stack UI and source/Photos integrity, run 38288933715 | المطابقة البكسلية لمحرك Android غير مدّعاة؛ Core Image للتمويه/التوهج والحافة، وحبيبات ثابتة قابلة لإعادة التوزيع. الوظيفة والتحكم والتكديس والحفظ/التراجع/التصدير مكتملة ومختبرة. |
+| F173 | كتالوج تأثيرات الصور · VIGNETTE | موجود مع فروق | ImageEffects/ImageEffectEditing; ImageEffectsPanel; ImageEffectGraph/ImagePixelProvider/ImageLayerRenderer; ImageEffectsTests (11), 151 native cases passed per iPad/iPhone; reachable stack UI and source/Photos integrity, run 38288933715 | المطابقة البكسلية لمحرك Android غير مدّعاة؛ Core Image للتمويه/التوهج والحافة، وحبيبات ثابتة قابلة لإعادة التوزيع. الوظيفة والتحكم والتكديس والحفظ/التراجع/التصدير مكتملة ومختبرة. |
+| F174 | كتالوج تأثيرات الصور · GRAIN | موجود مع فروق | ImageEffects/ImageEffectEditing; ImageEffectsPanel; ImageEffectGraph/ImagePixelProvider/ImageLayerRenderer; ImageEffectsTests (11), 151 native cases passed per iPad/iPhone; reachable stack UI and source/Photos integrity, run 38288933715 | المطابقة البكسلية لمحرك Android غير مدّعاة؛ Core Image للتمويه/التوهج والحافة، وحبيبات ثابتة قابلة لإعادة التوزيع. الوظيفة والتحكم والتكديس والحفظ/التراجع/التصدير مكتملة ومختبرة. |
+| F175 | كتالوج تأثيرات الصور · GLOW | موجود مع فروق | ImageEffects/ImageEffectEditing; ImageEffectsPanel; ImageEffectGraph/ImagePixelProvider/ImageLayerRenderer; ImageEffectsTests (11), 151 native cases passed per iPad/iPhone; reachable stack UI and source/Photos integrity, run 38288933715 | المطابقة البكسلية لمحرك Android غير مدّعاة؛ Core Image للتمويه/التوهج والحافة، وحبيبات ثابتة قابلة لإعادة التوزيع. الوظيفة والتحكم والتكديس والحفظ/التراجع/التصدير مكتملة ومختبرة. |
+| F176 | كتالوج تأثيرات الصور · PIXELATE | موجود مع فروق | ImageEffects/ImageEffectEditing; ImageEffectsPanel; ImageEffectGraph/ImagePixelProvider/ImageLayerRenderer; ImageEffectsTests (11), 151 native cases passed per iPad/iPhone; reachable stack UI and source/Photos integrity, run 38288933715 | المطابقة البكسلية لمحرك Android غير مدّعاة؛ Core Image للتمويه/التوهج والحافة، وحبيبات ثابتة قابلة لإعادة التوزيع. الوظيفة والتحكم والتكديس والحفظ/التراجع/التصدير مكتملة ومختبرة. |
+| F177 | كتالوج تأثيرات الصور · HALFTONE | موجود مع فروق | ImageEffects/ImageEffectEditing; ImageEffectsPanel; ImageEffectGraph/ImagePixelProvider/ImageLayerRenderer; ImageEffectsTests (11), 151 native cases passed per iPad/iPhone; reachable stack UI and source/Photos integrity, run 38288933715 | المطابقة البكسلية لمحرك Android غير مدّعاة؛ Core Image للتمويه/التوهج والحافة، وحبيبات ثابتة قابلة لإعادة التوزيع. الوظيفة والتحكم والتكديس والحفظ/التراجع/التصدير مكتملة ومختبرة. |
+| F178 | كتالوج تأثيرات الصور · SLICE | موجود مع فروق | ImageEffects/ImageEffectEditing; ImageEffectsPanel; ImageEffectGraph/ImagePixelProvider/ImageLayerRenderer; ImageEffectsTests (11), 151 native cases passed per iPad/iPhone; reachable stack UI and source/Photos integrity, run 38288933715 | المطابقة البكسلية لمحرك Android غير مدّعاة؛ Core Image للتمويه/التوهج والحافة، وحبيبات ثابتة قابلة لإعادة التوزيع. الوظيفة والتحكم والتكديس والحفظ/التراجع/التصدير مكتملة ومختبرة. |
+| F179 | كتالوج تأثيرات الصور · FADE | موجود مع فروق | ImageEffects/ImageEffectEditing; ImageEffectsPanel; ImageEffectGraph/ImagePixelProvider/ImageLayerRenderer; ImageEffectsTests (11), 151 native cases passed per iPad/iPhone; reachable stack UI and source/Photos integrity, run 38288933715 | المطابقة البكسلية لمحرك Android غير مدّعاة؛ Core Image للتمويه/التوهج والحافة، وحبيبات ثابتة قابلة لإعادة التوزيع. الوظيفة والتحكم والتكديس والحفظ/التراجع/التصدير مكتملة ومختبرة. |
+| F180 | كتالوج تأثيرات الصور · DUOTONE | موجود مع فروق | ImageEffects/ImageEffectEditing; ImageEffectsPanel; ImageEffectGraph/ImagePixelProvider/ImageLayerRenderer; ImageEffectsTests (11), 151 native cases passed per iPad/iPhone; reachable stack UI and source/Photos integrity, run 38288933715 | المطابقة البكسلية لمحرك Android غير مدّعاة؛ Core Image للتمويه/التوهج والحافة، وحبيبات ثابتة قابلة لإعادة التوزيع. الوظيفة والتحكم والتكديس والحفظ/التراجع/التصدير مكتملة ومختبرة. |
+| F181 | كتالوج تأثيرات الصور · MIRROR | موجود مع فروق | ImageEffects/ImageEffectEditing; ImageEffectsPanel; ImageEffectGraph/ImagePixelProvider/ImageLayerRenderer; ImageEffectsTests (11), 151 native cases passed per iPad/iPhone; reachable stack UI and source/Photos integrity, run 38288933715 | المطابقة البكسلية لمحرك Android غير مدّعاة؛ Core Image للتمويه/التوهج والحافة، وحبيبات ثابتة قابلة لإعادة التوزيع. الوظيفة والتحكم والتكديس والحفظ/التراجع/التصدير مكتملة ومختبرة. |
+| F182 | كتالوج تأثيرات الصور · OUTLINE | موجود مع فروق | ImageEffects/ImageEffectEditing; ImageEffectsPanel; ImageEffectGraph/ImagePixelProvider/ImageLayerRenderer; ImageEffectsTests (11), 151 native cases passed per iPad/iPhone; reachable stack UI and source/Photos integrity, run 38288933715 | المطابقة البكسلية لمحرك Android غير مدّعاة؛ Core Image للتمويه/التوهج والحافة، وحبيبات ثابتة قابلة لإعادة التوزيع. الوظيفة والتحكم والتكديس والحفظ/التراجع/التصدير مكتملة ومختبرة. |

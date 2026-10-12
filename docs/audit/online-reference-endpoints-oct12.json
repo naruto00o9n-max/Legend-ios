@@ -1,0 +1,41 @@
+{
+  "status": "read_only_reference_inventory_no_service_added_yet",
+  "scope": "non-community connected edition after current image effects",
+  "entries": [
+    {
+      "reference_file": "utils/CloudSyncManager.java",
+      "endpoints": [
+        "rpc/accept_arena_challenge",
+        "rpc/claim_recruitment_reward",
+        "rpc/claim_referral_code",
+        "rpc/claim_streak_reward",
+        "rpc/claim_welcome_reward",
+        "rpc/create_arena_challenge",
+        "rpc/create_promo_code",
+        "rpc/get_leaderboard",
+        "rpc/get_my_arena_challenge",
+        "rpc/increment_bubbles",
+        "rpc/redeem_promo_code",
+        "rpc/spin_lucky_wheel",
+        "rpc/sync_spent_points"
+      ]
+    },
+    {
+      "reference_file": "utils/ProfileFetcher.java",
+      "endpoints": [
+        "rpc/get_leaderboard",
+        "rpc/get_server_time",
+        "rpc/register_premium_device"
+      ]
+    },
+    {
+      "reference_file": "utils/StoreBackend.java",
+      "endpoints": [
+        "rpc/add_points",
+        "rpc/get_gallery_free_uses",
+        "rpc/spin_lucky_wheel",
+        "rpc/use_gallery_free_tool"
+      ]
+    }
+  ]
+}

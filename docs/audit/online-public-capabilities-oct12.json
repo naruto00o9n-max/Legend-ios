@@ -1,0 +1,26 @@
+{
+  "status": "read_only_preparation_for_next_online_scope",
+  "method": "POST original rpc/get_leaderboard with empty parameters; no reward/profile mutation",
+  "credential_role": "anon",
+  "http_status": 404,
+  "empty_parameters_are_not_reference_contract": true,
+  "original_rpc_requires": "current_user_id of the authenticated current user; never an arbitrary other user",
+  "null_current_user_read_only_probe": {
+    "http_status": 200,
+    "type": "dict",
+    "count": null,
+    "row_field_names": []
+  },
+  "leaderboard_schema": {
+    "top_10": {
+      "type": "list",
+      "count": 10,
+      "row_schema": {
+        "id": "str",
+        "display_name": "str",
+        "total_bubbles_typed": "int"
+      }
+    },
+    "current_user": "NoneType"
+  }
+}

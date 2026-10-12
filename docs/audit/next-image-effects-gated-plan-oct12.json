@@ -1,175 +1,266 @@
 {
   "baseline_missing": 44,
   "completed_this_queue": 0,
-  "status": "implementation_in_progress_native_validation_running",
+  "status": "completed_functional_with_documented_rendering_differences",
   "selected_count": 10,
   "selected": [
     {
+      "id": "F094",
+      "feature": "تأثيرات الصورة: 13 نوعًا مع تكديس وترتيب/تعطيل",
+      "status": "completed_functional_with_documented_differences",
+      "required": [
+        "real image-pixel renderer",
+        "effect-specific controls",
+        "enable/remove/reorder/restore original",
+        "save/reopen/undo/redo/archive",
+        "original-size PNG and retained profile",
+        "bounded live preview with intermediate frames",
+        "native all-engine and actual reachable UI gates"
+      ],
+      "original_evidence": "ImageEffectType؛ ImageEffectsPanel؛ item_active_effect",
+      "verification": "image-effects-verification-oct12.json; 38288933715 success"
+    },
+    {
+      "id": "F170",
+      "feature": "BLUR",
+      "status": "completed_functional_with_documented_differences",
+      "required": [
+        "real image-pixel renderer",
+        "effect-specific controls",
+        "enable/remove/reorder/restore original",
+        "save/reopen/undo/redo/archive",
+        "original-size PNG and retained profile",
+        "bounded live preview with intermediate frames",
+        "native all-engine and actual reachable UI gates"
+      ],
+      "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel",
+      "verification": "image-effects-verification-oct12.json; 38288933715 success"
+    },
+    {
+      "id": "F171",
+      "feature": "CHROMATIC",
+      "status": "completed_functional_with_documented_differences",
+      "required": [
+        "real image-pixel renderer",
+        "effect-specific controls",
+        "enable/remove/reorder/restore original",
+        "save/reopen/undo/redo/archive",
+        "original-size PNG and retained profile",
+        "bounded live preview with intermediate frames",
+        "native all-engine and actual reachable UI gates"
+      ],
+      "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel",
+      "verification": "image-effects-verification-oct12.json; 38288933715 success"
+    },
+    {
+      "id": "F172",
+      "feature": "GLITCH",
+      "status": "completed_functional_with_documented_differences",
+      "required": [
+        "real image-pixel renderer",
+        "effect-specific controls",
+        "enable/remove/reorder/restore original",
+        "save/reopen/undo/redo/archive",
+        "original-size PNG and retained profile",
+        "bounded live preview with intermediate frames",
+        "native all-engine and actual reachable UI gates"
+      ],
+      "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel",
+      "verification": "image-effects-verification-oct12.json; 38288933715 success"
+    },
+    {
       "id": "F173",
       "feature": "VIGNETTE",
-      "status": "not_started",
-      "dependency": "stabilization release gates must pass",
+      "status": "completed_functional_with_documented_differences",
       "required": [
-        "real image-layer renderer, not a text-effect alias",
-        "working effect-specific parameters matching the reference feature",
-        "enable/disable/remove/reorder without source destruction",
-        "project save/reopen and undo/redo",
-        "PNG/JPEG export with original dimensions and correct compositing",
-        "bounded preview work on long images",
-        "native regression and actual reachable interface test"
+        "real image-pixel renderer",
+        "effect-specific controls",
+        "enable/remove/reorder/restore original",
+        "save/reopen/undo/redo/archive",
+        "original-size PNG and retained profile",
+        "bounded live preview with intermediate frames",
+        "native all-engine and actual reachable UI gates"
       ],
-      "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel"
+      "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel",
+      "verification": "image-effects-verification-oct12.json; 38288933715 success"
     },
     {
       "id": "F174",
       "feature": "GRAIN",
-      "status": "not_started",
-      "dependency": "stabilization release gates must pass",
+      "status": "completed_functional_with_documented_differences",
       "required": [
-        "real image-layer renderer, not a text-effect alias",
-        "working effect-specific parameters matching the reference feature",
-        "enable/disable/remove/reorder without source destruction",
-        "project save/reopen and undo/redo",
-        "PNG/JPEG export with original dimensions and correct compositing",
-        "bounded preview work on long images",
-        "native regression and actual reachable interface test"
+        "real image-pixel renderer",
+        "effect-specific controls",
+        "enable/remove/reorder/restore original",
+        "save/reopen/undo/redo/archive",
+        "original-size PNG and retained profile",
+        "bounded live preview with intermediate frames",
+        "native all-engine and actual reachable UI gates"
       ],
-      "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel"
+      "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel",
+      "verification": "image-effects-verification-oct12.json; 38288933715 success"
     },
     {
       "id": "F175",
       "feature": "GLOW",
-      "status": "not_started",
-      "dependency": "stabilization release gates must pass",
+      "status": "completed_functional_with_documented_differences",
       "required": [
-        "real image-layer renderer, not a text-effect alias",
-        "working effect-specific parameters matching the reference feature",
-        "enable/disable/remove/reorder without source destruction",
-        "project save/reopen and undo/redo",
-        "PNG/JPEG export with original dimensions and correct compositing",
-        "bounded preview work on long images",
-        "native regression and actual reachable interface test"
+        "real image-pixel renderer",
+        "effect-specific controls",
+        "enable/remove/reorder/restore original",
+        "save/reopen/undo/redo/archive",
+        "original-size PNG and retained profile",
+        "bounded live preview with intermediate frames",
+        "native all-engine and actual reachable UI gates"
       ],
-      "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel"
+      "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel",
+      "verification": "image-effects-verification-oct12.json; 38288933715 success"
     },
     {
       "id": "F176",
       "feature": "PIXELATE",
-      "status": "not_started",
-      "dependency": "stabilization release gates must pass",
+      "status": "completed_functional_with_documented_differences",
       "required": [
-        "real image-layer renderer, not a text-effect alias",
-        "working effect-specific parameters matching the reference feature",
-        "enable/disable/remove/reorder without source destruction",
-        "project save/reopen and undo/redo",
-        "PNG/JPEG export with original dimensions and correct compositing",
-        "bounded preview work on long images",
-        "native regression and actual reachable interface test"
+        "real image-pixel renderer",
+        "effect-specific controls",
+        "enable/remove/reorder/restore original",
+        "save/reopen/undo/redo/archive",
+        "original-size PNG and retained profile",
+        "bounded live preview with intermediate frames",
+        "native all-engine and actual reachable UI gates"
       ],
-      "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel"
+      "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel",
+      "verification": "image-effects-verification-oct12.json; 38288933715 success"
     },
     {
       "id": "F177",
       "feature": "HALFTONE",
-      "status": "not_started",
-      "dependency": "stabilization release gates must pass",
+      "status": "completed_functional_with_documented_differences",
       "required": [
-        "real image-layer renderer, not a text-effect alias",
-        "working effect-specific parameters matching the reference feature",
-        "enable/disable/remove/reorder without source destruction",
-        "project save/reopen and undo/redo",
-        "PNG/JPEG export with original dimensions and correct compositing",
-        "bounded preview work on long images",
-        "native regression and actual reachable interface test"
+        "real image-pixel renderer",
+        "effect-specific controls",
+        "enable/remove/reorder/restore original",
+        "save/reopen/undo/redo/archive",
+        "original-size PNG and retained profile",
+        "bounded live preview with intermediate frames",
+        "native all-engine and actual reachable UI gates"
       ],
-      "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel"
+      "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel",
+      "verification": "image-effects-verification-oct12.json; 38288933715 success"
     },
     {
       "id": "F178",
       "feature": "SLICE",
-      "status": "not_started",
-      "dependency": "stabilization release gates must pass",
+      "status": "completed_functional_with_documented_differences",
       "required": [
-        "real image-layer renderer, not a text-effect alias",
-        "working effect-specific parameters matching the reference feature",
-        "enable/disable/remove/reorder without source destruction",
-        "project save/reopen and undo/redo",
-        "PNG/JPEG export with original dimensions and correct compositing",
-        "bounded preview work on long images",
-        "native regression and actual reachable interface test"
+        "real image-pixel renderer",
+        "effect-specific controls",
+        "enable/remove/reorder/restore original",
+        "save/reopen/undo/redo/archive",
+        "original-size PNG and retained profile",
+        "bounded live preview with intermediate frames",
+        "native all-engine and actual reachable UI gates"
       ],
-      "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel"
+      "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel",
+      "verification": "image-effects-verification-oct12.json; 38288933715 success"
     },
     {
       "id": "F179",
       "feature": "FADE",
-      "status": "not_started",
-      "dependency": "stabilization release gates must pass",
+      "status": "completed_functional_with_documented_differences",
       "required": [
-        "real image-layer renderer, not a text-effect alias",
-        "working effect-specific parameters matching the reference feature",
-        "enable/disable/remove/reorder without source destruction",
-        "project save/reopen and undo/redo",
-        "PNG/JPEG export with original dimensions and correct compositing",
-        "bounded preview work on long images",
-        "native regression and actual reachable interface test"
+        "real image-pixel renderer",
+        "effect-specific controls",
+        "enable/remove/reorder/restore original",
+        "save/reopen/undo/redo/archive",
+        "original-size PNG and retained profile",
+        "bounded live preview with intermediate frames",
+        "native all-engine and actual reachable UI gates"
       ],
-      "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel"
+      "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel",
+      "verification": "image-effects-verification-oct12.json; 38288933715 success"
     },
     {
       "id": "F180",
       "feature": "DUOTONE",
-      "status": "not_started",
-      "dependency": "stabilization release gates must pass",
+      "status": "completed_functional_with_documented_differences",
       "required": [
-        "real image-layer renderer, not a text-effect alias",
-        "working effect-specific parameters matching the reference feature",
-        "enable/disable/remove/reorder without source destruction",
-        "project save/reopen and undo/redo",
-        "PNG/JPEG export with original dimensions and correct compositing",
-        "bounded preview work on long images",
-        "native regression and actual reachable interface test"
+        "real image-pixel renderer",
+        "effect-specific controls",
+        "enable/remove/reorder/restore original",
+        "save/reopen/undo/redo/archive",
+        "original-size PNG and retained profile",
+        "bounded live preview with intermediate frames",
+        "native all-engine and actual reachable UI gates"
       ],
-      "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel"
+      "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel",
+      "verification": "image-effects-verification-oct12.json; 38288933715 success"
     },
     {
       "id": "F181",
       "feature": "MIRROR",
-      "status": "not_started",
-      "dependency": "stabilization release gates must pass",
+      "status": "completed_functional_with_documented_differences",
       "required": [
-        "real image-layer renderer, not a text-effect alias",
-        "working effect-specific parameters matching the reference feature",
-        "enable/disable/remove/reorder without source destruction",
-        "project save/reopen and undo/redo",
-        "PNG/JPEG export with original dimensions and correct compositing",
-        "bounded preview work on long images",
-        "native regression and actual reachable interface test"
+        "real image-pixel renderer",
+        "effect-specific controls",
+        "enable/remove/reorder/restore original",
+        "save/reopen/undo/redo/archive",
+        "original-size PNG and retained profile",
+        "bounded live preview with intermediate frames",
+        "native all-engine and actual reachable UI gates"
       ],
-      "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel"
+      "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel",
+      "verification": "image-effects-verification-oct12.json; 38288933715 success"
     },
     {
       "id": "F182",
       "feature": "OUTLINE",
-      "status": "not_started",
-      "dependency": "stabilization release gates must pass",
+      "status": "completed_functional_with_documented_differences",
       "required": [
-        "real image-layer renderer, not a text-effect alias",
-        "working effect-specific parameters matching the reference feature",
-        "enable/disable/remove/reorder without source destruction",
-        "project save/reopen and undo/redo",
-        "PNG/JPEG export with original dimensions and correct compositing",
-        "bounded preview work on long images",
-        "native regression and actual reachable interface test"
+        "real image-pixel renderer",
+        "effect-specific controls",
+        "enable/remove/reorder/restore original",
+        "save/reopen/undo/redo/archive",
+        "original-size PNG and retained profile",
+        "bounded live preview with intermediate frames",
+        "native all-engine and actual reachable UI gates"
       ],
-      "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel"
+      "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel",
+      "verification": "image-effects-verification-oct12.json; 38288933715 success"
     }
   ],
   "parent_F094": "Must not be marked complete: full 13-effect catalogue also requires BLUR, CHROMATIC and GLITCH.",
   "user_authorization": "2026-10-12: user tested latest performance release and explicitly authorized missing-feature work",
   "scope": "F094 + F170–F182: all thirteen source-image effects with independent editable stack",
-  "candidate": "694bfeb2c843beb7718cd31d3ecd32ea86644dd0",
-  "run": 38282385198,
-  "completed_claims": [],
-  "scope_expansion_reason": "Complete parent image-stack item F094 with all thirteen original effect kinds, rather than leave three absent."
+  "candidate": "9ef49fc6dbd0cceb35aeaa3a487fc1fd50447d71",
+  "run": 38288933715,
+  "completed_claims": [
+    "F094",
+    "F170",
+    "F171",
+    "F172",
+    "F173",
+    "F174",
+    "F175",
+    "F176",
+    "F177",
+    "F178",
+    "F179",
+    "F180",
+    "F181",
+    "F182"
+  ],
+  "scope_expansion_reason": "Complete parent image-stack item F094 with all thirteen original effect kinds, rather than leave three absent.",
+  "inventory_before": {
+    "موجود": 33,
+    "جزئي": 33,
+    "اعتماد خادم": 7,
+    "موجود مع فروق": 62,
+    "ناقص": 44,
+    "بديل iOS": 1,
+    "اعتماد خارجي": 1,
+    "غير متحقق": 1
+  },
+  "expected_missing_if_all_fourteen_gates_pass": 30,
+  "remaining_missing": 30
 }

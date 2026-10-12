@@ -1,6 +1,6 @@
 {
-  "date": "2026-10-11",
-  "ios_source": "06321b5663547547283b6373c0d092fcdebc03cb",
+  "date": "2026-10-12",
+  "ios_source": "9ef49fc6dbd0cceb35aeaa3a487fc1fd50447d71",
   "original": "YTyper V4.5",
   "apk_sha256": "a3758bcdf50c802c25d9023c90456f6bdde922a94cda08fc3ce737c2a9b29789",
   "scope": "182 source-based functional comparisons. 102 detailed editor entries, 80 surrounding-feature entries. Not full visual/device parity. Old paused batch ledgers unchanged.",
@@ -8,8 +8,8 @@
     "موجود": 33,
     "جزئي": 33,
     "اعتماد خادم": 7,
-    "موجود مع فروق": 62,
-    "ناقص": 44,
+    "موجود مع فروق": 76,
+    "ناقص": 30,
     "بديل iOS": 1,
     "اعتماد خارجي": 1,
     "غير متحقق": 1
@@ -950,10 +950,10 @@
       "group": "الصور والأشكال",
       "feature": "تأثيرات الصورة: 13 نوعًا مع تكديس وترتيب/تعطيل",
       "original_evidence": "ImageEffectType؛ ImageEffectsPanel؛ item_active_effect",
-      "current_status": "ناقص",
-      "ios_evidence": "No image adjustment/effect stack model or ImageEffectsPanel equivalent in App",
-      "remaining": "ضبط وفلاتر وتكديس تأثيرات الصور، الفرشاة السحرية، قناع حر لمسح/استرجاع الصورة، ومسودات الصور غير مكتملة/غير موجودة. قناع النص منفصل.",
-      "review_basis": "الجرد التفصيلي المحدث للمحرر"
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "ImageEffects/ImageEffectEditing; ImageEffectsPanel; ImageEffectGraph/ImagePixelProvider/ImageLayerRenderer; ImageEffectsTests (11), 151 native cases passed per iPad/iPhone; reachable stack UI and source/Photos integrity, run 38288933715",
+      "remaining": "المطابقة البكسلية لمحرك Android غير مدّعاة؛ Core Image للتمويه/التوهج والحافة، وحبيبات ثابتة قابلة لإعادة التوزيع. الوظيفة والتحكم والتكديس والحفظ/التراجع/التصدير مكتملة ومختبرة.",
+      "review_basis": "دفعة تأثيرات الصور 12 أكتوبر 2026؛ docs/audit/image-effects-verification-oct12.json"
     },
     {
       "id": "F095",
@@ -1710,130 +1710,170 @@
       "group": "كتالوج تأثيرات الصور",
       "feature": "BLUR",
       "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel",
-      "current_status": "ناقص",
-      "ios_evidence": "No image effect stack",
-      "remaining": "تأثيرات الصورة ليست تأثيرات النص؛ إضافة RGB للنص لا تنجز CHROMATIC للصورة.",
-      "review_basis": "الجرد التفصيلي المحدث للمحرر"
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "ImageEffects/ImageEffectEditing; ImageEffectsPanel; ImageEffectGraph/ImagePixelProvider/ImageLayerRenderer; ImageEffectsTests (11), 151 native cases passed per iPad/iPhone; reachable stack UI and source/Photos integrity, run 38288933715",
+      "remaining": "المطابقة البكسلية لمحرك Android غير مدّعاة؛ Core Image للتمويه/التوهج والحافة، وحبيبات ثابتة قابلة لإعادة التوزيع. الوظيفة والتحكم والتكديس والحفظ/التراجع/التصدير مكتملة ومختبرة.",
+      "review_basis": "دفعة تأثيرات الصور 12 أكتوبر 2026؛ docs/audit/image-effects-verification-oct12.json"
     },
     {
       "id": "F171",
       "group": "كتالوج تأثيرات الصور",
       "feature": "CHROMATIC",
       "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel",
-      "current_status": "ناقص",
-      "ios_evidence": "No image effect stack",
-      "remaining": "تأثيرات الصورة ليست تأثيرات النص؛ إضافة RGB للنص لا تنجز CHROMATIC للصورة.",
-      "review_basis": "الجرد التفصيلي المحدث للمحرر"
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "ImageEffects/ImageEffectEditing; ImageEffectsPanel; ImageEffectGraph/ImagePixelProvider/ImageLayerRenderer; ImageEffectsTests (11), 151 native cases passed per iPad/iPhone; reachable stack UI and source/Photos integrity, run 38288933715",
+      "remaining": "المطابقة البكسلية لمحرك Android غير مدّعاة؛ Core Image للتمويه/التوهج والحافة، وحبيبات ثابتة قابلة لإعادة التوزيع. الوظيفة والتحكم والتكديس والحفظ/التراجع/التصدير مكتملة ومختبرة.",
+      "review_basis": "دفعة تأثيرات الصور 12 أكتوبر 2026؛ docs/audit/image-effects-verification-oct12.json"
     },
     {
       "id": "F172",
       "group": "كتالوج تأثيرات الصور",
       "feature": "GLITCH",
       "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel",
-      "current_status": "ناقص",
-      "ios_evidence": "No image effect stack",
-      "remaining": "تأثيرات الصورة ليست تأثيرات النص؛ إضافة RGB للنص لا تنجز CHROMATIC للصورة.",
-      "review_basis": "الجرد التفصيلي المحدث للمحرر"
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "ImageEffects/ImageEffectEditing; ImageEffectsPanel; ImageEffectGraph/ImagePixelProvider/ImageLayerRenderer; ImageEffectsTests (11), 151 native cases passed per iPad/iPhone; reachable stack UI and source/Photos integrity, run 38288933715",
+      "remaining": "المطابقة البكسلية لمحرك Android غير مدّعاة؛ Core Image للتمويه/التوهج والحافة، وحبيبات ثابتة قابلة لإعادة التوزيع. الوظيفة والتحكم والتكديس والحفظ/التراجع/التصدير مكتملة ومختبرة.",
+      "review_basis": "دفعة تأثيرات الصور 12 أكتوبر 2026؛ docs/audit/image-effects-verification-oct12.json"
     },
     {
       "id": "F173",
       "group": "كتالوج تأثيرات الصور",
       "feature": "VIGNETTE",
       "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel",
-      "current_status": "ناقص",
-      "ios_evidence": "No image effect stack",
-      "remaining": "تأثيرات الصورة ليست تأثيرات النص؛ إضافة RGB للنص لا تنجز CHROMATIC للصورة.",
-      "review_basis": "الجرد التفصيلي المحدث للمحرر"
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "ImageEffects/ImageEffectEditing; ImageEffectsPanel; ImageEffectGraph/ImagePixelProvider/ImageLayerRenderer; ImageEffectsTests (11), 151 native cases passed per iPad/iPhone; reachable stack UI and source/Photos integrity, run 38288933715",
+      "remaining": "المطابقة البكسلية لمحرك Android غير مدّعاة؛ Core Image للتمويه/التوهج والحافة، وحبيبات ثابتة قابلة لإعادة التوزيع. الوظيفة والتحكم والتكديس والحفظ/التراجع/التصدير مكتملة ومختبرة.",
+      "review_basis": "دفعة تأثيرات الصور 12 أكتوبر 2026؛ docs/audit/image-effects-verification-oct12.json"
     },
     {
       "id": "F174",
       "group": "كتالوج تأثيرات الصور",
       "feature": "GRAIN",
       "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel",
-      "current_status": "ناقص",
-      "ios_evidence": "No image effect stack",
-      "remaining": "تأثيرات الصورة ليست تأثيرات النص؛ إضافة RGB للنص لا تنجز CHROMATIC للصورة.",
-      "review_basis": "الجرد التفصيلي المحدث للمحرر"
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "ImageEffects/ImageEffectEditing; ImageEffectsPanel; ImageEffectGraph/ImagePixelProvider/ImageLayerRenderer; ImageEffectsTests (11), 151 native cases passed per iPad/iPhone; reachable stack UI and source/Photos integrity, run 38288933715",
+      "remaining": "المطابقة البكسلية لمحرك Android غير مدّعاة؛ Core Image للتمويه/التوهج والحافة، وحبيبات ثابتة قابلة لإعادة التوزيع. الوظيفة والتحكم والتكديس والحفظ/التراجع/التصدير مكتملة ومختبرة.",
+      "review_basis": "دفعة تأثيرات الصور 12 أكتوبر 2026؛ docs/audit/image-effects-verification-oct12.json"
     },
     {
       "id": "F175",
       "group": "كتالوج تأثيرات الصور",
       "feature": "GLOW",
       "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel",
-      "current_status": "ناقص",
-      "ios_evidence": "No image effect stack",
-      "remaining": "تأثيرات الصورة ليست تأثيرات النص؛ إضافة RGB للنص لا تنجز CHROMATIC للصورة.",
-      "review_basis": "الجرد التفصيلي المحدث للمحرر"
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "ImageEffects/ImageEffectEditing; ImageEffectsPanel; ImageEffectGraph/ImagePixelProvider/ImageLayerRenderer; ImageEffectsTests (11), 151 native cases passed per iPad/iPhone; reachable stack UI and source/Photos integrity, run 38288933715",
+      "remaining": "المطابقة البكسلية لمحرك Android غير مدّعاة؛ Core Image للتمويه/التوهج والحافة، وحبيبات ثابتة قابلة لإعادة التوزيع. الوظيفة والتحكم والتكديس والحفظ/التراجع/التصدير مكتملة ومختبرة.",
+      "review_basis": "دفعة تأثيرات الصور 12 أكتوبر 2026؛ docs/audit/image-effects-verification-oct12.json"
     },
     {
       "id": "F176",
       "group": "كتالوج تأثيرات الصور",
       "feature": "PIXELATE",
       "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel",
-      "current_status": "ناقص",
-      "ios_evidence": "No image effect stack",
-      "remaining": "تأثيرات الصورة ليست تأثيرات النص؛ إضافة RGB للنص لا تنجز CHROMATIC للصورة.",
-      "review_basis": "الجرد التفصيلي المحدث للمحرر"
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "ImageEffects/ImageEffectEditing; ImageEffectsPanel; ImageEffectGraph/ImagePixelProvider/ImageLayerRenderer; ImageEffectsTests (11), 151 native cases passed per iPad/iPhone; reachable stack UI and source/Photos integrity, run 38288933715",
+      "remaining": "المطابقة البكسلية لمحرك Android غير مدّعاة؛ Core Image للتمويه/التوهج والحافة، وحبيبات ثابتة قابلة لإعادة التوزيع. الوظيفة والتحكم والتكديس والحفظ/التراجع/التصدير مكتملة ومختبرة.",
+      "review_basis": "دفعة تأثيرات الصور 12 أكتوبر 2026؛ docs/audit/image-effects-verification-oct12.json"
     },
     {
       "id": "F177",
       "group": "كتالوج تأثيرات الصور",
       "feature": "HALFTONE",
       "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel",
-      "current_status": "ناقص",
-      "ios_evidence": "No image effect stack",
-      "remaining": "تأثيرات الصورة ليست تأثيرات النص؛ إضافة RGB للنص لا تنجز CHROMATIC للصورة.",
-      "review_basis": "الجرد التفصيلي المحدث للمحرر"
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "ImageEffects/ImageEffectEditing; ImageEffectsPanel; ImageEffectGraph/ImagePixelProvider/ImageLayerRenderer; ImageEffectsTests (11), 151 native cases passed per iPad/iPhone; reachable stack UI and source/Photos integrity, run 38288933715",
+      "remaining": "المطابقة البكسلية لمحرك Android غير مدّعاة؛ Core Image للتمويه/التوهج والحافة، وحبيبات ثابتة قابلة لإعادة التوزيع. الوظيفة والتحكم والتكديس والحفظ/التراجع/التصدير مكتملة ومختبرة.",
+      "review_basis": "دفعة تأثيرات الصور 12 أكتوبر 2026؛ docs/audit/image-effects-verification-oct12.json"
     },
     {
       "id": "F178",
       "group": "كتالوج تأثيرات الصور",
       "feature": "SLICE",
       "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel",
-      "current_status": "ناقص",
-      "ios_evidence": "No image effect stack",
-      "remaining": "تأثيرات الصورة ليست تأثيرات النص؛ إضافة RGB للنص لا تنجز CHROMATIC للصورة.",
-      "review_basis": "الجرد التفصيلي المحدث للمحرر"
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "ImageEffects/ImageEffectEditing; ImageEffectsPanel; ImageEffectGraph/ImagePixelProvider/ImageLayerRenderer; ImageEffectsTests (11), 151 native cases passed per iPad/iPhone; reachable stack UI and source/Photos integrity, run 38288933715",
+      "remaining": "المطابقة البكسلية لمحرك Android غير مدّعاة؛ Core Image للتمويه/التوهج والحافة، وحبيبات ثابتة قابلة لإعادة التوزيع. الوظيفة والتحكم والتكديس والحفظ/التراجع/التصدير مكتملة ومختبرة.",
+      "review_basis": "دفعة تأثيرات الصور 12 أكتوبر 2026؛ docs/audit/image-effects-verification-oct12.json"
     },
     {
       "id": "F179",
       "group": "كتالوج تأثيرات الصور",
       "feature": "FADE",
       "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel",
-      "current_status": "ناقص",
-      "ios_evidence": "No image effect stack",
-      "remaining": "تأثيرات الصورة ليست تأثيرات النص؛ إضافة RGB للنص لا تنجز CHROMATIC للصورة.",
-      "review_basis": "الجرد التفصيلي المحدث للمحرر"
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "ImageEffects/ImageEffectEditing; ImageEffectsPanel; ImageEffectGraph/ImagePixelProvider/ImageLayerRenderer; ImageEffectsTests (11), 151 native cases passed per iPad/iPhone; reachable stack UI and source/Photos integrity, run 38288933715",
+      "remaining": "المطابقة البكسلية لمحرك Android غير مدّعاة؛ Core Image للتمويه/التوهج والحافة، وحبيبات ثابتة قابلة لإعادة التوزيع. الوظيفة والتحكم والتكديس والحفظ/التراجع/التصدير مكتملة ومختبرة.",
+      "review_basis": "دفعة تأثيرات الصور 12 أكتوبر 2026؛ docs/audit/image-effects-verification-oct12.json"
     },
     {
       "id": "F180",
       "group": "كتالوج تأثيرات الصور",
       "feature": "DUOTONE",
       "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel",
-      "current_status": "ناقص",
-      "ios_evidence": "No image effect stack",
-      "remaining": "تأثيرات الصورة ليست تأثيرات النص؛ إضافة RGB للنص لا تنجز CHROMATIC للصورة.",
-      "review_basis": "الجرد التفصيلي المحدث للمحرر"
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "ImageEffects/ImageEffectEditing; ImageEffectsPanel; ImageEffectGraph/ImagePixelProvider/ImageLayerRenderer; ImageEffectsTests (11), 151 native cases passed per iPad/iPhone; reachable stack UI and source/Photos integrity, run 38288933715",
+      "remaining": "المطابقة البكسلية لمحرك Android غير مدّعاة؛ Core Image للتمويه/التوهج والحافة، وحبيبات ثابتة قابلة لإعادة التوزيع. الوظيفة والتحكم والتكديس والحفظ/التراجع/التصدير مكتملة ومختبرة.",
+      "review_basis": "دفعة تأثيرات الصور 12 أكتوبر 2026؛ docs/audit/image-effects-verification-oct12.json"
     },
     {
       "id": "F181",
       "group": "كتالوج تأثيرات الصور",
       "feature": "MIRROR",
       "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel",
-      "current_status": "ناقص",
-      "ios_evidence": "No image effect stack",
-      "remaining": "تأثيرات الصورة ليست تأثيرات النص؛ إضافة RGB للنص لا تنجز CHROMATIC للصورة.",
-      "review_basis": "الجرد التفصيلي المحدث للمحرر"
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "ImageEffects/ImageEffectEditing; ImageEffectsPanel; ImageEffectGraph/ImagePixelProvider/ImageLayerRenderer; ImageEffectsTests (11), 151 native cases passed per iPad/iPhone; reachable stack UI and source/Photos integrity, run 38288933715",
+      "remaining": "المطابقة البكسلية لمحرك Android غير مدّعاة؛ Core Image للتمويه/التوهج والحافة، وحبيبات ثابتة قابلة لإعادة التوزيع. الوظيفة والتحكم والتكديس والحفظ/التراجع/التصدير مكتملة ومختبرة.",
+      "review_basis": "دفعة تأثيرات الصور 12 أكتوبر 2026؛ docs/audit/image-effects-verification-oct12.json"
     },
     {
       "id": "F182",
       "group": "كتالوج تأثيرات الصور",
       "feature": "OUTLINE",
       "original_evidence": "data/model/ImageEffectType.java؛ ImageEffectsPanel",
-      "current_status": "ناقص",
-      "ios_evidence": "No image effect stack",
-      "remaining": "تأثيرات الصورة ليست تأثيرات النص؛ إضافة RGB للنص لا تنجز CHROMATIC للصورة.",
-      "review_basis": "الجرد التفصيلي المحدث للمحرر"
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "ImageEffects/ImageEffectEditing; ImageEffectsPanel; ImageEffectGraph/ImagePixelProvider/ImageLayerRenderer; ImageEffectsTests (11), 151 native cases passed per iPad/iPhone; reachable stack UI and source/Photos integrity, run 38288933715",
+      "remaining": "المطابقة البكسلية لمحرك Android غير مدّعاة؛ Core Image للتمويه/التوهج والحافة، وحبيبات ثابتة قابلة لإعادة التوزيع. الوظيفة والتحكم والتكديس والحفظ/التراجع/التصدير مكتملة ومختبرة.",
+      "review_basis": "دفعة تأثيرات الصور 12 أكتوبر 2026؛ docs/audit/image-effects-verification-oct12.json"
     }
-  ]
+  ],
+  "image_effects_batch": {
+    "ids": [
+      "F094",
+      "F170",
+      "F171",
+      "F172",
+      "F173",
+      "F174",
+      "F175",
+      "F176",
+      "F177",
+      "F178",
+      "F179",
+      "F180",
+      "F181",
+      "F182"
+    ],
+    "source": "9ef49fc6dbd0cceb35aeaa3a487fc1fd50447d71",
+    "before_counts": {
+      "موجود": 33,
+      "جزئي": 33,
+      "اعتماد خادم": 7,
+      "موجود مع فروق": 62,
+      "ناقص": 44,
+      "بديل iOS": 1,
+      "اعتماد خارجي": 1,
+      "غير متحقق": 1
+    },
+    "after_counts": {
+      "موجود": 33,
+      "جزئي": 33,
+      "اعتماد خادم": 7,
+      "موجود مع فروق": 76,
+      "ناقص": 30,
+      "بديل iOS": 1,
+      "اعتماد خارجي": 1,
+      "غير متحقق": 1
+    },
+    "evidence": "image-effects-verification-oct12.json"
+  }
 }

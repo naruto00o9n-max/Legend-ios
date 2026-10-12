@@ -129,5 +129,13 @@
       "remaining": "APNs/FCM iOS وتهيئة Backend وتوقيع/Entitlements",
       "review_basis": "قراءة المصدر الحالي؛ الاختبار المحدد إن ذكر، لا تحقق جهاز فعلي شامل"
     }
-  ]
+  ],
+  "reference_details": {
+    "Discord": "CloudSyncManager writes own user_profiles link_token and expiry; explicit user action, no admin access",
+    "leaderboard": "rpc/get_leaderboard, ordinary original API",
+    "daily_rewards_and_invites": "claim_streak_reward, claim_welcome_reward, claim_referral_code, claim_recruitment_reward; actual server entitlements",
+    "season_and_arena": "create_arena_challenge / accept_arena_challenge / get_my_arena_challenge; inspect confirmation and rules before integration",
+    "settings_sync": "CloudSyncManager push/pull own profile settings",
+    "Drive_projects_fonts_styles_tags": "DriveSyncManager uses Google Drive account scopes; requires iOS-compatible client authorization, not anonymous Supabase storage substitution"
+  }
 }

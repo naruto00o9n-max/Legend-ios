@@ -1,0 +1,102 @@
+{
+  "status": "preliminary_source_only_not_production_verification",
+  "parameters_are_nearby_source_candidates_require_per_function_review": true,
+  "entries": [
+    {
+      "rpc": "rpc/accept_arena_challenge",
+      "nearby_parameter_keys": [
+        "p_code"
+      ],
+      "reference_byte_offset": 11778
+    },
+    {
+      "rpc": "rpc/claim_recruitment_reward",
+      "nearby_parameter_keys": [
+        "p_index"
+      ],
+      "reference_byte_offset": 17196
+    },
+    {
+      "rpc": "rpc/claim_referral_code",
+      "nearby_parameter_keys": [],
+      "reference_byte_offset": 22555
+    },
+    {
+      "rpc": "rpc/claim_streak_reward",
+      "nearby_parameter_keys": [
+        "p_amount"
+      ],
+      "reference_byte_offset": 27547
+    },
+    {
+      "rpc": "rpc/claim_welcome_reward",
+      "nearby_parameter_keys": [],
+      "reference_byte_offset": 31292
+    },
+    {
+      "rpc": "rpc/create_arena_challenge",
+      "nearby_parameter_keys": [
+        "p_is_public",
+        "p_target",
+        "p_wager"
+      ],
+      "reference_byte_offset": 36755
+    },
+    {
+      "rpc": "rpc/get_leaderboard",
+      "nearby_parameter_keys": [],
+      "reference_byte_offset": 42079
+    },
+    {
+      "rpc": "rpc/create_promo_code",
+      "nearby_parameter_keys": [
+        "p_premium_days"
+      ],
+      "reference_byte_offset": 46825
+    },
+    {
+      "rpc": "rpc/get_leaderboard",
+      "nearby_parameter_keys": [],
+      "reference_byte_offset": 77789
+    },
+    {
+      "rpc": "rpc/get_leaderboard",
+      "nearby_parameter_keys": [],
+      "reference_byte_offset": 129179
+    },
+    {
+      "rpc": "rpc/get_my_arena_challenge",
+      "nearby_parameter_keys": [],
+      "reference_byte_offset": 153075
+    },
+    {
+      "rpc": "rpc/increment_bubbles",
+      "nearby_parameter_keys": [],
+      "reference_byte_offset": 164328
+    },
+    {
+      "rpc": "rpc/redeem_promo_code",
+      "nearby_parameter_keys": [
+        "p_code"
+      ],
+      "reference_byte_offset": 198696
+    },
+    {
+      "rpc": "rpc/spin_lucky_wheel",
+      "nearby_parameter_keys": [],
+      "reference_byte_offset": 202869
+    },
+    {
+      "rpc": "rpc/increment_bubbles",
+      "nearby_parameter_keys": [],
+      "reference_byte_offset": 215533
+    },
+    {
+      "rpc": "rpc/sync_spent_points",
+      "nearby_parameter_keys": [
+        "p_amount"
+      ],
+      "reference_byte_offset": 223259
+    }
+  ]
+}

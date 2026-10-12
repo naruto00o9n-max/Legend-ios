@@ -1,0 +1,320 @@
+{
+  "first_candidate": "694bfeb2c843beb7718cd31d3ecd32ea86644dd0",
+  "first_run": 38282385198,
+  "first_ui_ipad_artifact": 11764190156,
+  "first_engine_ipad_artifact": 11762991624,
+  "first_engine_test_failure": "one regional comparison case: thirteen assertions; twelve had row-order fixture issue; pixelation additionally had genuine region-dependent grid",
+  "first_native_passes": [
+    "all thirteen kinds render and round-trip",
+    "continuous live frame publishing",
+    "800x15000 bounded provider requests",
+    "source stack undo/reset/archive/original-byte restoration",
+    "stack order and glitch colors"
+  ],
+  "first_ui_passes": [
+    "effect stack add/enable/reorder/reset/reopen",
+    "compound text gradient/style/perspective controls",
+    "Photos import and orientation",
+    "real Files font picker and return"
+  ],
+  "final_candidate": "9ef49fc6dbd0cceb35aeaa3a487fc1fd50447d71",
+  "final_run": 38288933715,
+  "status": "release_gates_passed",
+  "fixture_correction": "Core Image coordinates bottom-left, bitmap rows top-down; concatenate regional results in descending y",
+  "numeric_tolerance": "native whole/regional fused rendering allowed <=1 unit per premultiplied 8-bit channel; unedited original stays exact bytes",
+  "product_repair": "pixelation uses a global-coordinate kernel, replacing region-dependent CIPixellate",
+  "pre_native_candidate": "37aeae05d165a4430e50c2604879e0425451ecda",
+  "pre_native_results": {
+    "ipad_passed_cases": 148,
+    "ipad_failed_cases": 2,
+    "passed_image_cases": 9,
+    "failures": [
+      "live preview had no intermediate frame in cold competing-tile setup",
+      "old guide topic counts after adding the image-effects guide"
+    ],
+    "fixed_in_next_candidate": [
+      "suspend pending detail composites during image edits",
+      "safe resume of deferred tiles",
+      "continuous-slider autosave protocol in live test",
+      "native C alpha conversion with opaque-pixel fast path",
+      "updated guide expected topic count"
+    ]
+  },
+  "local_c_integrity": "PASS: 800x15000 all 48,000,000 source RGBA bytes unchanged; edge tile and composite verified",
+  "packages_37ae_only_build_verified_not_release_approved": [
+    {
+      "edition": "connected",
+      "path": "/workspace/Cookies-Editor-37aeae0-unsigned.ipa",
+      "source_commit": "37aeae05d165a4430e50c2604879e0425451ecda",
+      "bundle_id": "com.cookies.editor.ios",
+      "display_name": "Cookies Editor",
+      "version": "1.1.0",
+      "build": "1.1.0",
+      "minimum_os": "17.0",
+      "url_schemes": [
+        "cookies-editor"
+      ],
+      "service_enabled": true,
+      "service_configuration_bundled": true,
+      "architecture": "arm64",
+      "unsigned": true,
+      "embedded_source_revision": "37aeae05d165a4430e50c2604879e0425451ecda",
+      "size": 15539772,
+      "sha256": "83ba679b4b6614d7401fb2accecc1a8fdefa94f4ceae84fb7a0c7b17826d42bc"
+    },
+    {
+      "edition": "local",
+      "path": "/workspace/Cookies-Editor-Local-37aeae0-unsigned.ipa",
+      "source_commit": "37aeae05d165a4430e50c2604879e0425451ecda",
+      "bundle_id": "com.cookies.editor.local",
+      "display_name": "Cookies Editor",
+      "version": "1.1.0",
+      "build": "1.1.0",
+      "minimum_os": "17.0",
+      "url_schemes": [
+        "cookies-editor-local"
+      ],
+      "service_enabled": false,
+      "service_configuration_bundled": false,
+      "architecture": "arm64",
+      "unsigned": true,
+      "embedded_source_revision": "37aeae05d165a4430e50c2604879e0425451ecda",
+      "size": 15539362,
+      "sha256": "8670a98885f2b773126d025319492a2e54c39ef54920ac2a4d069a4ed7c02301"
+    }
+  ],
+  "packages": [
+    {
+      "edition": "connected",
+      "path": "/workspace/Cookies-Editor-9ef49fc-unsigned.ipa",
+      "source_commit": "9ef49fc6dbd0cceb35aeaa3a487fc1fd50447d71",
+      "bundle_id": "com.cookies.editor.ios",
+      "display_name": "Cookies Editor",
+      "version": "1.1.0",
+      "build": "1.1.0",
+      "minimum_os": "17.0",
+      "url_schemes": [
+        "cookies-editor"
+      ],
+      "service_enabled": true,
+      "service_configuration_bundled": true,
+      "architecture": "arm64",
+      "unsigned": true,
+      "embedded_source_revision": "9ef49fc6dbd0cceb35aeaa3a487fc1fd50447d71",
+      "size": 15543348,
+      "sha256": "d0a284f0e9779edd10315a17b20a12ad2388bfaac6a53c059d74b8c0e76df12c"
+    },
+    {
+      "edition": "local",
+      "path": "/workspace/Cookies-Editor-Local-9ef49fc-unsigned.ipa",
+      "source_commit": "9ef49fc6dbd0cceb35aeaa3a487fc1fd50447d71",
+      "bundle_id": "com.cookies.editor.local",
+      "display_name": "Cookies Editor",
+      "version": "1.1.0",
+      "build": "1.1.0",
+      "minimum_os": "17.0",
+      "url_schemes": [
+        "cookies-editor-local"
+      ],
+      "service_enabled": false,
+      "service_configuration_bundled": false,
+      "architecture": "arm64",
+      "unsigned": true,
+      "embedded_source_revision": "9ef49fc6dbd0cceb35aeaa3a487fc1fd50447d71",
+      "size": 15543007,
+      "sha256": "248ae804cce90ac7531c08506591b3f3ea103f3f020311cbe909f8c30347b65d"
+    }
+  ],
+  "package_artifact_id": 11765785092,
+  "native": {
+    "ipad": {
+      "passed": 151,
+      "failed": 0,
+      "failed_names": [],
+      "live_metrics": [
+        "IMAGE_LIVE frames=5 duration=1.6666250228881836"
+      ],
+      "image_tests": [
+        "-[CookiesTests.ImageEffectsTests testAllThirteenEffectsRenderAndSurviveSerialization]",
+        "-[CookiesTests.ImageEffectsTests testBlurModesAndEffectSpecificParametersActuallyChangePixels]",
+        "-[CookiesTests.ImageEffectsTests testEveryEffectExportsAllBandsAndRetainsOriginalDimensions]",
+        "-[CookiesTests.ImageEffectsTests testImageEffectsRemainEditableAfterSplitAndBackgroundReplacement]",
+        "-[CookiesTests.ImageEffectsTests testLiveImageSettingsPublishDuringContinuousChangesWithoutInvalidatingSource]",
+        "-[CookiesTests.ImageEffectsTests testLongSourceUsesBoundedProviderRequests]",
+        "-[CookiesTests.ImageEffectsTests testProviderMatchesNativePartialTransparencyAndKeepsSourceBytes]",
+        "-[CookiesTests.ImageEffectsTests testProviderOrientationAndTiledGraphMatchWholeImage]",
+        "-[CookiesTests.ImageEffectsTests testSourceEffectsUndoResetArchiveAndOriginalBytes]",
+        "-[CookiesTests.ImageEffectsTests testStackOrderAndGlitchColorsAreActualRenderingInputs]",
+        "-[CookiesTests.ImageEffectsTests testWorkingImagePreservesWideGamutProfileWithoutEffects]"
+      ]
+    },
+    "iphone": {
+      "passed": 151,
+      "failed": 0,
+      "failed_names": [],
+      "live_metrics": [
+        "IMAGE_LIVE frames=5 duration=1.5928599834442139"
+      ],
+      "image_tests": [
+        "-[CookiesTests.ImageEffectsTests testAllThirteenEffectsRenderAndSurviveSerialization]",
+        "-[CookiesTests.ImageEffectsTests testBlurModesAndEffectSpecificParametersActuallyChangePixels]",
+        "-[CookiesTests.ImageEffectsTests testEveryEffectExportsAllBandsAndRetainsOriginalDimensions]",
+        "-[CookiesTests.ImageEffectsTests testImageEffectsRemainEditableAfterSplitAndBackgroundReplacement]",
+        "-[CookiesTests.ImageEffectsTests testLiveImageSettingsPublishDuringContinuousChangesWithoutInvalidatingSource]",
+        "-[CookiesTests.ImageEffectsTests testLongSourceUsesBoundedProviderRequests]",
+        "-[CookiesTests.ImageEffectsTests testProviderMatchesNativePartialTransparencyAndKeepsSourceBytes]",
+        "-[CookiesTests.ImageEffectsTests testProviderOrientationAndTiledGraphMatchWholeImage]",
+        "-[CookiesTests.ImageEffectsTests testSourceEffectsUndoResetArchiveAndOriginalBytes]",
+        "-[CookiesTests.ImageEffectsTests testStackOrderAndGlitchColorsAreActualRenderingInputs]",
+        "-[CookiesTests.ImageEffectsTests testWorkingImagePreservesWideGamutProfileWithoutEffects]"
+      ]
+    }
+  },
+  "engine_artifacts": {
+    "ipad": 11766156915,
+    "iphone": 11766940198
+  },
+  "interfaces": {
+    "iphone": {
+      "test-iphone-photos.log": {
+        "passed": 1,
+        "failed": 0,
+        "failed_names": []
+      },
+      "test-iphone-services.log": {
+        "passed": 2,
+        "failed": 0,
+        "failed_names": []
+      },
+      "test-iphone-ui-build.log": {
+        "passed": 0,
+        "failed": 0,
+        "failed_names": []
+      },
+      "test-iphone.log": {
+        "passed": 4,
+        "failed": 0,
+        "failed_names": []
+      },
+      "photos-integrity-iphone.json": {
+        "width": 800,
+        "height": 15000,
+        "rgba_bytes_compared": 48000000,
+        "all_source_pixels_unchanged": true,
+        "rgba_sha256": "2e6f94c610d03b7ed0e06d2e0a89199797d4de874795879e3df1a840eba35832",
+        "source_extension": ".png",
+        "method": "Real PHPicker UI selection; compare application disk RGBA to seeded Photos fixture"
+      },
+      "gates-iphone.json": {
+        "local_editor_and_photos_exit_code": 0,
+        "real_external_services_exit_code": 0,
+        "external_failure_does_not_discard_local_evidence": true
+      }
+    },
+    "ipad": {
+      "test-ipad-photos.log": {
+        "passed": 1,
+        "failed": 0,
+        "failed_names": []
+      },
+      "test-ipad-services.log": {
+        "passed": 2,
+        "failed": 0,
+        "failed_names": []
+      },
+      "test-ipad-ui-build.log": {
+        "passed": 0,
+        "failed": 0,
+        "failed_names": []
+      },
+      "test-ipad.log": {
+        "passed": 4,
+        "failed": 0,
+        "failed_names": []
+      },
+      "photos-integrity-ipad.json": {
+        "width": 800,
+        "height": 15000,
+        "rgba_bytes_compared": 48000000,
+        "all_source_pixels_unchanged": true,
+        "rgba_sha256": "2e6f94c610d03b7ed0e06d2e0a89199797d4de874795879e3df1a840eba35832",
+        "source_extension": ".png",
+        "method": "Real PHPicker UI selection; compare application disk RGBA to seeded Photos fixture"
+      },
+      "gates-ipad.json": {
+        "local_editor_and_photos_exit_code": 0,
+        "real_external_services_exit_code": 0,
+        "external_failure_does_not_discard_local_evidence": true
+      }
+    }
+  },
+  "interface_artifacts": {
+    "iphone": 11767097007,
+    "ipad": 11767760532
+  },
+  "local": {
+    "iphone": {
+      "test-iphone-local.log": {
+        "passed": 2,
+        "failed": 0,
+        "failed_names": []
+      },
+      "test-iphone-local-photos.log": {
+        "passed": 1,
+        "failed": 0,
+        "failed_names": []
+      },
+      "gates-iphone-local.json": {
+        "local_edition_ui_and_source_integrity_exit_code": 0
+      },
+      "gates-iphone.json": {
+        "local_editor_and_photos_exit_code": 0,
+        "real_external_services_exit_code": 0,
+        "external_failure_does_not_discard_local_evidence": true
+      },
+      "photos-integrity-iphone-local.json": {
+        "width": 800,
+        "height": 15000,
+        "rgba_bytes_compared": 48000000,
+        "all_source_pixels_unchanged": true,
+        "rgba_sha256": "2e6f94c610d03b7ed0e06d2e0a89199797d4de874795879e3df1a840eba35832",
+        "source_extension": ".png",
+        "method": "Real PHPicker UI selection; compare application disk RGBA to seeded Photos fixture"
+      }
+    },
+    "ipad": {
+      "test-ipad-local-photos.log": {
+        "passed": 1,
+        "failed": 0,
+        "failed_names": []
+      },
+      "test-ipad-local.log": {
+        "passed": 2,
+        "failed": 0,
+        "failed_names": []
+      },
+      "gates-ipad-local.json": {
+        "local_edition_ui_and_source_integrity_exit_code": 0
+      },
+      "photos-integrity-ipad-local.json": {
+        "width": 800,
+        "height": 15000,
+        "rgba_bytes_compared": 48000000,
+        "all_source_pixels_unchanged": true,
+        "rgba_sha256": "2e6f94c610d03b7ed0e06d2e0a89199797d4de874795879e3df1a840eba35832",
+        "source_extension": ".png",
+        "method": "Real PHPicker UI selection; compare application disk RGBA to seeded Photos fixture"
+      },
+      "gates-ipad.json": {
+        "local_editor_and_photos_exit_code": 0,
+        "real_external_services_exit_code": 0,
+        "external_failure_does_not_discard_local_evidence": true
+      }
+    }
+  },
+  "iphone_verification_artifact": 11766794378,
+  "ipad_verification_artifact": 11768967129,
+  "run_conclusion": "success",
+  "physical_device_fps_claim": false,
+  "original_android_pixel_equivalence_claim": false
+}
