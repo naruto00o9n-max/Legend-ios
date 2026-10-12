@@ -100,7 +100,8 @@ final class RenderStabilityTests:XCTestCase {
         let canvas=DocumentCanvas(frame:CGRect(x:0,y:0,width:800,height:15000)),directory=library.directory(page.id)
         canvas.update(page:page,directory:directory,selected:text.id,zoom:1)
         canvas.refreshVisible(CGRect(x:0,y:0,width:400,height:600));canvas.prepareTextEditing(text.id)
-        for _ in 0..<200{if canvas.interactivePresentedFrames>0{break};try await Task.sleep(nanoseconds:50_000_000)}
+        for _ in 0..<200{if canvas.isTextPreviewReady{break};try await Task.sleep(nanoseconds:50_000_000)}
+        XCTAssertTrue(canvas.isTextPreviewReady)
         XCTAssertGreaterThan(canvas.interactivePresentedFrames,0)
         let revision=canvas.revision,frames=canvas.interactivePresentedFrames,reads=canvas.sourceReads
         let start=Date()
@@ -155,6 +156,14 @@ final class RenderStabilityTests:XCTestCase {
         let f=UIGraphicsImageRendererFormat();f.scale=resolution;f.opaque=false;f.preferredRange = .standard
         let reference=UIGraphicsImageRenderer(size:CGSize(width:rect.width+pad*2,height:rect.height+pad*2),format:f).image{_ in LayerRenderer.attributed(layer,color:.white).draw(with:rect.offsetBy(dx:pad,dy:pad),options:[.usesLineFragmentOrigin,.usesFontLeading],context:nil)}
         XCTAssertEqual(mask.pngData(),reference.pngData(),"Caching must preserve accents and italic glyph overhang")
+    }
+
+    func testDraftScreenAndExportCachesRemainSeparateAtIdenticalResolution(){
+        let layer=EditorLayer(kind:.text),directory=FileManager.default.temporaryDirectory,size=CGSize(width:240,height:100)
+        func key()->TextRenderKey{TextRenderKey(layer,directory:directory,resolution:1,size:size)}
+        let export=key(),screen=RenderBudget.screen{key()},draft=RenderBudget.screen(interactive:true){key()}
+        XCTAssertNotEqual(export,screen);XCTAssertNotEqual(export,draft);XCTAssertNotEqual(screen,draft)
+        XCTAssertFalse(RenderBudget.isInteractive);XCTAssertFalse(RenderBudget.isPreview)
     }
 
 }

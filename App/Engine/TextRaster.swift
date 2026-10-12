@@ -15,12 +15,13 @@ enum TextRaster {
         let advanced = s.effectType.isStyle || s.art != nil || !s.shadowGradient.isEmpty || !(s.extraStrokes ?? []).isEmpty || !(layer.textMask ?? []).isEmpty || (s.fadeAmount ?? 0)>0 || !s.textGradient.isEmpty || !s.strokeGradient.isEmpty || !s.texturePath.isEmpty || !s.perspectivePoints.isEmpty || s.isMeshMode || s.rotationX != 0 || s.rotationY != 0 || s.effectType == .blur || s.effectType == .fade
         guard advanced,rect.width*rect.height<4_194_304 else{return false}
         let transform=c.ctm
-        let requested=max(2,hypot(transform.a,transform.b),hypot(transform.c,transform.d))
+        let requested=max(RenderBudget.isInteractive ? 1:2,hypot(transform.a,transform.b),hypot(transform.c,transform.d))
         var cacheLayer=layer
         if s.effectType == .slice || s.effectType == .warp{cacheLayer.style.effectValue=0;cacheLayer.style.effectDetail=0}
         let padding=CGFloat(TextVisualBounds.padding(cacheLayer.style,minimum:8))
         let area=max(1,(rect.width+padding*2)*(rect.height+padding*2))
-        let resolution=max(RenderBudget.isPreview ? 0.125:1,min(8,pow(2,ceil(log2(requested))),sqrt((RenderBudget.isPreview ? RenderBudget.previewPixels:8_388_608)/area)))
+        let available=min(8,pow(2,ceil(log2(requested))),sqrt((RenderBudget.isPreview ? RenderBudget.previewPixels:8_388_608)/area))
+        let resolution=max(RenderBudget.isPreview ? 0.125:1,RenderBudget.isInteractive ? pow(2,floor(log2(max(0.125,available)))):available)
         let key=TextRenderKey(cacheLayer,directory:directory,resolution:resolution,size:CGSize(width:rect.width,height:rect.height))
         let pad=padding
         let size=CGSize(width:ceil(rect.width+pad*2),height:ceil(rect.height+pad*2))

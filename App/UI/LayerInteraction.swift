@@ -15,7 +15,7 @@ final class LayerInteraction {
         var resolution:CGFloat
         var generation=0
         var rendering=false
-        var latest:(EditorLayer,CGRect,URL,CGFloat)?
+        var latest:(EditorLayer,CGRect,URL,CGFloat,Bool)?
         var onReady:(()->Void)?
         var presentedFrames=0
         private var displayedRect:CGRect?
@@ -30,14 +30,14 @@ final class LayerInteraction {
             schedule(signature,rect:rect,directory:directory,resolution:resolution)
             updateTransform(layer)
         }
-        private func schedule(_ layer:EditorLayer,rect:CGRect,directory:URL,resolution:CGFloat){
-            generation+=1;latest=(layer,rect,directory,resolution);renderLatest()
+        private func schedule(_ layer:EditorLayer,rect:CGRect,directory:URL,resolution:CGFloat,interactive:Bool=false){
+            generation+=1;latest=(layer,rect,directory,resolution,interactive);renderLatest()
         }
         private func renderLatest(){
             guard !rendering,let request=latest else{return};latest=nil;rendering=true
             LayerInteraction.worker.async{[weak self] in
                 guard self != nil else{return}
-                let image=RenderBudget.screen{Self.raster(request.0,rect:request.1,directory:request.2,resolution:request.3)}
+                let image=RenderBudget.screen(interactive:request.4){Self.raster(request.0,rect:request.1,directory:request.2,resolution:request.3)}
                 DispatchQueue.main.async{[weak self] in guard let self else{return};self.rendering=false
                     // Keep the previous image while a more recent size/style renders.
                     // Publish completed work even while another knob value is pending.
@@ -74,7 +74,18 @@ final class LayerInteraction {
             let target=Self.resolution(for:layer,rect:nextRect,screenScale:screenScale)
             // Regenerate at scale boundaries; plain movement only transforms a cached sprite.
             let changed = next != signature || nextRect != rect || target != resolution
-            if changed { signature = next; rect = nextRect;resolution=target; schedule(next,rect:rect,directory:directory,resolution:resolution) }
+            if changed {
+                signature=next;rect=nextRect;resolution=target
+                let available=sqrt(65_536/max(1,rect.width*rect.height))
+                let liveResolution=max(0.125,min(target,pow(2,floor(log2(max(0.125,available))))))
+                schedule(next,rect:rect,directory:directory,resolution:liveResolution,interactive:true)
+                let token=generation,finalRect=rect
+                // One quiet-period refinement, never a queued full render per event.
+                DispatchQueue.main.asyncAfter(deadline:.now()+0.3){[weak self] in
+                    guard let self,self.generation==token else{return}
+                    self.schedule(next,rect:finalRect,directory:directory,resolution:target)
+                }
+            }
             updateTransform(layer); return changed
         }
         static func resolution(for layer:EditorLayer,rect:CGRect,screenScale:CGFloat)->CGFloat {

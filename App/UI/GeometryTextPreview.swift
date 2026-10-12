@@ -13,7 +13,8 @@ struct GeometryTextPreview:UIViewRepresentable {
 final class GeometryPreviewImageView:UIImageView {
     private static let worker=DispatchQueue(label:"cookies.geometry.preview",qos:.userInitiated,autoreleaseFrequency:.workItem)
     private var signature:TextRenderKey?
-    private var latest:(EditorLayer,URL,CGSize)?
+    private var latest:(EditorLayer,URL,CGSize,Bool)?
+    private var generation=0
     private var rendering=false
     private var cancelled=false
     private(set) var presentedFrames=0
@@ -25,7 +26,12 @@ final class GeometryPreviewImageView:UIImageView {
         guard !cancelled,size.width>0,size.height>0 else{return}
         var layer=source;layer.frame.x=0;layer.frame.y=0;layer.rotation=0;layer.scaleX=1;layer.scaleY=1
         let key=TextRenderKey(layer,directory:directory,resolution:1,size:size)
-        guard key != signature else{return};signature=key;latest=(layer,directory,size);renderLatest()
+        guard key != signature else{return};signature=key;generation+=1;latest=(layer,directory,size,true);renderLatest()
+        let token=generation
+        DispatchQueue.main.asyncAfter(deadline:.now()+0.3){[weak self] in
+            guard let self,!self.cancelled,self.generation==token else{return}
+            self.latest=(layer,directory,size,false);self.renderLatest()
+        }
     }
     private func renderLatest(){
         guard !cancelled,!rendering,let request=latest else{return}
@@ -33,7 +39,7 @@ final class GeometryPreviewImageView:UIImageView {
         Self.worker.async{[weak self] in
             guard self != nil else{return}
             let main=Thread.isMainThread
-            let image=RenderBudget.screen{Self.render(request.0,directory:request.1,size:request.2)}
+            let image=RenderBudget.screen(interactive:request.3){Self.render(request.0,directory:request.1,size:request.2)}
             DispatchQueue.main.async{[weak self] in
                 guard let self,!self.cancelled else{return}
                 self.rendering=false;self.image=image;self.presentedFrames+=1;self.renderedOnMain=main

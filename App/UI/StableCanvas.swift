@@ -161,6 +161,7 @@ final class DocumentCanvas: UIView {
     }
     private func loadPreview(_ page: EditorPage, directory: URL, identity: String) {
         worker.async { [weak self] in
+            guard self != nil else{return}
             var sample = 1
             while ((page.width + sample - 1) / sample) * ((page.height + sample - 1) / sample) > 1_000_000 { sample *= 2 }
             let rect = CGRect(x: 0, y: 0, width: page.width, height: page.height)
@@ -174,6 +175,7 @@ final class DocumentCanvas: UIView {
         let requested = revision, identity = sourceIdentity, cache = sourceCache
         let textResolution=max(1,min(4,ceil(zoom*traitCollection.displayScale)))
         worker.async { [weak self] in
+            guard self != nil else{return}
             let base: UIImage?
             var read = false
             let cacheKey = (identity + "|\(tile.sample):\(Int(tile.rect.minX)):\(Int(tile.rect.minY))") as NSString
@@ -395,6 +397,7 @@ final class DocumentCanvas: UIView {
         }
         if let id{_ = beginLayerInteraction(id)}
     }
+    var isTextPreviewReady:Bool{interaction?.phase == .active}
     var interactivePresentedFrames:Int{interaction?.presentedFrames ?? 0}
     func endLayerInteraction() {
         if let interaction,interaction.selected==editingText{return}
