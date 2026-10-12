@@ -127,8 +127,13 @@ struct ChapterReaderView:View {
 struct ChapterReaderPage:View {
     @EnvironmentObject var library:LibraryStore
     let id:UUID
-    var body:some View{if let page=try? library.load(id){ReadOnlyPage(model:EditorModel(page:page,library:library))}else{Text("تعذر فتح الصفحة")}}
+    @State private var model:EditorModel?
+    @State private var failed=false
+    var body:some View{Group{if let model{ReadOnlyPage(model:model)}else if failed{Text("تعذر فتح الصفحة")}else{ProgressView()}}
+        .task(id:id){guard model?.page.id != id else{return};model=nil;failed=false;let directory=library.directory(id);do{let saved=try await BackgroundWork.run{guard let saved=try RecoveryFile.read(EditorPage.self,at:directory.appendingPathComponent("page.json")) else{throw ImageFailure.message("ملف الصفحة مفقود")};return saved};guard !Task.isCancelled else{return};if saved.recovered{library.error="استُعيدت الصفحة من آخر حفظ سليم."};model=EditorModel(page:saved.value,library:library)}catch{failed=true}}
+    }
 }
+
 struct ReadOnlyPage:View {@StateObject var model:EditorModel;var body:some View{CanvasHost(model:model,readOnly:true)}}
 
 struct ChapterExportSheet:View {

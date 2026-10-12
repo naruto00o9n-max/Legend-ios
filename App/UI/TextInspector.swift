@@ -73,8 +73,8 @@ struct TextInspector:View {
         case .spacing:knob("بين الحروف",value(\.letterSpacing),-4...20);knob("بين الأسطر",value(\.lineSpacing),-60...60);knob("إزاحة التشكيل",Binding(get:{style.tashkeelOffset ?? 0},set:{v in model.change{$0.style.tashkeelOffset=v}}),-20...20)
         case .threeD:knob("عمق البروز",Binding(get:{Double(style.threeDDepth)},set:{v in model.change{$0.style.threeDDepth=Int(v)}}),0...40);swatches("لون البروز",\.threeDColor)
         case .effects:
-            Picker("التأثير",selection:Binding(get:{style.effectType},set:{v in model.change{$0.style.effectType=v}})){ForEach(TextEffect.allCases,id:\.self){Text($0.title).tag($0)}}.pickerStyle(.menu)
-            if style.effectType == .chromatic || style.effectType == .glitch{artControls}else{knob("القوة",value(\.effectValue),0...50);knob("التفاصيل",value(\.effectDetail),2...20);swatches("لون التأثير",\.effectColor)}
+            EffectCards(model:model)
+            if style.effectType.isStyle{styleEffectControls}else if style.effectType == .chromatic || style.effectType == .glitch{artControls}else if style.effectType != .none{knob("القوة",value(\.effectValue),style.effectType == .fade ? 0...100:0...50);knob("التفاصيل",value(\.effectDetail),2...20);swatches("لون التأثير",\.effectColor)}
         case .opacity:
             knob("شفافية الحروف",Binding(get:{style.innerOpacity ?? 1},set:{v in model.change{$0.style.innerOpacity=v}}),0...1)
             knob("تلاشي الحروف",Binding(get:{style.fadeAmount ?? 0},set:{v in model.change{$0.style.fadeAmount=v}}),0...1)
@@ -108,6 +108,23 @@ struct TextInspector:View {
     func replaceSelection(_ value:String,range:NSRange?=nil){guard let layer=model.active else{return};let result=TextRanges.replacement(layer.textContent,range:range ?? textRange,with:value,spans:layer.style.spans);model.change{$0.textContent=result.0;$0.style.spans=result.1};textRange=result.2;model.textSelection=result.2;model.textSelectionLayer=model.selected}
     func changeCase(upper:Bool){guard let layer=model.active else{return};let source=layer.textContent as NSString,start=min(source.length,max(0,textRange.location)),length=min(textRange.length,source.length-start),range=length>0 ? NSRange(location:start,length:length):NSRange(location:0,length:source.length);let selected=source.substring(with:range);replaceSelection(upper ? selected.uppercased():selected.lowercased(),range:range)}
     func knob(_ label:String,_ source:Binding<Double>,_ range:ClosedRange<Double>)->some View{let binding=Binding<Double>(get:{min(range.upperBound,max(range.lowerBound,source.wrappedValue))},set:{source.wrappedValue=min(range.upperBound,max(range.lowerBound,$0))});return VStack(alignment:.leading,spacing:8){HStack{Text(label).font(.system(size:12));Spacer();TextField(label,value:binding,format:.number.precision(.fractionLength(0...1))).font(.system(size:12,design:.monospaced)).multilineTextAlignment(.trailing).keyboardType(.numbersAndPunctuation).frame(width:70).accessibilityIdentifier("value-\(label)")};StepSlider(value:binding,in:range).tint(Palette.gold)}.padding(12).glass(16)}
+    func styleEffectValue(_ key:WritableKeyPath<StyleEffectSettings,Double>)->Binding<Double>{Binding(get:{(style.styleEffect ?? StyleEffectSettings())[keyPath:key]},set:{v in model.change{var settings=$0.style.styleEffect ?? StyleEffectSettings();settings[keyPath:key]=v;$0.style.styleEffect=settings}})}
+    func styleEffectColor(_ label:String,_ key:WritableKeyPath<StyleEffectSettings,String>)->some View{CookiesColorWell(label,selection:Binding(get:{Color(uiColor:UIColor(hex:(style.styleEffect ?? StyleEffectSettings())[keyPath:key]))},set:{color in model.change{var settings=$0.style.styleEffect ?? StyleEffectSettings();settings[keyPath:key]=UIColor(color).hex;$0.style.styleEffect=settings}}),supportsOpacity:false)}
+    @ViewBuilder var styleEffectControls:some View{
+        let effect=style.effectType
+        if ![TextEffect.satin,.dropShadow,.extrude,.godRays].contains(effect){knob(effect == .stainedGlass ? "عرض الفواصل":"حجم الحافة",styleEffectValue(\.radius),0...60)}
+        if ![TextEffect.strokeBoth,.strokeOuter,.stainedGlass,.extrude].contains(effect){knob("نعومة التأثير",styleEffectValue(\.softness),0...40)}
+        if [.bevelInner,.bevelOuter,.emboss,.relief,.waterdrop,.dropShadow,.satin,.extrude,.godRays].contains(effect){knob("زاوية الضوء أو الإزاحة",styleEffectValue(\.angle),0...360)}
+        if [.waterdrop,.dropShadow,.satin,.extrude,.godRays].contains(effect){knob("مسافة التأثير",styleEffectValue(\.depth),0...80)}
+        knob("شفافية التأثير",styleEffectValue(\.opacity),0...1)
+        styleEffectColor(effect == .stainedGlass ? "لون الفواصل":"لون التأثير",\.color)
+        if [.bevelInner,.bevelOuter,.emboss,.relief,.waterdrop].contains(effect){styleEffectColor("لون الإضاءة",\.highlightColor)}
+        if [.emboss,.relief].contains(effect){styleEffectColor("لون السطح",\.baseColor)}
+        if effect == .stainedGlass{knob("حجم الخلايا",styleEffectValue(\.cellSize),4...160);knob("تشبّع الخلايا",styleEffectValue(\.saturation),0...1);Button{model.change{var settings=$0.style.styleEffect ?? StyleEffectSettings();settings.seed=settings.seed &+ 1;$0.style.styleEffect=settings}}label:{Label("توزيع ألوان جديد",systemImage:"shuffle")}}
+        if effect == .godRays{knob("عدد عينات الأشعة",Binding(get:{Double(style.styleEffect?.density ?? 24)},set:{v in model.change{var settings=$0.style.styleEffect ?? StyleEffectSettings();settings.density=Int(v);$0.style.styleEffect=settings}}),4...48)}
+        Button{model.change{$0.style.effectType = .none}}label:{Label("إزالة التأثير",systemImage:"arrow.uturn.backward")}.accessibilityIdentifier("effect-reset")
+        Text("التأثير قابل للتعديل ويُحفظ في المشروع والنمط؛ إزالة التأثير تعيد النص دون تغيير محتواه أو ألوانه.").font(.system(size:11)).foregroundStyle(Palette.secondary)
+    }
     func artValue(_ key:WritableKeyPath<TextArtSettings,Double>)->Binding<Double>{Binding(get:{(style.art ?? TextArtSettings())[keyPath:key]},set:{v in model.change{var art=$0.style.art ?? TextArtSettings();art[keyPath:key]=v;$0.style.art=art}})}
     @ViewBuilder var artControls:some View{
         if style.effectType == .chromatic{knob("مسافة القنوات",artValue(\.distance),0...60);knob("زاوية الإزاحة",artValue(\.angle),0...360);Picker("ترتيب القنوات",selection:Binding(get:{style.art?.order ?? 0},set:{v in model.change{var art=$0.style.art ?? TextArtSettings();art.order=v;$0.style.art=art}})){ForEach(0..<6,id:\.self){i in Text(["R · G · B","R · B · G","G · R · B","G · B · R","B · R · G","B · G · R"][i]).tag(i)}}.pickerStyle(.menu)}else{knob("ارتفاع الشرائح",artValue(\.bandHeight),2...420);knob("إزاحة الشرائح",artValue(\.strength),0...100);knob("إزاحة الألوان",artValue(\.colorShift),0...60);Button{model.change{var art=$0.style.art ?? TextArtSettings();art.seed=art.seed &+ 1;$0.style.art=art}}label:{Label("توزيع آخر للشرائح",systemImage:"shuffle")}}

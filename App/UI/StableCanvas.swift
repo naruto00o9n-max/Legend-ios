@@ -44,7 +44,7 @@ final class DocumentCanvas: UIView {
     private func renderLatestInk(){
         guard !inkRendering,let input=latestInk else{return};latestInk=nil;inkRendering=true;let generation=inkGeneration
         inkWorker.async{[weak self] in
-            let image=(try? ImagePipeline.compositeRegion(input.0,directory:input.1,rect:input.2,sample:input.3)).map{UIImage(cgImage:$0)}
+            let image=RenderBudget.screen{(try? ImagePipeline.compositeRegion(input.0,directory:input.1,rect:input.2,sample:input.3)).map{UIImage(cgImage:$0)}}
             DispatchQueue.main.async{[weak self] in guard let self else{return};self.inkRendering=false
                 if self.inkGeneration==generation{
                     if let image,!(self.softwareCommitRevision.map{self.revision >= $0 && self.visibleTilesReady} ?? false){self.showPatch(image,rect:input.2);if let target=self.softwareCommitRevision{self.patchCommitRevision=target}}
@@ -79,7 +79,7 @@ final class DocumentCanvas: UIView {
         isOpaque = false; backgroundColor = .clear; clipsToBounds = false
         preview.frame = bounds; preview.isUserInteractionEnabled = false
         preview.layer.magnificationFilter = .linear; addSubview(preview)
-        sourceCache.totalCostLimit = 48 * 1024 * 1024
+        sourceCache.totalCostLimit = 24 * 1024 * 1024
         liveInk.lineCap = .round; liveInk.lineJoin = .round
         liveInk.fillColor = UIColor.clear.cgColor; layer.addSublayer(liveInk)
         layer.addSublayer(sniperOverlay)
@@ -99,11 +99,12 @@ final class DocumentCanvas: UIView {
     }
     required init?(coder: NSCoder) { fatalError() }
     func update(page: EditorPage, directory: URL, selected: UUID?, zoom: CGFloat) {
-        let identity = directory.path + "/" + page.raw + (page.baseHidden==true ? "|hidden":"")
+        let identity = directory.path + "/" + page.raw + "|\(page.width)x\(page.height)" + (page.baseHidden==true ? "|hidden":"")
         let sourceChanged = sourceIdentity != identity
         if sourceChanged { interaction?.remove(); interaction = nil; interactionRevision = nil }
         let renderPage = rasterPage(page)
         let pixelsChanged = sourceChanged || renderedLayers != renderPage.layers
+        let previousLayers=renderedLayers
         renderedLayers = renderPage.layers
         self.page = page; self.directory = directory; self.selected = selected; self.zoom = zoom
         if sourceChanged {
@@ -114,7 +115,12 @@ final class DocumentCanvas: UIView {
             interaction?.remove(); interaction = nil; interactionRevision = nil
             loadPreview(page, directory: directory, identity: identity)
         }
-        if pixelsChanged { revision += 1 }
+        if pixelsChanged {
+            let previousRevision=revision;revision+=1
+            if !sourceChanged,let dirty=LayerInvalidation.dirtyRect(before:previousLayers,after:renderPage.layers){
+                for tile in tiles.values where !tile.pending && tile.revision==previousRevision && !tile.rect.intersects(dirty){tile.revision=revision}
+            }
+        }
         interaction?.update(page,screenScale:zoom*traitCollection.displayScale)
         updateSelection()
         if pixelsChanged,!visible.isEmpty { refreshVisible(visible) }
@@ -187,7 +193,7 @@ final class DocumentCanvas: UIView {
                     context.scaleBy(x: base.size.width / tile.rect.width, y: base.size.height / tile.rect.height)
                     context.translateBy(x: -tile.rect.minX, y: -tile.rect.minY)
                     context.interpolationQuality = .high
-                    LayerRenderer.draw(page.layers, in: context, directory: directory)
+                    RenderBudget.screen{LayerRenderer.draw(page.layers, in: context, directory: directory)}
                 }
             }
             DispatchQueue.main.async {
@@ -209,6 +215,7 @@ final class DocumentCanvas: UIView {
     }
     private func retireOldDetail() {
         guard !currentKeys.isEmpty, currentKeys.allSatisfy({ tiles[$0]?.revision == revision }) else { return }
+        if interaction?.phase == .preparing,interaction?.isReady==false{return}
         if let commit = [strokeCommitRevision, interactionRevision,patchCommitRevision].compactMap({ $0 }).min(), revision >= commit {
             CATransaction.begin(); CATransaction.setDisableActions(true)
             for (key, image) in stagedImages { tiles[key]?.view.image = image }
@@ -348,7 +355,7 @@ final class DocumentCanvas: UIView {
     @discardableResult func beginLayerInteraction(_ id: UUID) -> Bool {
         guard let page, let directory, interaction == nil,
               let preview = LayerInteraction(page: page, selected: id, directory: directory,drawingViewport:visible.insetBy(dx:-128,dy:-128).intersection(bounds),screenScale:zoom*traitCollection.displayScale) else { return false }
-        interaction = preview; preview.attach(to: self); interactionRevision = revision + 1
+        interaction = preview; preview.onReady={[weak self] in self?.retireOldDetail()}; preview.attach(to: self); interactionRevision = revision + 1
         update(page: page, directory: directory, selected: selected, zoom: zoom)
         return true
     }

@@ -4,18 +4,18 @@ import CoreImage
 // Rasterize a text layer independently of the full image; keep source pixels on disk.
 enum TextRaster {
     final class Raster {let image:UIImage;let frame:CGRect;init(_ image:UIImage,_ frame:CGRect){self.image=image;self.frame=frame}}
-    static let cache=NSCache<NSString,Raster>()
+    static let cache=NSCache<TextRenderKey,Raster>()
     static let context=CIContext(options:[.cacheIntermediates:false])
     static func draw(_ layer:EditorLayer,rect:CGRect,in c:CGContext,directory:URL)->Bool {
         let s=layer.style
-        let advanced = s.art != nil || !s.shadowGradient.isEmpty || !(s.extraStrokes ?? []).isEmpty || !(layer.textMask ?? []).isEmpty || (s.fadeAmount ?? 0)>0 || !s.textGradient.isEmpty || !s.strokeGradient.isEmpty || !s.texturePath.isEmpty || !s.perspectivePoints.isEmpty || s.isMeshMode || s.rotationX != 0 || s.rotationY != 0 || s.effectType == .blur || s.effectType == .fade
+        let advanced = s.effectType.isStyle || s.art != nil || !s.shadowGradient.isEmpty || !(s.extraStrokes ?? []).isEmpty || !(layer.textMask ?? []).isEmpty || (s.fadeAmount ?? 0)>0 || !s.textGradient.isEmpty || !s.strokeGradient.isEmpty || !s.texturePath.isEmpty || !s.perspectivePoints.isEmpty || s.isMeshMode || s.rotationX != 0 || s.rotationY != 0 || s.effectType == .blur || s.effectType == .fade
         guard advanced,rect.width*rect.height<4_194_304 else{return false}
         let transform=c.ctm
         let requested=max(2,hypot(transform.a,transform.b),hypot(transform.c,transform.d))
         let padding=CGFloat(TextVisualBounds.padding(s,minimum:8))
         let area=max(1,(rect.width+padding*2)*(rect.height+padding*2))
-        let resolution=max(1,min(8,pow(2,ceil(log2(requested))),sqrt(8_388_608/area)))
-        var glyphLayer=layer;glyphLayer.frame.x=0;glyphLayer.frame.y=0;glyphLayer.rotation=0;glyphLayer.scaleX=1;glyphLayer.scaleY=1;glyphLayer.shearX=nil;glyphLayer.opacity=1;glyphLayer.isLocked=false;glyphLayer.isVisible=true;let key=(directory.path+"|scale=\(resolution)|"+String(data:(try? JSONEncoder().encode(glyphLayer)) ?? Data(),encoding:.utf8)!) as NSString
+        let resolution=max(RenderBudget.isPreview ? 0.125:1,min(8,pow(2,ceil(log2(requested))),sqrt((RenderBudget.isPreview ? RenderBudget.previewPixels:8_388_608)/area)))
+        let key=TextRenderKey(layer,directory:directory,resolution:resolution,size:CGSize(width:rect.width,height:rect.height))
         let pad=CGFloat(TextVisualBounds.padding(s,minimum:8))
         let size=CGSize(width:ceil(rect.width+pad*2),height:ceil(rect.height+pad*2))
         let raster:Raster
@@ -44,6 +44,7 @@ enum TextRaster {
                 ctx.setBlendMode(.normal)
 
             }
+            if s.effectType.isStyle,let cg=result.cgImage,let mask=glyph.cgImage{let styled=StyleEffectRenderer.apply(CIImage(cgImage:cg),mask:CIImage(cgImage:mask),effect:s.effectType,settings:s.styleEffect ?? StyleEffectSettings(),scale:resolution);if let output=context.createCGImage(styled,from:styled.extent){result=UIImage(cgImage:output,scale:resolution,orientation:.up)}}
             // Stroke is underneath the original fill, never painted across its interior.
             if s.strokeWidth>0 {
                 let fill=result
@@ -105,7 +106,7 @@ enum TextRaster {
                     result=UIGraphicsImageRenderer(size:outputFrame.size,format:format).image{_ in shadow.draw(at:.zero);foreground.draw(at:.zero)}
                 }
             }
-            raster=Raster(result,outputFrame);cache.totalCostLimit=64*1024*1024;cache.setObject(raster,forKey:key,cost:Int(outputFrame.width*outputFrame.height*resolution*resolution)*4)
+            raster=Raster(result,outputFrame);cache.totalCostLimit=RenderBudget.textCacheBytes;cache.setObject(raster,forKey:key,cost:Int(outputFrame.width*outputFrame.height*resolution*resolution)*4)
         }
         c.saveGState()
         if s.shadowGradient.isEmpty && (s.shadowRadius>0 || s.effectType == .neon || s.effectType == .shadow){c.setShadow(offset:CGSize(width:s.shadowDx,height:s.shadowDy),blur:CGFloat(s.effectType == .neon ? s.effectValue:s.shadowRadius),color:UIColor(hex:s.effectType == .neon ? s.effectColor:s.shadowColor,alpha:CGFloat(s.shadowAlpha)/255).cgColor)}

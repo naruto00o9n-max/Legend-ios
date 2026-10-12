@@ -8,7 +8,7 @@ on:
       verification_scope:
         description: Full validation or an unchanged-app test regression retry
         type: choice
-        options: [full, focused, regression, controls, styles]
+        options: [full, focused, regression, controls, styles, performance]
         default: full
 concurrency:
   group: cookies-ios-${{ github.ref }}-${{ github.sha }}
@@ -102,6 +102,7 @@ jobs:
       - run: python3 scripts/fetch_whitening_fixtures.py
       - run: xcodegen generate
       - name: Native engine and real whitening regressions
+        timeout-minutes: 35
         if: ${{ !contains(github.event.head_commit.message, '[ui-only retry]') && (github.event_name != 'workflow_dispatch' || inputs.verification_scope != 'focused') }}
         run: bash scripts/test_simulators.sh ${{ matrix.screen }} core
       - uses: actions/upload-artifact@v4
@@ -113,11 +114,16 @@ jobs:
             build/whitening-*/
           retention-days: 30
       - name: Interfaces, Photos and services
+        timeout-minutes: 35
         if: ${{ !cancelled() }}
         env:
-          TASK_SCOPE: ${{ contains(github.event.head_commit.message, '[style form retry]') && 'styles' || contains(github.event.head_commit.message, '[control hit-area retry]') && 'controls' || contains(github.event.head_commit.message, '[ui-only retry]') && 'focused' || contains(github.event.head_commit.message, '[interface test retry]') && 'regression' || inputs.verification_scope }}
+          TASK_SCOPE: ${{ contains(github.event.head_commit.message, '[performance validation]') && 'performance' || contains(github.event.head_commit.message, '[style form retry]') && 'styles' || contains(github.event.head_commit.message, '[control hit-area retry]') && 'controls' || contains(github.event.head_commit.message, '[ui-only retry]') && 'focused' || contains(github.event.head_commit.message, '[interface test retry]') && 'regression' || inputs.verification_scope }}
         run: |
-          if [[ "$TASK_SCOPE" == styles ]]; then
+          if [[ "$TASK_SCOPE" == performance ]]; then
+            # Product changes: run every engine test plus actual gradient teardown,
+            # style controls, persistence, Files and original-resolution Photos.
+            bash scripts/test_simulators.sh '${{ matrix.screen }}' ui 'CookiesUITests/EditorUITests/testGradientPresetDisableRestoreAndEffectCardsDoNotTerminateEditor,CookiesUITests/EditorUITests/testCreateUserStyleAndApplyGlyphGradient,CookiesUITests/EditorUITests/testColorLibraryFavoritesAndNegativeLineSpacing,CookiesUITests/EditorUITests/testManualDoneRemembersOutlineForNewManualText,CookiesUITests/EditorUITests/testRealFilesPickerImportsFontAndReturnsToLibrary,CookiesUITests/EditorUITests/testPhotosImportAndIPadOrientation,CookiesUITests/EditorUITests/testStrokePlusMinusChangesByExactlyOneWithoutDragging,CookiesUITests/EditorUITests/testOrganizedSettingsAndDetailedGuide'
+          elif [[ "$TASK_SCOPE" == styles ]]; then
             python3 scripts/verify_style_form_retry.py
             bash scripts/test_simulators.sh '${{ matrix.screen }}' ui 'CookiesUITests/EditorUITests/testColorLibraryFavoritesAndNegativeLineSpacing,CookiesUITests/EditorUITests/testCreateUserStyleAndApplyGlyphGradient,CookiesUITests/EditorUITests/testOrganizedSettingsAndDetailedGuide,CookiesUITests/EditorUITests/testFullTagEditorSavesAndReopensItsRealTextTools,CookiesUITests/EditorUITests/testManualDoneRemembersOutlineForNewManualText,CookiesUITests/EditorUITests/testRealFilesPickerImportsFontAndReturnsToLibrary,CookiesUITests/EditorUITests/testPhotosImportAndIPadOrientation'
           elif [[ "$TASK_SCOPE" == controls ]]; then
@@ -149,6 +155,7 @@ jobs:
             build/photos-integrity-*.json
           retention-days: 30
       - name: Local edition without account or community
+        timeout-minutes: 25
         if: ${{ !cancelled() }}
         run: bash scripts/test_local_simulator.sh ${{ matrix.screen }}
       - run: python3 scripts/collect_evidence.py

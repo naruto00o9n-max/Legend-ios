@@ -234,4 +234,18 @@ final class EditorUITests:XCTestCase {
         reveal(app.buttons["panel-stroke"],in:app.scrollViews["panel-strip"]);app.buttons["panel-stroke"].tap();XCTAssertEqual(app.textFields["value-السماكة"].value as? String,"5");capture("fix-manual-done-remembers-outline")
     }
 
+    func testGradientPresetDisableRestoreAndEffectCardsDoNotTerminateEditor(){
+        openEditor();tool("text");app.buttons["text-inspector-close"].tap()
+        reveal(app.buttons["panel-gradientMap"],in:app.scrollViews["panel-strip"]);app.buttons["panel-gradientMap"].tap()
+        let preset=app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH 'gradient-preset-'")).firstMatch
+        XCTAssertTrue(preset.waitForExistence(timeout:10));revealVertical(preset,in:app.scrollViews["text-inspector-scroll"]);preset.tap()
+        let original=app.buttons["gradient-map-original"];revealVertical(original,in:app.scrollViews["text-inspector-scroll"]);XCTAssertTrue(original.isEnabled);original.tap();XCTAssertFalse(original.isEnabled);app.buttons["text-inspector-close"].tap()
+        reveal(app.buttons["panel-color"],in:app.scrollViews["panel-strip"]);app.buttons["panel-color"].tap()
+        let toggle=app.switches["تدرج لوني"];revealVertical(toggle,in:app.scrollViews["text-inspector-scroll"])
+        for _ in 0..<5{toggle.tap();if toggle.value as? String == "0"{toggle.coordinate(withNormalizedOffset:CGVector(dx:0.08,dy:0.5)).tap()};XCTAssertEqual(toggle.value as? String,"1");toggle.tap();XCTAssertEqual(toggle.value as? String,"0")}
+        app.buttons["text-inspector-close"].tap();reveal(app.buttons["panel-effects"],in:app.scrollViews["panel-strip"]);app.buttons["panel-effects"].tap()
+        let glitch=app.buttons["effect-card-glitch"];revealVertical(glitch,in:app.scrollViews["text-inspector-scroll"]);glitch.tap();XCTAssertTrue(app.textFields["value-ارتفاع الشرائح"].exists)
+        let none=app.buttons["effect-card-none"];revealVertical(none,in:app.scrollViews["text-inspector-scroll"]);none.tap();capture("performance-effect-cards");app.buttons["text-inspector-close"].tap();XCTAssertTrue(app.buttons["export"].exists)
+    }
+
 }

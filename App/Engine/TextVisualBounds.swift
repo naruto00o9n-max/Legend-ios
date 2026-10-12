@@ -9,7 +9,8 @@ enum TextVisualBounds {
         let effect:Double=style.effectValue*3+Double(style.threeDDepth)
         let background:Double=max(style.backgroundPaddingX,style.backgroundPaddingY)
         let art=style.art ?? TextArtSettings();let shift=style.effectType == .chromatic ? art.distance:style.effectType == .glitch ? art.strength+art.colorShift:0
-        return max(minimum,outline+shadow+effect+background+shift)
+        let settings=style.styleEffect ?? StyleEffectSettings();let stylePadding=style.effectType.isStyle ? settings.radius+settings.softness*3+settings.depth:0
+        return max(minimum,outline+shadow+effect+background+shift+stylePadding)
     }
     static func rect(_ layer:EditorLayer)->CGRect {
         let style=layer.style,base=LayerRenderer.bounds(layer)

@@ -3,6 +3,9 @@ import UIKit
 /// Temporary normal-blend sprites preserve layer order while UIKit transforms
 /// them on the compositor. The committed/exported scene still uses LayerRenderer.
 final class LayerInteraction {
+    private static let worker=DispatchQueue(label:"cookies.layer.sprites",qos:.userInteractive,autoreleaseFrequency:.workItem)
+    var onReady:(()->Void)?
+    var isReady:Bool{sprites.values.allSatisfy{$0.view.image != nil}}
     enum Phase { case preparing, active, finishing }
     private final class Sprite {
         let view = UIImageView()
@@ -10,6 +13,10 @@ final class LayerInteraction {
         var rect: CGRect
         let viewport:CGRect?
         var resolution:CGFloat
+        var generation=0
+        var rendering=false
+        var latest:(EditorLayer,CGRect,URL,CGFloat)?
+        var onReady:(()->Void)?
         init(layer: EditorLayer, directory: URL,viewport:CGRect?=nil,resolution:CGFloat=1) {
             self.resolution=resolution
             self.viewport=viewport
@@ -17,8 +24,22 @@ final class LayerInteraction {
             view.isUserInteractionEnabled = false; view.isHidden = true
             view.layer.magnificationFilter = .linear
             view.layer.minificationFilter = .trilinear
-            view.image = Self.raster(signature, rect: rect, directory: directory,resolution:resolution)
+            schedule(signature,rect:rect,directory:directory,resolution:resolution)
             updateTransform(layer)
+        }
+        private func schedule(_ layer:EditorLayer,rect:CGRect,directory:URL,resolution:CGFloat){
+            generation+=1;latest=(layer,rect,directory,resolution);renderLatest()
+        }
+        private func renderLatest(){
+            guard !rendering,let request=latest else{return};latest=nil;rendering=true;let token=generation
+            LayerInteraction.worker.async{[weak self] in
+                let image=RenderBudget.screen{Self.raster(request.0,rect:request.1,directory:request.2,resolution:request.3)}
+                DispatchQueue.main.async{[weak self] in guard let self else{return};self.rendering=false
+                    // Keep the previous image while a more recent size/style renders.
+                    if self.generation==token || self.view.image==nil{self.view.image=image;self.onReady?()}
+                    self.renderLatest()
+                }
+            }
         }
         static func signature(_ layer: EditorLayer) -> EditorLayer {
             var value = layer
@@ -45,14 +66,14 @@ final class LayerInteraction {
             let target=Self.resolution(for:layer,rect:nextRect,screenScale:screenScale)
             // Regenerate at scale boundaries; plain movement only transforms a cached sprite.
             let changed = next != signature || nextRect != rect || target != resolution
-            if changed { signature = next; rect = nextRect;resolution=target; view.image = Self.raster(next, rect: rect, directory: directory,resolution:resolution) }
+            if changed { signature = next; rect = nextRect;resolution=target; schedule(next,rect:rect,directory:directory,resolution:resolution) }
             updateTransform(layer); return changed
         }
         static func resolution(for layer:EditorLayer,rect:CGRect,screenScale:CGFloat)->CGFloat {
             guard layer.kind == .text else{return 1}
             let requested=max(1,screenScale*CGFloat(max(abs(layer.scaleX),abs(layer.scaleY))))
             let bucket=pow(2,ceil(log2(requested)))
-            return max(1,min(8,bucket,sqrt(4_194_304/max(1,rect.width*rect.height))))
+            return max(0.125,min(8,bucket,sqrt(RenderBudget.previewPixels/max(1,rect.width*rect.height))))
         }
         private func updateTransform(_ layer: EditorLayer) {
             let transform = LayerRenderer.transform(layer)
@@ -82,7 +103,7 @@ final class LayerInteraction {
         guard areas.allSatisfy({ $0 > 0 && $0 <= 4_194_304 }), areas.reduce(0, +) <= 8_388_608 else { return nil }
         self.selected = selected; self.directory = directory
         self.order = foreground.map(\.id); self.excluded = Set(order)
-        for layer in foreground { sprites[layer.id] = Sprite(layer: layer, directory: directory,viewport:layer.kind == .drawing ? spriteRect(layer):nil,resolution:Sprite.resolution(for:layer,rect:spriteRect(layer),screenScale:screenScale)); rasterizations += 1 }
+        for layer in foreground { sprites[layer.id] = Sprite(layer: layer, directory: directory,viewport:layer.kind == .drawing ? spriteRect(layer):nil,resolution:Sprite.resolution(for:layer,rect:spriteRect(layer),screenScale:screenScale)); sprites[layer.id]?.onReady={[weak self] in self?.onReady?()}; rasterizations += 1 }
     }
     func attach(to canvas: UIView) { for id in order { if let sprite = sprites[id] { canvas.addSubview(sprite.view) } } }
     func update(_ page: EditorPage,screenScale:CGFloat=1) {

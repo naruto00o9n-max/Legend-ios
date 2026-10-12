@@ -48,14 +48,22 @@ struct LibraryView:View {
         .alert("تعذر إكمال العملية",isPresented:Binding(get:{library.error != nil},set:{if !$0{library.error=nil}})){Button("حسنًا"){library.error=nil}}message:{Text(library.error ?? "")}
     }
     func card(_ item:LibraryItem)->some View {
-        VStack(alignment:.leading,spacing:12){ZStack{RoundedRectangle(cornerRadius:14).fill(Palette.gold.opacity(0.06));if item.folder{Image(systemName:"folder").font(.system(size:36,weight:.ultraLight))}else if let image=ImagePipeline.asset(library.directory(item.cover ?? item.pages.first ?? item.id).appendingPathComponent("thumbnail.png")){Image(uiImage:image).resizable().scaledToFill().frame(height:140).clipped().clipShape(RoundedRectangle(cornerRadius:14))}else{Image(systemName:item.isChapter==true ? "rectangle.stack":"photo")}}.frame(height:140)
+        VStack(alignment:.leading,spacing:12){ZStack{RoundedRectangle(cornerRadius:14).fill(Palette.gold.opacity(0.06));if item.folder{Image(systemName:"folder").font(.system(size:36,weight:.ultraLight))}else{ProjectThumbnail(url:library.directory(item.cover ?? item.pages.first ?? item.id).appendingPathComponent("thumbnail.png"),revision:library.thumbnailRevision,icon:item.isChapter==true ? "rectangle.stack":"photo").frame(height:140).clipped().clipShape(RoundedRectangle(cornerRadius:14))}}.frame(height:140)
             Text(item.title).font(.system(size:14,weight:.medium)).lineLimit(1);Text(item.folder ? "\(library.items.filter{$0.parent==item.id}.count) أعمال":item.isChapter==true ? "\(item.pages.count) صفحة":"صورة أصلية · محفوظة محليًا").font(.system(size:10)).foregroundStyle(Palette.quiet)
         }.padding(12).glass(22).contextMenu{Button("تغيير الاسم"){renameText=item.title;renaming=item};Menu("نقل إلى"){Button("المعرض"){library.move(item,parent:nil)};ForEach(library.items.filter{$0.folder && $0.id != item.id}){folder in Button(folder.title){library.move(item,parent:folder.id)}}};Button("حذف",role:.destructive){library.remove(item)}}.accessibilityIdentifier("project-\(item.id)")
     }
 }
 struct PageDestination:View {
-    @EnvironmentObject var library:LibraryStore;let id:UUID
-    var body:some View{if let page=try? library.load(id){EditorView(model:EditorModel(page:page,library:library))}else{WorkspaceEmpty(title:"تعذر فتح المشروع",detail:"ارجع إلى المعرض وحاول فتحه مجددًا.",icon:"doc.badge.exclamationmark").padding(20)}}
+    @EnvironmentObject var library:LibraryStore
+    let id:UUID
+    @State private var model:EditorModel?
+    @State private var failed=false
+    var body:some View {
+        Group {if let model{EditorView(model:model)}else if failed{WorkspaceEmpty(title:"تعذر فتح المشروع",detail:"ارجع إلى المعرض وحاول فتحه مجددًا.",icon:"doc.badge.exclamationmark").padding(20)}else{ProgressView("فتح المشروع…")}}
+        .task(id:id){guard model?.page.id != id else{return};model=nil;failed=false;let directory=library.directory(id)
+            do{let saved=try await BackgroundWork.run{guard let saved=try RecoveryFile.read(EditorPage.self,at:directory.appendingPathComponent("page.json")) else{throw ImageFailure.message("ملف الصفحة مفقود")};return saved};guard !Task.isCancelled else{return};if saved.recovered{library.error="استُعيدت الصفحة من آخر حفظ سليم."};model=EditorModel(page:saved.value,library:library)}catch{failed=true}
+        }
+    }
 }
 
 private struct HomeHero:View {

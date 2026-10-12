@@ -1,8 +1,8 @@
 import Foundation
 import UIKit
 
-struct Point: Codable, Equatable { var x: Double; var y: Double; var cg: CGPoint { CGPoint(x:x,y:y) } }
-struct Box: Codable, Equatable {
+struct Point: Codable, Equatable, Hashable { var x: Double; var y: Double; var cg: CGPoint { CGPoint(x:x,y:y) } }
+struct Box: Codable, Equatable, Hashable {
     var x: Double = 0; var y: Double = 0; var width: Double = 300; var height: Double = 150
     var cg: CGRect { CGRect(x:x,y:y,width:width,height:height) }
 }
@@ -10,23 +10,32 @@ enum LayerKind: String, Codable, CaseIterable { case text, image, shape, drawing
 enum TextOrigin:String,Codable {case manual,typer,tagPreview}
 /// Position and selected-character ranges belong to a particular dialogue.
 /// These reusable transforms, unlike a canvas position, are part of its look.
-struct TextLayerTransform:Codable,Equatable {
+struct TextLayerTransform:Codable,Equatable, Hashable {
     var opacity=1.0;var rotation=0.0;var scaleX=1.0;var scaleY=1.0;var shearX:Double?
     init(){}
     init(_ layer:EditorLayer){opacity=layer.opacity;rotation=layer.rotation;scaleX=layer.scaleX;scaleY=layer.scaleY;shearX=layer.shearX}
     func apply(to layer:inout EditorLayer){layer.opacity=opacity;layer.rotation=rotation;layer.scaleX=scaleX;layer.scaleY=scaleY;layer.shearX=shearX}
 }
-struct ManualTextPreset:Codable,Equatable {var style:TextStyle;var transform=TextLayerTransform()}
+struct ManualTextPreset:Codable,Equatable, Hashable {var style:TextStyle;var transform=TextLayerTransform()}
 enum TextEffect: String, Codable, CaseIterable {
     case none, chromatic, blur, glitch, slice, neon, fade, warp, shadow, error
-    var title:String {switch self {case .none:"بلا تأثير";case .chromatic:"إزاحة قنوات RGB";case .blur:"تمويه";case .glitch:"تشويش";case .slice:"تقطيع";case .neon:"توهج";case .fade:"تلاشي";case .warp:"تشويه";case .shadow:"ظل";case .error:"خلل"}}
+    case strokeBoth,stainedGlass,wetEdge,innerGlow,bevelInner,bevelOuter,emboss,relief,waterdrop,strokeOuter,outerGlow,satin,dropShadow,extrude,godRays
+    var isStyle:Bool{Self.styleCases.contains(self)}
+    static let styleCases:[TextEffect]=[.strokeBoth,.stainedGlass,.wetEdge,.innerGlow,.bevelInner,.bevelOuter,.emboss,.relief,.waterdrop,.strokeOuter,.outerGlow,.satin,.dropShadow,.extrude,.godRays]
+    var title:String {switch self {case .none:"بلا تأثير";case .chromatic:"إزاحة قنوات RGB";case .blur:"تمويه";case .glitch:"تشويش";case .slice:"تقطيع";case .neon:"توهج";case .fade:"تلاشي";case .warp:"تشويه";case .shadow:"ظل";case .error:"خلل";case .strokeBoth:"حد داخلي وخارجي";case .stainedGlass:"زجاج ملوّن";case .wetEdge:"حافة رطبة";case .innerGlow:"توهج داخلي";case .bevelInner:"شطبة داخلية";case .bevelOuter:"شطبة خارجية";case .emboss:"نقش بارز";case .relief:"نحت بارز";case .waterdrop:"قطرة ماء";case .strokeOuter:"حد خارجي";case .outerGlow:"توهج خارجي";case .satin:"ساتان";case .dropShadow:"ظل ساقط";case .extrude:"بروز";case .godRays:"أشعة الضوء"}}
 }
+struct StyleEffectSettings:Codable,Equatable,Hashable {
+    var radius=4.0;var softness=3.0;var depth=12.0;var angle=45.0;var opacity=0.8
+    var color="000000";var highlightColor="FFFFFF";var baseColor="888888"
+    var cellSize=24.0;var saturation=0.7;var seed:UInt32=7;var density=24
+}
+
 enum Blend: String, Codable, CaseIterable {
     case normal, multiply, screen, overlay, darken, lighten, difference, add
     var title:String {switch self {case .normal:"عادي";case .multiply:"ضرب";case .screen:"شاشة";case .overlay:"تراكب";case .darken:"تغميق";case .lighten:"تفتيح";case .difference:"فرق";case .add:"جمع"}}
     var cg: CGBlendMode { switch self {case .normal:.normal;case .multiply:.multiply;case .screen:.screen;case .overlay:.overlay;case .darken:.darken;case .lighten:.lighten;case .difference:.difference;case .add:.plusLighter} }
 }
-struct TextStyle: Codable, Equatable {
+struct TextStyle: Codable, Equatable, Hashable {
     var fontPath = "bein_normal.ttf"; var fontSize = 48.0; var boxWidth = 320.0
     var color = "FFFFFF"; var isBold = false; var isItalic = false; var isUnderline = false; var isStrikeThrough = false
     var alignment = 1; var letterSpacing = 0.0; var lineSpacing = 0.0; var lineHeightMultiple:Double?; var fakeBoldWidth = 0.0
@@ -39,6 +48,7 @@ struct TextStyle: Codable, Equatable {
     var textGradientStops: [Double] = []; var strokeGradient: [String] = []; var strokeGradientAngle = 0.0
     var strokeGradientStops: [Double] = []; var strokeGradientType = 0; var shadowGradient: [String] = []
     var shadowGradientAngle = 0.0; var shadowGradientStops: [Double] = []; var shadowGradientType = 0
+    var styleEffect:StyleEffectSettings?
     var effectType = TextEffect.none; var effectColor = "D4AF37"; var effectValue = 4.0; var effectAngle = 0.0
     var effectDetail = 3.0; var effectSecondVal = 0.0; var effectThirdVal = 0.0
     var blurDx = 0.0; var blurDy = 0.0; var blurType = 0
@@ -57,10 +67,10 @@ extension TextStyle {
         var style=TextStyle();style.fontSize=fontSize;style.boxWidth=boxWidth;style.color="000000";style.strokeWidth=0;return style
     }
 }
-struct ExtraOutline:Codable,Equatable,Identifiable {var id=UUID();var width:Double;var color:String;var gradient:[String]?;var stops:[Double]?;var angle:Double?;var gradientType:Int?}
-struct TextRun: Codable, Equatable { var start: Int; var end: Int; var color: String?; var fontSize: Double?; var isBold: Bool? }
-struct Stroke: Codable, Equatable { var points: [Point]; var width: Double; var color: String; var erase = false; var brush = "normal";var opacity:Double?;var texturePath:String?;var shape:String?;var filled:Bool? }
-struct EditorLayer: Codable, Equatable, Identifiable {
+struct ExtraOutline:Codable,Equatable,Identifiable, Hashable {var id=UUID();var width:Double;var color:String;var gradient:[String]?;var stops:[Double]?;var angle:Double?;var gradientType:Int?}
+struct TextRun: Codable, Equatable, Hashable { var start: Int; var end: Int; var color: String?; var fontSize: Double?; var isBold: Bool? }
+struct Stroke: Codable, Equatable, Hashable { var points: [Point]; var width: Double; var color: String; var erase = false; var brush = "normal";var opacity:Double?;var texturePath:String?;var shape:String?;var filled:Bool? }
+struct EditorLayer: Codable, Equatable, Identifiable, Hashable {
     var id = UUID(); var kind: LayerKind; var name = "طبقة"; var frame = Box()
     var rotation = 0.0; var scaleX = 1.0; var scaleY = 1.0; var opacity = 1.0
     var shearX:Double?
@@ -68,6 +78,7 @@ struct EditorLayer: Codable, Equatable, Identifiable {
     var textContent = "نص جديد"; var style = TextStyle(); var imagePath = ""; var shape = 0
     // Optional so existing projects retain their original appearance on decode.
     var textOrigin:TextOrigin?
+    var gradientMapBaseline:GradientMapBaseline?
     var textMask:[Stroke]?
     var groupID:UUID?;var groupName:String?
     var strokes: [Stroke] = []; var isMaskEnabled = false; var maskX = 0.0; var maskY = 0.0; var maskRadius = 80.0
@@ -98,9 +109,9 @@ extension UIColor {
 }
 
 extension TextStyle {
-    var usedColors:[String]{var values=textGradient.isEmpty ? [color]:textGradient;if strokeWidth>0{values+=strokeGradient.isEmpty ? [strokeColor]:strokeGradient};if shadowAlpha>0 && (shadowRadius>0 || shadowDx != 0 || shadowDy != 0){values+=shadowGradient.isEmpty ? [shadowColor]:shadowGradient};if backgroundAlpha>0{values.append(backgroundColor)};if [.neon,.error].contains(effectType){values.append(effectColor)};values+=spans.compactMap(\.color);for outline in extraStrokes ?? []{values+=outline.gradient?.isEmpty==false ? outline.gradient!:[outline.color]};return Array(Set(values))}
+    var usedColors:[String]{var values=textGradient.isEmpty ? [color]:textGradient;if strokeWidth>0{values+=strokeGradient.isEmpty ? [strokeColor]:strokeGradient};if shadowAlpha>0 && (shadowRadius>0 || shadowDx != 0 || shadowDy != 0){values+=shadowGradient.isEmpty ? [shadowColor]:shadowGradient};if backgroundAlpha>0{values.append(backgroundColor)};if [.neon,.error].contains(effectType){values.append(effectColor)};if effectType.isStyle{let settings=styleEffect ?? StyleEffectSettings();values+=[settings.color,settings.highlightColor,settings.baseColor]};values+=spans.compactMap(\.color);for outline in extraStrokes ?? []{values+=outline.gradient?.isEmpty==false ? outline.gradient!:[outline.color]};return Array(Set(values))}
 }
-struct TextArtSettings:Codable,Equatable {
+struct TextArtSettings:Codable,Equatable, Hashable {
     var distance=4.0
     var angle=0.0
     var order=0
