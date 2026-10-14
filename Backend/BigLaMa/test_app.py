@@ -31,3 +31,14 @@ def test_real_model_http_contract_and_pixel_protection():
         wrong = client.post('/v1/restore', headers=headers, files={'image': files['image'], 'mask': ('bad.png', png(Image.new('L', (24, 24))), 'image/png')})
         assert wrong.status_code == 422
         assert client.post('/v1/restore', headers=headers, content=b'not a multipart').status_code == 415
+
+def test_wide_gamut_input_matches_real_ios_coregraphics_reference():
+    import json
+    references = json.loads(pathlib.Path(__file__).with_name('native-srgb-reference.json').read_text())
+    source = (ROOT / 'build/lama-probe-fixtures/colored-hatched-dialogue.png').read_bytes()
+    converted = module.image(source)
+    assert converted.mode == 'RGB'
+    assert any(p['srgb'] != p['source_profile_channels'] for p in references['points'])
+    for point in references['points']:
+        actual = converted.getpixel((point['x'], point['y']))
+        assert max(abs(a-b) for a,b in zip(actual, point['srgb'])) <= 2

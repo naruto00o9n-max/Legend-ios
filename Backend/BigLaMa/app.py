@@ -3,7 +3,7 @@ import hashlib, hmac, io, os, pathlib
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import Response
-from PIL import Image, UnidentifiedImageError
+from PIL import Image, ImageCms, UnidentifiedImageError
 from starlette.concurrency import run_in_threadpool
 from engine import BigLaMa
 from fetch_model import SPEC, verify
@@ -37,6 +37,16 @@ def image(data, *, mask=False):
         if value.format != 'PNG' or min(w, h) < 24 or max(w, h) > 4096 or w*h > 4_194_304:
             raise ValueError()
         value.load()
+        # UIKit can submit Display P3/other ICC-tagged PNGs. Match the local
+        # CoreGraphics sRGB tensor input rather than dropping the profile and
+        # shifting the reconstructed colors under the text mask.
+        if not mask and value.info.get('icc_profile'):
+            try:
+                profile = ImageCms.ImageCmsProfile(io.BytesIO(value.info['icc_profile']))
+                if value.mode == 'P':value = value.convert('RGB')
+                return ImageCms.profileToProfile(value, profile, ImageCms.createProfile('sRGB'), outputMode='RGB')
+            except (ImageCms.PyCMSError, OSError, ValueError):
+                raise HTTPException(422, 'invalid_color_profile')
         return value.convert('L' if mask else 'RGB')
     except (ValueError, UnidentifiedImageError, OSError, Image.DecompressionBombError):
         raise HTTPException(422, 'invalid_image')

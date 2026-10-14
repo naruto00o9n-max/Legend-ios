@@ -1,0 +1,146 @@
+{
+  "source": "colored-hatched-dialogue in scripts/lama-real-fixtures.json",
+  "native_reference": "CoreGraphics sRGB render, iOS native probe ad65b4c run 38558353543; points outside text mask",
+  "points": [
+    {
+      "x": 50,
+      "y": 40,
+      "srgb": [
+        253,
+        223,
+        212
+      ],
+      "source_profile_channels": [
+        248,
+        224,
+        214
+      ]
+    },
+    {
+      "x": 250,
+      "y": 90,
+      "srgb": [
+        255,
+        255,
+        255
+      ],
+      "source_profile_channels": [
+        255,
+        255,
+        255
+      ]
+    },
+    {
+      "x": 60,
+      "y": 140,
+      "srgb": [
+        247,
+        192,
+        181
+      ],
+      "source_profile_channels": [
+        238,
+        194,
+        183
+      ]
+    },
+    {
+      "x": 240,
+      "y": 200,
+      "srgb": [
+        240,
+        235,
+        234
+      ],
+      "source_profile_channels": [
+        239,
+        235,
+        234
+      ]
+    },
+    {
+      "x": 150,
+      "y": 240,
+      "srgb": [
+        255,
+        237,
+        128
+      ],
+      "source_profile_channels": [
+        254,
+        238,
+        143
+      ]
+    },
+    {
+      "x": 60,
+      "y": 360,
+      "srgb": [
+        236,
+        199,
+        99
+      ],
+      "source_profile_channels": [
+        230,
+        200,
+        114
+      ]
+    },
+    {
+      "x": 350,
+      "y": 400,
+      "srgb": [
+        194,
+        165,
+        150
+      ],
+      "source_profile_channels": [
+        189,
+        166,
+        152
+      ]
+    },
+    {
+      "x": 375,
+      "y": 550,
+      "srgb": [
+        139,
+        112,
+        97
+      ],
+      "source_profile_channels": [
+        135,
+        113,
+        99
+      ]
+    },
+    {
+      "x": 260,
+      "y": 610,
+      "srgb": [
+        194,
+        188,
+        183
+      ],
+      "source_profile_channels": [
+        193,
+        188,
+        184
+      ]
+    },
+    {
+      "x": 150,
+      "y": 650,
+      "srgb": [
+        227,
+        229,
+        217
+      ],
+      "source_profile_channels": [
+        227,
+        229,
+        218
+      ]
+    }
+  ]
+}
