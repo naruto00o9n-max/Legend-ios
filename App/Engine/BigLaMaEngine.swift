@@ -1,18 +1,21 @@
-import CoreML
-import CoreVideo
 import CoreGraphics
 import Foundation
 
 /// One serial session per requested batch. Never retained by the live canvas.
 final class BigLaMaSession {
-    private let model:MLModel
-    private let extent=800
-    init(compiled:URL,units:MLComputeUnits = .all)throws{
-        let configuration=MLModelConfiguration();configuration.computeUnits=units;configuration.allowLowPrecisionAccumulationOnGPU=false
-        model=try MLModel(contentsOf:compiled,configuration:configuration)
-        for name in ["image","mask"]{guard let image=model.modelDescription.inputDescriptionsByName[name]?.imageConstraint,image.pixelsWide==800,image.pixelsHigh==800 else{throw LaMaFailure.message("لم تتطابق مداخل نموذج Big LaMa")}}
-        guard model.modelDescription.outputDescriptionsByName["output"]?.imageConstraint != nil else{throw LaMaFailure.message("مخرج نموذج الترميم غير صالح")}
+    private let context:UnsafeMutableRawPointer
+    private let extent=512
+    init(compiled:URL)throws{
+        let available=CookiesLaMaAvailableMemory()
+        guard available==0 || available>=900_000_000 else{throw LaMaFailure.message("الذاكرة المتاحة لا تكفي لترميم Big LaMa بأمان. اختر التنفيذ السحابي، أو أغلق التطبيقات الأخرى ثم أعد المحاولة")}
+        let result=CookiesLaMaOpen(compiled.path)
+        guard let value=(result["context"] as? NSValue)?.pointerValue else{
+            NSLog("Cookies Big LaMa load: %@",result["error"] as? String ?? "unknown")
+            throw LaMaFailure.message("تعذر تشغيل نموذج الترميم المحلي. أعد تنزيله أو اختر التنفيذ السحابي")
+        }
+        context=value
     }
+    deinit{CookiesLaMaClose(context)}
     /// Native-resolution windows overlap; output is copied only under the text
     /// mask. The original outside that mask is never rescaled or regenerated.
     func repair(source:CGImage,mask:CGImage)throws->CGImage{
@@ -28,27 +31,26 @@ final class BigLaMaSession {
             for y in top..<bottom{for x in left..<right where maskRGBA[(y*w+x)*4]>0{marked=true;break};if marked{break}}
             if !marked{continue}
             try autoreleasepool{
-                let color=try Self.buffer(width:extent,height:extent,format:kCVPixelFormatType_32BGRA),text=try Self.buffer(width:extent,height:extent,format:kCVPixelFormatType_OneComponent8)
-                CVPixelBufferLockBaseAddress(color,[]);CVPixelBufferLockBaseAddress(text,[])
-                guard let rgb=CVPixelBufferGetBaseAddress(color)?.assumingMemoryBound(to:UInt8.self),let ink=CVPixelBufferGetBaseAddress(text)?.assumingMemoryBound(to:UInt8.self) else{CVPixelBufferUnlockBaseAddress(color,[]);CVPixelBufferUnlockBaseAddress(text,[]);throw LaMaFailure.message("تعذر تجهيز ذاكرة الترميم")}
-                let rgbStride=CVPixelBufferGetBytesPerRow(color),maskStride=CVPixelBufferGetBytesPerRow(text)
+                let plane=extent*extent
+                var color=[Float](repeating:0,count:plane*3),text=[Float](repeating:0,count:plane)
                 for y in 0..<extent{for x in 0..<extent{
-                    let sx=min(w-1,max(0,originX+x)),sy=min(h-1,max(0,originY+y)),index=(sy*w+sx)*4,pixel=y*rgbStride+x*4
-                    rgb[pixel]=input[index+2];rgb[pixel+1]=input[index+1];rgb[pixel+2]=input[index];rgb[pixel+3]=255
-                    ink[y*maskStride+x]=(originX+x>=0 && originX+x<w && originY+y>=0 && originY+y<h) ? maskRGBA[index]:0
+                    let sx=min(w-1,max(0,originX+x)),sy=min(h-1,max(0,originY+y)),index=(sy*w+sx)*4,pixel=y*extent+x
+                    for channel in 0..<3{color[channel*plane+pixel]=Float(input[index+channel])/255}
+                    text[pixel]=(originX+x>=0 && originX+x<w && originY+y>=0 && originY+y<h && maskRGBA[index]>0) ? 1:0
                 }}
-                CVPixelBufferUnlockBaseAddress(color,[]);CVPixelBufferUnlockBaseAddress(text,[])
-                let features=try MLDictionaryFeatureProvider(dictionary:["image":MLFeatureValue(pixelBuffer:color),"mask":MLFeatureValue(pixelBuffer:text)])
-                let prediction=try model.prediction(from:features)
+                let colorData=color.withUnsafeBufferPointer{Data(buffer:$0)},maskData=text.withUnsafeBufferPointer{Data(buffer:$0)}
+                let prediction=CookiesLaMaPredict(context,colorData,maskData)
                 try Task.checkCancellation()
-                guard let result=prediction.featureValue(for:"output")?.imageBufferValue,CVPixelBufferGetWidth(result)==extent,CVPixelBufferGetHeight(result)==extent,CVPixelBufferGetPixelFormatType(result)==kCVPixelFormatType_32BGRA else{throw LaMaFailure.message("تعذر قراءة نتيجة Big LaMa")}
-                CVPixelBufferLockBaseAddress(result,.readOnly);defer{CVPixelBufferUnlockBaseAddress(result,.readOnly)}
-                guard let pixels=CVPixelBufferGetBaseAddress(result)?.assumingMemoryBound(to:UInt8.self) else{throw LaMaFailure.message("نتيجة الترميم فارغة")}
-                let stride=CVPixelBufferGetBytesPerRow(result)
+                guard let bytes=prediction["output"] as? Data,bytes.count==plane*3*MemoryLayout<Float>.size else{
+                    NSLog("Cookies Big LaMa inference: %@",prediction["error"] as? String ?? "invalid tensor")
+                    throw LaMaFailure.message("تعذر إكمال الترميم المحلي. جرّب التنفيذ السحابي أو منطقة نص أصغر")
+                }
+                var pixels=[Float](repeating:0,count:plane*3)
+                _ = pixels.withUnsafeMutableBytes{bytes.copyBytes(to:$0)}
                 for y in top..<bottom{for x in left..<right{
                     let index=y*w+x,offset=index*4;guard maskRGBA[offset]>0 else{continue}
-                    let tx=x-originX,ty=y-originY,edge=min(min(tx+1,extent-tx),min(ty+1,extent-ty)),weight=min(1,Float(edge)/80),old=weights[index],sum=old+weight,p=ty*stride+tx*4
-                    for channel in 0..<3{let value=(Float(output[offset+channel])*old+Float(pixels[p+2-channel])*weight)/sum;output[offset+channel]=UInt8(max(0,min(255,value.rounded())))}
+                    let tx=x-originX,ty=y-originY,edge=min(min(tx+1,extent-tx),min(ty+1,extent-ty)),weight=min(1,Float(edge)/64),old=weights[index],sum=old+weight,p=ty*extent+tx
+                    for channel in 0..<3{let value=(Float(output[offset+channel])*old+pixels[channel*plane+p]*weight)/sum;output[offset+channel]=UInt8(max(0,min(255,value.rounded())))}
                     weights[index]=sum
                 }}
             }
@@ -59,15 +61,12 @@ final class BigLaMaSession {
         return image
     }
     private static func origins(length:Int)->[Int]{
-        if length<=800{return [-(800-length)/2]}
-        var values=Array(stride(from:0,to:length-800,by:640));if values.last != length-800{values.append(length-800)};return values
+        if length<=512{return [-(512-length)/2]}
+        var values=Array(stride(from:0,to:length-512,by:448));if values.last != length-512{values.append(length-512)};return values
     }
     static func rgba(_ image:CGImage)throws->[UInt8]{
         var data=[UInt8](repeating:0,count:image.width*image.height*4)
         let valid=data.withUnsafeMutableBytes{bytes->Bool in guard let context=CGContext(data:bytes.baseAddress,width:image.width,height:image.height,bitsPerComponent:8,bytesPerRow:image.width*4,space:CGColorSpace(name:CGColorSpace.sRGB)!,bitmapInfo:CGImageAlphaInfo.premultipliedLast.rawValue) else{return false};context.setBlendMode(.copy);context.draw(image,in:CGRect(x:0,y:0,width:image.width,height:image.height));return true}
         guard valid else{throw LaMaFailure.message("تعذر قراءة صورة الترميم")};return data
-    }
-    private static func buffer(width:Int,height:Int,format:OSType)throws->CVPixelBuffer{
-        var value:CVPixelBuffer?;guard CVPixelBufferCreate(kCFAllocatorDefault,width,height,format,[kCVPixelBufferCGImageCompatibilityKey:true,kCVPixelBufferCGBitmapContextCompatibilityKey:true] as CFDictionary,&value)==kCVReturnSuccess,let value else{throw LaMaFailure.message("لا تتوفر ذاكرة كافية للترميم")};return value
     }
 }

@@ -1,4 +1,4 @@
-name: Big LaMa actual iOS inference probe
+name: Big LaMa actual iOS runtime probe
 on:
   push:
     branches: [verify/lama-coreml-oct14]
@@ -23,7 +23,7 @@ jobs:
       - run: python3 -m venv .work/lama-fixtures-env && .work/lama-fixtures-env/bin/pip -q install Pillow
       - run: .work/lama-fixtures-env/bin/python scripts/prepare_lama_probe.py
       - run: xcodegen generate --spec scripts/lama-probe/project.yml --project scripts/lama-probe
-      - name: Run Core ML inside actual iOS simulator app
+      - name: Run Big LaMa with ONNX Runtime inside iOS simulator
         run: bash scripts/lama-probe/test.sh '${{ matrix.screen }}'
       - uses: actions/upload-artifact@v4
         if: always()
