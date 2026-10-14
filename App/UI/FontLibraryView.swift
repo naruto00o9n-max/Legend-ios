@@ -14,6 +14,7 @@ struct FontLibraryView:View {
     @State private var error:String?
     @State private var scripts:[String:Set<String>]=[:]
     @State private var catalogue=Fonts.files+Fonts.otf
+    @State private var importedNames=Set<String>()
     @State private var classification=UUID()
     @State private var query=""
     @State private var filter="الكل"
@@ -25,7 +26,7 @@ struct FontLibraryView:View {
     @State private var output:URL?
     private var files:[URL] {catalogue.filter{url in
         let name=url.lastPathComponent
-        return (query.isEmpty || name.localizedCaseInsensitiveContains(query)) && (filter=="الكل" || scripts[name]?.contains(filter)==true || (filter=="المفضلة" && favorites.contains(name)) || (filter=="آخر استخدام" && recent.contains(name)) || (filter=="المستوردة" && url.path.hasPrefix(Fonts.userDirectory.path)) || (groups[filter]?.contains(name)==true))
+        return (query.isEmpty || name.localizedCaseInsensitiveContains(query)) && (filter=="الكل" || scripts[name]?.contains(filter)==true || (filter=="المفضلة" && favorites.contains(name)) || (filter=="آخر استخدام" && recent.contains(name)) || (filter=="المستوردة" && importedNames.contains(name)) || (groups[filter]?.contains(name)==true))
     }.sorted{if filter=="آخر استخدام"{return (recent.firstIndex(of:$0.lastPathComponent) ?? Int.max)<(recent.firstIndex(of:$1.lastPathComponent) ?? Int.max)};return $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending}}
     var body:some View {
         NavigationStack{ZStack{Ambient();VStack(spacing:12){
@@ -47,12 +48,12 @@ struct FontLibraryView:View {
         .padding(.vertical,8).listRowBackground(Color.clear).contextMenu{
             ForEach(groups.keys.sorted(),id:\.self){group in Button("إضافة إلى \(group)"){groups[group]=Array(Set((groups[group] ?? [])+[name])).sorted();saveGroups()}}
             if groups[filter] != nil{Button("إزالة من المجموعة"){groups[filter]?.removeAll{$0==name};saveGroups()}}
-            if url.path.hasPrefix(Fonts.userDirectory.path){Button("حذف الخط المستورد",role:.destructive){do{try FileManager.default.removeItem(at:url);CTFontManagerUnregisterFontsForURL(url as CFURL,.process,nil);Fonts.register();selected.remove(name);favorites.remove(name);UserDefaults.standard.set(favorites.sorted(),forKey:"fontFavorites");for key in Array(groups.keys){groups[key]?.removeAll{$0==name}};saveGroups();version+=1}catch{self.error=error.localizedDescription}}}
+            if importedNames.contains(name){Button("حذف الخط المستورد",role:.destructive){do{try FileManager.default.removeItem(at:url);CTFontManagerUnregisterFontsForURL(url as CFURL,.process,nil);Fonts.register();selected.remove(name);favorites.remove(name);UserDefaults.standard.set(favorites.sorted(),forKey:"fontFavorites");for key in Array(groups.keys){groups[key]?.removeAll{$0==name}};saveGroups();version+=1}catch{self.error=error.localizedDescription}}}
         }
     }
     private func choose(_ name:String){guard let onSelect else{return};recent.removeAll{$0==name};recent.insert(name,at:0);recent=Array(recent.prefix(30));UserDefaults.standard.set(recent,forKey:"fontRecent");onSelect(name)}
     private func classifyFonts(){
-        let fonts=Fonts.files+Fonts.otf,token=UUID();catalogue=fonts;classification=token
+        let fonts=Fonts.files+Fonts.otf,token=UUID();catalogue=fonts;importedNames=Set(Fonts.userFiles.map(\.lastPathComponent));classification=token
         Task{do{let result=try await BackgroundWork.run{()->[String:Set<String>] in
             var result:[String:Set<String>]=[:]
             for file in fonts{try Task.checkCancellation();var style=TextStyle();style.fontPath=file.lastPathComponent;let ui=Fonts.font(style),font=CTFontCreateWithName(ui.fontName as CFString,17,nil);var supported=Set<String>();for (label,code) in [("العربية",UniChar(0x0639)),("الإنجليزية",UniChar(0x0041))]{var character=code,glyph=CGGlyph();if CTFontGetGlyphsForCharacters(font,&character,&glyph,1),glyph != 0{supported.insert(label)}};result[file.lastPathComponent]=supported};return result

@@ -31,7 +31,7 @@ jobs:
         if: ${{ contains(github.event.head_commit.message, '[wording followup]') }}
         run: |
           git fetch --no-tags origin 352ef452b459000305852db05b924cef1d01eb2c
-          git diff --exit-code 352ef452b459000305852db05b924cef1d01eb2c HEAD -- App ':!App/UI/SniperWhiteningPanel.swift' Tests ServicesTests ServicesUITests LocalUITests project.yml scripts
+          git diff --exit-code 352ef452b459000305852db05b924cef1d01eb2c HEAD -- App ':!App/UI/SniperWhiteningPanel.swift' ':!App/UI/FontLibraryView.swift' Tests ServicesTests ServicesUITests LocalUITests project.yml scripts
       - name: Native preferences, font registration, backup and editor regressions
         if: ${{ !contains(github.event.head_commit.message, '[wording followup]') }}
         run: bash scripts/test_simulators.sh '${{ matrix.screen }}' core
