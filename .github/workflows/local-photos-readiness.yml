@@ -1,0 +1,39 @@
+name: Standalone Photos library readiness
+on:
+  push:
+    branches: [verify/local-photos-readiness-oct14]
+permissions:
+  contents: read
+jobs:
+  local:
+    runs-on: macos-15-intel
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Verify unchanged final application
+        run: git diff --exit-code 279e498b977b082318ef7c21c7dceb412991f2a6 HEAD -- App Tests UITests LocalUITests project.yml
+      - run: brew install xcodegen
+      - uses: actions/cache@v4
+        with:
+          path: |
+            .work/reference.apk
+            .work/opencv-ios.zip
+            App/Core/Vendor
+            App/Resources/cookies-logo.png
+          key: cookies-native-v45-opencv411-${{ hashFiles('scripts/vendor-hashes.json') }}
+      - run: python3 scripts/fetch_resources.py
+      - run: python3 scripts/fetch_whitening_fixtures.py
+      - run: xcodegen generate
+      - name: Actual PHPicker selection, native editing, export and source integrity
+        run: bash scripts/test_local_simulator.sh iphone
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: standalone-photos-readiness-iphone
+          path: |
+            build/test-*-local*.log
+            build/gates-*-local.json
+            build/photos-integrity-*-local.json
+            build/screenshots/*-local/

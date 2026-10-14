@@ -20,6 +20,9 @@ TASK_DEVICE=$(cat .work/simulator-id)
 xcrun simctl boot "$TASK_DEVICE" || true
 xcrun simctl bootstatus "$TASK_DEVICE" -b
 open -a Simulator --args -CurrentDeviceUDID "$TASK_DEVICE"
+# Initialize the real system Photos library on the freshly booted simulator.
+# This does not grant the tested app Photos permission or bypass PHPicker.
+xcrun simctl launch "$TASK_DEVICE" com.apple.mobileslideshow
 # Seed this suite explicitly, even if a preceding connected UI run failed.
 python3 - <<'PYPHOTO'
 import pathlib,struct,zlib
@@ -30,9 +33,12 @@ if not p.exists():
  rows=b''.join(b'\0'+bytes((240-y%40,)*3)*w for y in range(h))
  p.write_bytes(b'\x89PNG\r\n\x1a\n'+chunk(b'IHDR',struct.pack('>IIBBBBB',w,h,8,2,0,0,0))+chunk(b'IDAT',zlib.compress(rows))+chunk(b'IEND',b''))
 PYPHOTO
+xcodebuild -project CookiesEditor.xcodeproj -scheme CookiesLocal -configuration Debug -destination "platform=iOS Simulator,id=$TASK_DEVICE" -parallel-testing-enabled NO -derivedDataPath .work/simulator-local ARCHS=x86_64 ONLY_ACTIVE_ARCH=YES build-for-testing > "build/test-$TASK_SCREEN-local-build.log" 2>&1
 xcrun simctl addmedia "$TASK_DEVICE" .work/Photos-800x15000.png
+xcrun simctl install "$TASK_DEVICE" .work/simulator-local/Build/Products/Debug-iphonesimulator/CookiesLocal.app
+xcrun simctl terminate "$TASK_DEVICE" com.apple.mobileslideshow
 TASK_STATUS=0
-xcodebuild -project CookiesEditor.xcodeproj -scheme CookiesLocal -configuration Debug -destination "platform=iOS Simulator,id=$TASK_DEVICE" -parallel-testing-enabled NO -derivedDataPath .work/simulator-local -resultBundlePath "build/$TASK_SCREEN-local.xcresult" -only-testing:CookiesLocalUITests ARCHS=x86_64 ONLY_ACTIVE_ARCH=YES test > "build/test-$TASK_SCREEN-local.log" 2>&1 || TASK_STATUS=$?
+xcodebuild -project CookiesEditor.xcodeproj -scheme CookiesLocal -configuration Debug -destination "platform=iOS Simulator,id=$TASK_DEVICE" -parallel-testing-enabled NO -derivedDataPath .work/simulator-local -resultBundlePath "build/$TASK_SCREEN-local.xcresult" -only-testing:CookiesLocalUITests ARCHS=x86_64 ONLY_ACTIVE_ARCH=YES test-without-building > "build/test-$TASK_SCREEN-local.log" 2>&1 || TASK_STATUS=$?
 if [[ "$TASK_STATUS" == 0 ]]; then
   xcodebuild -project CookiesEditor.xcodeproj -scheme CookiesLocal -configuration Debug -destination "platform=iOS Simulator,id=$TASK_DEVICE" -parallel-testing-enabled NO -derivedDataPath .work/simulator-local -resultBundlePath "build/$TASK_SCREEN-local-photos.xcresult" -only-testing:CookiesLocalUITests/LocalEditionUITests/testLocalPhotosEditingAndOriginalSizeExport ARCHS=x86_64 ONLY_ACTIVE_ARCH=YES test-without-building > "build/test-$TASK_SCREEN-local-photos.log" 2>&1 || TASK_STATUS=$?
 fi
@@ -40,7 +46,11 @@ if [[ "$TASK_STATUS" == 0 ]]; then
   TASK_CONTAINER=$(xcrun simctl get_app_container "$TASK_DEVICE" com.cookies.editor.local data)
   python3 scripts/verify_photos_import.py "$TASK_CONTAINER/Documents/Cookies" "build/photos-integrity-$TASK_SCREEN-local.json" || TASK_STATUS=$?
 fi
-rg -n "\.swift:[0-9]+: error:|Test Case .* failed|Executed .* failures" "build/test-$TASK_SCREEN-local.log" | tail -35 || true
+python3 - "$TASK_SCREEN" <<'PYSUMMARY'
+import pathlib,re,sys
+text=pathlib.Path("build/test-"+sys.argv[1]+"-local.log").read_text(errors="replace")
+print("\n".join(line for line in text.splitlines() if re.search(r"\.swift:[0-9]+: error:|Test Case .* failed|Executed .* failures",line))[-12000:])
+PYSUMMARY
 xcrun xcresulttool export attachments --path "build/$TASK_SCREEN-local.xcresult" --output-path "build/screenshots/$TASK_SCREEN-local" || true
 python3 - "$TASK_SCREEN" "$TASK_STATUS" <<'PY'
 import json,pathlib,sys
