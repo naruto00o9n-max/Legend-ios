@@ -1,14 +1,13 @@
 import XCTest
 import UIKit
 import ImageIO
-import CoreML
 import Darwin
 @testable import LaMaProbe
 
 final class ProbeTests:XCTestCase {
     @MainActor func testActualBigLaMaOnRealComicCrops()async throws {
         executionTimeAllowance=1200
-        print("BIG_LAMA phase=download_and_compile")
+        print("BIG_LAMA phase=download_and_verify")
         let assets=BigLaMaAssets(),started=Date(),compiled=try await assets.install()
         let preparation=Date().timeIntervalSince(started)
         let directory=try XCTUnwrap(Bundle.main.url(forResource:"lama-probe-fixtures",withExtension:nil))
@@ -44,7 +43,7 @@ final class ProbeTests:XCTestCase {
             let data=try JSONSerialization.data(withJSONObject:result.metric,options:[.sortedKeys,.prettyPrinted]);let attachment=XCTAttachment(data:data,uniformTypeIdentifier:"public.json");attachment.name=result.name+"-metrics.json";attachment.lifetime = .keepAlways;add(attachment)
             print("BIG_LAMA "+String(data:data,encoding:.utf8)!.replacingOccurrences(of:"\n",with:" "))
         }
-        print("BIG_LAMA setup_seconds=\(preparation) pinned_weight_bytes=215544960")
+        print("BIG_LAMA setup_seconds=\(preparation) pinned_weight_bytes=208044816")
     }
     private struct Outcome {let name:String;let source:CGImage;let mask:CGImage;let composite:CGImage;let metric:[String:Any]}
     private static func read(_ url:URL)throws->CGImage{guard let source=CGImageSourceCreateWithURL(url as CFURL,nil),let image=CGImageSourceCreateImageAtIndex(source,0,nil) else{throw LaMaFailure.message("Missing real fixture")};return image}

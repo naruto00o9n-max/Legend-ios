@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import worker, {RestorationGate} from './worker.mjs';
+import worker, {RestorationGateCore as RestorationGate} from './core.mjs';
 
 function storage() {
   const values = new Map();

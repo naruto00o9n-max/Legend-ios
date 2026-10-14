@@ -38,19 +38,22 @@ extension EditorModel {
         let targets=sniperTargets,snapshot=page,directory=self.directory
         guard targets.count<=40 else{error="عالِج حتى 40 فقاعة في المرة الواحدة لتقليل استهلاك الذاكرة";return}
         guard snapshot.baseHidden != true else{error="أظهر الصورة الأصلية قبل تبييض نصها";return}
-        let needsModel=targets.contains{$0.whiteningMethod == .bigLaMa}
+        let needsModel=targets.contains{$0.whiteningMethod == .bigLaMa && $0.restorationExecution == .device}
         var compiled:URL?
         do{if needsModel{compiled=try BigLaMaAssets.shared.acquire()}}catch{self.error=error.localizedDescription;return}
         busy=true;defer{busy=false;whiteningTask=nil;if needsModel{BigLaMaAssets.shared.release()}};discardCleaning();let generation=cleaningGeneration
         do{
-            let task=Task.detached(priority:.userInitiated){()->CleaningCandidate in
+            let task=Task.detached(priority:.userInitiated){()async throws->CleaningCandidate in
                 var engine:BigLaMaSession?
                 func session()throws->BigLaMaSession{if let engine{return engine};guard let compiled else{throw ImageFailure.message("نموذج الترميم غير متوفر")};let value=try BigLaMaSession(compiled:compiled);engine=value;return value}
                 var results:[BubbleWhiteningResult]=[],skipped=0,firstFailure:String?
                 do{
                     for target in targets{
                         try Task.checkCancellation()
-                        do{results.append(try autoreleasepool{target.whiteningMethod == .classic ? try BubbleWhitening.prepare(page:snapshot,directory:directory,target:target):try BubbleWhitening.prepareBigLaMa(page:snapshot,directory:directory,target:target,session:session)})}catch is CancellationError{throw CancellationError()}catch{skipped+=1;if firstFailure==nil{firstFailure=error.localizedDescription}}
+                        do{
+                            if target.whiteningMethod == .bigLaMa && target.restorationExecution == .cloud{results.append(try await BubbleWhitening.prepareCloud(page:snapshot,directory:directory,target:target))}
+                            else{results.append(try autoreleasepool{target.whiteningMethod == .classic ? try BubbleWhitening.prepare(page:snapshot,directory:directory,target:target):try BubbleWhitening.prepareBigLaMa(page:snapshot,directory:directory,target:target,session:session)})}
+                        }catch is CancellationError{throw CancellationError()}catch{skipped+=1;if firstFailure==nil{firstFailure=error.localizedDescription}}
                     }
                     try Task.checkCancellation()
                     guard let first=results.first else{throw ImageFailure.message(firstFailure ?? "تعذر فصل نص الفقاعات المحددة بأمان. أعد تحديد داخل الفقاعة أو استخدم فرشاة التنظيف.")}

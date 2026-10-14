@@ -28,6 +28,9 @@ packages:
   ZIPFoundation:
     url: https://github.com/weichsel/ZIPFoundation.git
     exactVersion: 0.9.19
+  ONNXRuntime:
+    url: https://github.com/microsoft/onnxruntime-swift-package-manager.git
+    exactVersion: 1.24.2
 targetTemplates:
   CookiesBase:
     type: application
@@ -45,6 +48,8 @@ targetTemplates:
       type: folder
       buildPhase: resources
     dependencies:
+    - package: ONNXRuntime
+      product: onnxruntime
     - package: ZIPFoundation
     - framework: .work/opencv/opencv2.framework
       embed: false

@@ -107,7 +107,7 @@ struct EditorView:View {
         }}
 
         .alert("تعذر إكمال العملية",isPresented:Binding(get:{model.error != nil},set:{if !$0{model.error=nil}})){Button("حسنًا"){model.error=nil}}message:{Text(model.error ?? "")}
-        .onDisappear{model.commitTextMask();model.discardCleaning();model.save()}
+        .onDisappear{model.cancelWhitening();model.commitTextMask();model.discardCleaning();model.save()}
     }
     func placeBubble(_ rect:CGRect,shape:BubbleShape){
         guard let chapter=typer.activeChapter else{model.error="افتح التايبر واختر فصلًا أولًا";assistant=true;return}

@@ -3,7 +3,29 @@
   "main": "worker.mjs",
   "compatibility_date": "2026-10-14",
   "workers_dev": true,
-  "durable_objects": {"bindings": [{"name": "GATE", "class_name": "RestorationGate"}]},
-  "migrations": [{"tag": "v1", "new_sqlite_classes": ["RestorationGate"]}],
-  "observability": {"enabled": false}
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "GATE",
+        "class_name": "RestorationGate"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "RestorationGate"
+      ]
+    }
+  ],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 0.1,
+    "logs": {
+      "enabled": true,
+      "invocation_logs": false
+    },
+    "redact_query_string": true
+  }
 }

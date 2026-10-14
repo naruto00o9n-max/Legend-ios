@@ -81,7 +81,8 @@ NSDictionary<NSString *, id> *CookiesCreateBubbleTextMask(CGSize size,NSArray<NS
         cv::Mat inside=cv::Mat::zeros(height,width,CV_8UC1),mask=inside.clone();std::vector<std::vector<cv::Point>> paths{polygon};cv::fillPoly(inside,paths,cv::Scalar(255));
         cv::erode(inside,inside,cv::getStructuringElement(cv::MORPH_ELLIPSE,cv::Size(7,7)));
         for(NSValue *v in textRects){CGRect r=v.CGRectValue;if(!std::isfinite(r.origin.x)||!std::isfinite(r.origin.y)||!std::isfinite(r.size.width)||!std::isfinite(r.size.height)||r.size.width<=0||r.size.height<=0)continue;
-            CGRect clipped=CGRectIntersection(CGRectInset(r,-std::clamp(padding,1.0,24.0),-std::clamp(padding,1.0,24.0)),CGRectMake(0,0,width,height));if(CGRectIsNull(clipped)||CGRectIsEmpty(clipped))continue;
+            double spread=std::clamp(padding,1.0,24.0);if(padding>=8)spread=std::max(spread,std::min(24.0,std::min((double)r.size.width,(double)r.size.height)*0.25));
+            CGRect clipped=CGRectIntersection(CGRectInset(r,-spread,-spread),CGRectMake(0,0,width,height));if(CGRectIsNull(clipped)||CGRectIsEmpty(clipped))continue;
             int x=std::max(0,(int)std::floor(clipped.origin.x)),y=std::max(0,(int)std::floor(clipped.origin.y));int right=std::min(width,(int)std::ceil(CGRectGetMaxX(clipped))),bottom=std::min(height,(int)std::ceil(CGRectGetMaxY(clipped)));if(right>x&&bottom>y)mask(cv::Rect(x,y,right-x,bottom-y)).setTo(255);
         }
         cv::bitwise_and(mask,inside,mask);int count=cv::countNonZero(mask),interior=cv::countNonZero(inside);if(count<6||count>interior*0.90)return nil;

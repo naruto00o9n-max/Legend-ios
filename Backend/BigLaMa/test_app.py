@@ -15,8 +15,8 @@ def test_real_model_http_contract_and_pixel_protection():
     with TestClient(module.app) as client:
         assert client.get('/health').json()['ready']
         assert client.post('/v1/restore').status_code == 401
-        directory = ROOT / '.work/lama-labelled'
-        source = Image.open(directory / 'asura-white-spiked-bubble-source.png').convert('RGB')
+        directory = ROOT / 'build/lama-probe-fixtures'
+        source = Image.open(directory / 'asura-white-spiked-bubble.png').convert('RGB')
         mask = Image.open(directory / 'asura-white-spiked-bubble-mask.png').convert('L')
         headers = {'authorization': 'Bearer ' + os.environ['RESTORATION_ORIGIN_TOKEN']}
         files = {'image': ('source.png', png(source), 'image/png'), 'mask': ('mask.png', png(mask), 'image/png')}

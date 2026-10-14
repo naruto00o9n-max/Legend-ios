@@ -11,10 +11,10 @@ final class ManualWhiteningTests:XCTestCase {
         let target=try XCTUnwrap(model.sniperTargets.first);XCTAssertTrue(target.manuallySelected);XCTAssertFalse(target.pin);XCTAssertEqual(target.outline.count,4);XCTAssertEqual(target.whiteningMethod,.classic);XCTAssertEqual(model.page,before);XCTAssertNil(model.manualSniperTool)
     }
     @MainActor func testReplacingContourKeepsPerBubbleMethodIdentityAndReturnsToInspector()throws{
-        let (root,model)=try setup();defer{try? FileManager.default.removeItem(at:root)};model.beginManualSniper(.rectangle);model.finishManualSniper(rectangle);let id=try XCTUnwrap(model.sniperTargets.first?.id);model.sniperTargets[0].whiteningMethod = .bigLaMa
+        let (root,model)=try setup();defer{try? FileManager.default.removeItem(at:root)};model.beginManualSniper(.rectangle);model.finishManualSniper(rectangle);let id=try XCTUnwrap(model.sniperTargets.first?.id);model.sniperTargets[0].whiteningMethod = .bigLaMa;model.sniperTargets[0].restorationExecution = .cloud
         model.beginManualSniper(.rectangle);model.finishManualSniper(rectangle.map{CGPoint(x:$0.x+10,y:$0.y+280)})
         model.beginManualSniper(.freehand,replacing:id,returnToWhitening:true);model.finishManualSniper([CGPoint(x:50,y:50),CGPoint(x:180,y:65),CGPoint(x:210,y:180),CGPoint(x:45,y:220)])
-        XCTAssertEqual(model.sniperTargets.count,2);XCTAssertEqual(model.sniperTargets[0].id,id);XCTAssertEqual(model.sniperTargets[0].whiteningMethod,.bigLaMa);XCTAssertEqual(model.sniperTargets[1].whiteningMethod,.classic);XCTAssertTrue(model.sniperWhiteningOpen);XCTAssertEqual(model.focusedSniperTarget,id)
+        XCTAssertEqual(model.sniperTargets.count,2);XCTAssertEqual(model.sniperTargets[0].id,id);XCTAssertEqual(model.sniperTargets[0].whiteningMethod,.bigLaMa);XCTAssertEqual(model.sniperTargets[1].whiteningMethod,.classic);XCTAssertEqual(model.sniperTargets[0].restorationExecution,.cloud);XCTAssertEqual(model.sniperTargets[1].restorationExecution,.device);XCTAssertTrue(model.sniperWhiteningOpen);XCTAssertEqual(model.focusedSniperTarget,id)
     }
     @MainActor func testManualTextRegionsAreClippedAndOutsideOrTinyContoursAreRejected()throws{
         let (root,model)=try setup();defer{try? FileManager.default.removeItem(at:root)};model.beginManualSniper(.rectangle);model.finishManualSniper(rectangle);let id=try XCTUnwrap(model.sniperTargets.first?.id)
@@ -37,7 +37,7 @@ final class ManualWhiteningTests:XCTestCase {
     }
     @MainActor func testOptionalModelSpecificationIsPinnedAndAbsentCacheDoesNotDownload()throws{
         let root=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString);defer{try? FileManager.default.removeItem(at:root)};let assets=BigLaMaAssets(root:root),spec=try BigLaMaSpecification.bundled()
-        XCTAssertEqual(spec.revision,"5ed76e3799ab4cad31381750d29880c267477e18");XCTAssertEqual(spec.downloadSize,216647386);XCTAssertEqual(spec.files.count,3);XCTAssertFalse(assets.ready);XCTAssertFalse(assets.installing);XCTAssertThrowsError(try assets.acquire());XCTAssertEqual(assets.activeUses,0)
+        XCTAssertEqual(spec.revision,"c3c0c9e468934d62e79c329e35d82dd09ff8c444");XCTAssertEqual(spec.downloadSize,208044816);XCTAssertEqual(spec.files.count,1);XCTAssertFalse(assets.ready);XCTAssertFalse(assets.installing);XCTAssertThrowsError(try assets.acquire());XCTAssertEqual(assets.activeUses,0)
     }
     @MainActor func testModelRemovalLocksAcquisitionAndCacheCleanupWithoutDownloading()async throws{
         let root=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString);defer{try? FileManager.default.removeItem(at:root)}

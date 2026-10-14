@@ -23,7 +23,7 @@ extension EditorModel {
         for i in points.indices{let next=points[(i+1)%points.count];twiceArea+=points[i].x*next.y-next.x*points[i].y}
         guard rect.width>=24,rect.height>=24,abs(twiceArea)>=256 else{error="ارسم محيطًا واضحًا داخل الفقاعة؛ المساحة صغيرة أو متقاطعة";return}
         var target=SniperTarget(bounds:Box(x:rect.minX,y:rect.minY,width:rect.width,height:rect.height),outline:points.map{Point(x:$0.x,y:$0.y)},point:Point(x:rect.midX,y:rect.midY));target.manuallySelected=true
-        if let id=manualSniperReplacement,let index=sniperTargets.firstIndex(where:{$0.id==id}){target.id=id;target.whiteningMethod=sniperTargets[index].whiteningMethod;target.manualTextRegions=sniperTargets[index].manualTextRegions;sniperTargets[index]=target}else{sniperTargets.append(target)}
+        if let id=manualSniperReplacement,let index=sniperTargets.firstIndex(where:{$0.id==id}){target.id=id;target.whiteningMethod=sniperTargets[index].whiteningMethod;target.restorationExecution=sniperTargets[index].restorationExecution;target.manualTextRegions=sniperTargets[index].manualTextRegions;sniperTargets[index]=target}else{sniperTargets.append(target)}
         focusedSniperTarget=target.id
     }
     func cancelWhitening(){whiteningTask?.cancel()}

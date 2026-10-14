@@ -1,25 +1,15 @@
 {
-  "revision": "5ed76e3799ab4cad31381750d29880c267477e18",
-  "repository": "mlboydaisuke/LaMa-CoreML",
+  "revision": "c3c0c9e468934d62e79c329e35d82dd09ff8c444",
+  "repository": "Carve/LaMa-ONNX",
   "upstream": "https://github.com/advimman/lama",
   "license": "Apache-2.0",
-  "width": 800,
-  "height": 800,
+  "width": 512,
+  "height": 512,
   "files": [
     {
-      "path": "Data/com.apple.CoreML/model.mlmodel",
-      "size": 1101809,
-      "sha256": "06a100ef99e0fd16326a3a8c4a687d13f7b26f544ea906a75338932d8554f953"
-    },
-    {
-      "path": "Data/com.apple.CoreML/weights/weight.bin",
-      "size": 215544960,
-      "sha256": "d0541f6044a94cd4982bfdac074fc1ccfe11d8f1f590c299d6b5071b501fc184"
-    },
-    {
-      "path": "Manifest.json",
-      "size": 617,
-      "sha256": "c814fff3cedf827c044094545ef80b0280b6cb8dd0e5c0bcf69fd31921191e58"
+      "path": "lama_fp32.onnx",
+      "size": 208044816,
+      "sha256": "1faef5301d78db7dda502fe59966957ec4b79dd64e16f03ed96913c7a4eb68d6"
     }
   ]
 }

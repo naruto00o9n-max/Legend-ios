@@ -5,6 +5,11 @@ enum BubbleWhiteningMethod:String,CaseIterable,Identifiable {
     var id:String{rawValue}
     var title:String{self == .classic ? "التبييض المعتاد":"ترميم Big LaMa"}
 }
+enum RestorationExecution:String,CaseIterable,Identifiable {
+    case device,cloud
+    var id:String{rawValue}
+    var title:String{self == .device ? "على الجهاز":"سحابي"}
+}
 enum ManualSniperTool:String {case rectangle,freehand,textRectangle}
 struct SniperTarget: Identifiable, Equatable {
     var id=UUID()
@@ -13,6 +18,7 @@ struct SniperTarget: Identifiable, Equatable {
     var pin=false
     var point:Point
     var whiteningMethod=BubbleWhiteningMethod.classic
+    var restorationExecution=RestorationExecution.device
     var manualTextRegions:[Box]=[]
     var manuallySelected=false
 }

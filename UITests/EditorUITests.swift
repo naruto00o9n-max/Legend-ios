@@ -20,7 +20,7 @@ final class EditorUITests:XCTestCase {
         let scroll=view ?? (app.scrollViews["guide-list"].exists ? app.scrollViews["guide-list"]:app.scrollViews.firstMatch)
         // Whole-view flicks can jump over a small row in the floating Typer and
         // oscillate above/below it. Use a bounded drag within this viewport.
-        for _ in 0..<40{guard scroll.exists else{XCTFail("Scrolling changed the foreground destination unexpectedly");return};let visible=scroll.frame.intersection(app.frame);if element.exists && element.isHittable && element.frame.minY>=visible.minY && element.frame.maxY<=visible.maxY{return};let down=element.exists && element.frame.minY<visible.minY;let edge=["guide-list","color-library-scroll","text-inspector-scroll"].contains(scroll.identifier),x=edge ? 0.97:0.5;let start=scroll.coordinate(withNormalizedOffset:CGVector(dx:x,dy:down ? 0.32:0.72)),end=scroll.coordinate(withNormalizedOffset:CGVector(dx:x,dy:down ? 0.72:0.32));start.press(forDuration:edge ? 0.15:0.02,thenDragTo:end,withVelocity:.slow,thenHoldForDuration:0.12)}
+        for _ in 0..<40{guard scroll.exists else{XCTFail("Scrolling changed the foreground destination unexpectedly");return};let visible=scroll.frame.intersection(app.frame);if element.exists && element.isHittable && element.frame.minY>=visible.minY && element.frame.maxY<=visible.maxY{return};let down=element.exists && element.frame.minY<visible.minY;let edge=["guide-list","color-library-scroll","text-inspector-scroll","whitening-settings-scroll"].contains(scroll.identifier),x=edge ? 0.97:0.5;let start=scroll.coordinate(withNormalizedOffset:CGVector(dx:x,dy:down ? 0.32:0.72)),end=scroll.coordinate(withNormalizedOffset:CGVector(dx:x,dy:down ? 0.72:0.32));start.press(forDuration:edge ? 0.15:0.02,thenDragTo:end,withVelocity:.slow,thenHoldForDuration:0.12)}
         XCTAssertTrue(element.exists && element.isHittable,"Control must be reachable by scrolling: \(element.identifier)")
     }
     func tapVisible(_ name:String){let element=app.buttons[name];revealVertical(element);element.tap()}
@@ -244,11 +244,17 @@ final class EditorUITests:XCTestCase {
             XCTAssertTrue(app.buttons["sniper-whiten"].waitForExistence(timeout:8));XCTAssertTrue(app.buttons["sniper-whiten"].isEnabled,"Manual contour must become a usable bubble \(index+1)")
         }
         app.buttons["sniper-whiten"].tap();XCTAssertTrue(app.buttons["whitening-target-2"].waitForExistence(timeout:8))
-        let settings=app.scrollViews["whitening-settings-scroll"];app.buttons["whitening-target-1"].tap();revealVertical(app.buttons["whitening-method-bigLaMa"],in:settings);app.buttons["whitening-method-bigLaMa"].tap()
-        XCTAssertFalse(app.buttons["whitening-preview"].isEnabled,"A model must be downloaded explicitly before neural restoration")
-        revealVertical(app.buttons["whitening-target-2"],in:settings);app.buttons["whitening-target-2"].tap();app.buttons["whitening-close"].tap()
-        app.buttons["sniper-whiten"].tap();XCTAssertTrue(app.buttons["whitening-target-1"].waitForExistence(timeout:8));XCTAssertFalse(app.buttons["whitening-preview"].isEnabled,"Per-bubble model choice must survive closing its inspector")
-        app.buttons["whitening-target-1"].tap();revealVertical(app.buttons["whitening-method-classic"],in:settings);app.buttons["whitening-method-classic"].tap();XCTAssertTrue(app.buttons["whitening-preview"].isEnabled)
+        let settings=app.scrollViews["whitening-settings-scroll"]
+        func choose(_ id:String){let button=app.buttons[id];revealVertical(button,in:settings);XCTAssertTrue(button.isHittable,app.debugDescription);button.tap()}
+        let first=app.buttons["whitening-target-1"],second=app.buttons["whitening-target-2"]
+        first.tap();choose("whitening-method-bigLaMa")
+        XCTAssertEqual(first.value as? String,"bigLaMa/device")
+        XCTAssertFalse(app.buttons["whitening-preview"].isEnabled,"Local restoration must require explicit model download")
+        choose("whitening-execution-cloud");XCTAssertEqual(first.value as? String,"bigLaMa/cloud");XCTAssertTrue(app.buttons["whitening-preview"].isEnabled,"Cloud restoration must work without local weights")
+        second.tap();XCTAssertEqual(second.value as? String,"classic/device");app.buttons["whitening-close"].tap()
+        app.buttons["sniper-whiten"].tap();XCTAssertTrue(first.waitForExistence(timeout:8));XCTAssertEqual(first.value as? String,"bigLaMa/cloud")
+        first.tap();choose("whitening-execution-device");XCTAssertFalse(app.buttons["whitening-preview"].isEnabled)
+        choose("whitening-method-classic");XCTAssertEqual(first.value as? String,"classic/device");XCTAssertTrue(app.buttons["whitening-preview"].isEnabled)
         app.buttons["whitening-close"].tap();XCTAssertTrue(app.buttons["export"].isHittable)
     }
 

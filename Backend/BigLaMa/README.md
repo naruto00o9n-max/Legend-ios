@@ -29,3 +29,19 @@ Validation: real Asura Scans crops and public comic/manhwa references, exact
 outside-mask preservation, white-text-remnant measurements, authenticated HTTP
 inference, concurrency and capacity checks. Quality is estimated reconstruction
 of occluded art; exact invisible decorations and flawless OCR are not promised.
+
+
+Deployment verified 2026-10-14: Cloudflare public endpoint
+`https://cookies-restoration.cookies-studio-36c499.workers.dev`, Railway CPU
+origin in the user-owned Cookies Editor Restoration project. Railway trial
+capacity is temporary, not a promise of free indefinite production hosting.
+The gateway can be kept while the origin moves to a larger or Cloudflare
+Containers plan later. Current deployment uses no paid-plan upgrade.
+
+Reproduce local protocol/inference tests (Python 3.12): install requirements
+plus pytest/httpx, run `python scripts/prepare_lama_probe.py`, fetch the pinned
+model with `LAMA_MODEL_PATH=.work/big-lama-fp32.onnx python Backend/BigLaMa/fetch_model.py`,
+then `PYTHONPATH=Backend/BigLaMa pytest Backend/BigLaMa/test_app.py`.
+Run `node --test Backend/BigLaMa/cloudflare/worker.test.mjs` for gateway limits.
+The real-image test masks are explicit annotations; they test restoration,
+not an unsupported claim that automatic text detection never misses a glyph.

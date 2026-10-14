@@ -7,6 +7,12 @@ settings:
     SWIFT_VERSION: '5.0'
     SWIFT_STRICT_CONCURRENCY: minimal
     CODE_SIGNING_ALLOWED: NO
+    CLANG_CXX_LANGUAGE_STANDARD: c++17
+    SWIFT_OBJC_BRIDGING_HEADER: ../../App/Engine/LaMaRuntime.h
+packages:
+  ONNXRuntime:
+    url: https://github.com/microsoft/onnxruntime-swift-package-manager.git
+    exactVersion: 1.24.2
 targets:
   LaMaProbe:
     type: application
@@ -15,6 +21,8 @@ targets:
       - ProbeApp.swift
       - ../../App/Engine/BigLaMaAssets.swift
       - ../../App/Engine/BigLaMaEngine.swift
+      - ../../App/Engine/LaMaRuntime.mm
+      - ../../App/Engine/LaMaRuntime.h
       - ../../App/Engine/BackgroundWork.swift
       - path: ../../App/Resources/big-lama-model.json
         buildPhase: resources
@@ -29,6 +37,8 @@ targets:
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         TARGETED_DEVICE_FAMILY: '1,2'
     dependencies:
+      - package: ONNXRuntime
+        product: onnxruntime
       - sdk: CoreML.framework
       - sdk: CoreVideo.framework
       - sdk: UIKit.framework
