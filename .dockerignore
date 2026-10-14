@@ -1,0 +1,6 @@
+**
+!Backend/
+!Backend/BigLaMa/
+!Backend/BigLaMa/**
+Backend/BigLaMa/__pycache__
+Backend/BigLaMa/.pytest_cache
