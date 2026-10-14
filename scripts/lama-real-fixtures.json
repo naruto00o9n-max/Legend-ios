@@ -1,0 +1,48 @@
+[
+  {
+    "name": "colored-hatched-dialogue",
+    "source": "https://user-images.githubusercontent.com/31543482/232264684-5a7bcf8e-707b-4925-86b0-4212382f1680.png",
+    "source_sha256": "7c4a55d231a22ebf7fc56a30e3bd117b731dd019631f3ae8876d1cacaa18ac20",
+    "attribution": "Public comic OCR demonstration; test crop only; not Asura Scans.",
+    "crop": [
+      300,
+      80,
+      500,
+      700
+    ],
+    "mask_rects": [
+      [
+        95,
+        260,
+        220,
+        320
+      ],
+      [
+        290,
+        75,
+        120,
+        205
+      ]
+    ]
+  },
+  {
+    "name": "real-manhwa-white-shadow",
+    "source": "https://xbrpvumrwhbarxuksddt.supabase.co/storage/v1/object/public/community_media/4e58f8d8-cddf-479a-a6dd-f37798111e2c.webp",
+    "source_sha256": "baabb1d413b95f265b8f09cd62e47b1b087c666b004c842acb8f5b3c45959d87",
+    "attribution": "Public YTyper manhwa community reference; not Asura Scans.",
+    "crop": [
+      80,
+      130,
+      930,
+      730
+    ],
+    "mask_rects": [
+      [
+        115,
+        290,
+        695,
+        220
+      ]
+    ]
+  }
+]
