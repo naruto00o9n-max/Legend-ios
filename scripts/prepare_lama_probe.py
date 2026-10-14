@@ -3,7 +3,7 @@
 import hashlib,json,pathlib,urllib.request
 from PIL import Image,ImageDraw
 root=pathlib.Path(__file__).resolve().parents[1]
-out=root/'.work/lama-probe-fixtures';out.mkdir(parents=True,exist_ok=True)
+out=root/'build/lama-probe-fixtures';out.mkdir(parents=True,exist_ok=True)
 refs=json.loads((root/'scripts/lama-real-fixtures.json').read_text())
 for item in refs:
  source=root/'.work'/('lama-reference-'+item['name'])

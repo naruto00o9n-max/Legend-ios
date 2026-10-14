@@ -40,6 +40,7 @@ final class BigLaMaSession {
                 CVPixelBufferUnlockBaseAddress(color,[]);CVPixelBufferUnlockBaseAddress(text,[])
                 let features=try MLDictionaryFeatureProvider(dictionary:["image":MLFeatureValue(pixelBuffer:color),"mask":MLFeatureValue(pixelBuffer:text)])
                 let prediction=try model.prediction(from:features)
+                try Task.checkCancellation()
                 guard let result=prediction.featureValue(for:"output")?.imageBufferValue,CVPixelBufferGetWidth(result)==extent,CVPixelBufferGetHeight(result)==extent,CVPixelBufferGetPixelFormatType(result)==kCVPixelFormatType_32BGRA else{throw LaMaFailure.message("تعذر قراءة نتيجة Big LaMa")}
                 CVPixelBufferLockBaseAddress(result,.readOnly);defer{CVPixelBufferUnlockBaseAddress(result,.readOnly)}
                 guard let pixels=CVPixelBufferGetBaseAddress(result)?.assumingMemoryBound(to:UInt8.self) else{throw LaMaFailure.message("نتيجة الترميم فارغة")}

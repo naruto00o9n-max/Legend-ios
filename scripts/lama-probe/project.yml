@@ -18,7 +18,7 @@ targets:
       - ../../App/Engine/BackgroundWork.swift
       - path: ../../App/Resources/big-lama-model.json
         buildPhase: resources
-      - path: ../../.work/lama-probe-fixtures
+      - path: ../../build/lama-probe-fixtures
         type: folder
         buildPhase: resources
     settings:

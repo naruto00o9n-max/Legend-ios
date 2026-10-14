@@ -40,6 +40,8 @@ private final class LaMaTransferProgress:NSObject,URLSessionDownloadDelegate,@un
     @Published private(set) var progress=0.0
     @Published private(set) var phase=""
     @Published private(set) var activeUses=0
+    @Published private(set) var failure:String?
+    private var installation:Task<Void,Never>?
     private var generation=UUID()
     init(root:URL?=nil){self.root=root ?? FileManager.default.urls(for:.cachesDirectory,in:.userDomainMask)[0].appendingPathComponent("CookiesModels/BigLaMa");refresh()}
     var compiled:URL{root.appendingPathComponent("LaMa.mlmodelc",isDirectory:true)}
@@ -47,6 +49,8 @@ private final class LaMaTransferProgress:NSObject,URLSessionDownloadDelegate,@un
     func refresh(){guard let spec=try? BigLaMaSpecification.bundled() else{ready=false;return};ready=(try? String(contentsOf:receipt,encoding:.utf8))==spec.revision && FileManager.default.fileExists(atPath:compiled.path)}
     func acquire()throws->URL{refresh();guard ready,!installing else{throw LaMaFailure.message("نزّل نموذج Big LaMa أولًا من إعدادات التبييض")};activeUses+=1;return compiled}
     func release(){activeUses=max(0,activeUses-1)}
+    func startInstallation(){guard installation==nil,!installing else{return};failure=nil;installation=Task{defer{installation=nil};do{_ = try await install()}catch is CancellationError{}catch{failure=error.localizedDescription}}}
+    func cancelInstallation(){installation?.cancel()}
     @discardableResult func install()async throws->URL{
         refresh();if ready{return compiled}
         guard !installing else{throw LaMaFailure.message("تنزيل النموذج جارٍ")}
@@ -54,6 +58,7 @@ private final class LaMaTransferProgress:NSObject,URLSessionDownloadDelegate,@un
         let token=UUID();generation=token;installing=true;progress=0;phase="تنزيل النموذج"
         defer{installing=false;try? fm.removeItem(at:folder)}
         try fm.createDirectory(at:package,withIntermediateDirectories:true)
+        if let available=try? root.resourceValues(forKeys:[.volumeAvailableCapacityForImportantUsageKey]).volumeAvailableCapacityForImportantUsage,available<spec.downloadSize*3{throw LaMaFailure.message("لا تتوفر مساحة كافية لتنزيل النموذج وتهيئته. أفرغ نحو 650 ميغابايت ثم حاول مجددًا")}
         var completed:Int64=0
         for asset in spec.files{
             try Task.checkCancellation();let start=completed,total=spec.downloadSize
