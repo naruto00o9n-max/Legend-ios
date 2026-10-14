@@ -60,3 +60,65 @@ jobs:
             build/gates-*-local.json
             build/photos-integrity-*-local.json
             build/screenshots/*-local/
+
+  package:
+    if: ${{ contains(github.event.head_commit.message, '[ui repair]') }}
+    runs-on: macos-15-intel
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+      - run: brew install xcodegen
+      - uses: actions/cache@v4
+        with:
+          path: |
+            .work/reference.apk
+            .work/opencv-ios.zip
+            App/Core/Vendor
+            App/Resources/cookies-logo.png
+          key: cookies-native-v45-opencv411-${{ hashFiles('scripts/vendor-hashes.json') }}
+      - run: python3 scripts/fetch_resources.py
+      - run: xcodegen generate
+      - run: bash scripts/build_ipas.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: restoration-final-unsigned-ipas
+          path: build/
+  editor:
+    if: ${{ contains(github.event.head_commit.message, '[ui repair]') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        screen: [ipad, iphone]
+    runs-on: macos-15-intel
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 3
+      - name: Verify unchanged tested engine and source-image code
+        run: |
+          git diff --exit-code 11384867dc2a2e0bdf1ab9ba05fdeda448e7cdf2 HEAD -- App ':!App/UI/SniperWhiteningPanel.swift' ':!App/UI/EditorView.swift' Tests ServicesTests ServicesUITests project.yml scripts/build_ipas.sh scripts/test_simulators.sh
+      - run: brew install xcodegen
+      - uses: actions/cache@v4
+        with:
+          path: |
+            .work/reference.apk
+            .work/opencv-ios.zip
+            App/Core/Vendor
+            App/Resources/cookies-logo.png
+          key: cookies-native-v45-opencv411-${{ hashFiles('scripts/vendor-hashes.json') }}
+      - run: python3 scripts/fetch_resources.py
+      - run: python3 scripts/fetch_whitening_fixtures.py
+      - run: xcodegen generate
+      - name: Actual per-bubble execution controls, trash, grid, Photos and services
+        run: bash scripts/test_simulators.sh '${{ matrix.screen }}' ui 'CookiesUITests/EditorUITests/testManualSniperKeepsIndependentWhiteningMethodPerBubble,CookiesUITests/EditorUITests/testTrashRestoresProjectAndGridSettingsRemainReachable'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: restoration-final-editor-${{ matrix.screen }}
+          path: |
+            build/test-*.log
+            build/gates-*.json
+            build/photos-integrity-*.json
+            build/screenshots/

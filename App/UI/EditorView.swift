@@ -89,7 +89,7 @@ struct EditorView:View {
         .onChange(of:model.selected){_,_ in objectPanel=nil;if model.active?.kind != .image{model.imageEffectsOpen=false}}
         .onChange(of:model.requestTyper){_,open in if open{assistant=true;model.requestTyper=false}}
         .fullScreenCover(isPresented:$reader){ReaderView(model:model).cookiesInterface()}
-        .sheet(isPresented:$model.sniperWhiteningOpen){SniperWhiteningPanel(model:model).presentationDetents([.medium,.large]).presentationBackground(.clear)}
+        .sheet(isPresented:$model.sniperWhiteningOpen){SniperWhiteningPanel(model:model).presentationDetents([.large]).presentationContentInteraction(.scrolls).presentationDragIndicator(.visible).presentationBackground(.clear)}
         .sheet(isPresented:$gridSettingsOpen){CanvasGridSettingsView().presentationDetents([.medium,.large]).presentationBackground(.clear)}
         .sheet(isPresented:$brushSettings){BrushSheet(model:model).cookiesInterface().presentationDetents([.height(300)]).presentationBackground(.clear)}
         .sheet(isPresented:$layers){LayerSheet(model:model).cookiesInterface().presentationDetents([.medium,.large]).presentationBackground(.clear)}
