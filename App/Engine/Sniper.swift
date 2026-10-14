@@ -1,11 +1,20 @@
 import UIKit
 
+enum BubbleWhiteningMethod:String,CaseIterable,Identifiable {
+    case classic,bigLaMa
+    var id:String{rawValue}
+    var title:String{self == .classic ? "التبييض المعتاد":"ترميم Big LaMa"}
+}
+enum ManualSniperTool:String {case rectangle,freehand,textRectangle}
 struct SniperTarget: Identifiable, Equatable {
     var id=UUID()
     var bounds:Box
     var outline:[Point]=[]
     var pin=false
     var point:Point
+    var whiteningMethod=BubbleWhiteningMethod.classic
+    var manualTextRegions:[Box]=[]
+    var manuallySelected=false
 }
 enum SniperDetector {
     static func detect(page:EditorPage,directory:URL,point:CGPoint)throws->SniperTarget {

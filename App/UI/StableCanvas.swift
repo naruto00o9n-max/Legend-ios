@@ -136,6 +136,14 @@ final class DocumentCanvas: UIView {
         accessibilityLabel = "مساحة الصورة بالأبعاد الأصلية"
     }
     required init?(coder: NSCoder) { fatalError() }
+    private let manualSniperOverlay=CAShapeLayer()
+    func showManualSniper(_ points:[CGPoint]?){
+        CATransaction.begin();CATransaction.setDisableActions(true);defer{CATransaction.commit()}
+        guard let points,let first=points.first else{manualSniperOverlay.path=nil;return}
+        if manualSniperOverlay.superlayer==nil{layer.addSublayer(manualSniperOverlay)}
+        let path=CGMutablePath();path.move(to:first);for point in points.dropFirst(){path.addLine(to:point)};path.closeSubpath()
+        manualSniperOverlay.path=path;manualSniperOverlay.fillColor=UIColor(hex:"D4AF37",alpha:0.08).cgColor;manualSniperOverlay.strokeColor=UIColor.white.cgColor;manualSniperOverlay.lineWidth=1.5/max(0.002,zoom);manualSniperOverlay.lineDashPattern=[NSNumber(value:6/Double(max(0.002,zoom))),NSNumber(value:4/Double(max(0.002,zoom)))]
+    }
     func update(page: EditorPage, directory: URL, selected: UUID?, zoom: CGFloat) {
         let identity = directory.path + "/" + page.raw + "|\(page.width)x\(page.height)" + (page.baseHidden==true ? "|hidden":"")
         let sourceChanged = sourceIdentity != identity
@@ -459,6 +467,18 @@ final class DocumentCanvas: UIView {
         guard let rect else{bubbleFrame.path=nil;return}
         bubbleFrame.fillColor=UIColor.clear.cgColor;bubbleFrame.strokeColor=UIColor(hex:"D4AF37").cgColor;bubbleFrame.lineWidth=1.5/max(0.002,zoom)
         bubbleFrame.path=(shape == .oval || shape == .scream ? UIBezierPath(ovalIn:rect):UIBezierPath(rect:rect)).cgPath;layer.addSublayer(bubbleFrame)
+    }
+    private let sniperFocusOverlay=CAShapeLayer()
+    private var lastSniperFocus:SniperTarget?
+    private var lastSniperFocusZoom:CGFloat=0
+    func showSniperFocus(_ target:SniperTarget?){
+        guard target != lastSniperFocus || zoom != lastSniperFocusZoom else{return};lastSniperFocus=target;lastSniperFocusZoom=zoom
+        CATransaction.begin();CATransaction.setDisableActions(true);defer{CATransaction.commit()}
+        guard let target,let first=target.outline.first else{sniperFocusOverlay.path=nil;return}
+        if sniperFocusOverlay.superlayer==nil{layer.addSublayer(sniperFocusOverlay)}
+        let path=CGMutablePath();path.move(to:first.cg);for point in target.outline.dropFirst(){path.addLine(to:point.cg)};path.closeSubpath()
+        for box in target.manualTextRegions{path.addRect(CGRect(x:box.x,y:box.y,width:box.width,height:box.height))}
+        sniperFocusOverlay.path=path;sniperFocusOverlay.strokeColor=UIColor.white.cgColor;sniperFocusOverlay.fillColor=UIColor(hex:"D4AF37",alpha:0.08).cgColor;sniperFocusOverlay.lineWidth=2.5/max(0.002,zoom)
     }
     func showSniper(_ targets:[SniperTarget]) {
         guard targets != sniperTargets || sniperZoom != zoom else{return}

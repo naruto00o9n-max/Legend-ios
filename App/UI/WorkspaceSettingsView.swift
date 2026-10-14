@@ -9,6 +9,7 @@ enum WorkspaceSettingsCategory:String,CaseIterable,Identifiable {
 struct WorkspaceSettingsView:View {
     @Environment(\.dismiss) var dismiss
     var initialCategory=WorkspaceSettingsCategory.editing
+    @State private var grid=false
     @State private var category=WorkspaceSettingsCategory.editing
     @AppStorage("editor-panel-density") private var density=1.0
     @AppStorage("editor-icon-scale") private var icons=1.0
@@ -29,7 +30,8 @@ struct WorkspaceSettingsView:View {
     var body:some View{NavigationStack{ZStack{Ambient();VStack(spacing:0){
         ScrollView(.horizontal,showsIndicators:false){HStack(spacing:8){ForEach(WorkspaceSettingsCategory.allCases){item in Button{category=item}label:{Label(item.title,systemImage:item.icon)}.buttonStyle(CapsuleActionStyle(selected:category==item)).accessibilityIdentifier("workspace-category-"+item.rawValue)}}.padding(.horizontal,20).padding(.vertical,12)}
         ScrollView{VStack(alignment:.leading,spacing:18){SurfaceHeader(title:category.title,subtitle:subtitle,icon:category.icon);content;Button{restore()}label:{Label("استعادة إعدادات مساحة العمل",systemImage:"arrow.counterclockwise")}.buttonStyle(GoldButtonStyle()).padding(.top,4);Text("تُحفظ التغييرات تلقائيًا. لا يؤثر هذا الزر في مشاريعك أو خطوطك أو أنماطك.").font(.system(size:11)).foregroundStyle(Palette.quiet).lineSpacing(4)}.padding(20).frame(maxWidth:720).frame(maxWidth:.infinity)}.accessibilityIdentifier("workspace-settings-form")
-    }}.foregroundStyle(Palette.pale).navigationTitle("مساحة العمل").navigationBarTitleDisplayMode(.inline).toolbar{ToolbarItem(placement:.topBarLeading){Button("تم"){dismiss()}.accessibilityIdentifier("workspace-settings-close")}}}.cookiesInterface().onAppear{category=initialCategory}}
+    }}.foregroundStyle(Palette.pale).navigationTitle("مساحة العمل").navigationBarTitleDisplayMode(.inline).toolbar{ToolbarItem(placement:.topBarLeading){Button("تم"){dismiss()}.accessibilityIdentifier("workspace-settings-close")}}}.cookiesInterface().sheet(isPresented:$grid){CanvasGridSettingsView()}
+    .onAppear{category=initialCategory}}
     private var subtitle:String{switch category{case .editing:"اضبط التفاعل ليوافق طريقة عملك";case .appearance:"زجاج داكن، تفاصيل واضحة، ولمسة ذهبية";case .quality:"وازن تفاصيل العرض مع استهلاك الذاكرة";case .reading:"تابع صفحات الفصل بالطريقة التي تناسبك"}}
     @ViewBuilder private var content:some View{
         switch category{
@@ -40,6 +42,7 @@ struct WorkspaceSettingsView:View {
                 scale("حجم إدراج التايبر",$typerScale,0.5...2)
                 Picker("النقر المزدوج على النص",selection:$doubleTap){Text("تحرير النص").tag("edit");Text("فتح التايبر").tag("typer");Text("بلا إجراء").tag("none")}.pickerStyle(.menu)
             }
+            GlassSection("شبكة اللوحة",icon:"grid"){NavigationRow(title:"الشبكة وإعداداتها",subtitle:"التقسيم، المسافة، اللون، والشفافية",icon:"grid"){grid=true}.accessibilityIdentifier("settings-grid")}
             GlassSection("الحركة والمقابض",icon:"hand.draw"){scale("حساسية المقابض",$handleSpeed,0.25...2);scale("حجم مقابض النص",$handles,0.8...1.5);SettingToggle(title:"التقاط إلى المركز وحواف الصورة",detail:"يساعد على المحاذاة أثناء التحريك والتدوير.",value:$snap);SettingToggle(title:"استجابة اللمس",value:$haptics)}
             GlassSection("التنظيف والقطارة",icon:"eyedropper"){scale("نصف قطر إعادة البناء",$cleaner,1...12);Text("اضغط مطولًا على الصورة لالتقاط لون. تظهر دائرة فوق إصبعك وتعرض اللون أثناء تحريكه؛ يُعتمد اللون عند رفع الإصبع.").font(.system(size:12)).foregroundStyle(Palette.secondary).lineSpacing(4)}
         case .appearance:

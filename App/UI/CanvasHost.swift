@@ -4,6 +4,7 @@ import UIKit
 struct CanvasHost:UIViewRepresentable {
     @ObservedObject var model:EditorModel
     var readOnly=false
+    var gridSettings=CanvasGridSettings()
     var onBubble:((CGRect,BubbleShape)->Void)?
     func makeCoordinator()->Coordinator {Coordinator(model)}
     func makeUIView(context:Context)->UIScrollView {
@@ -17,13 +18,16 @@ struct CanvasHost:UIViewRepresentable {
         let longPress=UILongPressGestureRecognizer(target:context.coordinator,action:#selector(Coordinator.longPress(_:)));longPress.delegate=context.coordinator;s.addGestureRecognizer(longPress)
         return s
     }
-        func updateUIView(_ s:UIScrollView,context:Context){let c=context.coordinator;c.model=model;c.onBubble=onBubble;if let viewport=s as? CanvasViewport{viewport.showBrushSize(model.brushSizePreview ? CGFloat(model.brushWidth)*s.zoomScale:nil);if model.tool != .eraser{viewport.showEraser(at:nil,diameter:0)}};c.canvas.gradientMode=readOnly ? nil:model.gradientTarget;c.canvas.deformationMode = !readOnly && model.panel == .perspective;c.canvas.onRenderError={ [weak c] message in c?.model.error=message };if !readOnly && model.imageEffectsOpen && model.active?.kind == .image{c.canvas.prepareTextEditing(nil);c.canvas.previewImageSettings(page:c.gesturePage ?? model.canvasPage,directory:model.directory,selected:model.selected,zoom:s.zoomScale)}else{c.canvas.finishImageSettings();if let draft=c.gesturePage{c.canvas.previewGesture(page:draft,directory:model.directory,selected:model.selected,zoom:s.zoomScale)}else{c.canvas.update(page:model.canvasPage,directory:model.directory,selected:readOnly ? nil:model.selected,zoom:s.zoomScale)}};c.canvas.prepareTextEditing(!readOnly && model.active?.kind == .text && model.active?.isVisible == true && model.active?.blend == .normal ? model.selected:nil);c.canvas.showSniper(readOnly ? []:model.sniperTargets);s.accessibilityValue="\(model.page.layers.count) طبقات، \(model.page.layers.reduce(0){$0+$1.strokes.count}) خطوط رسم، الحجم \(String(format:"%.2f",model.active?.scaleX ?? 1))";s.panGestureRecognizer.minimumNumberOfTouches=(!readOnly && [Tool.brush,.eraser,.cleaner].contains(model.tool)) ? 2:1
+        func updateUIView(_ s:UIScrollView,context:Context){let c=context.coordinator;c.model=model;c.onBubble=onBubble;c.gridSettings=readOnly ? CanvasGridSettings():gridSettings;if let viewport=s as? CanvasViewport{viewport.showBrushSize(model.brushSizePreview ? CGFloat(model.brushWidth)*s.zoomScale:nil);if model.tool != .eraser{viewport.showEraser(at:nil,diameter:0)}};c.canvas.gradientMode=readOnly ? nil:model.gradientTarget;c.canvas.deformationMode = !readOnly && model.panel == .perspective;c.canvas.onRenderError={ [weak c] message in c?.model.error=message };if !readOnly && model.imageEffectsOpen && model.active?.kind == .image{c.canvas.prepareTextEditing(nil);c.canvas.previewImageSettings(page:c.gesturePage ?? model.canvasPage,directory:model.directory,selected:model.selected,zoom:s.zoomScale)}else{c.canvas.finishImageSettings();if let draft=c.gesturePage{c.canvas.previewGesture(page:draft,directory:model.directory,selected:model.selected,zoom:s.zoomScale)}else{c.canvas.update(page:model.canvasPage,directory:model.directory,selected:readOnly ? nil:model.selected,zoom:s.zoomScale)}};c.canvas.prepareTextEditing(!readOnly && model.active?.kind == .text && model.active?.isVisible == true && model.active?.blend == .normal ? model.selected:nil);c.canvas.showSniper(readOnly ? []:model.sniperTargets);c.canvas.showSniperFocus(readOnly || !model.sniperMode ? nil:model.sniperTargets.first{$0.id==model.focusedSniperTarget});if model.manualSniperTool==nil{c.canvas.showManualSniper(nil);c.manualSniperPoints=[]};s.accessibilityValue="\(model.page.layers.count) طبقات، \(model.page.layers.reduce(0){$0+$1.strokes.count}) خطوط رسم، الحجم \(String(format:"%.2f",model.active?.scaleX ?? 1))";s.panGestureRecognizer.minimumNumberOfTouches=(!readOnly && ([Tool.brush,.eraser,.cleaner].contains(model.tool) || model.manualSniperTool != nil)) ? 2:1
         if !c.fitted{s.layoutIfNeeded();DispatchQueue.main.async{guard !c.fitted,s.bounds.width>0,s.bounds.height>0 else{return};let full=min(s.bounds.width/CGFloat(model.page.width),s.bounds.height/CGFloat(model.page.height));s.minimumZoomScale=max(0.002,full/4);let reading=s.bounds.width/CGFloat(model.page.width)*0.96;s.setZoomScale(reading,animated:false);c.fitted=true
             if c.readOnly,let saved=ReaderBookmark.viewport(page:c.model.page.id){s.setZoomScale(CGFloat(min(128,max(Double(s.minimumZoomScale),saved.zoom))),animated:false);s.setContentOffset(CGPoint(x:max(0,CGFloat(saved.x)*s.zoomScale-s.bounds.width/2),y:max(0,CGFloat(saved.y)*s.zoomScale-s.bounds.height/2)),animated:false)}
-            c.updateCenter(recenter:true)}}else{c.updateCenter()}
+            c.updateCenter(recenter:true)}}else{c.updateCenter()};c.centerSniperFocus()
     }
     class Coordinator:NSObject,UIScrollViewDelegate,UIGestureRecognizerDelegate {
         var onBubble:((CGRect,BubbleShape)->Void)?
+        var gridSettings=CanvasGridSettings()
+        let gridOverlay=CanvasGridOverlay()
+        var manualSniperPoints:[CGPoint]=[]
         var bubbleOrigin:CGPoint?
         var gesturePage:EditorPage?
         func changeGesture(_ body:(inout EditorLayer)->Void){guard var page=gesturePage,let i=page.layers.firstIndex(where:{$0.id==model.selected}) else{return};body(&page.layers[i]);gesturePage=page}
@@ -39,8 +43,18 @@ struct CanvasHost:UIViewRepresentable {
             if s.contentInset != insets{s.contentInset=insets}
             if recenter{var offset=s.contentOffset;if horizontal>0{offset.x = -horizontal};if vertical>0{offset.y = -vertical};if offset != s.contentOffset{s.contentOffset=offset}}
             if !readOnly{model.visibleCenter=canvas.convert(CGPoint(x:s.bounds.midX,y:s.bounds.midY),from:s)}
+            gridOverlay.update(settings:gridSettings,canvas:canvas,viewport:s)
             canvas.refreshVisible(canvas.convert(s.bounds,from:s))
             if readOnly,fitted{let center=canvas.convert(CGPoint(x:s.bounds.midX,y:s.bounds.midY),from:s);ReaderBookmark.save(ReaderViewport(x:Double(center.x),y:Double(center.y),zoom:Double(s.zoomScale)),page:model.page.id)}
+        }
+
+        private var lastCenteredSniper:UUID?
+        func centerSniperFocus(){
+            guard fitted,!readOnly,model.sniperMode,let target=model.sniperTargets.first(where:{$0.id==model.focusedSniperTarget}),let s=scroll else{lastCenteredSniper=nil;return}
+            guard lastCenteredSniper != target.id else{return};lastCenteredSniper=target.id
+            let bounds=target.bounds,point=canvas.convert(CGPoint(x:bounds.width>0 ? bounds.x+bounds.width/2:target.point.x,y:bounds.height>0 ? bounds.y+bounds.height/2:target.point.y),to:s)
+            let x=max(-s.contentInset.left,min(max(-s.contentInset.left,s.contentSize.width-s.bounds.width+s.contentInset.right),point.x-s.bounds.width/2)),y=max(-s.contentInset.top,min(max(-s.contentInset.top,s.contentSize.height-s.bounds.height+s.contentInset.bottom),point.y-s.bounds.height*0.32))
+            s.setContentOffset(CGPoint(x:x,y:y),animated:false)
         }
 
         func hit(_ point:CGPoint)->EditorLayer?{model.page.layers.reversed().first{l in guard l.isVisible,!l.isLocked,l.kind != .drawing else{return false};let b=LayerRenderer.bounds(l);return b.insetBy(dx:-18/max(0.01,model.zoom),dy:-36/max(0.01,model.zoom)).contains(point.applying(LayerRenderer.transform(l).inverted()))}}
@@ -49,11 +63,11 @@ struct CanvasHost:UIViewRepresentable {
             if gesture is UITapGestureRecognizer{var view=touch.view;while let current=view{if current is UIControl{return false};view=current.superview}}
             return true
         }
-        func gestureRecognizerShouldBegin(_ g:UIGestureRecognizer)->Bool{if model.busy || !model.cleanCandidates.isEmpty{return false};if g is UILongPressGestureRecognizer{return canvas.handle(at:g.location(in:canvas))==nil && canvas.bounds.contains(g.location(in:canvas))};guard g === panGesture else{return true};if model.bubbleShape != nil{return true};if model.sniperMode{return false};if model.drawingShape=="fill",model.tool == .brush{return false};if model.textMaskMode,model.active?.kind == .text{return true};if [.brush,.eraser,.cleaner].contains(model.tool){return true};let point=g.location(in:canvas),translation=(g as? UIPanGestureRecognizer)?.translation(in:canvas) ?? .zero,origin=touchOrigin ?? CGPoint(x:point.x-translation.x,y:point.y-translation.y);return touchedHandle != nil || canvas.handle(at:origin) != nil || hit(origin) != nil}
+        func gestureRecognizerShouldBegin(_ g:UIGestureRecognizer)->Bool{if model.busy || !model.cleanCandidates.isEmpty{return false};if g is UILongPressGestureRecognizer{return canvas.handle(at:g.location(in:canvas))==nil && canvas.bounds.contains(g.location(in:canvas))};guard g === panGesture else{return true};if model.bubbleShape != nil{return true};if model.sniperMode{return model.manualSniperTool != nil && canvas.bounds.contains(g.location(in:canvas))};if model.drawingShape=="fill",model.tool == .brush{return false};if model.textMaskMode,model.active?.kind == .text{return true};if [.brush,.eraser,.cleaner].contains(model.tool){return true};let point=g.location(in:canvas),translation=(g as? UIPanGestureRecognizer)?.translation(in:canvas) ?? .zero,origin=touchOrigin ?? CGPoint(x:point.x-translation.x,y:point.y-translation.y);return touchedHandle != nil || canvas.handle(at:origin) != nil || hit(origin) != nil}
         @objc func tap(_ g:UITapGestureRecognizer){let point=g.location(in:canvas);model.visibleCenter=point
             if model.bubbleShape != nil{return}
             guard !model.busy,model.cleanCandidates.isEmpty else{return}
-            if model.sniperMode{Task{await model.detectSniper(at:point)};return}
+            if model.sniperMode{if model.manualSniperTool==nil{Task{await model.detectSniper(at:point)}};return}
             if model.textMaskMode,let active=model.active,active.kind == .text,!active.isLocked{let local=point.applying(LayerRenderer.transform(active).inverted());let dot=Stroke(points:[Point(x:local.x,y:local.y)],width:model.brushWidth,color:"FFFFFF",erase:!model.textMaskRestore);model.checkpoint();model.change{$0.textMask=($0.textMask ?? [])+[dot]};return}
             if model.tool == .brush,model.drawingShape=="fill"{Task{await model.fillBucket(at:point)};return}
             if [.brush,.eraser,.cleaner].contains(model.tool){if model.tool == .brush{ColorLibraryStore.shared.record(model.brushColor)};let drawingPoint=(model.tool != .cleaner && model.active?.kind == .drawing) ? point.applying(LayerRenderer.transform(model.active!).inverted()):point;let dot=Stroke(points:[Point(x:drawingPoint.x,y:drawingPoint.y)],width:model.brushWidth,color:model.brushColor,erase:model.tool == .eraser,brush:model.brushStyle,opacity:model.brushOpacity,texturePath:model.brushTexture,shape:model.drawingShape,filled:model.drawingFilled);if model.tool == .cleaner{Task{await model.clean(dot)}}else{if model.active?.kind != .drawing{model.add(.drawing)};model.checkpoint();model.change{$0.strokes.append(dot)}};return}
@@ -112,6 +126,16 @@ struct CanvasHost:UIViewRepresentable {
         }
         @objc func pan(_ g:UIPanGestureRecognizer){let point=g.location(in:canvas)
             removeTextPrompt()
+            if let mode=model.manualSniperTool {
+                let current=CGPoint(x:max(0,min(CGFloat(model.page.width-1),point.x)),y:max(0,min(CGFloat(model.page.height-1),point.y)))
+                if g.state == .began{manualSniperPoints=[current]}
+                if mode == .freehand{if let previous=manualSniperPoints.last,hypot(previous.x-current.x,previous.y-current.y)*max(0.01,canvas.zoom)>=3{manualSniperPoints.append(current);if manualSniperPoints.count>1024{manualSniperPoints=manualSniperPoints.enumerated().compactMap{$0.offset%2==0 ? $0.element:nil}}}}
+                else if let origin=manualSniperPoints.first{manualSniperPoints=[origin,CGPoint(x:current.x,y:origin.y),current,CGPoint(x:origin.x,y:current.y)]}
+                canvas.showManualSniper(manualSniperPoints)
+                if g.state == .ended{let points=manualSniperPoints;manualSniperPoints=[];canvas.showManualSniper(nil);model.finishManualSniper(points)}
+                else if g.state == .cancelled || g.state == .failed{manualSniperPoints=[];canvas.showManualSniper(nil)}
+                return
+            }
             if let shape=model.bubbleShape {
                 if g.state == .began{bubbleOrigin=touchOrigin ?? point}
                 if let origin=bubbleOrigin {

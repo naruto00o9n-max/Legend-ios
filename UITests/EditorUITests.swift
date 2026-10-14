@@ -234,6 +234,33 @@ final class EditorUITests:XCTestCase {
         reveal(app.buttons["panel-stroke"],in:app.scrollViews["panel-strip"]);app.buttons["panel-stroke"].tap();XCTAssertEqual(app.textFields["value-السماكة"].value as? String,"5");capture("fix-manual-done-remembers-outline")
     }
 
+    func testManualSniperKeepsIndependentWhiteningMethodPerBubble(){
+        openEditor();tool("sniper");XCTAssertTrue(app.buttons["sniper-manual"].waitForExistence(timeout:8))
+        let canvas=app.scrollViews["canvas-scroll"]
+        for index in 0..<2{
+            app.buttons["sniper-manual"].tap()
+            let start=canvas.coordinate(withNormalizedOffset:CGVector(dx:0.35,dy:0.50)),end=canvas.coordinate(withNormalizedOffset:CGVector(dx:0.65,dy:0.65))
+            start.press(forDuration:0.1,thenDragTo:end,withVelocity:.slow,thenHoldForDuration:0.1)
+            XCTAssertTrue(app.buttons["sniper-whiten"].waitForExistence(timeout:8));XCTAssertTrue(app.buttons["sniper-whiten"].isEnabled,"Manual contour must become a usable bubble \(index+1)")
+        }
+        app.buttons["sniper-whiten"].tap();XCTAssertTrue(app.buttons["whitening-target-2"].waitForExistence(timeout:8))
+        app.buttons["whitening-target-1"].tap();app.buttons["whitening-method-bigLaMa"].tap()
+        XCTAssertFalse(app.buttons["whitening-preview"].isEnabled,"A model must be downloaded explicitly before neural restoration")
+        app.buttons["whitening-target-2"].tap();app.buttons["whitening-close"].tap()
+        app.buttons["sniper-whiten"].tap();XCTAssertTrue(app.buttons["whitening-target-1"].waitForExistence(timeout:8));XCTAssertFalse(app.buttons["whitening-preview"].isEnabled,"Per-bubble model choice must survive closing its inspector")
+        app.buttons["whitening-target-1"].tap();app.buttons["whitening-method-classic"].tap();XCTAssertTrue(app.buttons["whitening-preview"].isEnabled)
+        app.buttons["whitening-close"].tap();XCTAssertTrue(app.buttons["export"].isHittable)
+    }
+
+    func testTrashRestoresProjectAndGridSettingsRemainReachable(){
+        start();app.buttons["demo-project"].tap();let project=app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH 'project-' ")).firstMatch
+        XCTAssertTrue(project.waitForExistence(timeout:30));project.press(forDuration:1);app.buttons["حذف"].tap();app.buttons["library-trash"].tap()
+        XCTAssertTrue(app.buttons["trash-close"].waitForExistence(timeout:8));let restore=app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH 'trash-restore-' ")).firstMatch;XCTAssertTrue(restore.waitForExistence(timeout:8));restore.tap();app.buttons["trash-close"].tap()
+        XCTAssertTrue(project.waitForExistence(timeout:8));project.tap();XCTAssertTrue(app.buttons["tool-text"].waitForExistence(timeout:12));tool("grid")
+        XCTAssertTrue(app.switches["grid-enabled"].waitForExistence(timeout:8));XCTAssertEqual(app.switches["grid-enabled"].value as? String,"1");app.buttons["grid-close"].tap()
+        XCTAssertTrue(app.buttons["export"].isHittable);app.buttons["export"].tap();XCTAssertTrue(app.buttons["export-png"].waitForExistence(timeout:8));app.buttons["export-png"].tap();XCTAssertTrue(app.buttons["share-png"].waitForExistence(timeout:60))
+    }
+
     func testOnlineAccountPortalAndActualLeaderboardOutsideCommunity(){
         start();let portal=app.buttons["account-workspace"];revealVertical(portal);XCTAssertTrue(portal.isHittable);portal.tap()
         XCTAssertTrue(app.buttons["account-workspace-close"].waitForExistence(timeout:8));XCTAssertTrue(app.buttons["account-workspace-login"].exists)

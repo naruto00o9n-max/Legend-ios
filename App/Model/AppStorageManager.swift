@@ -56,9 +56,11 @@ enum AppStorageManager {
     static func library(at base:URL=root)throws->[LibraryItem]{guard fm.fileExists(atPath:base.appendingPathComponent("library.json").path) else{return []};return try JSONDecoder().decode([LibraryItem].self,from:Data(contentsOf:base.appendingPathComponent("library.json")))}
     static func units(at base:URL=root)throws->[BackupUnit] {
         let items=try library(at:base);var output:[BackupUnit]=[]
+        let purgePages=Set(items.filter{$0.purgePending==true}.flatMap(\.pages)).subtracting(items.filter{$0.purgePending != true}.flatMap(\.pages))
         for directory in (try? fm.contentsOfDirectory(at:base,includingPropertiesForKeys:nil)) ?? []{
             let name=directory.lastPathComponent
-            if let id=UUID(uuidString:name),let page=try? JSONDecoder().decode(EditorPage.self,from:Data(contentsOf:directory.appendingPathComponent("page.json"))){output.append(BackupUnit(id:name,title:items.first{$0.id==id}?.title ?? page.title,group:"المشاريع",paths:[name]))}
+            if let id=UUID(uuidString:name),purgePages.contains(id){continue}
+            if let id=UUID(uuidString:name),let page=try? JSONDecoder().decode(EditorPage.self,from:Data(contentsOf:directory.appendingPathComponent("page.json"))){let deleted=items.contains{$0.deletedAt != nil && $0.pages.contains(id)} && !items.contains{$0.deletedAt==nil && $0.pages.contains(id)};output.append(BackupUnit(id:name,title:items.first{$0.id==id}?.title ?? page.title,group:deleted ? "سلة المحذوفات":"المشاريع",paths:[name]))}
             else if name=="Fonts"{for font in (try? fm.contentsOfDirectory(at:directory,includingPropertiesForKeys:nil)) ?? []{output.append(BackupUnit(id:"font:"+font.lastPathComponent,title:font.lastPathComponent,group:"الخطوط",paths:["Fonts/"+font.lastPathComponent]))}}
             else if (try? directory.resourceValues(forKeys:[.isDirectoryKey]).isDirectory)==true,!(fm.enumerator(at:directory,includingPropertiesForKeys:nil)?.allObjects.isEmpty ?? true){output.append(BackupUnit(id:name,title:name=="Colors" ? "لوحة الألوان والمفضلة والمجموعات":name=="Styles" ? "الأنماط والنص اليدوي وخاماتها":name=="Typer" ? "فصول التايبر والوسوم":name=="ChapterHistory" ? "تاريخ الفصول":name=="Diagnostics" ? "تقارير الأداء والأعطال":name,group:"بيانات أخرى",paths:[name]))}
         }
@@ -91,7 +93,7 @@ enum AppStorageManager {
                 let bytes=try settings ?? settingsData();try add(bytes,path:"settings.plist",archive:archive)
                 files.append(BackupFile(path:"settings.plist",size:Int64(bytes.count),sha256:SHA256.hash(data:bytes).map{String(format:"%02x",$0)}.joined(),unit:"settings"))
             }
-            let selectedPages=Set(choices.compactMap{UUID(uuidString:$0.id)}),sourceItems=try library(at:base)
+            let selectedPages=Set(choices.compactMap{UUID(uuidString:$0.id)}),sourceItems=try library(at:base).filter{$0.purgePending != true}
             var index=sourceItems.filter{!$0.folder && $0.pages.contains(where:selectedPages.contains)}.map{item in var copy=item;copy.pages=copy.pages.filter{selectedPages.contains($0)};return copy}
             var parents=Set(index.compactMap(\.parent)),expanded=true
             while expanded{expanded=false;for folder in sourceItems where folder.folder && parents.contains(folder.id){if let parent=folder.parent,parents.insert(parent).inserted{expanded=true}}}

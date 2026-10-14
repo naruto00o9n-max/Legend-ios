@@ -54,6 +54,7 @@ targetTemplates:
     - sdk: AVFoundation.framework
     - sdk: CoreMedia.framework
     - sdk: CoreVideo.framework
+    - sdk: CoreML.framework
     - sdk: CoreImage.framework
     - sdk: Vision.framework
     - sdk: ImageIO.framework

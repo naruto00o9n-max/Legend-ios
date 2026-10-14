@@ -8,6 +8,8 @@ struct EditorView:View {
     @EnvironmentObject private var styles:StyleStore
     @State private var layers=false;@State private var shapes=false;@State private var assistant=false
     @State private var reader=false
+    @State private var gridSettingsOpen=false
+    @AppStorage("editor-grid-data") private var gridData=Data()
     @State private var brushSettings=false
     @State private var replacingBackground=false
     @State private var objectPanel:Panel?
@@ -19,7 +21,7 @@ struct EditorView:View {
     @AppStorage("typer-panel-width") private var typerWidth=320.0
     @AppStorage("typer-panel-height") private var typerHeight=490.0
     var body:some View {
-        ZStack(alignment:textDock=="top" ? .top:.bottom){Palette.ink.ignoresSafeArea();CanvasHost(model:model,onBubble:{rect,shape in placeBubble(rect,shape:shape)});if let objectPanel,model.tool == .move,[LayerKind.image,.shape].contains(model.active?.kind ?? .text){TextInspector(model:model,panel:objectPanel,close:{self.objectPanel=nil}).frame(maxWidth:560).frame(height:290).padding(.horizontal,12).padding(.bottom,8)};if model.tool == .text{if let panel=model.panel,model.active?.kind == .text{TextInspector(model:model,panel:panel,close:{model.panel=nil}).frame(maxWidth:560).frame(height:panel == .content ? 240:290).padding(.horizontal,12).padding(.bottom,8).transition(.move(edge:.bottom).combined(with:.opacity))}}}
+        ZStack(alignment:textDock=="top" ? .top:.bottom){Palette.ink.ignoresSafeArea();CanvasHost(model:model,gridSettings:CanvasGridSettings.decode(gridData),onBubble:{rect,shape in placeBubble(rect,shape:shape)});if let objectPanel,model.tool == .move,[LayerKind.image,.shape].contains(model.active?.kind ?? .text){TextInspector(model:model,panel:objectPanel,close:{self.objectPanel=nil}).frame(maxWidth:560).frame(height:290).padding(.horizontal,12).padding(.bottom,8)};if model.tool == .text{if let panel=model.panel,model.active?.kind == .text{TextInspector(model:model,panel:panel,close:{model.panel=nil}).frame(maxWidth:560).frame(height:panel == .content ? 240:290).padding(.horizontal,12).padding(.bottom,8).transition(.move(edge:.bottom).combined(with:.opacity))}}}
         .overlay(alignment:.bottom){if model.imageEffectsOpen,model.active?.kind == .image{ImageEffectsPanel(model:model).frame(maxWidth:560).frame(height:420).padding(.horizontal,12).padding(.bottom,8)}}
         .safeAreaInset(edge:.top,spacing:0){HStack(spacing:4){IconButton(icon:"chevron.right",title:"العودة"){model.save();dismiss()};VStack(alignment:.leading,spacing:2){Text(model.page.title).font(.system(size:12,weight:.medium)).lineLimit(1);Text(verbatim:"\(model.page.width) × \(model.page.height) · \(Int(model.zoom*100))%").font(.system(size:9,design:.monospaced)).foregroundStyle(Palette.quiet).accessibilityIdentifier("canvas-zoom")};Spacer(minLength:4);IconButton(icon:"arrow.uturn.backward",title:"تراجع"){model.undo()}.disabled(model.undoStack.isEmpty).accessibilityIdentifier("undo");IconButton(icon:"arrow.uturn.forward",title:"إعادة"){model.redo()}.disabled(model.redoStack.isEmpty).accessibilityIdentifier("redo");IconButton(icon:"square.3.layers.3d",title:"الطبقات"){layers=true}.accessibilityIdentifier("layers-header");IconButton(icon:"square.and.arrow.up",title:"تصدير"){showExport=true}.accessibilityIdentifier("export")}.padding(.horizontal,4).glass(0).frame(height:52)}
         .safeAreaInset(edge:.bottom,spacing:0){VStack(spacing:0){
@@ -29,6 +31,7 @@ struct EditorView:View {
                     toolButton("chevron.right","رجوع",id:"text-back"){guard model.confirmTextSettings() else{return};model.panel=nil;model.gradientTarget=nil;model.tool = .move}
                     if model.active?.kind == .text{toolButton(Panel.styles.icon,Panel.styles.title,id:"panel-styles",selected:model.panel == .styles){model.panel=model.panel == .styles ? nil:.styles}}
                     toolButton("plus","إضافة نص",id:"text-add"){model.add(.text)}
+                    gridControl
                     if model.active?.kind == .text{ForEach(Panel.allCases.filter{$0 != .styles}){panel in toolButton(panel.icon,panel.title,id:"panel-\(panel.rawValue)",selected:model.panel==panel){model.panel = model.panel==panel ? nil:panel}}}
                 }.padding(.horizontal,8)}.frame(height:68*min(1.15,max(0.85,toolbarScale))).accessibilityIdentifier("panel-strip")
             }else if [.brush,.eraser].contains(model.tool){
@@ -37,6 +40,7 @@ struct EditorView:View {
                     toolButton("paintbrush.pointed","فرشاة",id:"tool-brush",selected:model.tool == .brush){model.tool = .brush}
                     toolButton("eraser","ممحاة",id:"tool-eraser",selected:model.tool == .eraser){model.tool = .eraser}
                     toolButton("paintpalette","اللون والحجم",id:"brush-settings"){brushSettings=true}
+                    gridControl
                     toolButton("square.3.layers.3d","الطبقات",id:"tool-layers"){layers=true}
                 }.padding(.horizontal,8)}.frame(height:68*min(1.15,max(0.85,toolbarScale))).accessibilityIdentifier("tool-strip")
             }else if model.tool == .move,[LayerKind.image,.shape].contains(model.active?.kind ?? .text){
@@ -48,6 +52,7 @@ struct EditorView:View {
                     if model.active?.kind == .shape{toolButton("paintpalette","اللون",id:"shape-color",selected:objectPanel == .color){objectPanel=objectPanel == .color ? nil:.color};toolButton("a.square","الحدود",id:"shape-stroke",selected:objectPanel == .stroke){objectPanel=objectPanel == .stroke ? nil:.stroke};toolButton("square.on.circle","شكل جديد",id:"shape-add"){shapes=true}}
                     toolButton("doc.on.doc","نسخ",id:"object-duplicate"){model.duplicate()}
                     toolButton("trash","حذف",id:"object-delete"){objectPanel=nil;model.delete()}
+                    gridControl
                     toolButton("square.3.layers.3d","الطبقات",id:"object-layers"){layers=true}
                 }.padding(.horizontal,8)}.frame(height:68*min(1.15,max(0.85,toolbarScale))).accessibilityIdentifier("object-strip")
             }else{
@@ -63,6 +68,7 @@ struct EditorView:View {
                     toolButton(Tool.cleaner.icon,"تنظيف",id:"tool-cleaner"){select(.cleaner)}
                     toolButton(Tool.eyedropper.icon,"قطارة",id:"tool-eyedropper",selected:model.tool == .eyedropper){select(.eyedropper)}
                     toolButton("photo.on.rectangle","استبدال الأصل",id:"tool-replace-background"){replacingBackground=true}
+                    gridControl
                     toolButton("book","القراءة",id:"tool-reader"){reader=true}
 
                 }.padding(.horizontal,8)}.frame(height:68*min(1.15,max(0.85,toolbarScale))).accessibilityIdentifier("tool-strip")
@@ -73,13 +79,18 @@ struct EditorView:View {
         .overlay(alignment:.trailing){if !assistant{Button{assistant=true;model.panel=nil}label:{Image("CookiesLogo").resizable().scaledToFit().frame(width:38,height:38).clipShape(Circle()).padding(6).background(Palette.ink.opacity(0.85),in:Circle()).overlay(Circle().stroke(Palette.gold.opacity(0.4),lineWidth:0.8))}.padding(.trailing,12).accessibilityIdentifier("tool-assistant").accessibilityLabel("التايبر")}}
         .overlay(alignment:.trailing){if assistant{GeometryReader{g in TyperPanel(model:model,close:{assistant=false},compact:g.size.height<500).frame(width:min(CGFloat(typerWidth),g.size.width-24),height:min(CGFloat(typerHeight),max(160,g.size.height-24))).frame(maxWidth:.infinity,maxHeight:.infinity,alignment:.trailing).padding(.trailing,8)}.transition(.move(edge:.trailing).combined(with:.opacity))}}
         .overlay(alignment:.top){if let shape=model.bubbleShape{ToolModeCard(title:"تنسيق الفقاعة · "+shape.title,detail:"اسحب داخل الفقاعة؛ يُدرج الحوار التالي من التايبر بحجم وتوزيع مناسبين.",icon:"rectangle.and.pencil.and.ellipsis",close:{model.bubbleShape=nil}){Button{assistant=true}label:{Label("نصوص الفصل",systemImage:"text.bubble")};Menu{ForEach(BubbleShape.allCases){item in Button(item.title){model.bubbleShape=item}}}label:{Label("شكل المنطقة",systemImage:"square.on.circle")}}.padding(.top,58)}}
-        .overlay(alignment:.top){if model.sniperMode && model.cleanCandidates.isEmpty{ToolModeCard(title:"القنص · \(model.sniperTargets.count) أهداف",detail:"المس داخل كل فقاعة بالترتيب، ثم اختر إدراج النصوص أو تبييضها.",icon:"scope",close:{model.sniperMode=false}){Button{_ = model.sniperTargets.popLast()}label:{Label("تراجع",systemImage:"arrow.uturn.backward")}.disabled(model.sniperTargets.isEmpty);Button{assistant=true}label:{Label("النصوص",systemImage:"text.bubble")};Button{Task{await model.whitenSniperTargets()}}label:{Label("تبييض النص",systemImage:"eraser.fill")}.disabled(model.sniperTargets.isEmpty || model.busy).accessibilityIdentifier("sniper-whiten")}.padding(.top,58)}}
+        .overlay(alignment:.top){if model.sniperMode && model.cleanCandidates.isEmpty{
+            if let mode=model.manualSniperTool{ToolModeCard(title:mode == .textRectangle ? "تحديد النص للترميم":"محيط فقاعة يدوي",detail:mode == .freehand ? "ارسم داخل حد الفقاعة بإصبعك. حرّك الصورة وكبّرها بإصبعين.":"اسحب من زاوية إلى الزاوية المقابلة. حرّك الصورة وكبّرها بإصبعين.",icon:mode == .freehand ? "lasso":"rectangle.dashed",close:{model.cancelManualSniper()}){if mode != .textRectangle{Button("مستطيل"){model.manualSniperTool = .rectangle};Button("محيط حر"){model.manualSniperTool = .freehand}};Button("إلغاء"){model.cancelManualSniper()}}.padding(.top,58)}
+            else{ToolModeCard(title:"القنص · \(model.sniperTargets.count) أهداف",detail:"المس داخل كل فقاعة بالترتيب، أو ارسم حدودها يدويًا.",icon:"scope",close:{model.sniperMode=false}){Button{_ = model.sniperTargets.popLast()}label:{Label("تراجع",systemImage:"arrow.uturn.backward")}.disabled(model.sniperTargets.isEmpty);Button{model.beginManualSniper(.rectangle)}label:{Label("تحديد يدوي",systemImage:"rectangle.dashed")}.accessibilityIdentifier("sniper-manual");Button{assistant=true}label:{Label("النصوص",systemImage:"text.bubble")};Button{model.sniperWhiteningOpen=true}label:{Label("التبييض",systemImage:"eraser.fill")}.disabled(model.sniperTargets.isEmpty || model.busy).accessibilityIdentifier("sniper-whiten")}.padding(.top,58)}
+        }}
         .overlay(alignment:.top){if !model.cleanCandidates.isEmpty{ToolModeCard(title:"مراجعة التنظيف",detail:model.cleanCandidates.first?.detail ?? "قارن النتيجة بالأصل قبل اعتمادها.",icon:"sparkles",close:{model.discardCleaning()}){ForEach(model.cleanCandidates){candidate in Button(candidate.title){model.cleanPreviewID=candidate.id}.buttonStyle(CapsuleActionStyle(selected:model.cleanPreviewID==candidate.id))};Button{model.cleanPreviewID=nil}label:{Label("الأصل",systemImage:"photo")};Button{model.acceptCleaning()}label:{Label("اعتماد",systemImage:"checkmark")}.disabled(model.cleanPreviewID==nil).accessibilityIdentifier("cleaning-accept");Button{model.discardCleaning()}label:{Label("إلغاء",systemImage:"xmark")}.accessibilityIdentifier("cleaning-discard")}.padding(.top,58)}}
 
         .overlay{if model.busy && !showExport{ProgressView("جارٍ معالجة المنطقة…").tint(Palette.gold).padding(20).glass()}}
         .onChange(of:model.selected){_,_ in objectPanel=nil;if model.active?.kind != .image{model.imageEffectsOpen=false}}
         .onChange(of:model.requestTyper){_,open in if open{assistant=true;model.requestTyper=false}}
         .fullScreenCover(isPresented:$reader){ReaderView(model:model).cookiesInterface()}
+        .sheet(isPresented:$model.sniperWhiteningOpen){SniperWhiteningPanel(model:model).presentationDetents([.medium,.large]).presentationBackground(.clear)}
+        .sheet(isPresented:$gridSettingsOpen){CanvasGridSettingsView().presentationDetents([.medium,.large]).presentationBackground(.clear)}
         .sheet(isPresented:$brushSettings){BrushSheet(model:model).cookiesInterface().presentationDetents([.height(300)]).presentationBackground(.clear)}
         .sheet(isPresented:$layers){LayerSheet(model:model).cookiesInterface().presentationDetents([.medium,.large]).presentationBackground(.clear)}
         .sheet(isPresented:$shapes){ShapeSheet(model:model).cookiesInterface().presentationDetents([.medium,.large]).presentationBackground(.clear)}
@@ -114,6 +125,7 @@ struct EditorView:View {
         }catch{model.error=error.localizedDescription}}
 
     }
+    private var gridControl:some View{toolButton("grid","الشبكة",id:"tool-grid",selected:CanvasGridSettings.decode(gridData).enabled){var value=CanvasGridSettings.decode(gridData);value.enabled.toggle();gridData=value.data;if value.enabled{gridSettingsOpen=true}}.contextMenu{Button("إعدادات الشبكة"){gridSettingsOpen=true}}}
     func toolButton(_ icon:String,_ title:String,id:String,selected:Bool=false,action:@escaping ()->Void)->some View{Button(action:action){VStack(spacing:6){Image(systemName:icon).font(.system(size:20*min(1.2,max(0.8,iconScale)),weight:.regular));Text(title).font(.system(size:10*min(1.3,max(0.85,labelScale)))).lineLimit(1)}.frame(width:62,height:60*min(1.15,max(0.85,toolbarScale))).background(selected ? Palette.gold.opacity(0.16):.clear,in:RoundedRectangle(cornerRadius:12))}.accessibilityIdentifier(id).accessibilityLabel(title)}
     func select(_ tool:Tool){model.sniperMode=false;model.bubbleShape=nil;model.gradientTarget=nil;model.tool=tool;switch tool{case .layers:layers=true;case .shapes:shapes=true;case .text:if model.active?.kind != .text{model.add(.text)}else{model.panel = .content};case .brush,.eraser:if model.active?.kind != .drawing{model.add(.drawing)};default:break}}
 }

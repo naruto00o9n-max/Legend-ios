@@ -8,6 +8,7 @@ struct LibraryView:View {
     @State private var filePicker=false;@State private var fontLibrary=false;@State private var community=false;@State private var search=""
     @State private var guide=false
     @State private var accountWorkspace=false
+    @State private var trash=false
     @State private var renaming:LibraryItem?
     @State private var renameText=""
     @State private var chapterPrompt=false
@@ -19,7 +20,7 @@ struct LibraryView:View {
             if ProcessInfo.processInfo.arguments.contains("-ui-tests"),children.isEmpty{Button("افتح فصلًا تجريبيًا"){Task{importing=true;do{let root=library.root;let p=try await BackgroundWork.run{try ImagePipeline.fixture(root:root)};library.add(p,parent:parent)}catch{library.error=error.localizedDescription};importing=false}}.buttonStyle(CapsuleActionStyle()).accessibilityIdentifier("demo-project")}
             if parent==nil{HomeHero(projects:library.items.filter{!$0.folder}.count,folders:library.items.filter(\.folder).count)}else{SurfaceHeader(title:title,subtitle:"نظّم صفحات الفصل وأعماله في مكان واحد",icon:"folder")}
             ResponsiveActionGrid(items:2){ActionTile(title:"استيراد الصور",subtitle:"ابدأ من مكتبة الصور",icon:"photo.badge.plus",prominent:true){picker=true}.accessibilityIdentifier("import-image");ActionTile(title:"فتح مشروع",subtitle:"صور وملفات ومشاريع محفوظة",icon:"folder.badge.plus"){filePicker=true}.accessibilityIdentifier("import-project")}
-            HStack(spacing:8){SectionHeading(title:parent==nil ? "أعمالك":title,detail:children.isEmpty ? "":"\(children.count) عناصر");IconButton(icon:"rectangle.stack.badge.plus",title:"فصل جديد"){chapterPrompt=true}.accessibilityIdentifier("new-chapter");IconButton(icon:"folder.badge.plus",title:"مجلد جديد"){folderPrompt=true}.accessibilityIdentifier("new-folder")}
+            HStack(spacing:8){SectionHeading(title:parent==nil ? "أعمالك":title,detail:children.isEmpty ? "":"\(children.count) عناصر");IconButton(icon:"trash",title:"سلة المحذوفات"){trash=true}.accessibilityIdentifier("library-trash");IconButton(icon:"rectangle.stack.badge.plus",title:"فصل جديد"){chapterPrompt=true}.accessibilityIdentifier("new-chapter");IconButton(icon:"folder.badge.plus",title:"مجلد جديد"){folderPrompt=true}.accessibilityIdentifier("new-folder")}
             if !children.isEmpty{SearchBar(placeholder:"بحث في المشاريع والمجلدات",text:$search)}
             if children.isEmpty{WorkspaceEmpty(title:search.isEmpty ? "مساحة تنتظر حكايتك":"لا توجد نتائج",detail:search.isEmpty ? "أضف صورك، ثم اجمع العمل في مجلد وفصول. يبقى كل مشروع قابلًا للتعديل.":"جرّب اسمًا آخر للبحث.",icon:search.isEmpty ? "rectangle.stack.badge.plus":"magnifyingglass")}
             LazyVGrid(columns:[GridItem(.adaptive(minimum:158),spacing:14)],spacing:14){ForEach(children){item in if item.folder{NavigationLink{LibraryView(parent:item.id,title:item.title)}label:{card(item)}}else if item.isChapter==true{NavigationLink{ChapterGalleryView(id:item.id)}label:{card(item)}}else{NavigationLink{PageDestination(id:item.id)}label:{card(item)}}}.buttonStyle(.plain)}
@@ -47,6 +48,7 @@ struct LibraryView:View {
         .alert("تغيير الاسم",isPresented:Binding(get:{renaming != nil},set:{if !$0{renaming=nil}})){TextField("الاسم",text:$renameText);Button("حفظ"){if let item=renaming,!renameText.isEmpty{library.rename(item,to:renameText)};renaming=nil};Button("إلغاء",role:.cancel){renaming=nil}}
         .sheet(isPresented:$guide){AppGuideView()}.fullScreenCover(isPresented:$assistant){TyperLibraryView(folder:parent)}.fullScreenCover(isPresented:$settings){SettingsView()}.sheet(isPresented:$fontLibrary){FontLibraryView()}.fullScreenCover(isPresented:$community){ServiceHub()}.fullScreenCover(isPresented:$accountWorkspace){AccountWorkspaceView()}
         .alert("تعذر إكمال العملية",isPresented:Binding(get:{library.error != nil},set:{if !$0{library.error=nil}})){Button("حسنًا"){library.error=nil}}message:{Text(library.error ?? "")}
+        .fullScreenCover(isPresented:$trash){LibraryTrashView()}
     }
     func card(_ item:LibraryItem)->some View {
         VStack(alignment:.leading,spacing:12){ZStack{RoundedRectangle(cornerRadius:14).fill(Palette.gold.opacity(0.06));if item.folder{Image(systemName:"folder").font(.system(size:36,weight:.ultraLight))}else{ProjectThumbnail(url:library.directory(item.cover ?? item.pages.first ?? item.id).appendingPathComponent("thumbnail.png"),revision:library.thumbnailRevision,icon:item.isChapter==true ? "rectangle.stack":"photo").frame(height:140).clipped().clipShape(RoundedRectangle(cornerRadius:14))}}.frame(height:140)

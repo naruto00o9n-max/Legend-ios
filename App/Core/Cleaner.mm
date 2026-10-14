@@ -73,6 +73,22 @@ static UIImage *patchImage(const cv::Mat &patch) {
     CGImageRef cg=CGImageCreate(patch.cols,patch.rows,8,32,patch.cols*4,space,kCGImageAlphaLast,provider,NULL,false,kCGRenderingIntentDefault);
     UIImage *result=[UIImage imageWithCGImage:cg];CGImageRelease(cg);CGColorSpaceRelease(space);CGDataProviderRelease(provider);return result;
 }
+NSDictionary<NSString *, id> *CookiesCreateBubbleTextMask(CGSize size,NSArray<NSValue *> *outline,NSArray<NSValue *> *textRects,double padding) {
+    @try {try {
+        if(!std::isfinite(size.width)||!std::isfinite(size.height)||size.width<24||size.height<24||size.width>4096||size.height>4096||size.width*size.height>4194304||outline.count<3||outline.count>2048||textRects.count==0)return nil;
+        int width=(int)size.width,height=(int)size.height;std::vector<cv::Point> polygon;
+        for(NSValue *v in outline){CGPoint p=v.CGPointValue;if(!std::isfinite(p.x)||!std::isfinite(p.y))return nil;polygon.emplace_back((int)std::round(std::clamp((double)p.x,0.0,(double)width-1)),(int)std::round(std::clamp((double)p.y,0.0,(double)height-1)));}
+        cv::Mat inside=cv::Mat::zeros(height,width,CV_8UC1),mask=inside.clone();std::vector<std::vector<cv::Point>> paths{polygon};cv::fillPoly(inside,paths,cv::Scalar(255));
+        cv::erode(inside,inside,cv::getStructuringElement(cv::MORPH_ELLIPSE,cv::Size(7,7)));
+        for(NSValue *v in textRects){CGRect r=v.CGRectValue;if(!std::isfinite(r.origin.x)||!std::isfinite(r.origin.y)||!std::isfinite(r.size.width)||!std::isfinite(r.size.height)||r.size.width<=0||r.size.height<=0)continue;
+            CGRect clipped=CGRectIntersection(CGRectInset(r,-std::clamp(padding,1.0,24.0),-std::clamp(padding,1.0,24.0)),CGRectMake(0,0,width,height));if(CGRectIsNull(clipped)||CGRectIsEmpty(clipped))continue;
+            int x=std::max(0,(int)std::floor(clipped.origin.x)),y=std::max(0,(int)std::floor(clipped.origin.y));int right=std::min(width,(int)std::ceil(CGRectGetMaxX(clipped))),bottom=std::min(height,(int)std::ceil(CGRectGetMaxY(clipped)));if(right>x&&bottom>y)mask(cv::Rect(x,y,right-x,bottom-y)).setTo(255);
+        }
+        cv::bitwise_and(mask,inside,mask);int count=cv::countNonZero(mask),interior=cv::countNonZero(inside);if(count<6||count>interior*0.90)return nil;
+        cv::Mat rgba;cv::cvtColor(mask,rgba,cv::COLOR_GRAY2RGBA);return @{@"mask":patchImage(rgba),@"maskedPixels":@(count),@"interiorPixels":@(interior)};
+    }catch(const cv::Exception &){return nil;}}@catch(NSException *exception){return nil;}
+}
+
 NSDictionary<NSString *, id> *CookiesWhitenBubble(UIImage *source,NSArray<NSValue *> *outline,NSArray<NSValue *> *textRects) {
     @try {try {
         if(!source.CGImage || outline.count<3)return nil;

@@ -12,6 +12,7 @@ struct SettingsView:View {
     @State private var workspaceSettings=false
     @State private var diagnostics=false
     @State private var storage=false
+    @State private var trash=false
     @State private var guide=false
     @State private var category=WorkspaceSettingsCategory.editing
     var body:some View{NavigationStack{ZStack{Ambient();ScrollView{VStack(alignment:.leading,spacing:20){
@@ -28,6 +29,7 @@ struct SettingsView:View {
             NavigationRow(title:"مكتبة الخطوط",subtitle:"الخطوط المستوردة والمفضلة والمجموعات",icon:"textformat.alt"){fonts=true}.accessibilityIdentifier("settings-font-library")
         }
         GlassSection("البيانات والصيانة",icon:"externaldrive",subtitle:"تحكّم في المساحة، واحمِ عملك"){
+            NavigationRow(title:"سلة المحذوفات",subtitle:"استعادة المشاريع والفصول أو حذف ملفاتها نهائيًا",icon:"trash"){trash=true}.accessibilityIdentifier("settings-trash")
             NavigationRow(title:"المساحة والنسخ الاحتياطي",subtitle:"قياس البيانات، نسخة انتقائية، واستعادة وحذف",icon:"externaldrive"){storage=true}.accessibilityIdentifier("settings-storage")
             NavigationRow(title:"تقارير الأعطال والأداء",subtitle:"مراجعة التقارير ومشاركتها عند الحاجة",icon:"doc.text.magnifyingglass"){diagnostics=true}.accessibilityIdentifier("settings-diagnostics")
         }
@@ -47,6 +49,7 @@ struct SettingsView:View {
     .sheet(isPresented:$fonts){FontLibraryView()}
     .sheet(isPresented:$workspaceSettings){WorkspaceSettingsView(initialCategory:category)}
     .sheet(isPresented:$storage){StorageManagementView()}
+    .fullScreenCover(isPresented:$trash){LibraryTrashView()}
     .sheet(isPresented:$diagnostics){DiagnosticReportsView()}
     .sheet(isPresented:$guide){AppGuideView()}
     .fullScreenCover(isPresented:$typerLibrary){TyperLibraryView()}

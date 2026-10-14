@@ -3,6 +3,8 @@ import SwiftUI
 
 @MainActor final class LibraryStore: ObservableObject {
     @Published var items: [LibraryItem] = []
+    @Published var trashedItems:[LibraryItem]=[]
+    @Published var purgingTrash=false
     @Published var thumbnailRevision=0
     @Published var error: String?
     let root: URL
@@ -11,11 +13,12 @@ import SwiftUI
         if ProcessInfo.processInfo.arguments.contains("-ui-tests"){try? FileManager.default.removeItem(at:self.root)}
         try? FileManager.default.createDirectory(at:self.root,withIntermediateDirectories:true)
         do {
-            if let saved=try RecoveryFile.read([LibraryItem].self,at:self.root.appendingPathComponent("library.json")){items=saved.value;if saved.recovered{error="استُعيد المعرض من آخر نسخة سليمة بعد تعذر قراءة الفهرس."}}
+            if let saved=try RecoveryFile.read([LibraryItem].self,at:self.root.appendingPathComponent("library.json")){items=saved.value.filter{$0.deletedAt==nil};trashedItems=saved.value.filter{$0.deletedAt != nil};if saved.recovered{error="استُعيد المعرض من آخر نسخة سليمة بعد تعذر قراءة الفهرس."}}
         }catch{self.error="تعذر قراءة فهرس المعرض. احتُفظ بالملف المتضرر: \(error.localizedDescription)";items=Self.recoverPages(root:self.root)}
     }
     func save() { do {try writeItems(items)}catch{self.error=error.localizedDescription} }
-    func writeItems(_ next:[LibraryItem])throws{try RecoveryFile.write(next,at:root.appendingPathComponent("library.json"))}
+    func writeItems(_ next:[LibraryItem])throws{try writeLibrary(active:next,trash:trashedItems)}
+    func writeLibrary(active:[LibraryItem],trash:[LibraryItem])throws{try RecoveryFile.write(active+trash,at:root.appendingPathComponent("library.json"))}
     private static func recoverPages(root:URL)->[LibraryItem]{
         let folders=(try? FileManager.default.contentsOfDirectory(at:root,includingPropertiesForKeys:nil)) ?? []
         return folders.compactMap{folder in guard UUID(uuidString:folder.lastPathComponent) != nil,let data=try? Data(contentsOf:folder.appendingPathComponent("page.json")),let page=try? JSONDecoder().decode(EditorPage.self,from:data) else{return nil};return LibraryItem(id:page.id,title:page.title,folder:false,pages:[page.id])}.sorted{$0.title.localizedStandardCompare($1.title) == .orderedAscending}
@@ -33,12 +36,11 @@ import SwiftUI
     }
     func persist(_ page:EditorPage)throws {try RecoveryFile.write(page,at:directory(page.id).appendingPathComponent("page.json"))}
     func remove(_ item:LibraryItem){
+        guard items.contains(where:{$0.id==item.id}) else{return}
         var ids:Set<UUID>=[item.id],changed=true
         while changed{changed=false;for child in items where child.parent.map(ids.contains)==true{if ids.insert(child.id).inserted{changed=true}}}
-        let removed=items.filter{ids.contains($0.id)},next=items.filter{!ids.contains($0.id)}
-        do{try commitItems(next)}catch{self.error=error.localizedDescription;return}
-        let retained=Set(next.flatMap(\.pages))
-        for id in Set(removed.flatMap(\.pages)) where !retained.contains(id){try? FileManager.default.removeItem(at:directory(id))}
+        let date=Date(),removed=items.filter{ids.contains($0.id)}.map{value -> LibraryItem in var result=value;result.deletedAt=date;result.trashGroup=item.id;return result},next=items.filter{!ids.contains($0.id)}
+        do{let trash=trashedItems+removed;try writeLibrary(active:next,trash:trash);items=next;trashedItems=trash}catch{self.error=error.localizedDescription}
     }
     func move(_ item:LibraryItem,parent:UUID?){
         var parentID=parent,visited=Set<UUID>();while let id=parentID{guard id != item.id,visited.insert(id).inserted else{error="لا يمكن نقل مجلد داخل نفسه";return};parentID=items.first{$0.id==id}?.parent}
@@ -49,7 +51,7 @@ import SwiftUI
         do{if !item.folder,item.isChapter != true{var page=try load(item.id);previousPage=page;page.title=name;try persist(page)};next[index].title=name;try commitItems(next)}catch{if let previousPage{try? persist(previousPage)};self.error=error.localizedDescription}
     }
     func importImage(_ url:URL,parent:UUID?) async {
-        if ["pdf","zip","cookieschapter"].contains(url.pathExtension.lowercased()) {var created:UUID?;do{let id=try createChapter(url.deletingPathExtension().lastPathComponent,parent:parent);created=id;try await importPages([url],chapter:id)}catch{if let created,let item=items.first(where:{$0.id==created}),item.pages.isEmpty{remove(item)};self.error=error.localizedDescription};return}
+        if ["pdf","zip","cookieschapter"].contains(url.pathExtension.lowercased()) {var created:UUID?;do{let id=try createChapter(url.deletingPathExtension().lastPathComponent,parent:parent);created=id;try await importPages([url],chapter:id)}catch{if let created,let item=items.first(where:{$0.id==created}),item.pages.isEmpty{try? commitItems(items.filter{$0.id != item.id})};self.error=error.localizedDescription};return}
         do {let root=self.root;let page=try await Task.detached(priority:.userInitiated){try url.pathExtension.lowercased()=="cookies" ? ProjectArchive.importFile(url,root:root):ImagePipeline.importImage(url,root:root)}.value;if !add(page,parent:parent){try? FileManager.default.removeItem(at:directory(page.id))}}catch{self.error=error.localizedDescription}
     }
 }
@@ -89,6 +91,12 @@ import SwiftUI
     var redoDocuments:[EditorPage]=[]
     @Published var sniperTargets:[SniperTarget]=[]
     @Published var sniperMode=false
+    @Published var manualSniperTool:ManualSniperTool?
+    @Published var focusedSniperTarget:UUID?
+    @Published var sniperWhiteningOpen=false
+    var manualSniperReplacement:UUID?
+    var returnToWhiteningAfterDrawing=false
+    var whiteningTask:Task<CleaningCandidate,Error>?
     @Published var bubbleShape:BubbleShape?
     @Published var typerOverrideTag:UUID?
     @Published var typerQuickFont:String?
@@ -148,7 +156,7 @@ import SwiftUI
     }
     func delete() {guard stylePreviewLayer==nil,let selected,active?.isLocked==false else{return};checkpoint();page.layers.removeAll{$0.id==selected};self.selected=nil;save()}
     func duplicate() {guard stylePreviewLayer==nil,var l=active else{return};checkpoint();l.id=UUID();l.frame.x+=20;l.frame.y+=20;page.layers.append(l);selected=l.id;save()}
-    func cancelPendingSaves(){editSaveTask?.cancel();editSaveTask=nil;previewTask?.cancel();previewTask=nil}
+    func cancelPendingSaves(){whiteningTask?.cancel();editSaveTask?.cancel();editSaveTask=nil;previewTask?.cancel();previewTask=nil}
     func undo(){guard let previous=undoStack.popLast() else{return};redoStack.append(page.layers);redoDocuments.append(page);if let document=undoDocuments.popLast(){page=document}else{page.layers=previous};if textMaskDraft==nil{selected=nil};save()}
     func redo(){guard let next=redoStack.popLast() else{return};undoStack.append(page.layers);undoDocuments.append(page);if let document=redoDocuments.popLast(){page=document}else{page.layers=next};if textMaskDraft==nil{selected=nil};save()}
     private var continuousEditing=false
