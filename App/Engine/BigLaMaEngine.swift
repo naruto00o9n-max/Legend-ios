@@ -23,7 +23,10 @@ final class BigLaMaSession {
         guard w==mask.width,h==mask.height,w>0,h>0,w*h<=4_194_304 else{throw LaMaFailure.message("حدّد منطقة أصغر للترميم")}
         let input=try Self.rgba(source),maskRGBA=try Self.rgba(mask)
         var output=input,weights=[Float](repeating:0,count:w*h)
-        let xs=Self.origins(length:w),ys=Self.origins(length:h)
+        var minX=w,minY=h,maxX = -1,maxY = -1
+        for y in 0..<h{for x in 0..<w where maskRGBA[(y*w+x)*4]>0{minX=min(minX,x);minY=min(minY,y);maxX=max(maxX,x);maxY=max(maxY,y)}}
+        guard maxX>=minX,maxY>=minY else{throw LaMaFailure.message("حدد منطقة النص المراد ترميمها")}
+        let xs=Self.origins(length:w,lower:minX,upper:maxX),ys=Self.origins(length:h,lower:minY,upper:maxY)
         for originY in ys{for originX in xs{
             try Task.checkCancellation()
             let left=max(0,originX),top=max(0,originY),right=min(w,originX+extent),bottom=min(h,originY+extent)
@@ -47,6 +50,7 @@ final class BigLaMaSession {
                 }
                 var pixels=[Float](repeating:0,count:plane*3)
                 _ = pixels.withUnsafeMutableBytes{bytes.copyBytes(to:$0)}
+                guard pixels.allSatisfy(\.isFinite) else{throw LaMaFailure.message("نتيجة نموذج الترميم غير صالحة. لم تُغير الصورة؛ جرّب التنفيذ السحابي")}
                 for y in top..<bottom{for x in left..<right{
                     let index=y*w+x,offset=index*4;guard maskRGBA[offset]>0 else{continue}
                     let tx=x-originX,ty=y-originY,edge=min(min(tx+1,extent-tx),min(ty+1,extent-ty)),weight=min(1,Float(edge)/64),old=weights[index],sum=old+weight,p=ty*extent+tx
@@ -60,8 +64,9 @@ final class BigLaMaSession {
         guard let provider=CGDataProvider(data:Data(output) as CFData),let image=CGImage(width:w,height:h,bitsPerComponent:8,bitsPerPixel:32,bytesPerRow:w*4,space:CGColorSpace(name:CGColorSpace.sRGB)!,bitmapInfo:CGBitmapInfo(rawValue:CGImageAlphaInfo.premultipliedLast.rawValue),provider:provider,decode:nil,shouldInterpolate:false,intent:.defaultIntent) else{throw LaMaFailure.message("تعذر حفظ رقعة الترميم")}
         return image
     }
-    private static func origins(length:Int)->[Int]{
+    private static func origins(length:Int,lower:Int,upper:Int)->[Int]{
         if length<=512{return [-(512-length)/2]}
+        if upper-lower+1<=512{return [max(0,min(length-512,(lower+upper+1-512)/2))]}
         var values=Array(stride(from:0,to:length-512,by:448));if values.last != length-512{values.append(length-512)};return values
     }
     static func rgba(_ image:CGImage)throws->[UInt8]{
