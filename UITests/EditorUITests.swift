@@ -194,14 +194,17 @@ final class EditorUITests:XCTestCase {
         XCTAssertTrue(file.waitForExistence(timeout:8),app.debugDescription)
         let fileCell=app.cells.containing(.staticText,identifier:file.label).firstMatch
         if fileCell.exists{fileCell.tap()}else{file.tap()}
+        capture("font-first-file-selected");print("FONT_AFTER_FIRST_SELECTION\n"+app.debugDescription)
         let secondFile=app.staticTexts.matching(NSPredicate(format:"label BEGINSWITH %@","Cookies-Second-Fixture")).firstMatch
         XCTAssertTrue(secondFile.waitForExistence(timeout:8),app.debugDescription)
         let secondCell=app.cells.containing(.staticText,identifier:secondFile.label).firstMatch
         if secondCell.exists{secondCell.tap()}else{secondFile.tap()}
         let done=app.buttons.matching(NSPredicate(format:"label == 'Done' OR label == 'تم' OR label == 'Open' OR label == 'فتح'")).firstMatch
+        capture("font-two-files-selected");print("FONT_BEFORE_OPEN\n"+app.debugDescription);XCTAssertTrue(done.isEnabled,"Open must be enabled after selecting both actual files")
         if done.exists && done.isHittable{done.tap()}
+        capture("font-after-open");print("FONT_AFTER_OPEN\n"+app.debugDescription)
         let dismissed=XCTNSPredicateExpectation(predicate:NSPredicate{_,_ in !self.app.otherElements["cookies-document-picker"].exists && self.app.buttons["font-close"].isHittable},object:nil)
-        XCTAssertEqual(XCTWaiter.wait(for:[dismissed],timeout:25),.completed,"The real document picker must dismiss, not merely expose a background control")
+        let dismissedResult=XCTWaiter.wait(for:[dismissed],timeout:25);if dismissedResult != .completed{capture("failure-multiple-font-import");print("FONT_IMPORT_FAILURE_HIERARCHY\n"+app.debugDescription)};XCTAssertEqual(dismissedResult,.completed,"The real document picker must dismiss, not merely expose a background control")
         capture("fix-real-files-returned-before-filter")
         let filter=app.buttons["font-category-المستوردة"];reveal(filter,in:app.scrollViews["font-filter-strip"]);filter.tap()
         let installed=app.staticTexts.matching(filename).firstMatch;XCTAssertTrue(installed.waitForExistence(timeout:15),"Selected font must be installed and shown in the imported list");XCTAssertTrue(app.staticTexts.matching(NSPredicate(format:"label BEGINSWITH %@","Cookies-Second-Fixture")).firstMatch.waitForExistence(timeout:10),"Both selected fonts must be imported in one operation");capture("fix-real-files-font-import");app.buttons["font-close"].tap();XCTAssertTrue(app.buttons["settings-font-library"].exists)

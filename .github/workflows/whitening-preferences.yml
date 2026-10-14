@@ -48,11 +48,11 @@ jobs:
             build/screenshots/
             build/whitening-*/
   local:
-    if: ${{ !contains(github.event.head_commit.message, '[wording followup]') }}
+    if: ${{ !contains(github.event.head_commit.message, '[wording followup]') || contains(github.event.head_commit.message, '[local verification]') }}
     strategy:
       fail-fast: false
       matrix:
-        screen: [ipad, iphone]
+        screen: ${{ fromJSON(contains(github.event.head_commit.message, '[local verification]') && '["iphone"]' || '["ipad","iphone"]') }}
     runs-on: macos-15-intel
     timeout-minutes: 60
     steps:
@@ -80,6 +80,7 @@ jobs:
             build/photos-integrity-*-local.json
             build/screenshots/*-local/
   package:
+    if: ${{ !contains(github.event.head_commit.message, '[verification only]') }}
     runs-on: macos-15-intel
     timeout-minutes: 50
     steps:
