@@ -35,7 +35,9 @@ if not p.exists():
 PYPHOTO
 xcodebuild -project CookiesEditor.xcodeproj -scheme CookiesLocal -configuration Debug -destination "platform=iOS Simulator,id=$TASK_DEVICE" -parallel-testing-enabled NO -derivedDataPath .work/simulator-local ARCHS=x86_64 ONLY_ACTIVE_ARCH=YES build-for-testing > "build/test-$TASK_SCREEN-local-build.log" 2>&1
 xcrun simctl addmedia "$TASK_DEVICE" .work/Photos-800x15000.png
-xcrun simctl install "$TASK_DEVICE" .work/simulator-local/Build/Products/Debug-iphonesimulator/CookiesLocal.app
+TASK_LOCAL_APP=.work/simulator-local/Build/Products/Debug-iphonesimulator/CookiesEditor.app
+[[ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$TASK_LOCAL_APP/Info.plist")" == com.cookies.editor.local ]]
+xcrun simctl install "$TASK_DEVICE" "$TASK_LOCAL_APP"
 xcrun simctl terminate "$TASK_DEVICE" com.apple.mobileslideshow
 TASK_STATUS=0
 xcodebuild -project CookiesEditor.xcodeproj -scheme CookiesLocal -configuration Debug -destination "platform=iOS Simulator,id=$TASK_DEVICE" -parallel-testing-enabled NO -derivedDataPath .work/simulator-local -resultBundlePath "build/$TASK_SCREEN-local.xcresult" -only-testing:CookiesLocalUITests ARCHS=x86_64 ONLY_ACTIVE_ARCH=YES test-without-building > "build/test-$TASK_SCREEN-local.log" 2>&1 || TASK_STATUS=$?
