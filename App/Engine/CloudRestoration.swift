@@ -18,7 +18,7 @@ enum CloudRestoration {
     /// Called only for an explicitly selected cloud target. No whole chapter,
     /// user filename, account credential, or model download is sent.
     static func repair(source:CGImage,mask:CGImage,endpoint override:URL?=nil,session supplied:URLSession?=nil)async throws->CGImage{
-        guard let endpoint=override ?? Self.endpoint else{throw LaMaFailure.message("خدمة الترميم السحابي غير مهيأة في هذه النسخة")}
+        guard let endpoint=override ?? Self.endpoint else{throw LaMaFailure.message("خدمة الذكاء الاصطناعي غير مهيأة في هذه النسخة")}
         guard source.width==mask.width,source.height==mask.height,source.width*source.height<=4_194_304,let image=UIImage(cgImage:source).pngData(),let selection=UIImage(cgImage:mask).pngData() else{throw LaMaFailure.message("تعذر تجهيز منطقة النص للترميم")}
         let digest=SHA256.hash(data:image).map{String(format:"%02x",$0)}.joined(),boundary="Cookies-\(UUID().uuidString)"
         var body=Data()
@@ -40,8 +40,8 @@ enum CloudRestoration {
         guard let http=response as? HTTPURLResponse,http.statusCode==200 else{
             let code=(response as? HTTPURLResponse)?.statusCode
             let reason=(try? JSONSerialization.jsonObject(with:data) as? [String:String])?["error"]
-            if code==429{throw LaMaFailure.message(reason=="daily_capacity_reached" ? "بلغت الخدمة سعتها المؤقتة لليوم. يمكنك استخدام الترميم المحلي أو المحاولة لاحقًا":"الخدمة تعالج فقاعة أخرى حاليًا. انتظر بضع ثوانٍ ثم أعد المحاولة")}
-            throw LaMaFailure.message("تعذر إكمال الترميم السحابي الآن. لم تتغير الصورة الأصلية")
+            if code==429{throw LaMaFailure.message(reason=="daily_capacity_reached" ? "بلغت الخدمة سعتها المؤقتة لليوم. يمكنك استخدام «دون إنترنت» أو المحاولة لاحقًا":"الخدمة تعالج فقاعة أخرى حاليًا. انتظر بضع ثوانٍ ثم أعد المحاولة")}
+            throw LaMaFailure.message("تعذر إكمال الترميم عبر الإنترنت الآن. لم تتغير الصورة الأصلية")
         }
         guard data.count<=20_000_000,http.value(forHTTPHeaderField:"X-Cookies-Source-SHA256")==digest,let container=CGImageSourceCreateWithData(data as CFData,nil),CGImageSourceGetCount(container)==1,let info=CGImageSourceCopyPropertiesAtIndex(container,0,nil) as? [CFString:Any],(info[kCGImagePropertyPixelWidth] as? NSNumber)?.intValue==source.width,(info[kCGImagePropertyPixelHeight] as? NSNumber)?.intValue==source.height,let result=CGImageSourceCreateImageAtIndex(container,0,nil) else{throw LaMaFailure.message("لم تتطابق نتيجة الترميم مع منطقة الصورة المرسلة؛ رُفضت لحماية عملك")}
         return try clipped(result,mask:mask)

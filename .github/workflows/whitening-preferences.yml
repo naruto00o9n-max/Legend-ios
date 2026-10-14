@@ -1,0 +1,97 @@
+name: Whitening preferences and multiple font import
+on:
+  push:
+    branches: [verify/whitening-preferences-oct14]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  editor:
+    strategy:
+      fail-fast: false
+      matrix:
+        screen: [ipad, iphone]
+    runs-on: macos-15-intel
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v5
+      - run: brew install xcodegen
+      - uses: actions/cache@v4
+        with:
+          path: |
+            .work/reference.apk
+            .work/opencv-ios.zip
+            App/Core/Vendor
+            App/Resources/cookies-logo.png
+          key: cookies-native-v45-opencv411-${{ hashFiles('scripts/vendor-hashes.json') }}
+      - run: python3 scripts/fetch_resources.py
+      - run: python3 scripts/fetch_whitening_fixtures.py
+      - run: xcodegen generate
+      - name: Native preferences, font registration, backup and editor regressions
+        run: bash scripts/test_simulators.sh '${{ matrix.screen }}' core
+      - name: Actual multiple Files selection, independent whitening choices, Photos and account
+        run: bash scripts/test_simulators.sh '${{ matrix.screen }}' ui 'CookiesUITests/EditorUITests/testRealFilesPickerImportsFontAndReturnsToLibrary,CookiesUITests/EditorUITests/testManualSniperKeepsIndependentWhiteningMethodPerBubble'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: whitening-preferences-${{ matrix.screen }}
+          path: |
+            build/test-*.log
+            build/gates-*.json
+            build/photos-integrity-*.json
+            build/screenshots/
+            build/whitening-*/
+  local:
+    strategy:
+      fail-fast: false
+      matrix:
+        screen: [ipad, iphone]
+    runs-on: macos-15-intel
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+      - run: brew install xcodegen
+      - uses: actions/cache@v4
+        with:
+          path: |
+            .work/reference.apk
+            .work/opencv-ios.zip
+            App/Core/Vendor
+            App/Resources/cookies-logo.png
+          key: cookies-native-v45-opencv411-${{ hashFiles('scripts/vendor-hashes.json') }}
+      - run: python3 scripts/fetch_resources.py
+      - run: python3 scripts/fetch_whitening_fixtures.py
+      - run: xcodegen generate
+      - run: bash scripts/test_local_simulator.sh '${{ matrix.screen }}'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: whitening-preferences-local-${{ matrix.screen }}
+          path: |
+            build/test-*-local*.log
+            build/gates-*-local.json
+            build/photos-integrity-*-local.json
+            build/screenshots/*-local/
+  package:
+    runs-on: macos-15-intel
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v5
+      - run: brew install xcodegen
+      - uses: actions/cache@v4
+        with:
+          path: |
+            .work/reference.apk
+            .work/opencv-ios.zip
+            App/Core/Vendor
+            App/Resources/cookies-logo.png
+          key: cookies-native-v45-opencv411-${{ hashFiles('scripts/vendor-hashes.json') }}
+      - run: python3 scripts/fetch_resources.py
+      - run: python3 scripts/fetch_whitening_fixtures.py
+      - run: xcodegen generate
+      - run: bash scripts/build_ipas.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: whitening-preferences-unsigned-ipas
+          path: build/

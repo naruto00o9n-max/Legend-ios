@@ -63,7 +63,9 @@ target=pathlib.Path(sys.argv[1])/'Documents'/'Cookies-Import-Fixture.ttf'
 target.parent.mkdir(parents=True,exist_ok=True)
 shutil.copyfile(font,target)
 assert target.is_file() and target.stat().st_size==font.stat().st_size
-print('Files fixture installed in the tested application container')
+second=next(x for x in pathlib.Path('App/Resources/Fonts').glob('*.ttf') if x!=font)
+shutil.copyfile(second,target.with_name('Cookies-Second-Fixture.ttf'))
+print('Two distinct Files fixtures installed in the tested application container')
 PYFONT
 TASK_STATUS=0
 xcodebuild -project CookiesEditor.xcodeproj -scheme CookiesEditor -configuration Debug -destination "platform=iOS Simulator,id=$TASK_DEVICE" -parallel-testing-enabled NO -derivedDataPath .work/simulator -resultBundlePath "build/$TASK_SCREEN.xcresult" "${TASK_UI_ARGUMENTS[@]}" ARCHS=x86_64 ONLY_ACTIVE_ARCH=YES test-without-building > "build/test-$TASK_SCREEN.log" 2>&1 || TASK_STATUS=$?

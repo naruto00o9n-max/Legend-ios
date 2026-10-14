@@ -3,12 +3,32 @@ import UIKit
 enum BubbleWhiteningMethod:String,CaseIterable,Identifiable {
     case classic,bigLaMa
     var id:String{rawValue}
-    var title:String{self == .classic ? "التبييض المعتاد":"ترميم Big LaMa"}
+    var title:String{self == .classic ? "التبييض المعتاد":"خدمة ذكاء اصطناعي"}
 }
 enum RestorationExecution:String,CaseIterable,Identifiable {
     case device,cloud
     var id:String{rawValue}
-    var title:String{self == .device ? "على الجهاز":"سحابي"}
+    var title:String{self == .device ? "دون إنترنت":"عبر الإنترنت"}
+}
+/// A saved preference is applied only when a target is created, never when
+/// switching between existing bubbles with their independent choices.
+enum WhiteningPreferences {
+    static let methodKey="editor-whitening-method",executionKey="editor-whitening-execution"
+    static func method(defaults:UserDefaults = .standard)->BubbleWhiteningMethod {
+        BubbleWhiteningMethod(rawValue:defaults.string(forKey:methodKey) ?? "") ?? .classic
+    }
+    static func execution(available:Bool,defaults:UserDefaults = .standard)->RestorationExecution {
+        available && defaults.string(forKey:executionKey)==RestorationExecution.device.rawValue ? .device:.cloud
+    }
+    static func remember(_ method:BubbleWhiteningMethod,defaults:UserDefaults = .standard){defaults.set(method.rawValue,forKey:methodKey)}
+    static func remember(_ execution:RestorationExecution,available:Bool,defaults:UserDefaults = .standard){
+        guard execution != .device || available else{return}
+        defaults.set(execution.rawValue,forKey:executionKey)
+    }
+    static func apply(to target:inout SniperTarget,available:Bool,defaults:UserDefaults = .standard){
+        target.whiteningMethod=method(defaults:defaults)
+        target.restorationExecution=execution(available:available,defaults:defaults)
+    }
 }
 enum ManualSniperTool:String {case rectangle,freehand,textRectangle}
 struct SniperTarget: Identifiable, Equatable {
@@ -18,7 +38,7 @@ struct SniperTarget: Identifiable, Equatable {
     var pin=false
     var point:Point
     var whiteningMethod=BubbleWhiteningMethod.classic
-    var restorationExecution=RestorationExecution.device
+    var restorationExecution=RestorationExecution.cloud
     var manualTextRegions:[Box]=[]
     var manuallySelected=false
 }

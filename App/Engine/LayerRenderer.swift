@@ -5,8 +5,14 @@ enum Fonts {
     private static let cache=NSCache<NSString,UIFont>()
     static var userDirectory:URL {FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("Cookies/Fonts",isDirectory:true)}
     static var userFiles:[URL] {(try? FileManager.default.contentsOfDirectory(at:userDirectory,includingPropertiesForKeys:nil)) ?? []}
-    static var files:[URL] {(Bundle.main.urls(forResourcesWithExtension:"ttf",subdirectory:"Fonts") ?? [])+userFiles.filter{$0.pathExtension.lowercased()=="ttf"}}
-    static var otf:[URL] {(Bundle.main.urls(forResourcesWithExtension:"otf",subdirectory:"Fonts") ?? [])+userFiles.filter{$0.pathExtension.lowercased()=="otf"}}
+    private static func catalogue(_ ext:String)->[URL] {
+        let imported=userFiles.filter{$0.pathExtension.lowercased()==ext},names=Set(imported.map(\.lastPathComponent))
+        // Prefer the imported URL for identical bundled names, so classification,
+        // deletion and backup all refer to the user's durable copy.
+        return (Bundle.main.urls(forResourcesWithExtension:ext,subdirectory:"Fonts") ?? []).filter{!names.contains($0.lastPathComponent)}+imported
+    }
+    static var files:[URL] {catalogue("ttf")}
+    static var otf:[URL] {catalogue("otf")}
     static func register(){cache.removeAllObjects();for url in files+otf{CTFontManagerRegisterFontsForURL(url as CFURL,.process,nil)}}
     static func font(_ style:TextStyle)->UIFont {
         let key="\(style.fontPath)|\(style.fontSize)|\(style.isBold)|\(style.isItalic)" as NSString

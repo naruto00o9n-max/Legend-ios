@@ -7,11 +7,11 @@ final class BigLaMaSession {
     private let extent=512
     init(compiled:URL)throws{
         let available=CookiesLaMaAvailableMemory()
-        guard available==0 || available>=900_000_000 else{throw LaMaFailure.message("الذاكرة المتاحة لا تكفي لترميم Big LaMa بأمان. اختر التنفيذ السحابي، أو أغلق التطبيقات الأخرى ثم أعد المحاولة")}
+        guard available==0 || available>=900_000_000 else{throw LaMaFailure.message("الذاكرة المتاحة لا تكفي لترميم الخلفية بأمان. اختر «عبر الإنترنت»، أو أغلق التطبيقات الأخرى ثم أعد المحاولة")}
         let result=CookiesLaMaOpen(compiled.path)
         guard let value=(result["context"] as? NSValue)?.pointerValue else{
             NSLog("Cookies Big LaMa load: %@",result["error"] as? String ?? "unknown")
-            throw LaMaFailure.message("تعذر تشغيل نموذج الترميم المحلي. أعد تنزيله أو اختر التنفيذ السحابي")
+            throw LaMaFailure.message("تعذر تشغيل ملفات المعالجة. أعد تنزيلها أو اختر «عبر الإنترنت»")
         }
         context=value
     }
@@ -46,11 +46,11 @@ final class BigLaMaSession {
                 try Task.checkCancellation()
                 guard let bytes=prediction["output"] as? Data,bytes.count==plane*3*MemoryLayout<Float>.size else{
                     NSLog("Cookies Big LaMa inference: %@",prediction["error"] as? String ?? "invalid tensor")
-                    throw LaMaFailure.message("تعذر إكمال الترميم المحلي. جرّب التنفيذ السحابي أو منطقة نص أصغر")
+                    throw LaMaFailure.message("تعذر إكمال الترميم على الجهاز. جرّب «عبر الإنترنت» أو منطقة نص أصغر")
                 }
                 var pixels=[Float](repeating:0,count:plane*3)
                 _ = pixels.withUnsafeMutableBytes{bytes.copyBytes(to:$0)}
-                guard pixels.allSatisfy(\.isFinite) else{throw LaMaFailure.message("نتيجة نموذج الترميم غير صالحة. لم تُغير الصورة؛ جرّب التنفيذ السحابي")}
+                guard pixels.allSatisfy(\.isFinite) else{throw LaMaFailure.message("نتيجة نموذج الترميم غير صالحة. لم تُغير الصورة؛ جرّب «عبر الإنترنت»")}
                 for y in top..<bottom{for x in left..<right{
                     let index=y*w+x,offset=index*4;guard maskRGBA[offset]>0 else{continue}
                     let tx=x-originX,ty=y-originY,edge=min(min(tx+1,extent-tx),min(ty+1,extent-ty)),weight=min(1,Float(edge)/64),old=weights[index],sum=old+weight,p=ty*extent+tx

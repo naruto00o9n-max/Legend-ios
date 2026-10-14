@@ -194,13 +194,17 @@ final class EditorUITests:XCTestCase {
         XCTAssertTrue(file.waitForExistence(timeout:8),app.debugDescription)
         let fileCell=app.cells.containing(.staticText,identifier:file.label).firstMatch
         if fileCell.exists{fileCell.tap()}else{file.tap()}
+        let secondFile=app.staticTexts.matching(NSPredicate(format:"label BEGINSWITH %@","Cookies-Second-Fixture")).firstMatch
+        XCTAssertTrue(secondFile.waitForExistence(timeout:8),app.debugDescription)
+        let secondCell=app.cells.containing(.staticText,identifier:secondFile.label).firstMatch
+        if secondCell.exists{secondCell.tap()}else{secondFile.tap()}
         let done=app.buttons.matching(NSPredicate(format:"label == 'Done' OR label == 'تم' OR label == 'Open' OR label == 'فتح'")).firstMatch
         if done.exists && done.isHittable{done.tap()}
         let dismissed=XCTNSPredicateExpectation(predicate:NSPredicate{_,_ in !self.app.otherElements["cookies-document-picker"].exists && self.app.buttons["font-close"].isHittable},object:nil)
         XCTAssertEqual(XCTWaiter.wait(for:[dismissed],timeout:25),.completed,"The real document picker must dismiss, not merely expose a background control")
         capture("fix-real-files-returned-before-filter")
         let filter=app.buttons["font-category-المستوردة"];reveal(filter,in:app.scrollViews["font-filter-strip"]);filter.tap()
-        let installed=app.staticTexts.matching(filename).firstMatch;XCTAssertTrue(installed.waitForExistence(timeout:15),"Selected font must be installed and shown in the imported list");capture("fix-real-files-font-import");app.buttons["font-close"].tap();XCTAssertTrue(app.buttons["settings-font-library"].exists)
+        let installed=app.staticTexts.matching(filename).firstMatch;XCTAssertTrue(installed.waitForExistence(timeout:15),"Selected font must be installed and shown in the imported list");XCTAssertTrue(app.staticTexts.matching(NSPredicate(format:"label BEGINSWITH %@","Cookies-Second-Fixture")).firstMatch.waitForExistence(timeout:10),"Both selected fonts must be imported in one operation");capture("fix-real-files-font-import");app.buttons["font-close"].tap();XCTAssertTrue(app.buttons["settings-font-library"].exists)
     }
 
     func testFullTagEditorSavesAndReopensItsRealTextTools(){
@@ -249,13 +253,20 @@ final class EditorUITests:XCTestCase {
         func choose(_ id:String){let button=app.buttons[id];revealVertical(button,in:settings);XCTAssertTrue(button.isHittable,app.debugDescription);button.tap()}
         let first=app.buttons["whitening-target-1"],second=app.buttons["whitening-target-2"]
         first.tap();choose("whitening-method-bigLaMa")
-        XCTAssertEqual(first.value as? String,"bigLaMa/device")
-        XCTAssertFalse(app.buttons["whitening-preview"].isEnabled,"Local restoration must require explicit model download")
-        choose("whitening-execution-cloud");XCTAssertEqual(first.value as? String,"bigLaMa/cloud");XCTAssertTrue(app.buttons["whitening-preview"].isEnabled,"Cloud restoration must work without local weights")
-        second.tap();XCTAssertEqual(second.value as? String,"classic/device");app.buttons["whitening-close"].tap()
+        XCTAssertEqual(first.value as? String,"bigLaMa/cloud")
+        XCTAssertTrue(app.buttons["whitening-preview"].isEnabled,"Internet execution is the default and needs no download")
+        let device=app.buttons["whitening-execution-device"];revealVertical(device,in:settings)
+        XCTAssertFalse(device.isEnabled,"Device execution must remain unavailable before a verified download")
+        XCTAssertTrue(app.staticTexts["خدمة ذكاء اصطناعي"].exists)
+        XCTAssertFalse(app.staticTexts.matching(NSPredicate(format:"label CONTAINS 'Big LaMa'")).firstMatch.exists)
+        second.tap();XCTAssertEqual(second.value as? String,"classic/cloud");app.buttons["whitening-close"].tap()
         app.buttons["sniper-whiten"].tap();XCTAssertTrue(first.waitForExistence(timeout:8));XCTAssertEqual(first.value as? String,"bigLaMa/cloud")
-        first.tap();choose("whitening-execution-device");XCTAssertFalse(app.buttons["whitening-preview"].isEnabled)
-        choose("whitening-method-classic");XCTAssertEqual(first.value as? String,"classic/device");XCTAssertTrue(app.buttons["whitening-preview"].isEnabled)
+        first.tap();choose("whitening-method-classic");XCTAssertEqual(first.value as? String,"classic/cloud");XCTAssertTrue(app.buttons["whitening-preview"].isEnabled)
+        choose("whitening-method-bigLaMa");app.buttons["whitening-close"].tap()
+        app.buttons["sniper-manual"].tap()
+        canvas.coordinate(withNormalizedOffset:CGVector(dx:0.30,dy:0.25)).press(forDuration:0.1,thenDragTo:canvas.coordinate(withNormalizedOffset:CGVector(dx:0.60,dy:0.40)),withVelocity:.slow,thenHoldForDuration:0.1)
+        app.buttons["sniper-whiten"].tap();let third=app.buttons["whitening-target-3"];XCTAssertTrue(third.waitForExistence(timeout:8));XCTAssertEqual(third.value as? String,"bigLaMa/cloud","A new bubble inherits the last method without overwriting existing bubbles")
+        XCTAssertEqual(second.value as? String,"classic/cloud")
         app.buttons["whitening-close"].tap();XCTAssertTrue(app.buttons["export"].isHittable)
     }
 

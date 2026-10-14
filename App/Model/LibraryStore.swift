@@ -132,8 +132,9 @@ import SwiftUI
     func detectSniper(at point:CGPoint) async {
         guard !busy,point.x>=0,point.y>=0,point.x<Double(page.width),point.y<Double(page.height) else{return}
         busy=true;defer{busy=false};let page=self.page,directory=self.directory
-        do{let target=try await Task.detached(priority:.userInitiated){try SniperDetector.detect(page:page,directory:directory,point:point)}.value
+        do{var target=try await Task.detached(priority:.userInitiated){try SniperDetector.detect(page:page,directory:directory,point:point)}.value
             guard sniperMode,self.page.id==page.id else{return}
+            WhiteningPreferences.apply(to:&target,available:BigLaMaAssets.shared.ready)
             if !sniperTargets.contains(where:{hypot($0.point.x-point.x,$0.point.y-point.y)<12}){sniperTargets.append(target)}
         }catch{self.error=error.localizedDescription}
     }

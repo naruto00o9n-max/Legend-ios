@@ -3,7 +3,7 @@ import UIKit
 @testable import CookiesEditor
 
 final class ManualWhiteningTests:XCTestCase {
-    @MainActor private func setup()throws->(URL,EditorModel){let root=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString),library=LibraryStore(root:root),page=try PageOperations.blank(title:"فقاعات",width:400,height:600,color:"FFFFFF",transparent:false,root:root);XCTAssertTrue(library.add(page,parent:nil));return(root,EditorModel(page:page,library:library))}
+    @MainActor private func setup()throws->(URL,EditorModel){UserDefaults.standard.removeObject(forKey:WhiteningPreferences.methodKey);UserDefaults.standard.removeObject(forKey:WhiteningPreferences.executionKey);let root=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString),library=LibraryStore(root:root),page=try PageOperations.blank(title:"فقاعات",width:400,height:600,color:"FFFFFF",transparent:false,root:root);XCTAssertTrue(library.add(page,parent:nil));return(root,EditorModel(page:page,library:library))}
     private let rectangle=[CGPoint(x:30,y:40),CGPoint(x:250,y:40),CGPoint(x:250,y:260),CGPoint(x:30,y:260)]
     @MainActor func testManualContourIsRealTargetAndDoesNotEditImage()throws{
         let (root,model)=try setup();defer{try? FileManager.default.removeItem(at:root)};let before=model.page
@@ -14,7 +14,7 @@ final class ManualWhiteningTests:XCTestCase {
         let (root,model)=try setup();defer{try? FileManager.default.removeItem(at:root)};model.beginManualSniper(.rectangle);model.finishManualSniper(rectangle);let id=try XCTUnwrap(model.sniperTargets.first?.id);model.sniperTargets[0].whiteningMethod = .bigLaMa;model.sniperTargets[0].restorationExecution = .cloud
         model.beginManualSniper(.rectangle);model.finishManualSniper(rectangle.map{CGPoint(x:$0.x+10,y:$0.y+280)})
         model.beginManualSniper(.freehand,replacing:id,returnToWhitening:true);model.finishManualSniper([CGPoint(x:50,y:50),CGPoint(x:180,y:65),CGPoint(x:210,y:180),CGPoint(x:45,y:220)])
-        XCTAssertEqual(model.sniperTargets.count,2);XCTAssertEqual(model.sniperTargets[0].id,id);XCTAssertEqual(model.sniperTargets[0].whiteningMethod,.bigLaMa);XCTAssertEqual(model.sniperTargets[1].whiteningMethod,.classic);XCTAssertEqual(model.sniperTargets[0].restorationExecution,.cloud);XCTAssertEqual(model.sniperTargets[1].restorationExecution,.device);XCTAssertTrue(model.sniperWhiteningOpen);XCTAssertEqual(model.focusedSniperTarget,id)
+        XCTAssertEqual(model.sniperTargets.count,2);XCTAssertEqual(model.sniperTargets[0].id,id);XCTAssertEqual(model.sniperTargets[0].whiteningMethod,.bigLaMa);XCTAssertEqual(model.sniperTargets[1].whiteningMethod,.classic);XCTAssertEqual(model.sniperTargets[0].restorationExecution,.cloud);XCTAssertEqual(model.sniperTargets[1].restorationExecution,.cloud);XCTAssertTrue(model.sniperWhiteningOpen);XCTAssertEqual(model.focusedSniperTarget,id)
     }
     @MainActor func testManualTextRegionsAreClippedAndOutsideOrTinyContoursAreRejected()throws{
         let (root,model)=try setup();defer{try? FileManager.default.removeItem(at:root)};model.beginManualSniper(.rectangle);model.finishManualSniper(rectangle);let id=try XCTUnwrap(model.sniperTargets.first?.id)
@@ -46,6 +46,28 @@ final class ManualWhiteningTests:XCTestCase {
         assets.startInstallation();XCTAssertFalse(assets.installing)
         do{try await assets.remove();XCTFail("Concurrent removal must be rejected")}catch{}
         assets.endCacheCleanup();XCTAssertFalse(assets.removing);XCTAssertFalse(assets.ready)
+    }
+
+    func testWhiteningPreferencePersistsAndMissingDownloadCannotSelectDevice()throws {
+        let suite="whitening-"+UUID().uuidString,defaults=try XCTUnwrap(UserDefaults(suiteName:suite))
+        defer{defaults.removePersistentDomain(forName:suite)}
+        XCTAssertEqual(WhiteningPreferences.method(defaults:defaults),.classic)
+        XCTAssertEqual(WhiteningPreferences.execution(available:true,defaults:defaults),.cloud)
+        WhiteningPreferences.remember(BubbleWhiteningMethod.bigLaMa,defaults:defaults)
+        WhiteningPreferences.remember(RestorationExecution.device,available:false,defaults:defaults)
+        XCTAssertNil(defaults.string(forKey:WhiteningPreferences.executionKey))
+        WhiteningPreferences.remember(RestorationExecution.device,available:true,defaults:defaults)
+        let reopened=try XCTUnwrap(UserDefaults(suiteName:suite))
+        XCTAssertEqual(WhiteningPreferences.method(defaults:reopened),.bigLaMa)
+        XCTAssertEqual(WhiteningPreferences.execution(available:true,defaults:reopened),.device)
+        XCTAssertEqual(WhiteningPreferences.execution(available:false,defaults:reopened),.cloud)
+        var target=SniperTarget(bounds:Box(x:0,y:0,width:100,height:100),point:Point(x:50,y:50))
+        WhiteningPreferences.apply(to:&target,available:false,defaults:reopened)
+        XCTAssertEqual(target.whiteningMethod,.bigLaMa);XCTAssertEqual(target.restorationExecution,.cloud)
+        WhiteningPreferences.remember(BubbleWhiteningMethod.classic,defaults:reopened)
+        XCTAssertEqual(target.whiteningMethod,.bigLaMa,"Preferences must not mutate existing independent targets")
+        let backup=try PropertyListSerialization.propertyList(from:AppStorageManager.settingsData(reopened),format:nil) as? [String:Any]
+        XCTAssertEqual(backup?[WhiteningPreferences.methodKey] as? String,"classic")
     }
 
 }

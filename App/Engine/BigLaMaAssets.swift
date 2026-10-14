@@ -46,8 +46,8 @@ private final class LaMaTransferProgress:NSObject,URLSessionDownloadDelegate,@un
     init(root:URL?=nil){self.root=root ?? FileManager.default.urls(for:.cachesDirectory,in:.userDomainMask)[0].appendingPathComponent("CookiesModels/BigLaMa");refresh()}
     var compiled:URL{root.appendingPathComponent("big-lama.onnx")}
     private var receipt:URL{root.appendingPathComponent("verified-revision.txt")}
-    func refresh(){guard let spec=try? BigLaMaSpecification.bundled() else{ready=false;return};ready=(try? String(contentsOf:receipt,encoding:.utf8))==spec.revision && FileManager.default.fileExists(atPath:compiled.path)}
-    func acquire()throws->URL{refresh();guard ready,!installing,!removing else{throw LaMaFailure.message("نزّل نموذج Big LaMa أولًا من إعدادات التبييض")};activeUses+=1;return compiled}
+    func refresh(){guard let spec=try? BigLaMaSpecification.bundled() else{ready=false;return};ready=(try? String(contentsOf:receipt,encoding:.utf8))==spec.revision && (try? compiled.resourceValues(forKeys:[.fileSizeKey]).fileSize)==Int(spec.downloadSize)}
+    func acquire()throws->URL{refresh();guard ready,!installing,!removing else{throw LaMaFailure.message("أكمل تنزيل ملفات المعالجة أولًا من إعدادات التبييض")};activeUses+=1;return compiled}
     func release(){activeUses=max(0,activeUses-1)}
     func startInstallation(){guard installation==nil,!installing,!removing else{return};failure=nil;installation=Task{defer{installation=nil};do{_ = try await install()}catch is CancellationError{}catch{if !Task.isCancelled{failure=error.localizedDescription}}}}
     func cancelInstallation(){installation?.cancel()}
