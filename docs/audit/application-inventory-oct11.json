@@ -1,15 +1,15 @@
 {
-  "date": "2026-10-12",
-  "ios_source": "9ef49fc6dbd0cceb35aeaa3a487fc1fd50447d71",
+  "date": "2026-10-14",
+  "ios_source": "5c98fc4e788311d1f1c7cdd9a8d39c8d53ccbfe3",
   "original": "YTyper V4.5",
   "apk_sha256": "a3758bcdf50c802c25d9023c90456f6bdde922a94cda08fc3ce737c2a9b29789",
   "scope": "182 source-based functional comparisons. 102 detailed editor entries, 80 surrounding-feature entries. Not full visual/device parity. Old paused batch ledgers unchanged.",
   "counts": {
     "موجود": 33,
-    "جزئي": 33,
+    "جزئي": 34,
     "اعتماد خادم": 7,
-    "موجود مع فروق": 76,
-    "ناقص": 30,
+    "موجود مع فروق": 79,
+    "ناقص": 26,
     "بديل iOS": 1,
     "اعتماد خارجي": 1,
     "غير متحقق": 1
@@ -41,9 +41,9 @@
       "feature": "إنشاء الحساب والتأكيد وإعادة إرسال التأكيد",
       "original_evidence": "/auth/v1/signup وresend؛ رسالة الاختبار وصلت",
       "current_status": "جزئي",
-      "ios_evidence": "AccountView; ReferenceService signup/resend",
-      "remaining": "واجهات إنشاء الحساب والتأكيد وإعادة الإرسال موجودة؛ وصول كل رسالة والتحقق الكامل على جهاز فعلي غير مثبتين لهذه الدفعة.",
-      "review_basis": "قراءة المصدر الحالي؛ الاختبار المحدد إن ذكر، لا تحقق جهاز فعلي شامل"
+      "ios_evidence": "AccountView; signup/confirmation with owned disposable inbox; online-owned-account-verification-oct12.json",
+      "remaining": "وصل تأكيد حساب الاختبار وتأكدت الجلسة فعليًا؛ إعادة الإرسال وكل حالات الجهاز الفعلي لم تتحقق لهذه الدفعة.",
+      "review_basis": "قراءة العقد الأصلي واختبارات أصلية على iPad/iPhone وواجهة المتصدرين وخادم بحساب اختبار مستقل؛ لا ادعاء بالجهاز المادي أو اكتمال Google/Discord bot"
     },
     {
       "id": "F004",
@@ -70,10 +70,10 @@
       "group": "الحساب والبداية",
       "feature": "ربط Discord وعرض الحساب المرتبط",
       "original_evidence": "dialog_discord_link؛ dashboard؛ strings discord",
-      "current_status": "ناقص",
-      "ios_evidence": "—",
-      "remaining": "واجهة الربط والعودة والتحقق من الحساب غير موجودة",
-      "review_basis": "قراءة المصدر الحالي؛ الاختبار المحدد إن ذكر، لا تحقق جهاز فعلي شامل"
+      "current_status": "جزئي",
+      "ios_evidence": "AccountWorkspace; DiscordLinkView; verified owned link_token PATCH; eight account tests",
+      "remaining": "إنشاء الأمر ونسخه وفتح السيرفر وتحديث الحالة موجودة؛ الربط النهائي عبر بوت Discord بحساب فعلي لم يُنفذ في الاختبار.",
+      "review_basis": "قراءة العقد الأصلي واختبارات أصلية على iPad/iPhone وواجهة المتصدرين وخادم بحساب اختبار مستقل؛ لا ادعاء بالجهاز المادي أو اكتمال Google/Discord bot"
     },
     {
       "id": "F007",
@@ -140,10 +140,10 @@
       "group": "المشاريع والصفحات",
       "feature": "سلة المحذوفات والاسترجاع",
       "original_evidence": "TrashedProjectMeta؛ نصوص trash_draft_prefix",
-      "current_status": "ناقص",
-      "ios_evidence": "LibraryStore.remove; TyperStore.remove/restore separate",
-      "remaining": "حذف مشاريع المعرض يزيل ملفاتها؛ مهملات التايبر لا تعني وجود سلة مشاريع قابلة للاسترجاع.",
-      "review_basis": "قراءة المصدر الحالي؛ الاختبار المحدد إن ذكر، لا تحقق جهاز فعلي شامل"
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "LibraryTrash; LibraryStore durable soft deletion, restore/purge/backup; 8 native cases and real restore/export UI on both devices; restoration-release-oct14.json",
+      "remaining": "سلة فعلية للمشاريع والمجلدات والفصول، استرجاع انتقائي وحذف نهائي مع حماية الصفحات المشتركة والنسخ الاحتياطي. المطابقة البصرية الحرفية للأصل ليست مثبتة.",
+      "review_basis": "اختبارات أصلية وواجهة فعلية على محاكي iPad وiPhone، مع مقارنة المصدر كاملة؛ لا ادعاء باختبار الجهاز المادي أو مطابقة كل شاشة."
     },
     {
       "id": "F014",
@@ -520,10 +520,10 @@
       "group": "المحرر العام",
       "feature": "شبكة اللوحة وإعداداتها",
       "original_evidence": "activity_editor btnGrid",
-      "current_status": "ناقص",
-      "ios_evidence": "EditorView; CanvasHost; EditorPreferences",
-      "remaining": "القائمة الدائرية المخصصة، شبكة اللوحة، تثبيت الخلفية مع وضع تحريك بيد واحدة، وZen الكامل غير موجودة.",
-      "review_basis": "الجرد التفصيلي المحدث للمحرر"
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "CanvasGridSettings/Geometry/Overlay; 4 native cases and real tool/settings/export UI on both devices; restoration-release-oct14.json",
+      "remaining": "شبكة مربعات وأثلاث ومركز، مع المسافة واللون والشفافية والسماكة والحفظ؛ دلائل منفصلة عن بيانات الصورة ولا تدخل التصدير. هذه حالة الشبكة فقط؛ بقية أدوات المحرر تبقى في بنودها.",
+      "review_basis": "اختبارات أصلية وواجهة فعلية على محاكي iPad وiPhone، مع مقارنة المصدر كاملة؛ لا ادعاء باختبار الجهاز المادي أو مطابقة كل شاشة."
     },
     {
       "id": "F052",
@@ -1341,19 +1341,19 @@
       "feature": "ملف شخصي: الاسم والصورة والعضوية والنقاط والفقاعات",
       "original_evidence": "dashboard profile stats؛ vw_user_profiles",
       "current_status": "جزئي",
-      "ios_evidence": "ProfileView; ReferenceService user profile/stats",
-      "remaining": "عرض هوية وإحصاءات وحساب موجود؛ تحرير الاسم/الصورة وكل أقسام ملف الأصل غير موجودة.",
-      "review_basis": "قراءة المصدر الحالي؛ الاختبار المحدد إن ذكر، لا تحقق جهاز فعلي شامل"
+      "ios_evidence": "AccountWorkspaceView; owned profile/name PATCH and readback; real service test account",
+      "remaining": "عرض الاسم والبريد وصورة Discord والعضوية والنقاط والفقاعات والموسم وتحرير الاسم موجود؛ بقية أقسام الأصل مثل إدارة الأجهزة وكل حالات الملف تحتاج متابعة.",
+      "review_basis": "قراءة العقد الأصلي واختبارات أصلية على iPad/iPhone وواجهة المتصدرين وخادم بحساب اختبار مستقل؛ لا ادعاء بالجهاز المادي أو اكتمال Google/Discord bot"
     },
     {
       "id": "F134",
       "group": "المجتمع والملف",
       "feature": "قائمة المتصدرين والموسم والإحصاءات",
       "original_evidence": "LeaderboardScreenKt؛ leaderboard_title؛ season_bubbles",
-      "current_status": "ناقص",
-      "ios_evidence": "No leaderboard/rewards UI in App",
-      "remaining": "المتصدرون والموسم والمكافآت اليومية/المواظبة/الدعوات غير منفذة؛ ما يموله الخادم يحتاج واجهاته واستحقاقاته الرسمية.",
-      "review_basis": "قراءة المصدر الحالي؛ الاختبار المحدد إن ذكر، لا تحقق جهاز فعلي شامل"
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "LeaderboardView; actual get_leaderboard top_10/current_user; AccountRank matching original; season_bubbles",
+      "remaining": "المتصدرون العشرة والمركز الشخصي وإحصاء الموسم والرتبة الأصلية موجودة؛ التطابق البصري الحرفي والجهاز المادي غير مثبتين. المكافآت والدعوات منفصلة في F135.",
+      "review_basis": "قراءة العقد الأصلي واختبارات أصلية على iPad/iPhone وواجهة المتصدرين وخادم بحساب اختبار مستقل؛ لا ادعاء بالجهاز المادي أو اكتمال Google/Discord bot"
     },
     {
       "id": "F135",
@@ -1875,5 +1875,68 @@
       "غير متحقق": 1
     },
     "evidence": "image-effects-verification-oct12.json"
+  },
+  "online_account_batch": {
+    "source": "5c98fc4e788311d1f1c7cdd9a8d39c8d53ccbfe3",
+    "run": 38566918791,
+    "ids": [
+      "F003",
+      "F006",
+      "F133",
+      "F134"
+    ],
+    "before_counts": {
+      "موجود": 33,
+      "جزئي": 33,
+      "اعتماد خادم": 7,
+      "موجود مع فروق": 76,
+      "ناقص": 30,
+      "بديل iOS": 1,
+      "اعتماد خارجي": 1,
+      "غير متحقق": 1
+    },
+    "after_counts": {
+      "موجود": 33,
+      "جزئي": 34,
+      "اعتماد خادم": 7,
+      "موجود مع فروق": 77,
+      "ناقص": 28,
+      "بديل iOS": 1,
+      "اعتماد خارجي": 1,
+      "غير متحقق": 1
+    },
+    "evidence": "online-services-verification-oct12.json",
+    "excludes_community": true
+  },
+  "restoration_and_local_batch": {
+    "date": "2026-10-14",
+    "source": "5c98fc4e788311d1f1c7cdd9a8d39c8d53ccbfe3",
+    "test_run": 38566918791,
+    "completed_missing_ids": [
+      "F013",
+      "F051"
+    ],
+    "before_counts": {
+      "موجود": 33,
+      "جزئي": 34,
+      "اعتماد خادم": 7,
+      "موجود مع فروق": 77,
+      "ناقص": 28,
+      "بديل iOS": 1,
+      "اعتماد خارجي": 1,
+      "غير متحقق": 1
+    },
+    "after_counts": {
+      "موجود": 33,
+      "جزئي": 34,
+      "اعتماد خادم": 7,
+      "موجود مع فروق": 79,
+      "ناقص": 26,
+      "بديل iOS": 1,
+      "اعتماد خارجي": 1,
+      "غير متحقق": 1
+    },
+    "evidence": "restoration-release-oct14.json",
+    "additional_capabilities": "Optional CPU Big LaMa and explicit cloud execution, manual contour/text-mask correction; no complete original-detector parity claim."
   }
 }

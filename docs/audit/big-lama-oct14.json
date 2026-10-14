@@ -1,0 +1,316 @@
+{
+  "date": "2026-10-14",
+  "user_priority": "Repair real-iPad ML Program failure; optional local Big LaMa download plus explicit per-bubble cloud execution; comprehensive text-mask and reconstruction review.",
+  "status": "verified_release",
+  "native_model_probe": {
+    "source": "ad65b4c2dba583d1df35db4ec5d54587275b9ea6",
+    "run": 38558353543,
+    "status": "success_both_simulators",
+    "kernel_identical_to_app_candidate": true,
+    "results": {
+      "ipad": {
+        "artifact": 11892245341,
+        "actual_inference_cases": [
+          {
+            "dark_fraction": 0,
+            "height": 450,
+            "masked_pixels": 17625,
+            "mean_masked_change": 31.395687943262413,
+            "mean_repaired_channel": 253.65337115839245,
+            "name": "asura-white-spiked-bubble",
+            "outside_mask_patch_pixels": 0,
+            "peak_process_resident_bytes": 694456320,
+            "platform": "iOS simulator; not physical iPad performance",
+            "seconds": 32.62254309654236,
+            "white_fraction": 1,
+            "width": 520
+          },
+          {
+            "dark_fraction": 0.5433304572907679,
+            "height": 570,
+            "masked_pixels": 289750,
+            "mean_masked_change": 37.45535231521426,
+            "mean_repaired_channel": 97.99398331895313,
+            "name": "asura-blue-action-lettering",
+            "outside_mask_patch_pixels": 0,
+            "peak_process_resident_bytes": 697196544,
+            "platform": "iOS simulator; not physical iPad performance",
+            "seconds": 58.73091804981232,
+            "white_fraction": 0.00035893011216566004,
+            "width": 720
+          },
+          {
+            "dark_fraction": 0,
+            "height": 730,
+            "masked_pixels": 152900,
+            "mean_masked_change": 50.49309570525398,
+            "mean_repaired_channel": 254.55901024634838,
+            "name": "real-manhwa-white-shadow",
+            "outside_mask_patch_pixels": 0,
+            "peak_process_resident_bytes": 694456320,
+            "platform": "iOS simulator; not physical iPad performance",
+            "seconds": 55.826603055000305,
+            "white_fraction": 1,
+            "width": 930
+          },
+          {
+            "dark_fraction": 0,
+            "height": 700,
+            "masked_pixels": 80310,
+            "mean_masked_change": 45.63726808616611,
+            "mean_repaired_channel": 196.17627941725812,
+            "name": "colored-hatched-dialogue",
+            "outside_mask_patch_pixels": 0,
+            "peak_process_resident_bytes": 682795008,
+            "platform": "iOS simulator; not physical iPad performance",
+            "seconds": 69.23291802406311,
+            "white_fraction": 0.007421242684597186,
+            "width": 500
+          }
+        ],
+        "peak_process_resident_bytes": 697196544,
+        "environment": "iOS simulator, not a physical-device benchmark"
+      },
+      "iphone": {
+        "artifact": 11891973825,
+        "actual_inference_cases": [
+          {
+            "dark_fraction": 0,
+            "height": 700,
+            "masked_pixels": 80310,
+            "mean_masked_change": 45.63726808616611,
+            "mean_repaired_channel": 196.17627941725812,
+            "name": "colored-hatched-dialogue",
+            "outside_mask_patch_pixels": 0,
+            "peak_process_resident_bytes": 680083456,
+            "platform": "iOS simulator; not physical iPad performance",
+            "seconds": 42.17619502544403,
+            "white_fraction": 0.007421242684597186,
+            "width": 500
+          },
+          {
+            "dark_fraction": 0,
+            "height": 450,
+            "masked_pixels": 17625,
+            "mean_masked_change": 31.395687943262413,
+            "mean_repaired_channel": 253.65337115839245,
+            "name": "asura-white-spiked-bubble",
+            "outside_mask_patch_pixels": 0,
+            "peak_process_resident_bytes": 690245632,
+            "platform": "iOS simulator; not physical iPad performance",
+            "seconds": 25.04384696483612,
+            "white_fraction": 1,
+            "width": 520
+          },
+          {
+            "dark_fraction": 0,
+            "height": 730,
+            "masked_pixels": 152900,
+            "mean_masked_change": 50.49309570525398,
+            "mean_repaired_channel": 254.55901024634838,
+            "name": "real-manhwa-white-shadow",
+            "outside_mask_patch_pixels": 0,
+            "peak_process_resident_bytes": 690245632,
+            "platform": "iOS simulator; not physical iPad performance",
+            "seconds": 55.80455493927002,
+            "white_fraction": 1,
+            "width": 930
+          },
+          {
+            "dark_fraction": 0.5433304572907679,
+            "height": 570,
+            "masked_pixels": 289750,
+            "mean_masked_change": 37.45535231521426,
+            "mean_repaired_channel": 97.99398331895313,
+            "name": "asura-blue-action-lettering",
+            "outside_mask_patch_pixels": 0,
+            "peak_process_resident_bytes": 692744192,
+            "platform": "iOS simulator; not physical iPad performance",
+            "seconds": 49.454030990600586,
+            "white_fraction": 0.00035893011216566004,
+            "width": 720
+          }
+        ],
+        "peak_process_resident_bytes": 692744192,
+        "environment": "iOS simulator, not a physical-device benchmark"
+      }
+    }
+  },
+  "model": {
+    "name": "Big LaMa",
+    "export": "Carve/LaMa-ONNX",
+    "revision": "c3c0c9e468934d62e79c329e35d82dd09ff8c444",
+    "bytes": 208044816,
+    "sha256": "1faef5301d78db7dda502fe59966957ec4b79dd64e16f03ed96913c7a4eb68d6",
+    "extent": 512,
+    "local_runtime": "ONNX Runtime 1.24.2 CPU; Core ML execution provider is not used",
+    "cloud_runtime": "ONNX Runtime 1.23.2 CPU"
+  },
+  "physical_device_failure": {
+    "source": "User screenshot",
+    "failed_runtime": "Previous Core ML ML Program",
+    "resolution": "Replace execution backend; reduce model extent from 800 to 512; native overlap windows; memory preflight; explicit cloud option",
+    "physical_retest": "Not performed; not implied by simulator evidence"
+  },
+  "delivery": "Neither edition embeds model weights or origin credentials. Both support explicit public cloud restoration and optional local model. Local edition has no original-service account/community configuration.",
+  "cloud": {
+    "endpoint": "https://cookies-restoration.cookies-studio-36c499.workers.dev",
+    "gateway": "Cloudflare Worker + SQLite Durable Object",
+    "origin": "User-owned Railway Cookies Editor Restoration, CPU 1GB/1vCPU, sleeping enabled",
+    "deployment_status": "SUCCESS observed; health 200 with pinned model revision; actual public inference 200",
+    "cloudflare_containers": "Account requires Workers Paid; no plan upgrade performed",
+    "capacity": "Railway temporary trial, 300 requests/day total, 120/IP/day, max one in flight; not perpetual free production hosting",
+    "privacy": "ROI + text mask only; no image files/database/request-body logging; origin credential server-side only; salted IP digests/counts, daily reset",
+    "deployment_id": "0e87a4d6-3df6-41f0-9342-d89a38ce80b8",
+    "source": "d88946fa709b6350a8c77e603ff16620afd2fde0",
+    "icc_normalization": "Embedded profiles converted to sRGB before inference. Cross-runtime input reference matches iOS CoreGraphics within 1 channel level on the real tagged comic; source digest still hashes original PNG bytes."
+  },
+  "real_image_manifest": "scripts/lama-real-fixtures.json",
+  "cloud_real_inference": [
+    {
+      "name": "colored-hatched-dialogue",
+      "http": 200,
+      "seconds": 9.892300019000686,
+      "outside_mask_changed_pixels": 0,
+      "masked_mean": 196.1588843232474,
+      "dark_fraction": 0.0,
+      "white_fraction": 0.007458597933009588,
+      "source_digest_matches": true
+    },
+    {
+      "name": "real-manhwa-white-shadow",
+      "http": 200,
+      "seconds": 9.409523025000453,
+      "outside_mask_changed_pixels": 0,
+      "masked_mean": 254.552188794419,
+      "dark_fraction": 0.0,
+      "white_fraction": 1.0,
+      "source_digest_matches": true
+    },
+    {
+      "name": "asura-white-spiked-bubble",
+      "http": 200,
+      "seconds": 4.755315828999301,
+      "outside_mask_changed_pixels": 0,
+      "masked_mean": 253.65337115839245,
+      "dark_fraction": 0.0,
+      "white_fraction": 1.0,
+      "source_digest_matches": true
+    },
+    {
+      "name": "asura-blue-action-lettering",
+      "http": 200,
+      "seconds": 9.333564511000077,
+      "outside_mask_changed_pixels": 0,
+      "masked_mean": 97.99594017831464,
+      "dark_fraction": 0.5433339085418464,
+      "white_fraction": 0.00035893011216566004,
+      "source_digest_matches": true
+    }
+  ],
+  "visual_review": {
+    "white_bubbles": "No visible glyph/shadow remnants in tested hand-annotated masks",
+    "yellow_patterned_dialogue": "Letters removed; inpainting seams/estimated ornaments still visible",
+    "blue_asura_action_lettering": "SFX removed, estimated blue background; this is a deliberately hard illustrated SFX crop, not a dialogue bubble"
+  },
+  "mask_contract": "Manual masks in model quality tests; automatic Vision localization is a separate stage and can miss glyphs or mistake ornaments for text. Manual text rectangles are available to correct it. Protected contour and outside-mask pixels remain unchanged.",
+  "local_server_tests": {
+    "docker": "Actual inference passed in read-only non-root Docker with 1GB cgroup and one CPU",
+    "http_contract": "pytest real model test passed: auth, exact dimensions, masked-only output, malformed multipart rejection",
+    "gateway": "Three Node tests passed: persistent quota, single inference, public identity/credential isolation"
+  },
+  "not_claimed": [
+    "Flawless reconstruction on all unseen artwork",
+    "Exact hidden original decoration",
+    "Physical iPad latency or memory from simulator measurements",
+    "New model training in this batch",
+    "Calibrated superiority over original Android detector",
+    "The historical full baseline workflow was wholly successful; its failures and final recovery evidence are retained."
+  ],
+  "original_android_detector": {
+    "apk_sha256": "a3758bcdf50c802c25d9023c90456f6bdde922a94cda08fc3ce737c2a9b29789",
+    "asset": "assets/de8.tflite",
+    "sha256": "7e3b6d61f91e6d3a227eced6cf8a4972b6141b5a78c1b707d1be70ed1f0f8738",
+    "input": "float32 [1,640,640,3]",
+    "output": "float32 [1,16,8400] (12 classes + 4 box coordinates)",
+    "role": "rectangular detector proposals; original also has flood-fill/Canny sniper and Telea inpainting",
+    "training_dataset": "Not recoverable from model tensor shapes/decompiled APK alone",
+    "comparison": "No calibrated, same-input, ground-truth contour comparison completed. Neither original detection superiority nor exact hidden-background restoration is claimed."
+  },
+  "engine_baseline_source": "11384867dc2a2e0bdf1ab9ba05fdeda448e7cdf2",
+  "engine_baseline_run": 38558791158,
+  "candidate_source": "5c98fc4e788311d1f1c7cdd9a8d39c8d53ccbfe3",
+  "candidate_run": 38566918791,
+  "candidate_followup_scope": "Only restoration UI size/direct scrolling and test harness changed after the full engine baseline. Actual app tree is identical for package 5c98fc4, UI/local tests befc9ca and backend source d88946f.",
+  "native_app_tests": {
+    "ipad": {
+      "source": "11384867dc2a2e0bdf1ab9ba05fdeda448e7cdf2",
+      "run": 38558791158,
+      "app_unit_tests_passed": 167,
+      "service_tests_passed": 14,
+      "failed": [],
+      "log_sha256": "a99bfdef4b1d98acdaddb6699345ddd215f2ad1567c1d7840813de8fec09ad73"
+    },
+    "iphone": {
+      "source": "11384867dc2a2e0bdf1ab9ba05fdeda448e7cdf2",
+      "run": 38558791158,
+      "app_unit_tests_passed": 167,
+      "service_tests_passed": 14,
+      "failed": [],
+      "log_sha256": "91667b59e12888904e78d67bbc0f05232966ccf0b76b699b41f431f6a10842ed"
+    }
+  },
+  "candidate_build_run": 38566736907,
+  "candidate_test_source": "befc9ca1112e1ae466eda0790de798762a6bcc44",
+  "backend_source": "d88946fa709b6350a8c77e603ff16620afd2fde0",
+  "ipa_verification": [
+    {
+      "edition": "connected",
+      "path": "/workspace/Cookies-Editor-5c98fc4-unsigned.ipa",
+      "source_commit": "5c98fc4e788311d1f1c7cdd9a8d39c8d53ccbfe3",
+      "bundle_id": "com.cookies.editor.ios",
+      "display_name": "Cookies Editor",
+      "version": "1.1.0",
+      "build": "1.1.0",
+      "minimum_os": "17.0",
+      "url_schemes": [
+        "cookies-editor"
+      ],
+      "service_enabled": true,
+      "service_configuration_bundled": true,
+      "architecture": "arm64",
+      "unsigned": true,
+      "restoration_endpoint_configured": true,
+      "local_model_optional_bytes": 208044816,
+      "model_weights_embedded": false,
+      "embedded_source_revision": "5c98fc4e788311d1f1c7cdd9a8d39c8d53ccbfe3",
+      "size": 24433585,
+      "sha256": "abea1c33874650a3ca73c4a0feea19e3c265f4f6cbde210943a2662cae0c5d5d"
+    },
+    {
+      "edition": "local",
+      "path": "/workspace/Cookies-Editor-Local-5c98fc4-unsigned.ipa",
+      "source_commit": "5c98fc4e788311d1f1c7cdd9a8d39c8d53ccbfe3",
+      "bundle_id": "com.cookies.editor.local",
+      "display_name": "Cookies Editor",
+      "version": "1.1.0",
+      "build": "1.1.0",
+      "minimum_os": "17.0",
+      "url_schemes": [
+        "cookies-editor-local"
+      ],
+      "service_enabled": false,
+      "service_configuration_bundled": false,
+      "architecture": "arm64",
+      "unsigned": true,
+      "restoration_endpoint_configured": true,
+      "local_model_optional_bytes": 208044816,
+      "model_weights_embedded": false,
+      "embedded_source_revision": "5c98fc4e788311d1f1c7cdd9a8d39c8d53ccbfe3",
+      "size": 24434260,
+      "sha256": "e6130c114d0c084ad4c2858c4745abfe1ccebe0792c1724733c0d815ec12a6fa"
+    }
+  ],
+  "release_evidence": "restoration-release-oct14.json",
+  "final_ui_and_local_workflow_conclusion": "success"
+}

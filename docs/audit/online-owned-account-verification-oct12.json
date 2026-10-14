@@ -1,0 +1,22 @@
+{
+  "only_owned_test_account_modified": true,
+  "signup": 200,
+  "email_confirmation_received": true,
+  "confirmed_user_checked": true,
+  "name_patch_status": 200,
+  "name_readback_confirmed": true,
+  "discord_patch_status": 200,
+  "discord_owned_row_confirmed": true,
+  "discord_bot_user_link_not_executed": true,
+  "leaderboard_status": 200,
+  "public_top_count": 10,
+  "current_user_field_names": [
+    "display_name",
+    "id",
+    "rank",
+    "total_bubbles_typed"
+  ],
+  "own_rank_returned": true,
+  "email_password_signin_status": 200,
+  "email_password_signin_owned_identity_verified": true
+}

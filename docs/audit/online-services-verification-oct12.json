@@ -1,0 +1,111 @@
+{
+  "source": "5c98fc4e788311d1f1c7cdd9a8d39c8d53ccbfe3",
+  "workflow_conclusion": "success",
+  "run": 38566918791,
+  "verification_scope": "Composite immutable-source evidence; final editor/local workflow green. Native engine baseline and package jobs separately verified; historical failures retained in restoration-release-oct14.json.",
+  "release_evidence": "restoration-release-oct14.json",
+  "devices": {
+    "ipad": {
+      "native_app_tests_passed": 167,
+      "native_service_tests_passed": 14,
+      "native_log_sha256": "a99bfdef4b1d98acdaddb6699345ddd215f2ad1567c1d7840813de8fec09ad73",
+      "restoration_trash_grid_ui_passed": [
+        "-[CookiesUITests.EditorUITests testManualSniperKeepsIndependentWhiteningMethodPerBubble]",
+        "-[CookiesUITests.EditorUITests testTrashRestoresProjectAndGridSettingsRemainReachable]"
+      ],
+      "photos_repetition_passed": [
+        "-[CookiesUITests.EditorUITests testPhotosImportAndIPadOrientation]"
+      ],
+      "real_external_services_passed": [
+        "-[CookiesServicesTests.ServiceTests testOriginalPublicAPIFromNativeClient]",
+        "-[CookiesServicesUITests.ServiceUITests testLoginAndSignupInterfaces]"
+      ],
+      "local_ui_passed": [
+        "-[CookiesLocalUITests.LocalEditionUITests testLocalPhotosEditingAndOriginalSizeExport]",
+        "-[CookiesLocalUITests.LocalEditionUITests testNoAccountOrCommunityAndGuideRetainsLocalTools]"
+      ],
+      "local_photos_repetition_passed": [
+        "-[CookiesLocalUITests.LocalEditionUITests testLocalPhotosEditingAndOriginalSizeExport]"
+      ],
+      "source_integrity": {
+        "connected": {
+          "width": 800,
+          "height": 15000,
+          "rgba_bytes_compared": 48000000,
+          "all_source_pixels_unchanged": true,
+          "rgba_sha256": "2e6f94c610d03b7ed0e06d2e0a89199797d4de874795879e3df1a840eba35832",
+          "source_extension": ".png",
+          "method": "Real PHPicker UI selection; compare application disk RGBA to seeded Photos fixture"
+        },
+        "local": {
+          "width": 800,
+          "height": 15000,
+          "rgba_bytes_compared": 48000000,
+          "all_source_pixels_unchanged": true,
+          "rgba_sha256": "2e6f94c610d03b7ed0e06d2e0a89199797d4de874795879e3df1a840eba35832",
+          "source_extension": ".png",
+          "method": "Real PHPicker UI selection; compare application disk RGBA to seeded Photos fixture"
+        }
+      },
+      "connected_gates": {
+        "local_editor_and_photos_exit_code": 0,
+        "real_external_services_exit_code": 0,
+        "external_failure_does_not_discard_local_evidence": true
+      },
+      "local_gates": {
+        "local_edition_ui_and_source_integrity_exit_code": 0
+      }
+    },
+    "iphone": {
+      "native_app_tests_passed": 167,
+      "native_service_tests_passed": 14,
+      "native_log_sha256": "91667b59e12888904e78d67bbc0f05232966ccf0b76b699b41f431f6a10842ed",
+      "restoration_trash_grid_ui_passed": [
+        "-[CookiesUITests.EditorUITests testManualSniperKeepsIndependentWhiteningMethodPerBubble]",
+        "-[CookiesUITests.EditorUITests testTrashRestoresProjectAndGridSettingsRemainReachable]"
+      ],
+      "photos_repetition_passed": [
+        "-[CookiesUITests.EditorUITests testPhotosImportAndIPadOrientation]"
+      ],
+      "real_external_services_passed": [
+        "-[CookiesServicesTests.ServiceTests testOriginalPublicAPIFromNativeClient]",
+        "-[CookiesServicesUITests.ServiceUITests testLoginAndSignupInterfaces]"
+      ],
+      "local_ui_passed": [
+        "-[CookiesLocalUITests.LocalEditionUITests testLocalPhotosEditingAndOriginalSizeExport]",
+        "-[CookiesLocalUITests.LocalEditionUITests testNoAccountOrCommunityAndGuideRetainsLocalTools]"
+      ],
+      "local_photos_repetition_passed": [
+        "-[CookiesLocalUITests.LocalEditionUITests testLocalPhotosEditingAndOriginalSizeExport]"
+      ],
+      "source_integrity": {
+        "connected": {
+          "width": 800,
+          "height": 15000,
+          "rgba_bytes_compared": 48000000,
+          "all_source_pixels_unchanged": true,
+          "rgba_sha256": "2e6f94c610d03b7ed0e06d2e0a89199797d4de874795879e3df1a840eba35832",
+          "source_extension": ".png",
+          "method": "Real PHPicker UI selection; compare application disk RGBA to seeded Photos fixture"
+        },
+        "local": {
+          "width": 800,
+          "height": 15000,
+          "rgba_bytes_compared": 48000000,
+          "all_source_pixels_unchanged": true,
+          "rgba_sha256": "2e6f94c610d03b7ed0e06d2e0a89199797d4de874795879e3df1a840eba35832",
+          "source_extension": ".png",
+          "method": "Real PHPicker UI selection; compare application disk RGBA to seeded Photos fixture"
+        }
+      },
+      "connected_gates": {
+        "local_editor_and_photos_exit_code": 0,
+        "real_external_services_exit_code": 0,
+        "external_failure_does_not_discard_local_evidence": true
+      },
+      "local_gates": {
+        "local_edition_ui_and_source_integrity_exit_code": 0
+      }
+    }
+  }
+}

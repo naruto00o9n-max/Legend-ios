@@ -1,0 +1,141 @@
+{
+  "date": "2026-10-12",
+  "source": "c3162d4ab614f3b056813a23c23d9be7ae3adb5b",
+  "purpose": "Atomic online-service tracking; not an app-completion percentage and not the paused 70-item batch.",
+  "community_excluded": true,
+  "connected_edition_only": true,
+  "items": [
+    {
+      "id": "O001",
+      "title": "بوابة حساب مستقلة عن المجتمع",
+      "status": "مكتمل",
+      "evidence_or_next_requirement": "AccountWorkspaceView; iPad/iPhone UI"
+    },
+    {
+      "id": "O002",
+      "title": "قراءة الهوية والعضوية والنقاط والفقاعات والموسم",
+      "status": "مكتمل",
+      "evidence_or_next_requirement": "Owned authenticated profile; real readback"
+    },
+    {
+      "id": "O003",
+      "title": "تحرير الاسم والتحقق من الحفظ",
+      "status": "مكتمل",
+      "evidence_or_next_requirement": "Owned test account PATCH/GET and native RLS tests"
+    },
+    {
+      "id": "O004",
+      "title": "الرتبة والتقدم بحساب الأصل",
+      "status": "مكتمل",
+      "evidence_or_next_requirement": "AccountRank; original RankManager thresholds"
+    },
+    {
+      "id": "O005",
+      "title": "المتصدرون العشرة والتحديث والاستعادة من الخطأ",
+      "status": "مكتمل",
+      "evidence_or_next_requirement": "Original get_leaderboard; guest null contract; actual UI"
+    },
+    {
+      "id": "O006",
+      "title": "المركز الشخصي من الخادم",
+      "status": "مكتمل",
+      "evidence_or_next_requirement": "Own test account actual get_leaderboard.current_user"
+    },
+    {
+      "id": "O007",
+      "title": "أمر Discord الأصلي ونسخه وفتح السيرفر وتحديث الحالة",
+      "status": "مكتمل وظيفيًا",
+      "evidence_or_next_requirement": "Owned link_token verified; actual final bot link not tested"
+    },
+    {
+      "id": "O008",
+      "title": "اكتمال ربط Discord عبر البوت بحساب حقيقي",
+      "status": "غير متحقق",
+      "evidence_or_next_requirement": "Requires real Discord identity and manual bot execution"
+    },
+    {
+      "id": "O009",
+      "title": "تأكيد البريد وتجديد الجلسة وإعادة الإرسال",
+      "status": "جزئي",
+      "evidence_or_next_requirement": "Disposable signup confirmation arrived; full resend/device coverage pending"
+    },
+    {
+      "id": "O010",
+      "title": "Google login وعودة iOS",
+      "status": "اعتماد خارجي",
+      "evidence_or_next_requirement": "Original owner redirect allowlist or official iOS client"
+    },
+    {
+      "id": "O011",
+      "title": "إحصاءات الفقاعات المكتسبة ومزامنة العمليات",
+      "status": "قيد التخطيط",
+      "evidence_or_next_requirement": "Original increment_bubbles amount; actual committed dialogues and deduplication required"
+    },
+    {
+      "id": "O012",
+      "title": "المكافأة اليومية والمواظبة والعجلة",
+      "status": "قيد التخطيط",
+      "evidence_or_next_requirement": "Original eligibility; fixed 5 daily points; real server result"
+    },
+    {
+      "id": "O013",
+      "title": "مهمة الترحيب",
+      "status": "قيد التخطيط",
+      "evidence_or_next_requirement": "claim_welcome_reward; actual server thresholds"
+    },
+    {
+      "id": "O014",
+      "title": "الإحالة والمجندون ومكافآت المراحل",
+      "status": "قيد التخطيط",
+      "evidence_or_next_requirement": "claim_referral_code and claim_recruitment_reward"
+    },
+    {
+      "id": "O015",
+      "title": "تحديات الفقاعات",
+      "status": "قيد التخطيط",
+      "evidence_or_next_requirement": "create/accept/get_my_arena_challenge; original constraints and explicit spending confirmation"
+    },
+    {
+      "id": "O016",
+      "title": "إنشاء أكواد الترقيات واستبدالها",
+      "status": "قيد التخطيط",
+      "evidence_or_next_requirement": "create_promo_code/redeem_promo_code; original server entitlements"
+    },
+    {
+      "id": "O017",
+      "title": "المتجر والعضوية والفرق والإعلانات",
+      "status": "جزئي/اعتماد خارجي",
+      "evidence_or_next_requirement": "Local Cookies tools free; original points unchanged; official iOS purchases require owner integration"
+    },
+    {
+      "id": "O018",
+      "title": "مزامنة إعدادات الحساب والتحرير",
+      "status": "قيد التخطيط",
+      "evidence_or_next_requirement": "Preserve Android app_settings and unknown fields; never overwrite entitlements"
+    },
+    {
+      "id": "O019",
+      "title": "مشاريع وخطوط وأنماط Drive",
+      "status": "اعتماد خارجي",
+      "evidence_or_next_requirement": "Original appDataFolder and officially authorized iOS Google scopes"
+    },
+    {
+      "id": "O020",
+      "title": "الإشعارات الأصلية",
+      "status": "اعتماد خارجي",
+      "evidence_or_next_requirement": "Original Firebase iOS registration, APNs and signing entitlements"
+    },
+    {
+      "id": "O021",
+      "title": "إدارة الأجهزة والاستحقاقات والذخيرة",
+      "status": "قيد الجرد التفصيلي",
+      "evidence_or_next_requirement": "Use own iOS identity; original legitimate API only; no Android identity impersonation"
+    }
+  ],
+  "verified_release": {
+    "source": "5c98fc4e788311d1f1c7cdd9a8d39c8d53ccbfe3",
+    "test_run": 38566918791,
+    "evidence": "restoration-release-oct14.json",
+    "date": "2026-10-14"
+  }
+}

@@ -1,0 +1,217 @@
+{
+  "date": "2026-10-14",
+  "source": "5c98fc4e788311d1f1c7cdd9a8d39c8d53ccbfe3",
+  "app_tree": "f09ca5764e1c0f17125e61d200b418a63be0ff47",
+  "native_engine_source": "11384867dc2a2e0bdf1ab9ba05fdeda448e7cdf2",
+  "native_engine_run": 38558791158,
+  "ui_and_local_test_source": "befc9ca1112e1ae466eda0790de798762a6bcc44",
+  "ui_and_local_run": 38566918791,
+  "unsigned_package_run": 38566736907,
+  "unsigned_package_job": 115861214666,
+  "backend_source": "d88946fa709b6350a8c77e603ff16620afd2fde0",
+  "native_model_probe_source": "ad65b4c2dba583d1df35db4ec5d54587275b9ea6",
+  "native_model_probe_run": 38558353543,
+  "source_reuse_proof": "Actual App trees identical for packaged, final UI/local-tested and backend commits. Full native engine source differs only in two restoration UI views; engine, model assets, unit/service tests and build scripts unchanged.",
+  "devices": {
+    "ipad": {
+      "native_app_tests_passed": 167,
+      "native_service_tests_passed": 14,
+      "native_log_sha256": "a99bfdef4b1d98acdaddb6699345ddd215f2ad1567c1d7840813de8fec09ad73",
+      "restoration_trash_grid_ui_passed": [
+        "-[CookiesUITests.EditorUITests testManualSniperKeepsIndependentWhiteningMethodPerBubble]",
+        "-[CookiesUITests.EditorUITests testTrashRestoresProjectAndGridSettingsRemainReachable]"
+      ],
+      "photos_repetition_passed": [
+        "-[CookiesUITests.EditorUITests testPhotosImportAndIPadOrientation]"
+      ],
+      "real_external_services_passed": [
+        "-[CookiesServicesTests.ServiceTests testOriginalPublicAPIFromNativeClient]",
+        "-[CookiesServicesUITests.ServiceUITests testLoginAndSignupInterfaces]"
+      ],
+      "local_ui_passed": [
+        "-[CookiesLocalUITests.LocalEditionUITests testLocalPhotosEditingAndOriginalSizeExport]",
+        "-[CookiesLocalUITests.LocalEditionUITests testNoAccountOrCommunityAndGuideRetainsLocalTools]"
+      ],
+      "local_photos_repetition_passed": [
+        "-[CookiesLocalUITests.LocalEditionUITests testLocalPhotosEditingAndOriginalSizeExport]"
+      ],
+      "source_integrity": {
+        "connected": {
+          "width": 800,
+          "height": 15000,
+          "rgba_bytes_compared": 48000000,
+          "all_source_pixels_unchanged": true,
+          "rgba_sha256": "2e6f94c610d03b7ed0e06d2e0a89199797d4de874795879e3df1a840eba35832",
+          "source_extension": ".png",
+          "method": "Real PHPicker UI selection; compare application disk RGBA to seeded Photos fixture"
+        },
+        "local": {
+          "width": 800,
+          "height": 15000,
+          "rgba_bytes_compared": 48000000,
+          "all_source_pixels_unchanged": true,
+          "rgba_sha256": "2e6f94c610d03b7ed0e06d2e0a89199797d4de874795879e3df1a840eba35832",
+          "source_extension": ".png",
+          "method": "Real PHPicker UI selection; compare application disk RGBA to seeded Photos fixture"
+        }
+      },
+      "connected_gates": {
+        "local_editor_and_photos_exit_code": 0,
+        "real_external_services_exit_code": 0,
+        "external_failure_does_not_discard_local_evidence": true
+      },
+      "local_gates": {
+        "local_edition_ui_and_source_integrity_exit_code": 0
+      }
+    },
+    "iphone": {
+      "native_app_tests_passed": 167,
+      "native_service_tests_passed": 14,
+      "native_log_sha256": "91667b59e12888904e78d67bbc0f05232966ccf0b76b699b41f431f6a10842ed",
+      "restoration_trash_grid_ui_passed": [
+        "-[CookiesUITests.EditorUITests testManualSniperKeepsIndependentWhiteningMethodPerBubble]",
+        "-[CookiesUITests.EditorUITests testTrashRestoresProjectAndGridSettingsRemainReachable]"
+      ],
+      "photos_repetition_passed": [
+        "-[CookiesUITests.EditorUITests testPhotosImportAndIPadOrientation]"
+      ],
+      "real_external_services_passed": [
+        "-[CookiesServicesTests.ServiceTests testOriginalPublicAPIFromNativeClient]",
+        "-[CookiesServicesUITests.ServiceUITests testLoginAndSignupInterfaces]"
+      ],
+      "local_ui_passed": [
+        "-[CookiesLocalUITests.LocalEditionUITests testLocalPhotosEditingAndOriginalSizeExport]",
+        "-[CookiesLocalUITests.LocalEditionUITests testNoAccountOrCommunityAndGuideRetainsLocalTools]"
+      ],
+      "local_photos_repetition_passed": [
+        "-[CookiesLocalUITests.LocalEditionUITests testLocalPhotosEditingAndOriginalSizeExport]"
+      ],
+      "source_integrity": {
+        "connected": {
+          "width": 800,
+          "height": 15000,
+          "rgba_bytes_compared": 48000000,
+          "all_source_pixels_unchanged": true,
+          "rgba_sha256": "2e6f94c610d03b7ed0e06d2e0a89199797d4de874795879e3df1a840eba35832",
+          "source_extension": ".png",
+          "method": "Real PHPicker UI selection; compare application disk RGBA to seeded Photos fixture"
+        },
+        "local": {
+          "width": 800,
+          "height": 15000,
+          "rgba_bytes_compared": 48000000,
+          "all_source_pixels_unchanged": true,
+          "rgba_sha256": "2e6f94c610d03b7ed0e06d2e0a89199797d4de874795879e3df1a840eba35832",
+          "source_extension": ".png",
+          "method": "Real PHPicker UI selection; compare application disk RGBA to seeded Photos fixture"
+        }
+      },
+      "connected_gates": {
+        "local_editor_and_photos_exit_code": 0,
+        "real_external_services_exit_code": 0,
+        "external_failure_does_not_discard_local_evidence": true
+      },
+      "local_gates": {
+        "local_edition_ui_and_source_integrity_exit_code": 0
+      }
+    }
+  },
+  "historical_failures_not_hidden": {
+    "baseline_whitening_controls": "Failed in medium sheet; passed final actual UI on both devices after full-height direct scrolling.",
+    "baseline_local_ipad_photos": "System picker remained on Loading; no asset selected. Final independent seeded suite must pass twice with full source comparison.",
+    "baseline_iphone_image_effects": "UI snapshot query timeout in unrelated effects case. Effects source files unchanged from previous passing 5c7ede5 case; current iPad case and all native rendering tests passed. No claim that the baseline full workflow was successful.",
+    "intermediate_helper_preflight": "Missing fixtures/shallow comparison history failed before app tests; corrected in final test workflow.",
+    "physical_device": "No physical-device performance or flawless reconstruction claim."
+  },
+  "cloud_real_inference": [
+    {
+      "name": "colored-hatched-dialogue",
+      "http": 200,
+      "seconds": 9.892300019000686,
+      "outside_mask_changed_pixels": 0,
+      "masked_mean": 196.1588843232474,
+      "dark_fraction": 0.0,
+      "white_fraction": 0.007458597933009588,
+      "source_digest_matches": true
+    },
+    {
+      "name": "real-manhwa-white-shadow",
+      "http": 200,
+      "seconds": 9.409523025000453,
+      "outside_mask_changed_pixels": 0,
+      "masked_mean": 254.552188794419,
+      "dark_fraction": 0.0,
+      "white_fraction": 1.0,
+      "source_digest_matches": true
+    },
+    {
+      "name": "asura-white-spiked-bubble",
+      "http": 200,
+      "seconds": 4.755315828999301,
+      "outside_mask_changed_pixels": 0,
+      "masked_mean": 253.65337115839245,
+      "dark_fraction": 0.0,
+      "white_fraction": 1.0,
+      "source_digest_matches": true
+    },
+    {
+      "name": "asura-blue-action-lettering",
+      "http": 200,
+      "seconds": 9.333564511000077,
+      "outside_mask_changed_pixels": 0,
+      "masked_mean": 97.99594017831464,
+      "dark_fraction": 0.5433339085418464,
+      "white_fraction": 0.00035893011216566004,
+      "source_digest_matches": true
+    }
+  ],
+  "ipas": [
+    {
+      "edition": "connected",
+      "path": "/workspace/Cookies-Editor-5c98fc4-unsigned.ipa",
+      "source_commit": "5c98fc4e788311d1f1c7cdd9a8d39c8d53ccbfe3",
+      "bundle_id": "com.cookies.editor.ios",
+      "display_name": "Cookies Editor",
+      "version": "1.1.0",
+      "build": "1.1.0",
+      "minimum_os": "17.0",
+      "url_schemes": [
+        "cookies-editor"
+      ],
+      "service_enabled": true,
+      "service_configuration_bundled": true,
+      "architecture": "arm64",
+      "unsigned": true,
+      "restoration_endpoint_configured": true,
+      "local_model_optional_bytes": 208044816,
+      "model_weights_embedded": false,
+      "embedded_source_revision": "5c98fc4e788311d1f1c7cdd9a8d39c8d53ccbfe3",
+      "size": 24433585,
+      "sha256": "abea1c33874650a3ca73c4a0feea19e3c265f4f6cbde210943a2662cae0c5d5d"
+    },
+    {
+      "edition": "local",
+      "path": "/workspace/Cookies-Editor-Local-5c98fc4-unsigned.ipa",
+      "source_commit": "5c98fc4e788311d1f1c7cdd9a8d39c8d53ccbfe3",
+      "bundle_id": "com.cookies.editor.local",
+      "display_name": "Cookies Editor",
+      "version": "1.1.0",
+      "build": "1.1.0",
+      "minimum_os": "17.0",
+      "url_schemes": [
+        "cookies-editor-local"
+      ],
+      "service_enabled": false,
+      "service_configuration_bundled": false,
+      "architecture": "arm64",
+      "unsigned": true,
+      "restoration_endpoint_configured": true,
+      "local_model_optional_bytes": 208044816,
+      "model_weights_embedded": false,
+      "embedded_source_revision": "5c98fc4e788311d1f1c7cdd9a8d39c8d53ccbfe3",
+      "size": 24434260,
+      "sha256": "e6130c114d0c084ad4c2858c4745abfe1ccebe0792c1724733c0d815ec12a6fa"
+    }
+  ],
+  "all_required_release_gates_passed": true
+}

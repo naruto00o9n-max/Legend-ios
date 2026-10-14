@@ -1,0 +1,144 @@
+{
+  "date": "2026-10-12",
+  "reference_apk_sha256": "a3758bcdf50c802c25d9023c90456f6bdde922a94cda08fc3ce737c2a9b29789",
+  "purpose": "Exact call-site parameters replace preliminary nearby-key heuristics; source evidence is not proof of live endpoint behavior.",
+  "rpcs": [
+    {
+      "rpc": "rpc/accept_arena_challenge",
+      "parameter_source": [
+        "JsonElementBuildersKt.put(jsonObjectBuilder, \"p_code\", str);"
+      ],
+      "verified_source": "YTyper V4.5 utils/CloudSyncManager.java",
+      "implemented_in_current_batch": false,
+      "server_behavior_verified": false
+    },
+    {
+      "rpc": "rpc/claim_recruitment_reward",
+      "parameter_source": [
+        "JsonElementBuildersKt.put(jsonObjectBuilder, \"p_index\", new Integer(i2));"
+      ],
+      "verified_source": "YTyper V4.5 utils/CloudSyncManager.java",
+      "implemented_in_current_batch": false,
+      "server_behavior_verified": false
+    },
+    {
+      "rpc": "rpc/claim_referral_code",
+      "parameter_source": [
+        "JsonElementBuildersKt.put(jsonObjectBuilder, \"ref_code\", str);",
+        "JsonElementBuildersKt.put(jsonObjectBuilder, \"current_device_id\", deviceId);"
+      ],
+      "verified_source": "YTyper V4.5 utils/CloudSyncManager.java",
+      "implemented_in_current_batch": false,
+      "server_behavior_verified": false
+    },
+    {
+      "rpc": "rpc/claim_streak_reward",
+      "parameter_source": [
+        "JsonElementBuildersKt.put(jsonObjectBuilder, \"p_amount\", new Integer(i2));"
+      ],
+      "verified_source": "YTyper V4.5 utils/CloudSyncManager.java",
+      "implemented_in_current_batch": false,
+      "server_behavior_verified": false
+    },
+    {
+      "rpc": "rpc/claim_welcome_reward",
+      "parameter_source": [],
+      "verified_source": "YTyper V4.5 utils/CloudSyncManager.java",
+      "implemented_in_current_batch": false,
+      "server_behavior_verified": false
+    },
+    {
+      "rpc": "rpc/create_arena_challenge",
+      "parameter_source": [
+        "JsonElementBuildersKt.put(jsonObjectBuilder, \"p_target\", new Integer(i2));",
+        "JsonElementBuildersKt.put(jsonObjectBuilder, \"p_wager\", new Integer(i3));",
+        "JsonElementBuildersKt.put(jsonObjectBuilder, \"p_is_public\", Boolean.valueOf(z));"
+      ],
+      "verified_source": "YTyper V4.5 utils/CloudSyncManager.java",
+      "implemented_in_current_batch": false,
+      "server_behavior_verified": false
+    },
+    {
+      "rpc": "rpc/get_leaderboard",
+      "parameter_source": [
+        "JsonElementBuildersKt.put(jsonObjectBuilder, \"current_user_id\", id2);"
+      ],
+      "verified_source": "YTyper V4.5 utils/CloudSyncManager.java",
+      "implemented_in_current_batch": true,
+      "server_behavior_verified": true
+    },
+    {
+      "rpc": "rpc/create_promo_code",
+      "parameter_source": [
+        "JsonElementBuildersKt.put(jsonObjectBuilder, \"p_premium_days\", new Integer(i2));"
+      ],
+      "verified_source": "YTyper V4.5 utils/CloudSyncManager.java",
+      "implemented_in_current_batch": false,
+      "server_behavior_verified": false
+    },
+    {
+      "rpc": "rpc/get_my_arena_challenge",
+      "parameter_source": [],
+      "verified_source": "YTyper V4.5 utils/CloudSyncManager.java",
+      "implemented_in_current_batch": false,
+      "server_behavior_verified": false
+    },
+    {
+      "rpc": "rpc/increment_bubbles",
+      "parameter_source": [
+        "JsonElementBuildersKt.put(jsonObjectBuilder, \"amount\", new Integer(i2));"
+      ],
+      "verified_source": "YTyper V4.5 utils/CloudSyncManager.java",
+      "implemented_in_current_batch": false,
+      "server_behavior_verified": false
+    },
+    {
+      "rpc": "rpc/redeem_promo_code",
+      "parameter_source": [
+        "JsonElementBuildersKt.put(jsonObjectBuilder, \"p_code\", upperCase);"
+      ],
+      "verified_source": "YTyper V4.5 utils/CloudSyncManager.java",
+      "implemented_in_current_batch": false,
+      "server_behavior_verified": false
+    },
+    {
+      "rpc": "rpc/spin_lucky_wheel",
+      "parameter_source": [],
+      "verified_source": "YTyper V4.5 utils/CloudSyncManager.java",
+      "implemented_in_current_batch": false,
+      "server_behavior_verified": false
+    },
+    {
+      "rpc": "rpc/sync_spent_points",
+      "parameter_source": [
+        "JsonElementBuildersKt.put(jsonObjectBuilder, \"p_amount\", new Integer(pendingSpentPoints));"
+      ],
+      "verified_source": "YTyper V4.5 utils/CloudSyncManager.java",
+      "implemented_in_current_batch": false,
+      "server_behavior_verified": false
+    }
+  ],
+  "next_batch_rules": {
+    "daily_reward": {
+      "minimum_daily_bubbles": 100,
+      "minimum_interval_ms": 86400000,
+      "fixed_points": 5,
+      "source": "CloudSyncManager.incrementLocalStats; ui/dashboard/e3.java; ui/dashboard/h0.java",
+      "must_track": "Actual committed dialogue operations only; no arbitrary increment RPC or retry of ambiguous non-idempotent requests."
+    },
+    "referral_rewards": {
+      "source": "Original referral dashboard/resources",
+      "must_verify": "Server eligibility and claimed state; no points or membership overrides."
+    },
+    "cloud_settings": {
+      "source": "CloudSyncManager.pushSettingsToCloud",
+      "must_preserve": [
+        "Original app_settings keys",
+        "server entitlement and reward fields",
+        "Android defaults",
+        "unknown future keys"
+      ],
+      "must_not_do": "Replace the complete settings object with an incompatible Cookies-only dictionary."
+    }
+  }
+}

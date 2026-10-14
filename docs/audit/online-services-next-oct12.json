@@ -1,7 +1,7 @@
 {
   "date": "2026-10-12",
   "authorization": "Finish current image-effects work first; next add Android online-service features only to connected edition; exclude community. Confirmed in user clarification.",
-  "status": "implementation_started_after_image_effects_release",
+  "status": "first_connected_account_group_complete_remaining_groups_tracked",
   "excluded": [
     "F126",
     "F127",
@@ -25,8 +25,8 @@
       "feature": "إنشاء الحساب والتأكيد وإعادة إرسال التأكيد",
       "original_evidence": "/auth/v1/signup وresend؛ رسالة الاختبار وصلت",
       "current_status": "جزئي",
-      "ios_evidence": "AccountView; ReferenceService signup/resend",
-      "remaining": "واجهات إنشاء الحساب والتأكيد وإعادة الإرسال موجودة؛ وصول كل رسالة والتحقق الكامل على جهاز فعلي غير مثبتين لهذه الدفعة.",
+      "ios_evidence": "AccountView; signup/confirmation with owned disposable inbox; online-owned-account-verification-oct12.json",
+      "remaining": "وصل تأكيد حساب الاختبار وتأكدت الجلسة فعليًا؛ إعادة الإرسال وكل حالات الجهاز الفعلي لم تتحقق لهذه الدفعة.",
       "review_basis": "قراءة المصدر الحالي؛ الاختبار المحدد إن ذكر، لا تحقق جهاز فعلي شامل"
     },
     {
@@ -44,9 +44,9 @@
       "group": "الحساب والبداية",
       "feature": "ربط Discord وعرض الحساب المرتبط",
       "original_evidence": "dialog_discord_link؛ dashboard؛ strings discord",
-      "current_status": "ناقص",
-      "ios_evidence": "—",
-      "remaining": "واجهة الربط والعودة والتحقق من الحساب غير موجودة",
+      "current_status": "جزئي",
+      "ios_evidence": "AccountWorkspace; DiscordLinkView; verified owned link_token PATCH; eight account tests",
+      "remaining": "إنشاء الأمر ونسخه وفتح السيرفر وتحديث الحالة موجودة؛ الربط النهائي عبر بوت Discord بحساب فعلي لم يُنفذ في الاختبار.",
       "review_basis": "قراءة المصدر الحالي؛ الاختبار المحدد إن ذكر، لا تحقق جهاز فعلي شامل"
     },
     {
@@ -65,8 +65,8 @@
       "feature": "ملف شخصي: الاسم والصورة والعضوية والنقاط والفقاعات",
       "original_evidence": "dashboard profile stats؛ vw_user_profiles",
       "current_status": "جزئي",
-      "ios_evidence": "ProfileView; ReferenceService user profile/stats",
-      "remaining": "عرض هوية وإحصاءات وحساب موجود؛ تحرير الاسم/الصورة وكل أقسام ملف الأصل غير موجودة.",
+      "ios_evidence": "AccountWorkspaceView; owned profile/name PATCH and readback; real service test account",
+      "remaining": "عرض الاسم والبريد وصورة Discord والعضوية والنقاط والفقاعات والموسم وتحرير الاسم موجود؛ بقية أقسام الأصل مثل إدارة الأجهزة وكل حالات الملف تحتاج متابعة.",
       "review_basis": "قراءة المصدر الحالي؛ الاختبار المحدد إن ذكر، لا تحقق جهاز فعلي شامل"
     },
     {
@@ -74,9 +74,9 @@
       "group": "المجتمع والملف",
       "feature": "قائمة المتصدرين والموسم والإحصاءات",
       "original_evidence": "LeaderboardScreenKt؛ leaderboard_title؛ season_bubbles",
-      "current_status": "ناقص",
-      "ios_evidence": "No leaderboard/rewards UI in App",
-      "remaining": "المتصدرون والموسم والمكافآت اليومية/المواظبة/الدعوات غير منفذة؛ ما يموله الخادم يحتاج واجهاته واستحقاقاته الرسمية.",
+      "current_status": "موجود مع فروق",
+      "ios_evidence": "LeaderboardView; actual get_leaderboard top_10/current_user; AccountRank matching original; season_bubbles",
+      "remaining": "المتصدرون العشرة والمركز الشخصي وإحصاء الموسم والرتبة الأصلية موجودة؛ التطابق البصري الحرفي والجهاز المادي غير مثبتين. المكافآت والدعوات منفصلة في F135.",
       "review_basis": "قراءة المصدر الحالي؛ الاختبار المحدد إن ذكر، لا تحقق جهاز فعلي شامل"
     },
     {
@@ -146,5 +146,24 @@
   ],
   "image_effects_release_source": "9ef49fc6dbd0cceb35aeaa3a487fc1fd50447d71",
   "image_effects_release_run": 38288933715,
-  "current_code_status": "unvalidated_candidate"
+  "current_code_status": "verified_release",
+  "candidate": "c3162d4ab614f3b056813a23c23d9be7ae3adb5b",
+  "candidate_run": 38298742101,
+  "live_owned_account_evidence": "online-owned-account-verification-oct12.json",
+  "native_and_ui_status": "Final required native engine, focused restoration/trash/grid, connected/local Photos/source-integrity and actual service gates passed on both simulators. Historical unrelated effects AX query timeout retained in release evidence.",
+  "next_group": [
+    "real committed dialogue statistics and nonduplicated server synchronization",
+    "daily rewards/streak and welcome mission with original thresholds",
+    "referral dashboard, claim code and milestone claims",
+    "original arena and promo-code operations with explicit point-spending confirmation"
+  ],
+  "owner_configuration_dependencies": {
+    "Google login": "Original Supabase redirect allowlist must accept cookies-editor://auth/callback or an officially registered iOS OAuth client; original Android client cannot be impersonated.",
+    "Drive projects/fonts/styles": "Original Drive appDataFolder plus iOS-authorized Google account scopes; no Supabase storage substitution.",
+    "Push notifications": "iOS app/APNs registration in original Firebase project, signing entitlements and backend delivery setup.",
+    "Purchases and membership": "Official iOS product/receipt validation integration; no fabricated subscription or unlimited original-server points."
+  },
+  "atomic_ledger": "online-services-ledger-oct12.json",
+  "exact_rpc_contracts": "online-reference-rpc-contracts-oct12.json",
+  "evidence": "restoration-release-oct14.json"
 }
