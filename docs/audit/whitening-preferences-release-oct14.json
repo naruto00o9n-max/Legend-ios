@@ -1,0 +1,216 @@
+{
+  "date": "2026-10-14",
+  "application_source": "279e498b977b082318ef7c21c7dceb412991f2a6",
+  "application_tree": "7bbd63fa82f852648c300633fb01a5e4fff789f9",
+  "native_regression_source": "352ef452b459000305852db05b924cef1d01eb2c",
+  "native_regression_run": 38589782272,
+  "final_editor_and_package_run": 38596190204,
+  "independent_local_iphone_source": "c0e31debe423851c2d3b94c393a9bf26e2509a41",
+  "independent_local_iphone_run": 38601536646,
+  "reuse_proof": "Full native engine, persistence, font registration and service tests are unchanged from the baseline; final UI changes are restricted to whitening labels/availability presentation and the imported-font catalogue. Final app tree is identical to the independent standalone validation source.",
+  "devices": {
+    "ipad": {
+      "native_tests_passed": 183,
+      "native_log_sha256": "04da1a0f57abe94a75671c02749f1a02195a229a448c971cf3ae07832a82d855",
+      "real_multiple_files_and_whitening_ui": {
+        "passed": [
+          "-[CookiesUITests.EditorUITests testManualSniperKeepsIndependentWhiteningMethodPerBubble]",
+          "-[CookiesUITests.EditorUITests testRealFilesPickerImportsFontAndReturnsToLibrary]"
+        ],
+        "sha256": "cd32a722b9cf08d0df58125e60e2f75f0dcd0ae990ced83c9beb6d50ca89bb2c"
+      },
+      "real_photos": {
+        "passed": [
+          "-[CookiesUITests.EditorUITests testPhotosImportAndIPadOrientation]"
+        ],
+        "sha256": "c3bfd7635df8d8e3ca3a2ea951bfba013028fbe8ea0edd55a586778240611345"
+      },
+      "real_services": {
+        "passed": [
+          "-[CookiesServicesTests.ServiceTests testOriginalPublicAPIFromNativeClient]",
+          "-[CookiesServicesUITests.ServiceUITests testLoginAndSignupInterfaces]"
+        ],
+        "sha256": "6ffc4374ed1401f2e45e2eef7e55e0c030e9bafb7d39feec769d5cfb8534af3f"
+      },
+      "source_integrity": {
+        "width": 800,
+        "height": 15000,
+        "rgba_bytes_compared": 48000000,
+        "all_source_pixels_unchanged": true,
+        "rgba_sha256": "2e6f94c610d03b7ed0e06d2e0a89199797d4de874795879e3df1a840eba35832",
+        "source_extension": ".png",
+        "method": "Real PHPicker UI selection; compare application disk RGBA to seeded Photos fixture"
+      },
+      "gates": {
+        "local_editor_and_photos_exit_code": 0,
+        "real_external_services_exit_code": 0,
+        "external_failure_does_not_discard_local_evidence": true
+      },
+      "standalone": {
+        "source": "352ef452b459000305852db05b924cef1d01eb2c",
+        "run": 38589782272,
+        "tests": {
+          "passed": [
+            "-[CookiesLocalUITests.LocalEditionUITests testLocalPhotosEditingAndOriginalSizeExport]",
+            "-[CookiesLocalUITests.LocalEditionUITests testNoAccountOrCommunityAndGuideRetainsLocalTools]"
+          ],
+          "sha256": "a79329754623305c4a89e4060f8a6df41bedfb308f814969f687186b411f674c"
+        },
+        "repeated_photos": {
+          "passed": [
+            "-[CookiesLocalUITests.LocalEditionUITests testLocalPhotosEditingAndOriginalSizeExport]"
+          ],
+          "sha256": "8748bd2f5e9621ce3611fe65ec03dd4beefee1bf5d74f8e37e14c14587f9a722"
+        },
+        "source_integrity": {
+          "width": 800,
+          "height": 15000,
+          "rgba_bytes_compared": 48000000,
+          "all_source_pixels_unchanged": true,
+          "rgba_sha256": "2e6f94c610d03b7ed0e06d2e0a89199797d4de874795879e3df1a840eba35832",
+          "source_extension": ".png",
+          "method": "Real PHPicker UI selection; compare application disk RGBA to seeded Photos fixture"
+        },
+        "gate": {
+          "local_edition_ui_and_source_integrity_exit_code": 0
+        }
+      }
+    },
+    "iphone": {
+      "native_tests_passed": 183,
+      "native_log_sha256": "737827281c76b18899361b988b1d9818624ccb33ade0c810231d7e95bc3375f3",
+      "real_multiple_files_and_whitening_ui": {
+        "passed": [
+          "-[CookiesUITests.EditorUITests testManualSniperKeepsIndependentWhiteningMethodPerBubble]",
+          "-[CookiesUITests.EditorUITests testRealFilesPickerImportsFontAndReturnsToLibrary]"
+        ],
+        "sha256": "b78673b5ca3ff978208b1293565b6158fb2f44e5c1dd76605320cac8b5df3a59"
+      },
+      "real_photos": {
+        "passed": [
+          "-[CookiesUITests.EditorUITests testPhotosImportAndIPadOrientation]"
+        ],
+        "sha256": "d57357221e0368c856af49a510b2a708ba32ab3dbbbe408c91d5f09aa30b7377"
+      },
+      "real_services": {
+        "passed": [
+          "-[CookiesServicesTests.ServiceTests testOriginalPublicAPIFromNativeClient]",
+          "-[CookiesServicesUITests.ServiceUITests testLoginAndSignupInterfaces]"
+        ],
+        "sha256": "e50cbd63a89f8d4b7dafa9384040c233d11ebc6479e3d1b3aaec8903ba45d624"
+      },
+      "source_integrity": {
+        "width": 800,
+        "height": 15000,
+        "rgba_bytes_compared": 48000000,
+        "all_source_pixels_unchanged": true,
+        "rgba_sha256": "2e6f94c610d03b7ed0e06d2e0a89199797d4de874795879e3df1a840eba35832",
+        "source_extension": ".png",
+        "method": "Real PHPicker UI selection; compare application disk RGBA to seeded Photos fixture"
+      },
+      "gates": {
+        "local_editor_and_photos_exit_code": 0,
+        "real_external_services_exit_code": 0,
+        "external_failure_does_not_discard_local_evidence": true
+      },
+      "standalone": {
+        "source": "c0e31debe423851c2d3b94c393a9bf26e2509a41",
+        "run": 38601536646,
+        "tests": {
+          "passed": [
+            "-[CookiesLocalUITests.LocalEditionUITests testLocalPhotosEditingAndOriginalSizeExport]",
+            "-[CookiesLocalUITests.LocalEditionUITests testNoAccountOrCommunityAndGuideRetainsLocalTools]"
+          ],
+          "sha256": "785e8966e5d7771d38514792c2e99aff8f689036f42e87caaffc363415191216"
+        },
+        "repeated_photos": {
+          "passed": [
+            "-[CookiesLocalUITests.LocalEditionUITests testLocalPhotosEditingAndOriginalSizeExport]"
+          ],
+          "sha256": "842dd91daa680fd595c525b9993974227fc07e4bd01af69911457ec17ab6e2de"
+        },
+        "source_integrity": {
+          "width": 800,
+          "height": 15000,
+          "rgba_bytes_compared": 48000000,
+          "all_source_pixels_unchanged": true,
+          "rgba_sha256": "2e6f94c610d03b7ed0e06d2e0a89199797d4de874795879e3df1a840eba35832",
+          "source_extension": ".png",
+          "method": "Real PHPicker UI selection; compare application disk RGBA to seeded Photos fixture"
+        },
+        "gate": {
+          "local_edition_ui_and_source_integrity_exit_code": 0
+        }
+      }
+    }
+  },
+  "packages": [
+    {
+      "edition": "connected",
+      "path": "/workspace/Cookies-Editor-279e498-unsigned.ipa",
+      "source_commit": "279e498b977b082318ef7c21c7dceb412991f2a6",
+      "bundle_id": "com.cookies.editor.ios",
+      "display_name": "Cookies Editor",
+      "version": "1.1.0",
+      "build": "1.1.0",
+      "minimum_os": "17.0",
+      "url_schemes": [
+        "cookies-editor"
+      ],
+      "service_enabled": true,
+      "service_configuration_bundled": true,
+      "architecture": "arm64",
+      "unsigned": true,
+      "restoration_endpoint_configured": true,
+      "local_model_optional_bytes": 208044816,
+      "model_weights_embedded": false,
+      "embedded_source_revision": "279e498b977b082318ef7c21c7dceb412991f2a6",
+      "size": 24444465,
+      "sha256": "9b6d09620c2fd10ce5cdc4a6178390f1154b24371d4579390ec4bab1074700b4"
+    },
+    {
+      "edition": "local",
+      "path": "/workspace/Cookies-Editor-Local-279e498-unsigned.ipa",
+      "source_commit": "279e498b977b082318ef7c21c7dceb412991f2a6",
+      "bundle_id": "com.cookies.editor.local",
+      "display_name": "Cookies Editor",
+      "version": "1.1.0",
+      "build": "1.1.0",
+      "minimum_os": "17.0",
+      "url_schemes": [
+        "cookies-editor-local"
+      ],
+      "service_enabled": false,
+      "service_configuration_bundled": false,
+      "architecture": "arm64",
+      "unsigned": true,
+      "restoration_endpoint_configured": true,
+      "local_model_optional_bytes": 208044816,
+      "model_weights_embedded": false,
+      "embedded_source_revision": "279e498b977b082318ef7c21c7dceb412991f2a6",
+      "size": 24444814,
+      "sha256": "b5c39d8a14d00356d38c4a384dde778248e0a2b163ab0f01c39f36d5ef8950d8"
+    }
+  ],
+  "real_image_validation": "whitening-user-images-oct14.json",
+  "public_edge_tests_passed": 4,
+  "public_edge_real_post_deployment_inference": {
+    "health": {
+      "protocol": 1,
+      "service": "Cookies AI Restoration",
+      "backendConfigured": true,
+      "localDownloadRequired": false
+    },
+    "http": 200,
+    "source_digest_matches": true,
+    "upstream_model_header_exposed": false,
+    "outside_mask_alpha_nonzero_pixels": 0
+  },
+  "historical_failures_not_hidden": {
+    "first_ipad_multiple_files": "First run did not observe picker dismissal within the allowance. The unchanged import pipeline passed actual two-file selection in the subsequent final iPad and iPhone runs; no speculative product dismissal patch was made.",
+    "standalone_iphone_photos": "Two runs were blocked in the system PHPicker Loading screen before asset selection. Final independent harness initializes the real stock Photos library, then builds/installs/seeds and performs genuine PHPicker import plus an additional repeated import; no Photos permission grant or fake import fallback.",
+    "superseded_readiness_preflight": "Initial readiness script referenced the target name instead of the shared CookiesEditor product name; corrected with bundle-ID assertion and superseded before relying on it.",
+    "physical_device": "Simulator integration is not physical iPad performance evidence.",
+    "model_quality": "Mask-preservation success is not perfect reconstruction; complex ornamentation remains estimated. No unvalidated alternative is exposed as a working model."
+  }
+}
