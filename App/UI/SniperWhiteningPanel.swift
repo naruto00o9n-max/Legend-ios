@@ -7,7 +7,7 @@ struct SniperWhiteningPanel:View {
     private var selected:SniperTarget?{model.sniperTargets.first{$0.id==model.focusedSniperTarget} ?? model.sniperTargets.first}
     private var needsModel:Bool{model.sniperTargets.contains{$0.whiteningMethod == .bigLaMa && $0.restorationExecution == .device}}
     private var needsCloud:Bool{model.sniperTargets.contains{$0.whiteningMethod == .bigLaMa && $0.restorationExecution == .cloud}}
-    var body:some View{NavigationStack{ZStack{Ambient();VStack(spacing:0){targetSelector.padding(.horizontal,20).padding(.vertical,10);ScrollView{VStack(alignment:.leading,spacing:20){
+    var body:some View{NavigationStack{ZStack{Ambient();VStack(spacing:0){targetSelector.frame(height:104).padding(.horizontal,20).padding(.vertical,10).disabled(model.busy);ScrollView{VStack(alignment:.leading,spacing:20){
         SurfaceHeader(title:"تبييض الفقاعات",subtitle:"اختر طريقة مستقلة لكل فقاعة، ثم راجع النتيجة",icon:"eraser.fill")
         if model.sniperTargets.isEmpty{WorkspaceEmpty(title:"حدد فقاعة أولًا",detail:"المس داخلها بالقنص، أو ارسم حدودها يدويًا.",icon:"scope")}
         if let target=selected{

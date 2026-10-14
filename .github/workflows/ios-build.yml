@@ -35,12 +35,16 @@ jobs:
               core.setFailed('This run was superseded before native jobs started.');
               return;
             }
-            // Retire all older queued/running branch builds before native work.
+            // A UI-only restoration follow-up keeps its exact engine/local
+            // baseline running; final evidence combines both immutable runs.
+            const panelFollowup = (context.payload.head_commit?.message || '').includes('[panel layout validation]');
+            // Retire other older queued/running branch builds before native work.
             const runs = await github.paginate(github.rest.actions.listWorkflowRuns, {
               ...context.repo, workflow_id: 'ios-build.yml', branch: context.ref.replace('refs/heads/', ''), per_page: 100
             });
             for (const run of runs) {
               if (run.id >= context.runId || !['queued', 'in_progress', 'waiting', 'pending'].includes(run.status)) continue;
+              if (panelFollowup && run.id === 38558791158) continue;
               try { await github.rest.actions.cancelWorkflowRun({...context.repo, run_id: run.id}); }
               catch (error) { if (![409, 422].includes(error.status)) throw error; }
             }
@@ -105,7 +109,7 @@ jobs:
       - run: xcodegen generate
       - name: Native engine and real whitening regressions
         timeout-minutes: 35
-        if: ${{ !contains(github.event.head_commit.message, '[ui-only retry]') && (github.event_name != 'workflow_dispatch' || inputs.verification_scope != 'focused') }}
+        if: ${{ !contains(github.event.head_commit.message, '[ui-only retry]') && !contains(github.event.head_commit.message, '[panel layout validation]') && (github.event_name != 'workflow_dispatch' || inputs.verification_scope != 'focused') }}
         env:
           COOKIES_CORE_FILTER: ${{ contains(github.event.head_commit.message, '[fixture initialization retry]') && 'CookiesTests/RenderStabilityTests/testPersistentToolPreviewHonorsHiddenReorderedAndDrawingForeground' || '' }}
         run: |
@@ -128,9 +132,14 @@ jobs:
         if: ${{ !cancelled() && !contains(github.event.head_commit.message, '[fixture initialization retry]') }}
         env:
           RENDER_CONTROL_RETRY: ${{ contains(github.event.head_commit.message, '[render-control retry]') }}
-          TASK_SCOPE: ${{ contains(github.event.head_commit.message, '[bubble restoration validation]') && 'bubble-restoration' || contains(github.event.head_commit.message, '[online services validation]') && 'online-services' || contains(github.event.head_commit.message, '[image effects validation]') && 'image-effects' || contains(github.event.head_commit.message, '[performance validation]') && 'performance' || contains(github.event.head_commit.message, '[style form retry]') && 'styles' || contains(github.event.head_commit.message, '[control hit-area retry]') && 'controls' || contains(github.event.head_commit.message, '[ui-only retry]') && 'focused' || contains(github.event.head_commit.message, '[interface test retry]') && 'regression' || inputs.verification_scope }}
+          TASK_SCOPE: ${{ contains(github.event.head_commit.message, '[panel layout validation]') && 'panel-layout' || contains(github.event.head_commit.message, '[bubble restoration validation]') && 'bubble-restoration' || contains(github.event.head_commit.message, '[online services validation]') && 'online-services' || contains(github.event.head_commit.message, '[image effects validation]') && 'image-effects' || contains(github.event.head_commit.message, '[performance validation]') && 'performance' || contains(github.event.head_commit.message, '[style form retry]') && 'styles' || contains(github.event.head_commit.message, '[control hit-area retry]') && 'controls' || contains(github.event.head_commit.message, '[ui-only retry]') && 'focused' || contains(github.event.head_commit.message, '[interface test retry]') && 'regression' || inputs.verification_scope }}
         run: |
-          if [[ "$TASK_SCOPE" == bubble-restoration ]]; then
+          if [[ "$TASK_SCOPE" == panel-layout ]]; then
+            # Reuse only byte-identical engine, fixtures, service and local
+            # sources from 1138486; both editions still compile and package.
+            git diff --exit-code 11384867dc2a2e0bdf1ab9ba05fdeda448e7cdf2 HEAD -- App ':!App/UI/SniperWhiteningPanel.swift' ':!App/UI/LibraryTrashView.swift' Tests ServicesTests ServicesUITests LocalUITests project.yml scripts
+            bash scripts/test_simulators.sh '${{ matrix.screen }}' ui 'CookiesUITests/EditorUITests/testManualSniperKeepsIndependentWhiteningMethodPerBubble,CookiesUITests/EditorUITests/testTrashRestoresProjectAndGridSettingsRemainReachable'
+          elif [[ "$TASK_SCOPE" == bubble-restoration ]]; then
             bash scripts/test_simulators.sh '${{ matrix.screen }}' ui 'CookiesUITests/EditorUITests/testManualSniperKeepsIndependentWhiteningMethodPerBubble,CookiesUITests/EditorUITests/testTrashRestoresProjectAndGridSettingsRemainReachable,CookiesUITests/EditorUITests/testOnlineAccountPortalAndActualLeaderboardOutsideCommunity,CookiesUITests/EditorUITests/testImageEffectsStackControlsResetAndReopen,CookiesUITests/EditorUITests/testRealFilesPickerImportsFontAndReturnsToLibrary,CookiesUITests/EditorUITests/testPhotosImportAndIPadOrientation'
           elif [[ "$TASK_SCOPE" == online-services ]]; then
             bash scripts/test_simulators.sh '${{ matrix.screen }}' ui 'CookiesUITests/EditorUITests/testOnlineAccountPortalAndActualLeaderboardOutsideCommunity,CookiesUITests/EditorUITests/testImageEffectsStackControlsResetAndReopen,CookiesUITests/EditorUITests/testRealFilesPickerImportsFontAndReturnsToLibrary,CookiesUITests/EditorUITests/testPhotosImportAndIPadOrientation'
@@ -179,7 +188,7 @@ jobs:
           retention-days: 30
       - name: Local edition without account or community
         timeout-minutes: 35
-        if: ${{ !cancelled() && !contains(github.event.head_commit.message, '[render-control retry]') && !contains(github.event.head_commit.message, '[fixture initialization retry]') }}
+        if: ${{ !cancelled() && !contains(github.event.head_commit.message, '[panel layout validation]') && !contains(github.event.head_commit.message, '[render-control retry]') && !contains(github.event.head_commit.message, '[fixture initialization retry]') }}
         run: bash scripts/test_local_simulator.sh ${{ matrix.screen }}
       - run: python3 scripts/collect_evidence.py
         if: always()
