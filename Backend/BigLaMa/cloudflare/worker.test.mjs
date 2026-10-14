@@ -16,11 +16,11 @@ test('Persistent daily budget stops work before contacting model origin', async 
   let calls = 0;
   global.fetch = async (_, init) => {
     calls++;assert.equal(init.headers.authorization, 'Bearer origin-only-test');
-    return new Response('patch', {headers: {'content-type': 'image/png', 'x-cookies-source-sha256': 'test-digest'}});
+    return new Response('patch', {headers: {'content-type': 'image/png', 'x-cookies-source-sha256': 'test-digest', 'x-cookies-model': 'upstream-implementation'}});
   };
   try {
     const gate = new RestorationGate({storage: storage()}, {BACKEND_URL: 'https://model.example', BACKEND_TOKEN: 'origin-only-test', MAX_DAILY_REQUESTS: '2', MAX_CLIENT_DAILY_REQUESTS: '2'});
-    const first = await gate.fetch(request());assert.equal(first.status, 200);assert.equal(first.headers.get('cache-control'), 'no-store');assert.equal(first.headers.get('x-cookies-source-sha256'), 'test-digest');
+    const first = await gate.fetch(request());assert.equal(first.status, 200);assert.equal(first.headers.get('cache-control'), 'no-store');assert.equal(first.headers.get('x-cookies-source-sha256'), 'test-digest');assert.equal(first.headers.get('x-cookies-model'),null);
     assert.equal((await gate.fetch(request())).status, 200);
     assert.equal((await gate.fetch(request())).status, 429);assert.equal(calls, 2);
   } finally {global.fetch = previous;}
@@ -44,4 +44,10 @@ test('Public client cannot choose origin authorization or quota identity', async
   assert.equal(result.status, 200);assert.equal(seen.headers.get('authorization'), null);assert.match(seen.headers.get('x-cookies-client'), /^[0-9a-f]{64}$/);
   assert.equal((await worker.fetch(new Request('https://cookies.example/other'), env)).status, 404);
   assert.equal((await worker.fetch(new Request('https://cookies.example/v1/restore', {method: 'POST', headers: {'content-length': '20000001'}}), env)).status, 413);
+});
+
+
+test('Public health describes the product service without implementation branding', async () => {
+  const response=await worker.fetch(new Request('https://cookies.example/health'),{BACKEND_URL:'https://model.example'});
+  assert.equal(response.status,200);const health=await response.json();assert.equal(health.service,'Cookies AI Restoration');assert.equal(health.model,undefined);assert.equal(health.localDownloadRequired,false);
 });

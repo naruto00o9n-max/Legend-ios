@@ -1,0 +1,397 @@
+{
+  "date": "2026-10-14",
+  "image_tests": {
+    "sources": [
+      {
+        "file": "1",
+        "size": [
+          800,
+          10195
+        ],
+        "sha256": "a49268d9676097eab388c0e7c294c32ac1824ce9b45ba7afdbc1a01282bcd3ea"
+      },
+      {
+        "file": "2",
+        "size": [
+          800,
+          7003
+        ],
+        "sha256": "f4755c08f68f0fefc9148c611eac0c9a32205c96ea50d7646b2b61f8bb766863"
+      },
+      {
+        "file": "3",
+        "size": [
+          800,
+          9650
+        ],
+        "sha256": "ba38b9a0d610226f8b0e4c90ee79175187ff3ec6909e5813e57ff852602baeff"
+      },
+      {
+        "file": "4",
+        "size": [
+          760,
+          13500
+        ],
+        "sha256": "05324192b11711cad64f6f8c8ce858657a9afbeca3c5d0de622f72cd3ecea5a3"
+      },
+      {
+        "file": "attached",
+        "size": [
+          72,
+          1280
+        ],
+        "sha256": "df400d8c89c03219eb66af4992f5dd1b083ef84b1a0f924ae9f2d530da54aebc"
+      }
+    ],
+    "cases": [
+      {
+        "name": "4-gradient-dialogue",
+        "file": "4",
+        "crop": [
+          90,
+          950,
+          710,
+          1700
+        ],
+        "rects": [
+          [
+            190,
+            1090,
+            465,
+            1225
+          ],
+          [
+            365,
+            1320,
+            625,
+            1485
+          ]
+        ],
+        "seconds": 5.265,
+        "http_status": 200,
+        "outside_mask_changed_pixels": 0,
+        "source_digest_matches": true,
+        "mask_padding_pixels": 8
+      },
+      {
+        "name": "1-blue-stats-panel",
+        "file": "1",
+        "crop": [
+          70,
+          1640,
+          735,
+          2480
+        ],
+        "rects": [
+          [
+            115,
+            1670,
+            385,
+            1936
+          ],
+          [
+            115,
+            1955,
+            675,
+            2080
+          ],
+          [
+            115,
+            2090,
+            540,
+            2210
+          ],
+          [
+            115,
+            2220,
+            695,
+            2460
+          ]
+        ],
+        "seconds": 20.809,
+        "http_status": 200,
+        "outside_mask_changed_pixels": 0,
+        "source_digest_matches": true,
+        "mask_padding_pixels": 8
+      },
+      {
+        "name": "3-blue-tilted-panel",
+        "file": "3",
+        "crop": [
+          120,
+          5350,
+          800,
+          6370
+        ],
+        "rects": [
+          [
+            545,
+            5440,
+            780,
+            5560
+          ],
+          [
+            395,
+            5550,
+            745,
+            5785
+          ],
+          [
+            300,
+            5760,
+            775,
+            5920
+          ],
+          [
+            245,
+            5895,
+            795,
+            6130
+          ],
+          [
+            170,
+            6120,
+            700,
+            6310
+          ]
+        ],
+        "seconds": 30.139,
+        "http_status": 200,
+        "outside_mask_changed_pixels": 0,
+        "source_digest_matches": true,
+        "mask_padding_pixels": 8
+      },
+      {
+        "name": "4-ornate-white-panel",
+        "file": "4",
+        "crop": [
+          0,
+          5230,
+          610,
+          5690
+        ],
+        "rects": [
+          [
+            125,
+            5382,
+            470,
+            5557
+          ]
+        ],
+        "seconds": 5.834,
+        "http_status": 200,
+        "outside_mask_changed_pixels": 0,
+        "source_digest_matches": true
+      },
+      {
+        "name": "2-purple-fingerprint",
+        "file": "2",
+        "crop": [
+          100,
+          6110,
+          700,
+          6660
+        ],
+        "rects": [
+          [
+            195,
+            6245,
+            595,
+            6490
+          ]
+        ],
+        "seconds": 5.009,
+        "http_status": 200,
+        "outside_mask_changed_pixels": 0,
+        "source_digest_matches": true
+      },
+      {
+        "name": "3-red-translucent-panel",
+        "file": "3",
+        "crop": [
+          0,
+          1240,
+          420,
+          1670
+        ],
+        "rects": [
+          [
+            38,
+            1348,
+            290,
+            1577
+          ]
+        ],
+        "seconds": 5.11,
+        "http_status": 200,
+        "outside_mask_changed_pixels": 0,
+        "source_digest_matches": true
+      },
+      {
+        "name": "attached-white-caption",
+        "file": "attached",
+        "crop": [
+          0,
+          0,
+          72,
+          120
+        ],
+        "rects": [
+          [
+            19,
+            22,
+            46,
+            36
+          ]
+        ],
+        "seconds": 4.903,
+        "http_status": 200,
+        "outside_mask_changed_pixels": 0,
+        "source_digest_matches": true
+      }
+    ],
+    "notes": [
+      "Actual original text with manually annotated masks; no text-free reference exists for those text regions.",
+      "Attached image is only 72x1280. No claim of precise restoration of details lost in that thumbnail.",
+      "Three masks were expanded by 8 pixels to include outlined glyph edges; this evaluates supplied masks, not the app Vision detector.",
+      "No claim of exact recovery of artwork hidden under the original glyphs."
+    ]
+  },
+  "migan_v2": {
+    "repository": "andraniksargsyan/migan",
+    "revision": "406830d0fa60666da0071c342ad2fbc8f30c5c64",
+    "sha256": "6f1f3530a1a2324b19752018ce756088b07973cda8d7d890034ace5c8a48c40b",
+    "cases": [
+      {
+        "name": "1-blue-stats-panel",
+        "seconds": 1.956,
+        "outside_mask_changed_pixels": 0
+      },
+      {
+        "name": "2-purple-fingerprint",
+        "seconds": 2.006,
+        "outside_mask_changed_pixels": 0
+      },
+      {
+        "name": "3-blue-tilted-panel",
+        "seconds": 2.062,
+        "outside_mask_changed_pixels": 0
+      },
+      {
+        "name": "3-red-translucent-panel",
+        "seconds": 1.793,
+        "outside_mask_changed_pixels": 0
+      },
+      {
+        "name": "4-gradient-dialogue",
+        "seconds": 1.909,
+        "outside_mask_changed_pixels": 0
+      },
+      {
+        "name": "4-ornate-white-panel",
+        "seconds": 1.658,
+        "outside_mask_changed_pixels": 0
+      },
+      {
+        "name": "attached-white-caption",
+        "seconds": 1.602,
+        "outside_mask_changed_pixels": 0
+      }
+    ]
+  },
+  "assessment": {
+    "current_service": "Outlined glyphs require a mask covering the complete halo. Grey gradient/white panel and red translucent examples were cleaner than the complicated purple engraving. No exact hidden artwork ground truth exists.",
+    "migan": "Both original and current recommended v2 ONNX pipelines were run. Faster on this CPU but invented objects and dark curves in the tested illustrations; not shipped as a quality upgrade.",
+    "cloudflare_sd15": "The provider returned HTTP 200 for its experiment, but generated wrong-color/black results. Not a validated alternative; temporary authenticated evaluation Worker removed after testing.",
+    "next_candidate": "SDXL Inpainting 0.1 needs GPU validation on the same original crops; not deployed or exposed as a working option.",
+    "timing_caveat": "Current service was tested via the live network CPU deployment; MI-GAN ran in the task CPU workspace. Timings are not a same-hardware speedup benchmark."
+  },
+  "references": [
+    "https://github.com/Picsart-AI-Research/MI-GAN",
+    "https://huggingface.co/andraniksargsyan/migan",
+    "https://developers.cloudflare.com/workers-ai/models/stable-diffusion-v1-5-inpainting/",
+    "https://huggingface.co/diffusers/stable-diffusion-xl-1.0-inpainting-0.1"
+  ],
+  "privacy": "Original pages and visual comparison crops remain in the task workspace; not committed to the public repository.",
+  "edge_branding_verification": {
+    "health": {
+      "protocol": 1,
+      "service": "Cookies AI Restoration",
+      "backendConfigured": true,
+      "localDownloadRequired": false
+    },
+    "http": 200,
+    "source_digest_matches": true,
+    "upstream_model_header_exposed": false,
+    "outside_mask_alpha_nonzero_pixels": 0
+  },
+  "controlled_known_background_tests": [
+    {
+      "name": "purple-engraving",
+      "type": "Known clean crop of supplied image with synthetic outlined English text added; not a test of automatic text detection",
+      "size": [
+        600,
+        550
+      ],
+      "models": {
+        "current": {
+          "seconds": 5.71,
+          "masked_mae": 7.198,
+          "masked_psnr_db": 28.095,
+          "outside_mask_changed_pixels": 0
+        },
+        "migan-v2": {
+          "seconds": 0.942,
+          "masked_mae": 8.523,
+          "masked_psnr_db": 26.959,
+          "outside_mask_changed_pixels": 0
+        }
+      }
+    },
+    {
+      "name": "pale-gradient",
+      "type": "Known clean crop of supplied image with synthetic outlined English text added; not a test of automatic text detection",
+      "size": [
+        220,
+        55
+      ],
+      "models": {
+        "current": {
+          "seconds": 4.264,
+          "masked_mae": 1.439,
+          "masked_psnr_db": 44.071,
+          "outside_mask_changed_pixels": 0
+        },
+        "migan-v2": {
+          "seconds": 1.908,
+          "masked_mae": 0.919,
+          "masked_psnr_db": 46.269,
+          "outside_mask_changed_pixels": 0
+        }
+      }
+    },
+    {
+      "name": "red-panel",
+      "type": "Known clean crop of supplied image with synthetic outlined English text added; not a test of automatic text detection",
+      "size": [
+        254,
+        90
+      ],
+      "models": {
+        "current": {
+          "seconds": 4.427,
+          "masked_mae": 5.385,
+          "masked_psnr_db": 31.252,
+          "outside_mask_changed_pixels": 0
+        },
+        "migan-v2": {
+          "seconds": 1.639,
+          "masked_mae": 5.216,
+          "masked_psnr_db": 30.805,
+          "outside_mask_changed_pixels": 0
+        }
+      }
+    }
+  ],
+  "controlled_test_limit": "Three real clean background crops with synthetic outlined English text added. Same task CPU and ONNX Runtime for both models. These small controlled cases do not replace the seven original-text tests or automatic localization tests."
+}

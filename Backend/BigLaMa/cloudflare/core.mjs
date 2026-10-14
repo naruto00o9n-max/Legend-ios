@@ -7,7 +7,7 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (request.method === 'GET' && url.pathname === '/health') {
-      return json({ protocol: 1, model: 'Big LaMa', backendConfigured: !!env.BACKEND_URL, localDownloadRequired: false });
+      return json({ protocol: 1, service: 'Cookies AI Restoration', backendConfigured: !!env.BACKEND_URL, localDownloadRequired: false });
     }
     if (request.method !== 'POST' || url.pathname !== '/v1/restore') return json({ error: 'not_found' }, 404);
     if (!env.BACKEND_URL || !env.BACKEND_TOKEN) return json({ error: 'not_configured' }, 503);
@@ -49,7 +49,7 @@ export class RestorationGateCore {
         body: request.body, signal: AbortSignal.timeout(180_000)
       });
       const headers = new Headers({ 'cache-control': 'no-store', 'content-type': response.headers.get('content-type') || 'application/json' });
-      for (const name of ['x-cookies-model', 'x-cookies-source-sha256', 'retry-after']) {
+      for (const name of ['x-cookies-source-sha256', 'retry-after']) {
         if (response.headers.has(name)) headers.set(name, response.headers.get(name));
       }
       return new Response(response.body, { status: response.status, headers });
