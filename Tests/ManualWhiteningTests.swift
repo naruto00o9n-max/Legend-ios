@@ -39,4 +39,13 @@ final class ManualWhiteningTests:XCTestCase {
         let root=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString);defer{try? FileManager.default.removeItem(at:root)};let assets=BigLaMaAssets(root:root),spec=try BigLaMaSpecification.bundled()
         XCTAssertEqual(spec.revision,"5ed76e3799ab4cad31381750d29880c267477e18");XCTAssertEqual(spec.downloadSize,216647386);XCTAssertEqual(spec.files.count,3);XCTAssertFalse(assets.ready);XCTAssertFalse(assets.installing);XCTAssertThrowsError(try assets.acquire());XCTAssertEqual(assets.activeUses,0)
     }
+    @MainActor func testModelRemovalLocksAcquisitionAndCacheCleanupWithoutDownloading()async throws{
+        let root=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString);defer{try? FileManager.default.removeItem(at:root)}
+        let assets=BigLaMaAssets(root:root)
+        try await assets.beginCacheCleanup();XCTAssertTrue(assets.removing);XCTAssertThrowsError(try assets.acquire())
+        assets.startInstallation();XCTAssertFalse(assets.installing)
+        do{try await assets.remove();XCTFail("Concurrent removal must be rejected")}catch{}
+        assets.endCacheCleanup();XCTAssertFalse(assets.removing);XCTAssertFalse(assets.ready)
+    }
+
 }

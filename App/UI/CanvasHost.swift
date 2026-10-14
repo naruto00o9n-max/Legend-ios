@@ -128,7 +128,7 @@ struct CanvasHost:UIViewRepresentable {
             removeTextPrompt()
             if let mode=model.manualSniperTool {
                 let current=CGPoint(x:max(0,min(CGFloat(model.page.width-1),point.x)),y:max(0,min(CGFloat(model.page.height-1),point.y)))
-                if g.state == .began{manualSniperPoints=[current]}
+                if g.state == .began{manualSniperPoints=[touchOrigin ?? current]}
                 if mode == .freehand{if let previous=manualSniperPoints.last,hypot(previous.x-current.x,previous.y-current.y)*max(0.01,canvas.zoom)>=3{manualSniperPoints.append(current);if manualSniperPoints.count>1024{manualSniperPoints=manualSniperPoints.enumerated().compactMap{$0.offset%2==0 ? $0.element:nil}}}}
                 else if let origin=manualSniperPoints.first{manualSniperPoints=[origin,CGPoint(x:current.x,y:origin.y),current,CGPoint(x:origin.x,y:current.y)]}
                 canvas.showManualSniper(manualSniperPoints)

@@ -11,5 +11,5 @@ import SwiftUI
         else if assets.ready{Button(role:.destructive){removal=true}label:{Label("إزالة النموذج لتوفير المساحة",systemImage:"trash")}.buttonStyle(CapsuleActionStyle()).disabled(assets.activeUses>0).accessibilityIdentifier("lama-remove")}
         else{Button{assets.startInstallation()}label:{Label("تنزيل نموذج الترميم",systemImage:"arrow.down.circle")}.buttonStyle(GoldButtonStyle()).accessibilityIdentifier("lama-download")}
         if let message=failure ?? assets.failure{Label(message,systemImage:"exclamationmark.circle").font(.system(size:12)).foregroundStyle(Palette.secondary).lineSpacing(4)}
-    }.task{assets.refresh()}.alert("إزالة النموذج؟",isPresented:$removal){Button("إزالة",role:.destructive){Task{do{try await assets.remove()}catch{failure=error.localizedDescription}}};Button("إلغاء",role:.cancel){}}message:{Text("تبقى صورك ومشاريعك كما هي. يمكنك إعادة تنزيل النموذج لاحقًا.")}}
+    }.disabled(assets.removing).task{assets.refresh()}.alert("إزالة النموذج؟",isPresented:$removal){Button("إزالة",role:.destructive){Task{do{try await assets.remove()}catch{failure=error.localizedDescription}}};Button("إلغاء",role:.cancel){}}message:{Text("تبقى صورك ومشاريعك كما هي. يمكنك إعادة تنزيل النموذج لاحقًا.")}}
 }

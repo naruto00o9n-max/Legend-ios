@@ -23,7 +23,8 @@
         120,
         205
       ]
-    ]
+    ],
+    "expected": "colored"
   },
   {
     "name": "real-manhwa-white-shadow",
@@ -43,6 +44,51 @@
         695,
         220
       ]
-    ]
+    ],
+    "expected": "white"
+  },
+  {
+    "name": "asura-white-spiked-bubble",
+    "source": "https://cdn.asurascans.com/asura-images/chapters/solo-leveling/1/001.webp",
+    "referer": "https://www.asurascans.com/comics/solo-leveling/chapter/1",
+    "source_sha256": "e99f6962eb453c542ce29c4bdb9326ba27e3fc9a5290ee77aca9b409c452c38b",
+    "attribution": "Solo Leveling chapter 1, Asura Scans public reader. Bounded evaluation crop only; no chapter bundled in app.",
+    "crop": [
+      30,
+      650,
+      520,
+      450
+    ],
+    "mask_rects": [
+      [
+        130,
+        165,
+        235,
+        75
+      ]
+    ],
+    "expected": "white"
+  },
+  {
+    "name": "asura-blue-action-lettering",
+    "source": "https://cdn.asurascans.com/asura-images/chapters/solo-leveling/1/004.webp",
+    "referer": "https://www.asurascans.com/comics/solo-leveling/chapter/1",
+    "source_sha256": "f05b0f6830cb4ccaadd817f1ce1abc00f461df6acb43555517ec616c73a5acfe",
+    "attribution": "Solo Leveling chapter 1, Asura Scans public reader. Colored illustrated action lettering: difficult non-bubble case, exact hidden art is unknown.",
+    "crop": [
+      0,
+      1580,
+      720,
+      570
+    ],
+    "mask_rects": [
+      [
+        88,
+        8,
+        610,
+        475
+      ]
+    ],
+    "expected": "colored"
   }
 ]

@@ -9,6 +9,7 @@ extension EditorModel {
     func finishManualSniper(_ points:[CGPoint]){
         guard let method=manualSniperTool else{return}
         defer{cancelManualSniper()}
+        guard points.allSatisfy({$0.x.isFinite && $0.y.isFinite}) else{error="تعذر قراءة مسار التحديد";return}
         let points=points.map{CGPoint(x:max(0,min(CGFloat(page.width-1),$0.x)),y:max(0,min(CGFloat(page.height-1),$0.y)))}
         guard points.count>=3,points.allSatisfy({$0.x.isFinite && $0.y.isFinite}) else{return}
         let xs=points.map(\.x),ys=points.map(\.y),rect=CGRect(x:xs.min()!,y:ys.min()!,width:xs.max()!-xs.min()!,height:ys.max()!-ys.min()!)

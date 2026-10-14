@@ -244,11 +244,11 @@ final class EditorUITests:XCTestCase {
             XCTAssertTrue(app.buttons["sniper-whiten"].waitForExistence(timeout:8));XCTAssertTrue(app.buttons["sniper-whiten"].isEnabled,"Manual contour must become a usable bubble \(index+1)")
         }
         app.buttons["sniper-whiten"].tap();XCTAssertTrue(app.buttons["whitening-target-2"].waitForExistence(timeout:8))
-        app.buttons["whitening-target-1"].tap();app.buttons["whitening-method-bigLaMa"].tap()
+        let settings=app.scrollViews["whitening-settings-scroll"];app.buttons["whitening-target-1"].tap();revealVertical(app.buttons["whitening-method-bigLaMa"],in:settings);app.buttons["whitening-method-bigLaMa"].tap()
         XCTAssertFalse(app.buttons["whitening-preview"].isEnabled,"A model must be downloaded explicitly before neural restoration")
-        app.buttons["whitening-target-2"].tap();app.buttons["whitening-close"].tap()
+        revealVertical(app.buttons["whitening-target-2"],in:settings);app.buttons["whitening-target-2"].tap();app.buttons["whitening-close"].tap()
         app.buttons["sniper-whiten"].tap();XCTAssertTrue(app.buttons["whitening-target-1"].waitForExistence(timeout:8));XCTAssertFalse(app.buttons["whitening-preview"].isEnabled,"Per-bubble model choice must survive closing its inspector")
-        app.buttons["whitening-target-1"].tap();app.buttons["whitening-method-classic"].tap();XCTAssertTrue(app.buttons["whitening-preview"].isEnabled)
+        app.buttons["whitening-target-1"].tap();revealVertical(app.buttons["whitening-method-classic"],in:settings);app.buttons["whitening-method-classic"].tap();XCTAssertTrue(app.buttons["whitening-preview"].isEnabled)
         app.buttons["whitening-close"].tap();XCTAssertTrue(app.buttons["export"].isHittable)
     }
 
