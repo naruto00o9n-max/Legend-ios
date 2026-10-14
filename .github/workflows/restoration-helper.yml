@@ -1,0 +1,62 @@
+name: Restoration failure evidence and independent local validation
+on:
+  push:
+    branches: [verify/restoration-helper-oct14]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  failure-evidence:
+    if: ${{ !contains(github.event.head_commit.message, '[ui repair]') }}
+    runs-on: macos-15-intel
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v4
+        with:
+          name: cookies-editor-evidence-ipad
+          run-id: 38558791158
+          github-token: ${{ github.token }}
+          path: .work/evidence
+      - run: python3 scripts/ci/export_ui_failure.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: restoration-failure-review
+          path: build/failure-review/
+  local:
+    if: ${{ !contains(github.event.head_commit.message, '[ui repair]') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        screen: [ipad, iphone]
+    runs-on: macos-15-intel
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 2
+      - run: git diff --exit-code 2ef184a3558fb79535e3d031145c4abd58f77a4b HEAD -- App project.yml Tests ServicesTests ServicesUITests
+      - run: brew install xcodegen
+      - uses: actions/cache@v4
+        with:
+          path: |
+            .work/reference.apk
+            .work/opencv-ios.zip
+            App/Core/Vendor
+            App/Resources/cookies-logo.png
+          key: cookies-native-v45-opencv411-${{ hashFiles('scripts/vendor-hashes.json') }}
+      - run: python3 scripts/fetch_resources.py
+      - run: xcodegen generate
+      - name: Actual local Photos, editing, export and source integrity
+        run: bash scripts/test_local_simulator.sh '${{ matrix.screen }}'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: local-independent-${{ matrix.screen }}
+          path: |
+            build/test-*-local*.log
+            build/gates-*-local.json
+            build/photos-integrity-*-local.json
+            build/screenshots/*-local/
