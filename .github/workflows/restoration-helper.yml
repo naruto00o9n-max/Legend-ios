@@ -36,7 +36,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          fetch-depth: 2
+          fetch-depth: 0
       - name: Prove that Photos and local application code are unchanged
         run: |
           git diff --exit-code 2ef184a3558fb79535e3d031145c4abd58f77a4b HEAD -- App ':!App/UI/EditorView.swift' project.yml Tests ServicesTests ServicesUITests
@@ -72,7 +72,7 @@ jobs:
             build/screenshots/*-local/
 
   package:
-    if: ${{ contains(github.event.head_commit.message, '[ui repair]') }}
+    if: ${{ contains(github.event.head_commit.message, '[ui repair]') && !contains(github.event.head_commit.message, '[verification only]') }}
     runs-on: macos-15-intel
     timeout-minutes: 45
     steps:
@@ -96,7 +96,7 @@ jobs:
           name: restoration-final-unsigned-ipas
           path: build/
   editor:
-    if: ${{ contains(github.event.head_commit.message, '[ui repair]') && !contains(github.event.head_commit.message, '[local verification]') }}
+    if: ${{ contains(github.event.head_commit.message, '[ui repair]') && (!contains(github.event.head_commit.message, '[local verification]') || contains(github.event.head_commit.message, '[verification only]')) }}
     strategy:
       fail-fast: false
       matrix:
@@ -106,7 +106,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          fetch-depth: 3
+          fetch-depth: 0
       - name: Verify unchanged tested engine and source-image code
         run: |
           git diff --exit-code 11384867dc2a2e0bdf1ab9ba05fdeda448e7cdf2 HEAD -- App ':!App/UI/SniperWhiteningPanel.swift' ':!App/UI/EditorView.swift' Tests ServicesTests ServicesUITests project.yml scripts/build_ipas.sh scripts/test_simulators.sh
