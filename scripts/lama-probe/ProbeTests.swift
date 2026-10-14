@@ -7,15 +7,21 @@ import Darwin
 
 final class ProbeTests:XCTestCase {
     @MainActor func testActualBigLaMaOnRealComicCrops()async throws {
+        executionTimeAllowance=1200
+        print("BIG_LAMA phase=download_and_compile")
         let assets=BigLaMaAssets(),started=Date(),compiled=try await assets.install()
         let preparation=Date().timeIntervalSince(started)
         let directory=try XCTUnwrap(Bundle.main.url(forResource:"lama-probe-fixtures",withExtension:nil))
         let outcomes=try await BackgroundWork.run{()throws->[Outcome] in
+            print("BIG_LAMA phase=load_model")
             let model=try BigLaMaSession(compiled:compiled)
+            print("BIG_LAMA phase=model_loaded")
             var results:[Outcome]=[]
-            for name in ["colored-hatched-dialogue","real-manhwa-white-shadow"] {
+            for name in ["colored-hatched-dialogue","real-manhwa-white-shadow","asura-white-spiked-bubble","asura-blue-action-lettering"] {
                 let source=try Self.read(directory.appendingPathComponent(name+".png")),mask=try Self.read(directory.appendingPathComponent(name+"-mask.png"))
+                print("BIG_LAMA phase=predict reference=\(name)")
                 let before=Date(),patch=try model.repair(source:source,mask:mask),elapsed=Date().timeIntervalSince(before)
+                print("BIG_LAMA phase=predicted reference=\(name) seconds=\(elapsed)")
                 let original=try BigLaMaSession.rgba(source),ink=try BigLaMaSession.rgba(mask),after=try BigLaMaSession.rgba(patch)
                 var outside=0,count=0,difference=0.0,sum=0.0,white=0,composite=original
                 for i in 0..<(source.width*source.height){let p=i*4
@@ -32,7 +38,7 @@ final class ProbeTests:XCTestCase {
         for result in outcomes{
             XCTAssertEqual(result.metric["outside_mask_patch_pixels"] as? Int,0)
             XCTAssertGreaterThan(result.metric["mean_masked_change"] as? Double ?? 0,5,"Real text must change; a copied input is not inference")
-            if result.name=="real-manhwa-white-shadow"{XCTAssertGreaterThan(result.metric["mean_repaired_channel"] as? Double ?? 0,235)}else{XCTAssertLessThan(result.metric["white_fraction"] as? Double ?? 1,0.85,"Colored reconstruction must not be a white rectangle")}
+            if ["real-manhwa-white-shadow","asura-white-spiked-bubble"].contains(result.name){XCTAssertGreaterThan(result.metric["mean_repaired_channel"] as? Double ?? 0,235)}else{XCTAssertLessThan(result.metric["white_fraction"] as? Double ?? 1,0.85,"Colored reconstruction must not be a white rectangle")}
             for (suffix,image) in [("source",result.source),("mask",result.mask),("repaired",result.composite)]{let attachment=XCTAttachment(image:UIImage(cgImage:image),quality:.original);attachment.name=result.name+"-"+suffix;attachment.lifetime = .keepAlways;add(attachment)}
             let data=try JSONSerialization.data(withJSONObject:result.metric,options:[.sortedKeys,.prettyPrinted]);let attachment=XCTAttachment(data:data,uniformTypeIdentifier:"public.json");attachment.name=result.name+"-metrics.json";attachment.lifetime = .keepAlways;add(attachment)
             print("BIG_LAMA "+String(data:data,encoding:.utf8)!.replacingOccurrences(of:"\n",with:" "))

@@ -17,7 +17,7 @@ PY
 xcrun simctl boot "$TASK_DEVICE" || true
 xcrun simctl bootstatus "$TASK_DEVICE" -b
 TASK_STATUS=0
-xcodebuild -project .work/LaMaProbe.xcodeproj -scheme LaMaProbe -configuration Debug -destination "platform=iOS Simulator,id=$TASK_DEVICE" -parallel-testing-enabled NO -derivedDataPath .work/lama-probe-build -resultBundlePath "build/lama-probe-$TASK_SCREEN.xcresult" ARCHS=x86_64 ONLY_ACTIVE_ARCH=YES test > "build/lama-probe-$TASK_SCREEN.log" 2>&1 || TASK_STATUS=$?
+xcodebuild -project scripts/lama-probe/LaMaProbe.xcodeproj -scheme LaMaProbe -configuration Debug -destination "platform=iOS Simulator,id=$TASK_DEVICE" -parallel-testing-enabled NO -test-timeouts-enabled YES -maximum-test-execution-time-allowance 1200 -derivedDataPath .work/lama-probe-build -resultBundlePath "build/lama-probe-$TASK_SCREEN.xcresult" ARCHS=x86_64 ONLY_ACTIVE_ARCH=YES test > "build/lama-probe-$TASK_SCREEN.log" 2>&1 || TASK_STATUS=$?
 rg -n 'error:|Test Case .* (passed|failed)|BIG_LAMA|Executed .* failures' "build/lama-probe-$TASK_SCREEN.log" | tail -50 || true
 if [[ -d "build/lama-probe-$TASK_SCREEN.xcresult" ]]; then
  xcrun xcresulttool export attachments --path "build/lama-probe-$TASK_SCREEN.xcresult" --output-path "build/lama-probe-attachments/$TASK_SCREEN" || true
