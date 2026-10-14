@@ -253,20 +253,20 @@ final class EditorUITests:XCTestCase {
         func choose(_ id:String){let button=app.buttons[id];revealVertical(button,in:settings);XCTAssertTrue(button.isHittable,app.debugDescription);button.tap()}
         let first=app.buttons["whitening-target-1"],second=app.buttons["whitening-target-2"]
         first.tap();choose("whitening-method-bigLaMa")
-        XCTAssertEqual(first.value as? String,"bigLaMa/cloud")
+        XCTAssertEqual(first.value as? String,"خدمة ذكاء اصطناعي · عبر الإنترنت")
         XCTAssertTrue(app.buttons["whitening-preview"].isEnabled,"Internet execution is the default and needs no download")
         let device=app.buttons["whitening-execution-device"];revealVertical(device,in:settings)
         XCTAssertFalse(device.isEnabled,"Device execution must remain unavailable before a verified download")
         XCTAssertTrue(app.staticTexts["خدمة ذكاء اصطناعي"].exists)
         XCTAssertFalse(app.staticTexts.matching(NSPredicate(format:"label CONTAINS 'Big LaMa'")).firstMatch.exists)
-        second.tap();XCTAssertEqual(second.value as? String,"classic/cloud");app.buttons["whitening-close"].tap()
-        app.buttons["sniper-whiten"].tap();XCTAssertTrue(first.waitForExistence(timeout:8));XCTAssertEqual(first.value as? String,"bigLaMa/cloud")
-        first.tap();choose("whitening-method-classic");XCTAssertEqual(first.value as? String,"classic/cloud");XCTAssertTrue(app.buttons["whitening-preview"].isEnabled)
+        second.tap();XCTAssertEqual(second.value as? String,"التبييض المعتاد · عبر الإنترنت");app.buttons["whitening-close"].tap()
+        app.buttons["sniper-whiten"].tap();XCTAssertTrue(first.waitForExistence(timeout:8));XCTAssertEqual(first.value as? String,"خدمة ذكاء اصطناعي · عبر الإنترنت")
+        first.tap();choose("whitening-method-classic");XCTAssertEqual(first.value as? String,"التبييض المعتاد · عبر الإنترنت");XCTAssertTrue(app.buttons["whitening-preview"].isEnabled)
         choose("whitening-method-bigLaMa");app.buttons["whitening-close"].tap()
         app.buttons["sniper-manual"].tap()
         canvas.coordinate(withNormalizedOffset:CGVector(dx:0.30,dy:0.25)).press(forDuration:0.1,thenDragTo:canvas.coordinate(withNormalizedOffset:CGVector(dx:0.60,dy:0.40)),withVelocity:.slow,thenHoldForDuration:0.1)
-        app.buttons["sniper-whiten"].tap();let third=app.buttons["whitening-target-3"];XCTAssertTrue(third.waitForExistence(timeout:8));XCTAssertEqual(third.value as? String,"bigLaMa/cloud","A new bubble inherits the last method without overwriting existing bubbles")
-        XCTAssertEqual(second.value as? String,"classic/cloud")
+        app.buttons["sniper-whiten"].tap();let third=app.buttons["whitening-target-3"];XCTAssertTrue(third.waitForExistence(timeout:8));XCTAssertEqual(third.value as? String,"خدمة ذكاء اصطناعي · عبر الإنترنت","A new bubble inherits the last method without overwriting existing bubbles")
+        XCTAssertEqual(second.value as? String,"التبييض المعتاد · عبر الإنترنت")
         app.buttons["whitening-close"].tap();XCTAssertTrue(app.buttons["export"].isHittable)
     }
 
