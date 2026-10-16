@@ -1,5 +1,6 @@
 import XCTest
 import UIKit
+import ImageIO
 @testable import CookiesEditor
 
 final class DriveChapterTests:XCTestCase {
@@ -28,5 +29,20 @@ final class DriveChapterTests:XCTestCase {
     func testPhotoProviderSuggestedFilenameSurvivesTemporaryProviderURL()throws{
         let file=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString+".jpg");try Data([1,2,3]).write(to:file);defer{try? FileManager.default.removeItem(at:file)}
         let owned=try PhotoImport.ownFile(file,suggestedName:"Chapter 12 - 003.jpg");defer{try? FileManager.default.removeItem(at:owned.deletingLastPathComponent())};XCTAssertEqual(owned.lastPathComponent,"Chapter 12 - 003.jpg")
+    }
+}
+
+extension DriveChapterTests {
+    func testRealPublicDriveImageKeepsItsNameAndNativeDimensions()async throws{
+        guard let address=ProcessInfo.processInfo.environment["COOKIES_TEST_PUBLIC_DRIVE"] else{throw XCTSkip("Set a public reference folder for the live Drive check")}
+        let images=try await DriveChapterImport.list(DriveChapterImport.link(address));XCTAssertFalse(images.isEmpty)
+        let folder=FileManager.default.temporaryDirectory.appendingPathComponent("drive-test-"+UUID().uuidString);defer{try? FileManager.default.removeItem(at:folder)}
+        let image=try XCTUnwrap(images.first),file=try await DriveChapterImport.download(image,into:folder)
+        XCTAssertEqual(file.lastPathComponent,image.name)
+        let source=try XCTUnwrap(CGImageSourceCreateWithURL(file as CFURL,nil)),properties=try XCTUnwrap(CGImageSourceCopyPropertiesAtIndex(source,0,nil) as? [CFString:Any])
+        let page=try ImagePipeline.importImage(file,root:folder)
+        XCTAssertEqual(page.title,file.deletingPathExtension().lastPathComponent)
+        XCTAssertEqual(page.width,(properties[kCGImagePropertyPixelWidth] as? NSNumber)?.intValue)
+        XCTAssertEqual(page.height,(properties[kCGImagePropertyPixelHeight] as? NSNumber)?.intValue)
     }
 }

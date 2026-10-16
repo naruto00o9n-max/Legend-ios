@@ -87,6 +87,8 @@ jobs:
         run: python3 scripts/provision_vault_ci.py provision
       - run: xcodegen generate
       - name: Native layer compositing, eraser opacity, import, export and regressions
+        env:
+          COOKIES_TEST_PUBLIC_DRIVE: https://drive.google.com/drive/folders/1xfrsEi3Cdg8_oZX6qr26-LM_jfzTgN88
         run: bash scripts/test_simulators.sh '${{ matrix.screen }}' core
       - name: Require an actual native private-vault round trip
         run: python3 scripts/provision_vault_ci.py verify-log 'build/test-${{ matrix.screen }}-core.log'

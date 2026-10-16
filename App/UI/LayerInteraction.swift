@@ -58,7 +58,7 @@ final class LayerInteraction {
         }
         static func rect(_ layer: EditorLayer) -> CGRect {
             if layer.kind == .text{return TextVisualBounds.rect(layer)}
-            return LayerRenderer.bounds(layer).insetBy(dx:-max(2,layer.style.strokeWidth),dy:-max(2,layer.style.strokeWidth)).integral
+            return LayerRenderer.visualBounds(layer).integral
         }
 
         static func raster(_ layer: EditorLayer, rect: CGRect, directory: URL,resolution:CGFloat=1) -> UIImage {

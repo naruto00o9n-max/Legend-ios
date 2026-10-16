@@ -44,7 +44,7 @@ private final class ImageRasterKey:NSObject {
     let layer:EditorLayer,source:String,area:CGRect,scale:CGFloat,tier:Int
     private let value:Int
     init(_ original:EditorLayer,directory:URL,sourceRect:CGRect,scale:CGFloat){
-        var canonical=original;canonical.id=UUID(uuidString:"00000000-0000-0000-0000-000000000000")!;canonical.name="";canonical.frame.x=0;canonical.frame.y=0;canonical.rotation=0;canonical.scaleX=1;canonical.scaleY=1;canonical.opacity=1;canonical.isVisible=true;canonical.isLocked=false;canonical.blend = .normal;canonical.erasures=nil
+        var canonical=original;canonical.id=UUID(uuidString:"00000000-0000-0000-0000-000000000000")!;canonical.name="";canonical.frame.x=0;canonical.frame.y=0;canonical.rotation=0;canonical.scaleX=1;canonical.scaleY=1;canonical.opacity=1;canonical.isVisible=true;canonical.isLocked=false;canonical.blend = .normal;canonical.erasures=nil;canonical.strokes=[];canonical.stackID=nil;canonical.stackName=nil
         layer=canonical;source=directory.path;area=sourceRect;self.scale=scale;tier=RenderBudget.isPreview ? (RenderBudget.isInteractive ? 2:1):0
         var h=Hasher();h.combine(canonical);h.combine(directory.path);h.combine(sourceRect.minX);h.combine(sourceRect.minY);h.combine(sourceRect.width);h.combine(sourceRect.height);h.combine(scale);h.combine(tier);value=h.finalize()
     }

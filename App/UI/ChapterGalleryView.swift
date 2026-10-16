@@ -180,7 +180,7 @@ struct ChapterExportSheet:View {
         else{output=try await BackgroundWork.run{try BatchExport.export(pages:pages,root:root,format:format,quality:quality,prefix:prefix,smartHeight:h){done,count in Task{@MainActor in completed=done;total=count}}}}
         }
     }catch is CancellationError{}catch{failure=error.localizedDescription}}}
-    func prepareDrive(){task=Task{busy=true;completed=0;total=ids.count;defer{busy=false}
+    func prepareDrive(){guard !ids.isEmpty else{failure="حدد صورًا أولًا";return};task=Task{busy=true;completed=0;total=ids.count;defer{busy=false}
         let folder=FileManager.default.temporaryDirectory.appendingPathComponent("Cookies-Drive-"+UUID().uuidString)
         do{try FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true)
             let urls=try await library.withProjectFiles(ids){()->[URL] in

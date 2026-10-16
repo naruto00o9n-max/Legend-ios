@@ -10,7 +10,12 @@ struct CanvasHost:UIViewRepresentable {
     func makeUIView(context:Context)->UIScrollView {
         let s=CanvasViewport();context.coordinator.readOnly=readOnly;s.backgroundColor=UIColor(hex:"080808");s.delegate=context.coordinator;s.bouncesZoom=true;s.showsVerticalScrollIndicator=false;s.showsHorizontalScrollIndicator=false;s.maximumZoomScale=128;s.contentInsetAdjustmentBehavior = .never;s.accessibilityIdentifier="canvas-scroll"
         let canvas=DocumentCanvas(frame:CGRect(x:0,y:0,width:model.page.width,height:model.page.height));s.addSubview(canvas);context.coordinator.canvas=canvas;context.coordinator.scroll=s;canvas.onHandle={ [weak coordinator=context.coordinator] name in guard let c=coordinator,!c.model.busy,c.model.cleanCandidates.isEmpty else{return};switch name{case "delete":c.model.delete();case "duplicate":c.model.duplicate();case "edit":c.model.tool = .text;c.model.panel = .content;case "styles":c.model.tool = .text;c.model.panel = .styles;default:break}}
-        s.onViewportSizeChange = { [weak coordinator=context.coordinator] in guard let coordinator,coordinator.fitted else{return};coordinator.updateCenter(recenter:true) }
+        s.onViewportSizeChange = { [weak coordinator=context.coordinator] in
+            guard let coordinator,coordinator.fitted else{return};coordinator.updateCenter(recenter:true)
+            if let layer=coordinator.model.active,let scroll=coordinator.scroll{
+                let rect=LayerRenderer.bounds(layer).applying(LayerRenderer.transform(layer));scroll.scrollRectToVisible(coordinator.canvas.convert(rect,to:scroll).insetBy(dx:-20,dy:-20),animated:false)
+            }
+        }
         if readOnly{return s}
         let tap=UITapGestureRecognizer(target:context.coordinator,action:#selector(Coordinator.tap(_:)));tap.delegate=context.coordinator;s.addGestureRecognizer(tap)
         let double=UITapGestureRecognizer(target:context.coordinator,action:#selector(Coordinator.doubleTap(_:)));double.numberOfTapsRequired=2;double.delegate=context.coordinator;s.addGestureRecognizer(double)

@@ -25,7 +25,7 @@ struct LayerSheet:View {
             guard let stack=item.stackID else{return true};return seen.insert(stack).inserted
         }
     }
-    private func members(_ item:EditorLayer)->[EditorLayer]{model.layerObjects(item.id).reversed()}
+    private func members(_ item:EditorLayer)->[EditorLayer]{Array(model.layerObjects(item.id).reversed())}
     private func isSelected(_ item:EditorLayer)->Bool{model.selected==item.id || (model.stackSelection && item.stackID != nil && model.active?.stackID==item.stackID)}
     private var activeIndex:Int?{model.page.layers.firstIndex{$0.id==model.selected}}
     private var editable:Bool{model.active?.isLocked==false && !model.busy}
@@ -35,13 +35,15 @@ struct LayerSheet:View {
             filters
             if multiple{selectionCommands}
             GeometryReader{geometry in
-                HStack(spacing:0){
-                    if geometry.size.width>=680{inspector.frame(width:min(250,geometry.size.width*0.3));Divider().overlay(.white.opacity(0.06))}
-                    layerList
-                    commandRail
+                VStack(spacing:0){
+                    HStack(spacing:0){
+                        if geometry.size.width>=680{inspector.frame(width:min(250,geometry.size.width*0.3));Divider().overlay(.white.opacity(0.06))}
+                        layerList
+                        commandRail
+                    }
+                    if geometry.size.height>240{currentControls}
                 }
             }
-            currentControls
             footer
         }
         .foregroundStyle(Palette.pale).background(Palette.ink.opacity(0.94)).glass(26)
@@ -84,7 +86,7 @@ struct LayerSheet:View {
                 if let stack=item.stackID,expandedStacks.contains(stack){ForEach(members(item)){object in
                     Button{model.selected=object.id;model.tool = .text;model.panel=nil}label:{HStack(spacing:10){Image(systemName:"text.bubble");Text(object.textContent).lineLimit(2);Spacer();if model.selected==object.id && !model.stackSelection{Image(systemName:"checkmark.circle.fill").foregroundStyle(Palette.gold)}}.font(.system(size:11)).padding(.vertical,10).padding(.leading,24)}.buttonStyle(.plain).listRowBackground(Color.white.opacity(0.025)).accessibilityIdentifier("layer-object-"+object.id.uuidString)
                 }}
-            }
+            }.onMove{source,destination in model.reorderLayerStacks(layers.map(\.id),from:source,to:destination)}
             if !model.page.layers.contains(where:{$0.isWorkingImage==true}){backgroundRow}
         }.listStyle(.plain).scrollContentBackground(.hidden).environment(\.editMode,.constant(.active)).buttonStyle(.borderless)
         .overlay{if layers.isEmpty && filter != "all"{Text("لا توجد طبقات في هذا القسم").font(.footnote).foregroundStyle(Palette.quiet).allowsHitTesting(false)}}

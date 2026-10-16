@@ -121,7 +121,7 @@ struct EditorView:View {
         .onDisappear{model.cancelWhitening();model.commitTextMask();model.discardCleaning();model.save()}
     }
     private var fontDock:some View {
-        FontLibraryView(onSelect:{name in model.change{$0.style.fontPath=name}},currentFont:model.active?.style.fontPath,embedded:true,onClose:{model.panel=nil;model.save()}).cookiesInterface().background(Palette.ink).onAppear{model.checkpoint()}
+        FontLibraryView(onSelect:{name in model.change{$0.style.fontPath=name}},currentFont:model.active?.style.fontPath,embedded:true,onClose:{guard model.confirmTextSettings() else{return};model.panel=nil;model.save()}).cookiesInterface().background(Palette.ink).onAppear{model.checkpoint()}
     }
     func placeBubble(_ rect:CGRect,shape:BubbleShape){
         guard let chapter=typer.activeChapter else{model.error="افتح التايبر واختر فصلًا أولًا";assistant=true;return}

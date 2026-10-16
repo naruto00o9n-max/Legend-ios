@@ -40,10 +40,28 @@ extension EditorModel {
         if let drawing=page.layers.last(where:{($0.id==lastDrawingLayer || selected==nil) && $0.kind == .drawing && !$0.isLocked && $0.isVisible}){selected=drawing.id;return true}
         add(.drawing);return true
     }
+    @discardableResult func appendRasterPatch(_ patch:EditorLayer)->Bool{
+        guard prepareBrushTarget(),let active else{return false}
+        let inverse=LayerRenderer.transform(active).inverted(),rect=patch.frame.cg
+        let points=[CGPoint(x:rect.minX,y:rect.minY),CGPoint(x:rect.maxX,y:rect.minY),CGPoint(x:rect.minX,y:rect.maxY)].map{$0.applying(inverse)}.map{Point(x:Double($0.x),y:Double($0.y))}
+        let mark=Stroke(points:points,width:1,color:"FFFFFF",brush:"image-patch",texturePath:patch.imagePath,patchSize:Point(x:rect.width,y:rect.height))
+        checkpoint();change{$0.appendEditorStroke(mark)};save();return true
+    }
+    func reorderLayerStacks(_ rows:[UUID],from source:IndexSet,to destination:Int){
+        guard source.count==1,let index=source.first,rows.indices.contains(index) else{return}
+        let ids=Set(layerObjects(rows[index]).map(\.id)),objects=page.layers.filter{ids.contains($0.id)}
+        var remaining=page.layers.filter{!ids.contains($0.id)}
+        let anchor=destination<rows.count ? rows[destination]:nil
+        let position:Int
+        if let anchor,!ids.contains(anchor){let anchors=Set(layerObjects(anchor).map(\.id));position=(remaining.lastIndex{anchors.contains($0.id)}).map{$0+1} ?? remaining.count}
+        else if destination>=rows.count{let bottom=rows.reversed().first{!ids.contains($0)};let anchors=Set(bottom.map{layerObjects($0).map(\.id)} ?? []);position=remaining.firstIndex{anchors.contains($0.id)} ?? 0}
+        else{return}
+        checkpoint();remaining.insert(contentsOf:objects,at:position);page.layers=remaining;save()
+    }
     func changeLayerObjects(_ body:(inout EditorLayer)->Void){
         let ids=selectedLayerObjects;var next=page
         for index in next.layers.indices where ids.contains(next.layers[index].id) && !next.layers[index].isLocked{body(&next.layers[index])}
-        next.modified=Date();page=next;save()
+        next.modified=Date();page=next;scheduleEditSave()
     }
     func setStackVisibility(_ id:UUID,_ visible:Bool){
         let ids=Set(layerObjects(id).map(\.id));checkpoint()
@@ -147,15 +165,15 @@ extension EditorModel {
     }
     func rasterizeActiveLayer() async {
         guard let active,!active.isLocked,!busy else{return}
-        busy=true;defer{busy=false};let snapshot=page,directory=self.directory
+        let ids=selectedLayerObjects,indices=page.layers.indices.filter{ids.contains(page.layers[$0].id)}
+        guard let first=indices.first,let last=indices.last,indices==Array(first...last),indices.allSatisfy({!page.layers[$0].isLocked}) else{error="اختر طبقة متجاورة وغير مقفلة";return}
+        busy=true;defer{busy=false};let snapshot=page,directory=self.directory,objects=indices.map{page.layers[$0]}
         do {
-            let result=try await BackgroundWork.run{try LayerBitmap.merge([active],page:snapshot,directory:directory)}
-            guard page==snapshot,let index=page.layers.firstIndex(where:{$0.id==active.id}) else{
-                try? FileManager.default.removeItem(at:directory.appendingPathComponent(result.imagePath));return
-            }
-            var raster=result;raster.id=active.id;raster.name=active.name;raster.isVisible=active.isVisible
+            let result=try await BackgroundWork.run{try LayerBitmap.merge(objects,page:snapshot,directory:directory)}
+            guard page==snapshot else{try? FileManager.default.removeItem(at:directory.appendingPathComponent(result.imagePath));return}
+            var raster=result;raster.id=active.id;raster.name=active.stackName ?? active.name;raster.isVisible=active.isVisible
             raster.groupID=active.groupID;raster.groupName=active.groupName;raster.blend=active.blend
-            checkpoint();page.layers[index]=raster;save()
+            checkpoint();page.layers.replaceSubrange(first...last,with:[raster]);selected=raster.id;save()
         }catch{self.error=error.localizedDescription}
     }
 }

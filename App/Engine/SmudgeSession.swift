@@ -1,7 +1,7 @@
 import UIKit
 
 /// A bounded, mutable working region. Finger motion moves sampled paint; source
-/// pixels stay untouched and only a masked result becomes a new editable layer.
+/// pixels stay untouched and masked results remain commands in the selected layer.
 final class SmudgeSession {
     let region:CGRect
     private let context:CGContext
@@ -29,5 +29,5 @@ final class SmudgeSession {
         }
     }
     func image(masked:Bool=false)->UIImage?{guard let cg=context.makeImage() else{return nil};let image=UIImage(cgImage:cg);guard masked else{return image};let format=UIGraphicsImageRendererFormat();format.scale=1;return UIGraphicsImageRenderer(size:region.size,format:format).image{out in image.draw(at:.zero);if let cg=mask.makeImage(){UIImage(cgImage:cg).draw(at:.zero,blendMode:.destinationIn,alpha:1)}}}
-    @MainActor func commit(to model:EditorModel)throws{guard let data=image(masked:true)?.pngData() else{throw ImageFailure.message("تعذر حفظ ضربة الطمس")};let name=UUID().uuidString+".png";try data.write(to:model.directory.appendingPathComponent(name),options:.atomic);model.checkpoint();var layer=EditorLayer(kind:.image,name:"طمس");layer.imagePath=name;layer.frame=Box(x:region.minX,y:region.minY,width:region.width,height:region.height);model.page.layers.append(layer);model.selected=layer.id;model.save()}
+    @MainActor func commit(to model:EditorModel)throws{guard let data=image(masked:true)?.pngData() else{throw ImageFailure.message("تعذر حفظ ضربة الطمس")};let name=UUID().uuidString+".png";try data.write(to:model.directory.appendingPathComponent(name),options:.atomic);var layer=EditorLayer(kind:.image,name:"طمس");layer.imagePath=name;layer.frame=Box(x:region.minX,y:region.minY,width:region.width,height:region.height);if !model.appendRasterPatch(layer){try? FileManager.default.removeItem(at:model.directory.appendingPathComponent(name));throw ImageFailure.message("اختر طبقة قابلة للرسم") }}
 }

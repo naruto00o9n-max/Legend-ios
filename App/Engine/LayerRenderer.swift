@@ -59,6 +59,18 @@ enum LayerRenderer {
         }
         return CGRect(x:0,y:0,width:l.frame.width,height:l.frame.height)
     }
+    static func visualBounds(_ layer:EditorLayer)->CGRect{
+        if layer.kind == .text{return TextVisualBounds.rect(layer)}
+        var rect=bounds(layer).insetBy(dx:-CGFloat(max(2,layer.style.strokeWidth)),dy:-CGFloat(max(2,layer.style.strokeWidth)))
+        for stroke in layer.strokes where !stroke.erase{
+            var points=stroke.points
+            if stroke.brush=="image-patch",points.count==3{points.append(Point(x:points[1].x+points[2].x-points[0].x,y:points[1].y+points[2].y-points[0].y))}
+            guard let first=points.first else{continue};let margin=max(2,stroke.width*2)
+            var area=CGRect(x:first.x,y:first.y,width:0,height:0)
+            for point in points.dropFirst(){area=area.union(CGRect(x:point.x,y:point.y,width:0,height:0))}
+            rect=rect.union(area.insetBy(dx:-margin,dy:-margin))
+        };return rect
+    }
     static func transform(_ l:EditorLayer)->CGAffineTransform {
         let b=bounds(l)
         if let shear=l.shearX,abs(shear)>0.000001{
@@ -74,7 +86,7 @@ enum LayerRenderer {
         UIGraphicsPushContext(ctx);defer{UIGraphicsPopContext()}
         for l in layers where l.isVisible {
             // Cull in document coordinates before shaping/rasterizing off-screen glyphs.
-            let local=l.kind == .text ? TextVisualBounds.rect(l):bounds(l).insetBy(dx:-CGFloat(max(2,l.style.strokeWidth)),dy:-CGFloat(max(2,l.style.strokeWidth)))
+            let local=visualBounds(l)
             if !local.applying(transform(l)).intersects(ctx.boundingBoxOfClipPath){continue}
             ctx.saveGState();ctx.setAlpha(CGFloat(l.opacity));ctx.setBlendMode(l.blend.cg)
             let b=bounds(l);ctx.concatenate(transform(l))

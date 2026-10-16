@@ -78,7 +78,14 @@ struct LibraryView:View {
     func card(_ item:LibraryItem)->some View {
         VStack(alignment:.leading,spacing:12){ZStack{RoundedRectangle(cornerRadius:14).fill(Palette.gold.opacity(0.06));if item.folder{Image(systemName:"folder").font(.system(size:36,weight:.ultraLight))}else{ProjectThumbnail(url:library.directory(item.cover ?? item.pages.first ?? item.id).appendingPathComponent("thumbnail.png"),revision:library.thumbnailRevision,icon:item.isChapter==true ? "rectangle.stack":"photo").frame(height:140).clipped().clipShape(RoundedRectangle(cornerRadius:14))}}.frame(height:140)
             Text(item.title).font(.system(size:14,weight:.medium)).lineLimit(1);Text(item.folder ? "\(library.items.filter{$0.parent==item.id}.count) أعمال":item.isChapter==true ? "\(item.pages.count) صفحة":library.vault.receipt(item.id)?.resident==false ? "محفوظ في الحساب · يُنزّل عند الفتح":"صورة أصلية · محفوظة على الجهاز").font(.system(size:10)).foregroundStyle(Palette.quiet)
-        }.padding(12).glass(22).contextMenu{Button("تغيير الاسم"){renameText=item.title;renaming=item};Menu("نقل إلى"){Button("المعرض"){library.move(item,parent:nil)};ForEach(library.items.filter{$0.folder && $0.id != item.id}){folder in Button(folder.title){library.move(item,parent:folder.id)}}};Button("حذف",role:.destructive){library.remove(item)}}.accessibilityIdentifier("project-\(item.id)")
+        }.padding(12).glass(22).overlay(alignment:.topLeading){
+            if !selecting{Menu{
+                if !item.folder,item.isChapter != true{Button{selecting=true;projectSelection=[item.id]}label:{Label("تحديد مشاريع",systemImage:"checkmark.circle")}}
+                Button("تغيير الاسم"){renameText=item.title;renaming=item}
+                Menu("نقل إلى"){Button("المعرض"){library.move(item,parent:nil)};ForEach(library.items.filter{$0.folder && $0.id != item.id}){folder in Button(folder.title){library.move(item,parent:folder.id)}}}
+                Button("حذف",role:.destructive){library.remove(item)}
+            }label:{Image(systemName:"ellipsis").font(.system(size:14,weight:.semibold)).foregroundStyle(.white).frame(width:32,height:32).background(.black.opacity(0.65),in:Circle())}.padding(18).accessibilityLabel("خيارات "+item.title)}
+        }.accessibilityIdentifier("project-\(item.id)")
     }
 }
 struct PageDestination:View {

@@ -187,7 +187,7 @@ import SwiftUI
         if editing{editSaveTask?.cancel();editSaveTask=nil;previewTask?.cancel();previewTask=nil}
         else{scheduleEditSave()}
     }
-    private func scheduleEditSave(){
+    func scheduleEditSave(){
         guard !continuousEditing else{return}
         editSaveTask?.cancel()
         editSaveTask=Task { [weak self] in

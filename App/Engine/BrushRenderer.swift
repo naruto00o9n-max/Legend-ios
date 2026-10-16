@@ -12,6 +12,7 @@ enum BrushRenderer {
     }
     static func visible(_ s:Stroke,in clip:CGRect)->Bool {
         guard !s.points.isEmpty else{return false}
+        if s.brush=="image-patch",s.points.count==3{let a=s.points[0],b=s.points[1],c=s.points[2],d=Point(x:b.x+c.x-a.x,y:b.y+c.y-a.y);let xs=[a.x,b.x,c.x,d.x],ys=[a.y,b.y,c.y,d.y];return CGRect(x:xs.min()!,y:ys.min()!,width:xs.max()!-xs.min()!,height:ys.max()!-ys.min()!).insetBy(dx:-2,dy:-2).intersects(clip)}
         // A texture can have an arbitrary aspect ratio; its stamp extents are
         // not inferred from brush width, so this fast rejection does not apply.
         guard s.brush != "texture" else{return true}
@@ -22,6 +23,12 @@ enum BrushRenderer {
     }
     static func draw(_ s:Stroke,in ctx:CGContext,directory:URL){
         guard let first=s.points.first,visible(s,in:ctx.boundingBoxOfClipPath) else{return};ctx.saveGState();defer{ctx.restoreGState()}
+        if s.brush=="image-patch",let size=s.patchSize,size.x>0,size.y>0,s.points.count==3,let file=s.texturePath{
+            let a=s.points[0],b=s.points[1],d=s.points[2]
+            ctx.concatenate(CGAffineTransform(a:(b.x-a.x)/size.x,b:(b.y-a.y)/size.x,c:(d.x-a.x)/size.y,d:(d.y-a.y)/size.y,tx:a.x,ty:a.y))
+            var patch=EditorLayer(kind:.image);patch.imagePath=file;patch.frame=Box(x:0,y:0,width:size.x,height:size.y)
+            ImageLayerRenderer.draw(patch,rect:patch.frame.cg,in:ctx,directory:directory);return
+        }
         let path=path(s),alpha=min(1,max(0,s.opacity ?? 1))*(s.brush=="water" ? 0.25:s.brush=="marker" ? 0.55:1)
         ctx.setAlpha(CGFloat(alpha));if s.erase{ctx.setBlendMode(.destinationOut)}
         UIColor(hex:s.color).setStroke();UIColor(hex:s.color).setFill()

@@ -15,7 +15,7 @@ struct FontLibraryView:View {
     @State private var version=0
     @State private var error:String?
     @State private var scripts:[String:Set<String>]=[:]
-    @State private var catalogue=Fonts.files+Fonts.otf
+    @State private var catalogue:[URL]=[]
     @State private var importedNames=Set<String>()
     @State private var classification=UUID()
     @State private var query=""
@@ -31,12 +31,14 @@ struct FontLibraryView:View {
         return (query.isEmpty || name.localizedCaseInsensitiveContains(query)) && (filter=="الكل" || scripts[name]?.contains(filter)==true || (filter=="المفضلة" && favorites.contains(name)) || (filter=="آخر استخدام" && recent.contains(name)) || (filter=="المستوردة" && importedNames.contains(name)) || (groups[filter]?.contains(name)==true))
     }.sorted{if filter=="آخر استخدام"{return (recent.firstIndex(of:$0.lastPathComponent) ?? Int.max)<(recent.firstIndex(of:$1.lastPathComponent) ?? Int.max)};return $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending}}
     var body:some View {
-        NavigationStack{ZStack{if !embedded{Ambient()};VStack(spacing:10){
-            HStack(spacing:10){SurfaceSymbol(icon:"textformat.alt",size:36);VStack(alignment:.leading,spacing:3){Text("اختر صوت الحوار").font(.system(size:15,weight:.semibold));Text("\(catalogue.count) خطوط · معاينة مباشرة على الصورة").font(.system(size:10)).foregroundStyle(Palette.secondary)};Spacer(minLength:0)}.padding(.horizontal,16)
+        NavigationStack{ZStack{if !embedded{Ambient()};VStack(spacing:embedded ? 8:12){
+            if !embedded{HStack(spacing:10){SurfaceSymbol(icon:"textformat.alt",size:36);VStack(alignment:.leading,spacing:3){Text("اختر صوت الحوار").font(.system(size:15,weight:.semibold));Text("\(catalogue.count) خطوط · معاينة مباشرة على الصورة").font(.system(size:10)).foregroundStyle(Palette.secondary)};Spacer(minLength:0)}.padding(.horizontal,16)}
+
             SearchBar(placeholder:"البحث في الخطوط",text:$query).padding(.horizontal,20)
-            ScrollView(.horizontal,showsIndicators:false){HStack{ForEach(["الكل","العربية","الإنجليزية","المفضلة","آخر استخدام","المستوردة"]+groups.keys.sorted(),id:\.self){name in Button(name){filter=name}.buttonStyle(CapsuleActionStyle(selected:filter==name)).accessibilityIdentifier("font-category-"+name).accessibilityLabel(name)}}.padding(.horizontal).padding(.vertical,8)}.frame(height:54).accessibilityIdentifier("font-filter-strip")
+            ScrollView(.horizontal,showsIndicators:false){HStack{ForEach(["الكل","العربية","الإنجليزية","المفضلة","آخر استخدام","المستوردة"]+groups.keys.sorted(),id:\.self){name in Button(name){filter=name}.buttonStyle(CapsuleActionStyle(selected:filter==name)).accessibilityIdentifier("font-category-"+name).accessibilityLabel(name)}}.padding(.horizontal).padding(.vertical,8)}.frame(height:embedded ? 44:54).accessibilityIdentifier("font-filter-strip")
             List{ForEach(files,id:\.self){url in row(url)}}.id(version).listStyle(.plain).buttonStyle(.borderless).scrollContentBackground(.hidden)
-            HStack{Text("\(selected.count) للتنظيم");Spacer();Button("مجموعة جديدة"){naming=true}.disabled(selected.isEmpty);Button("تصدير"){exportFonts()}.disabled(selected.isEmpty);if let output{ShareLink(item:output){Image(systemName:"square.and.arrow.up")}}}.font(.system(size:12)).padding(14).glass(0)
+            if !embedded || !selected.isEmpty{HStack{Text("\(selected.count) للتنظيم");Spacer();Button("مجموعة جديدة"){naming=true}.disabled(selected.isEmpty);Button("تصدير"){exportFonts()}.disabled(selected.isEmpty);if let output{ShareLink(item:output){Image(systemName:"square.and.arrow.up")}}}.font(.system(size:12)).padding(14).glass(0)}
+
         }}.foregroundStyle(Palette.pale).navigationTitle("مكتبة الخطوط").navigationBarTitleDisplayMode(.inline)
         .toolbar{ToolbarItem(placement:.topBarLeading){Button("إغلاق"){if let onClose{onClose()}else{dismiss()}}.accessibilityIdentifier("font-close")};ToolbarItem(placement:.topBarTrailing){Button{picker=true}label:{Image(systemName:"plus")}.accessibilityLabel("استيراد خطوط").accessibilityIdentifier("font-import")}}
         .disabled(importing).overlay{if importing{ProgressView("جارٍ استيراد الخطوط…").padding(20).glass(20)}}

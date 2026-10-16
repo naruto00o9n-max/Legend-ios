@@ -153,3 +153,23 @@ extension LayerCommandTests {
         model.undo();XCTAssertEqual(model.page.layers.count,3)
     }
 }
+
+extension LayerCommandTests {
+    @MainActor func testRasterFillCommandsReuseLayerAndCanBeErasedWithoutHarmingSource()async throws{
+        let(page,root,directory)=try fixture();defer{try? FileManager.default.removeItem(at:root)}
+        let source=try Data(contentsOf:directory.appendingPathComponent(page.source)),model=EditorModel(page:page,library:LibraryStore(root:root));defer{model.cancelPendingSaves()}
+        model.brushColor="FFFFFF";await model.fillBucket(at:CGPoint(x:20,y:20));XCTAssertNil(model.error)
+        XCTAssertEqual(model.page.layers.count,1);XCTAssertEqual(model.active?.strokes.first?.brush,"image-patch")
+        XCTAssertGreaterThan(try sample(model.page,directory)[1],245)
+        let id=try XCTUnwrap(model.selected);model.brushColor="0000FF";await model.fillBucket(at:CGPoint(x:20,y:20))
+        XCTAssertEqual(model.page.layers.count,1);XCTAssertEqual(model.selected,id);XCTAssertEqual(model.active?.strokes.count,2)
+        XCTAssertGreaterThan(try sample(model.page,directory)[2],245)
+        model.change{$0.appendEditorStroke(Stroke(points:[Point(x:48,y:64)],width:20,color:"000000",erase:true))}
+        let pixel=try sample(model.page,directory);XCTAssertGreaterThan(pixel[0],245);XCTAssertLessThan(pixel[2],10,"Erasing ink reveals the red source, not black paint")
+        XCTAssertEqual(try Data(contentsOf:directory.appendingPathComponent(page.source)),source)
+        let archive=try ProjectArchive.export(model.page,directory:directory);defer{try? FileManager.default.removeItem(at:archive)}
+        let target=root.appendingPathComponent("restored");try FileManager.default.createDirectory(at:target,withIntermediateDirectories:true)
+        let restored=try ProjectArchive.importFile(archive,root:target)
+        XCTAssertEqual(restored.layers[0].strokes.count,3);XCTAssertEqual(try sample(restored,target.appendingPathComponent(restored.id.uuidString)),pixel)
+    }
+}

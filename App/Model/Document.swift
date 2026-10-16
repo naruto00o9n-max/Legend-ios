@@ -69,7 +69,7 @@ extension TextStyle {
 }
 struct ExtraOutline:Codable,Equatable,Identifiable, Hashable {var id=UUID();var width:Double;var color:String;var gradient:[String]?;var stops:[Double]?;var angle:Double?;var gradientType:Int?}
 struct TextRun: Codable, Equatable, Hashable { var start: Int; var end: Int; var color: String?; var fontSize: Double?; var isBold: Bool? }
-struct Stroke: Codable, Equatable, Hashable { var points: [Point]; var width: Double; var color: String; var erase = false; var brush = "normal";var opacity:Double?;var texturePath:String?;var shape:String?;var filled:Bool? }
+struct Stroke: Codable, Equatable, Hashable { var points: [Point]; var width: Double; var color: String; var erase = false; var brush = "normal";var opacity:Double?;var texturePath:String?;var shape:String?;var filled:Bool?;var patchSize:Point? }
 struct EditorLayer: Codable, Equatable, Identifiable, Hashable {
     var stackID:UUID?;var stackName:String?
     var id = UUID(); var kind: LayerKind; var name = "طبقة"; var frame = Box()
