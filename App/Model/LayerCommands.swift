@@ -20,7 +20,7 @@ extension EditorModel {
             if let existing=next.layers[i].stackID{stack=existing;continue}
             let id=stack ?? UUID();stack=id;next.layers[i].stackID=id;next.layers[i].stackName="النصوص";changed=true
         }
-        if changed{checkpoint();page=next;save()}
+        if changed{page=next;save()}
     }
     var selectedLayerObjects:Set<UUID>{
         guard let active else{return []}

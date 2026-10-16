@@ -173,3 +173,13 @@ extension LayerCommandTests {
         XCTAssertEqual(restored.layers[0].strokes.count,3);XCTAssertEqual(try sample(restored,target.appendingPathComponent(restored.id.uuidString)),pixel)
     }
 }
+
+extension LayerCommandTests {
+    @MainActor func testLegacyTextStackMigrationDoesNotInventUserUndoHistory()throws{
+        var(page,root,_)=try fixture();defer{try? FileManager.default.removeItem(at:root)}
+        var first=EditorLayer(kind:.text),second=EditorLayer(kind:.text);first.textContent="الأول";second.textContent="الثاني";page.layers=[first,second]
+        let model=EditorModel(page:page,library:LibraryStore(root:root));defer{model.cancelPendingSaves()};model.organizeLegacyTextLayers()
+        XCTAssertEqual(model.logicalLayerCount,1);XCTAssertTrue(model.undoStack.isEmpty);XCTAssertEqual(model.page.layers.map(\.textContent),page.layers.map(\.textContent))
+        let migrated=model.page;model.organizeLegacyTextLayers();XCTAssertEqual(model.page,migrated)
+    }
+}

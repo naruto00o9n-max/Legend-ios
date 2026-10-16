@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import pathlib,zipfile,re,json,base64,hashlib,subprocess,urllib.request,shutil
 from download_reference import download
+from fetch_swift_packages import prepare as prepare_swift_packages
+prepare_swift_packages()
 p=pathlib.Path(__file__).resolve().parents[1]
 revision='722718f6e8d8ff8f02337c5bf83a6455d9f4b6a1'
 base='https://raw.githubusercontent.com/naruto00o9n-max/Legend/'+revision+'/'

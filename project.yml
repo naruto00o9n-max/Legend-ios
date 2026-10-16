@@ -29,8 +29,7 @@ packages:
     url: https://github.com/weichsel/ZIPFoundation.git
     exactVersion: 0.9.19
   ONNXRuntime:
-    url: https://github.com/microsoft/onnxruntime-swift-package-manager.git
-    exactVersion: 1.24.2
+    path: .work/SwiftPackages/ONNXRuntime
 targetTemplates:
   CookiesBase:
     type: application
