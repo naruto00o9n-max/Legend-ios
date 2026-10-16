@@ -8,6 +8,7 @@ import SwiftUI
     @Published var thumbnailRevision=0
     @Published var error: String?
     let root: URL
+    lazy var vault=ProjectVaultStore(library:self)
     init(root: URL? = nil) {
         self.root=root ?? FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("Cookies",isDirectory:true)
         if ProcessInfo.processInfo.arguments.contains("-ui-tests"){try? FileManager.default.removeItem(at:self.root)}
@@ -31,6 +32,7 @@ import SwiftUI
         do{try commitItems(next);return true}catch{self.error=error.localizedDescription;return false}
     }
     func load(_ id:UUID)throws->EditorPage {
+        if let receipt=try VaultFiles.receipt(directory(id)),!receipt.resident{throw ImageFailure.message("المشروع محفوظ في الخادم؛ افتحه لتنزيله قبل هذه العملية")}
         guard let saved=try RecoveryFile.read(EditorPage.self,at:directory(id).appendingPathComponent("page.json")) else{throw ImageFailure.message("ملف الصفحة مفقود")}
         if saved.recovered{error="استُعيدت الصفحة من آخر حفظ سليم. راجع آخر تعديل قبل المتابعة."};return saved.value
     }

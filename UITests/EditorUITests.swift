@@ -351,4 +351,13 @@ final class EditorUITests:XCTestCase {
         reveal(app.buttons["text-add"],in:app.scrollViews["panel-strip"]);app.buttons["text-add"].tap();XCTAssertTrue(app.textViews["text-input"].waitForExistence(timeout:5))
     }
 
+    func testVaultOverviewKeepsLocalEditingAvailableWithoutLogin(){
+        start()
+        let vault=app.buttons["project-vault"];revealVertical(vault);vault.tap()
+        XCTAssertTrue(app.staticTexts["مساحة لمشاريعك"].waitForExistence(timeout:10))
+        XCTAssertTrue(app.buttons["تسجيل الدخول"].exists)
+        app.buttons["تم"].firstMatch.tap()
+        XCTAssertTrue(app.buttons["import-image"].waitForExistence(timeout:8))
+    }
+
 }

@@ -4,6 +4,7 @@ import CoreText
 
 struct StorageManagementView:View {
     @EnvironmentObject private var service:ReferenceService
+    @EnvironmentObject private var library:LibraryStore
     @Environment(\.dismiss) private var dismiss
     @State private var usage=StorageUsage()
     @State private var choices:[BackupUnit]=[]
@@ -39,7 +40,7 @@ struct StorageManagementView:View {
     private func refresh(){Task{do{let result=try await Task.detached{(AppStorageManager.usage(),try AppStorageManager.units())}.value;usage=result.0;choices=result.1;selection=Set(choices.map(\.id))}catch{ColorLibraryStore.shared.reload();message=error.localizedDescription}}}
     private func load(_ file:URL){busy=true;Task{defer{busy=false};do{let manifest=try await Task.detached{try AppStorageManager.inspect(file)}.value;restoreFile=file;choices=manifest.units;selection=Set(choices.map(\.id))}catch{try? FileManager.default.removeItem(at:file);message=error.localizedDescription}}}
     private func backup(){busy=true;let selected=selection;let settings:Data;do{try ColorLibraryStore.shared.flushIfNeeded();settings=try AppStorageManager.settingsData()}catch{busy=false;message=error.localizedDescription;return};Task{defer{busy=false};do{archive=try await Task.detached{try AppStorageManager.createBackup(selected:selected,settings:settings)}.value;refresh()}catch{ColorLibraryStore.shared.reload();message=error.localizedDescription}}}
-    private func perform(){busy=true;let action=confirmation,selected=selection,file=restoreFile;Task{defer{busy=false};do{
+    private func perform(){guard !library.vault.busy else{message="انتظر اكتمال نقل المشروع قبل تنظيف البيانات أو استعادتها";return};library.vault.suspended=true;busy=true;let action=confirmation,selected=selection,file=restoreFile;Task{defer{busy=false;library.vault.suspended=false};do{
         if action=="reset"{try await BigLaMaAssets.shared.beginCacheCleanup();defer{BigLaMaAssets.shared.endCacheCleanup()};ColorLibraryStore.shared.discardPendingWrites();service.discardLocalSession();try AppStorageManager.resetLocalData();ImagePipeline.clearMemoryCaches();dismiss();NotificationCenter.default.post(name:AppStorageManager.reset,object:nil)}
         else if action=="restore",let file{ColorLibraryStore.shared.discardPendingWrites();for font in Fonts.userFiles{CTFontManagerUnregisterFontsForURL(font as CFURL,.process,nil)};defer{Fonts.register()};let settings=try await Task.detached{try AppStorageManager.restore(file,selected:selected)}.value;if let settings{for (key,value) in settings{UserDefaults.standard.set(value,forKey:key)}};Fonts.register();ImagePipeline.clearMemoryCaches();dismiss();NotificationCenter.default.post(name:AppStorageManager.changed,object:nil)}
         else{try await BigLaMaAssets.shared.beginCacheCleanup();defer{BigLaMaAssets.shared.endCacheCleanup()};restoreFile=nil;try await Task.detached{try AppStorageManager.cleanCaches()}.value;ImagePipeline.clearMemoryCaches();archive=nil;refresh();message="نُظفت الملفات المؤقتة. مشاريعك وأصولها وطبقاتها محفوظة."}

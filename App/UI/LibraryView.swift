@@ -7,6 +7,7 @@ struct LibraryView:View {
     var parent:UUID? = nil;var title="معرضي"
     @State private var filePicker=false;@State private var fontLibrary=false;@State private var community=false;@State private var search=""
     @State private var guide=false
+    @State private var projectVault=false
     @State private var accountWorkspace=false
     @State private var trash=false
     @State private var renaming:LibraryItem?
@@ -25,10 +26,10 @@ struct LibraryView:View {
             if children.isEmpty{WorkspaceEmpty(title:search.isEmpty ? "مساحة تنتظر حكايتك":"لا توجد نتائج",detail:search.isEmpty ? "أضف صورك، ثم اجمع العمل في مجلد وفصول. يبقى كل مشروع قابلًا للتعديل.":"جرّب اسمًا آخر للبحث.",icon:search.isEmpty ? "rectangle.stack.badge.plus":"magnifyingglass")}
             LazyVGrid(columns:[GridItem(.adaptive(minimum:158),spacing:14)],spacing:14){ForEach(children){item in if item.folder{NavigationLink{LibraryView(parent:item.id,title:item.title)}label:{card(item)}}else if item.isChapter==true{NavigationLink{ChapterGalleryView(id:item.id)}label:{card(item)}}else{NavigationLink{PageDestination(id:item.id)}label:{card(item)}}}.buttonStyle(.plain)}
             SectionHeading(title:"أدوات مساحة العمل",detail:"كل ما تحتاج إليه، قريب منك")
-            ResponsiveActionGrid(items:NetworkPolicy.enabled ? 6:4){
+            ResponsiveActionGrid(items:NetworkPolicy.enabled ? 7:4){
                 ActionTile(title:"التايبر",subtitle:"نصوص الفصول والوسوم والتقدّم",icon:"text.bubble"){assistant=true}.accessibilityIdentifier("assistant")
                 ActionTile(title:"الخطوط",subtitle:"استيراد، مجموعات، ومفضلة",icon:"textformat.alt"){fontLibrary=true}.accessibilityIdentifier("font-library")
-                if NetworkPolicy.enabled{ActionTile(title:"الحساب والخدمات",subtitle:"ملفك، الترتيب، والربط",icon:"person.crop.circle"){accountWorkspace=true}.accessibilityIdentifier("account-workspace");ActionTile(title:"المجتمع",subtitle:"الأعمال والنقاشات والملف الشخصي",icon:"person.2"){community=true}.accessibilityIdentifier("community")}
+                if NetworkPolicy.enabled{ActionTile(title:"حفظ المشاريع",subtitle:"اختر مكان مشاريعك وحرّر مساحة جهازك",icon:"externaldrive.badge.icloud"){projectVault=true}.accessibilityIdentifier("project-vault");ActionTile(title:"الحساب والخدمات",subtitle:"ملفك، الترتيب، والربط",icon:"person.crop.circle"){accountWorkspace=true}.accessibilityIdentifier("account-workspace");ActionTile(title:"المجتمع",subtitle:"الأعمال والنقاشات والملف الشخصي",icon:"person.2"){community=true}.accessibilityIdentifier("community")}
                 ActionTile(title:"دليل كوكيز",subtitle:"خطوة بخطوة، من الاستيراد إلى التصدير",icon:"book.closed"){guide=true}.accessibilityIdentifier("app-guide")
                 ActionTile(title:"الإعدادات",subtitle:"المظهر، التحرير، والبيانات",icon:"slider.horizontal.3"){settings=true}.accessibilityIdentifier("settings-link")
             }
@@ -46,7 +47,7 @@ struct LibraryView:View {
         .alert("مجلد جديد",isPresented:$folderPrompt){TextField("اسم العمل أو الفصل",text:$name);Button("إنشاء"){if !name.trimmingCharacters(in:.whitespaces).isEmpty{library.createFolder(name,parent:parent);name=""}};Button("إلغاء",role:.cancel){}}
         .alert("فصل جديد",isPresented:$chapterPrompt){TextField("اسم الفصل",text:$name);Button("إنشاء"){do{try library.createChapter(name,parent:parent);name=""}catch{library.error=error.localizedDescription}};Button("إلغاء",role:.cancel){}}
         .alert("تغيير الاسم",isPresented:Binding(get:{renaming != nil},set:{if !$0{renaming=nil}})){TextField("الاسم",text:$renameText);Button("حفظ"){if let item=renaming,!renameText.isEmpty{library.rename(item,to:renameText)};renaming=nil};Button("إلغاء",role:.cancel){renaming=nil}}
-        .sheet(isPresented:$guide){AppGuideView()}.fullScreenCover(isPresented:$assistant){TyperLibraryView(folder:parent)}.fullScreenCover(isPresented:$settings){SettingsView()}.sheet(isPresented:$fontLibrary){FontLibraryView()}.fullScreenCover(isPresented:$community){ServiceHub()}.fullScreenCover(isPresented:$accountWorkspace){AccountWorkspaceView()}
+        .fullScreenCover(isPresented:$projectVault){ProjectVaultView(vault:library.vault)}.sheet(isPresented:$guide){AppGuideView()}.fullScreenCover(isPresented:$assistant){TyperLibraryView(folder:parent)}.fullScreenCover(isPresented:$settings){SettingsView()}.sheet(isPresented:$fontLibrary){FontLibraryView()}.fullScreenCover(isPresented:$community){ServiceHub()}.fullScreenCover(isPresented:$accountWorkspace){AccountWorkspaceView()}
         .alert("تعذر إكمال العملية",isPresented:Binding(get:{library.error != nil},set:{if !$0{library.error=nil}})){Button("حسنًا"){library.error=nil}}message:{Text(library.error ?? "")}
         .fullScreenCover(isPresented:$trash){LibraryTrashView()}
     }
@@ -64,8 +65,8 @@ struct PageDestination:View {
     var body:some View {
         Group {if let model{EditorView(model:model)}else if failed{WorkspaceEmpty(title:"تعذر فتح المشروع",detail:"ارجع إلى المعرض وحاول فتحه مجددًا.",icon:"doc.badge.exclamationmark").padding(20)}else{ProgressView("فتح المشروع…")}}
         .task(id:id){guard model?.page.id != id else{return};model=nil;failed=false;let directory=library.directory(id)
-            do{let saved=try await BackgroundWork.run{guard let saved=try RecoveryFile.read(EditorPage.self,at:directory.appendingPathComponent("page.json")) else{throw ImageFailure.message("ملف الصفحة مفقود")};return saved};guard !Task.isCancelled else{return};if saved.recovered{library.error="استُعيدت الصفحة من آخر حفظ سليم."};model=EditorModel(page:saved.value,library:library)}catch{failed=true}
-        }
+            do{try await library.vault.open(id);let saved=try await BackgroundWork.run{guard let saved=try RecoveryFile.read(EditorPage.self,at:directory.appendingPathComponent("page.json")) else{throw ImageFailure.message("ملف الصفحة مفقود")};return saved};guard !Task.isCancelled else{return};if saved.recovered{library.error="استُعيدت الصفحة من آخر حفظ سليم."};model=EditorModel(page:saved.value,library:library)}catch{failed=true;library.error=error.localizedDescription}
+        }.onDisappear{model?.save();model?.cancelPendingSaves();model=nil;library.vault.close(id)}
     }
 }
 

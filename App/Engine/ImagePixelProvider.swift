@@ -45,6 +45,10 @@ enum ImageAssetPixels {
     static func provider(_ layer:EditorLayer,directory:URL)throws->ImagePixelProvider {
         if let file=layer.imagePixelFile,AppStorageManager.safe(file),!file.contains("/"),let width=layer.imagePixelWidth,let height=layer.imagePixelHeight,width>0,height>0{
             let raw=directory.appendingPathComponent(file)
+            if !FileManager.default.fileExists(atPath:raw.path),layer.isWorkingImage==true,
+               let data=try? Data(contentsOf:directory.appendingPathComponent("page.json")),let page=try? JSONDecoder().decode(EditorPage.self,from:data),page.raw==file,page.source==layer.imagePath,page.width==width,page.height==height {
+                try ImagePipeline.ensureDecoded(raw,width:width,height:height)
+            }
             if (try? FileManager.default.attributesOfItem(atPath:raw.path)[.size] as? NSNumber)?.int64Value == Int64(width)*Int64(height)*4{return cachedProvider(raw,width:width,height:height,profile:directory.appendingPathComponent(layer.imagePath))}
         }
         let input=directory.appendingPathComponent(layer.imagePath)
