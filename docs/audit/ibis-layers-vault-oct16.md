@@ -67,3 +67,9 @@ The vault verification workflow now requests a signed GitHub OIDC token with aud
 Project leases follow navigation destination lifetime rather than disappearance callbacks: covering the editor with a full-screen tool must not upload/evict its source. Reader/editor leases for the same project are independent. Closing the last lease permits the transfer. Cache/reset/restore/backup operations refuse to race an active transfer.
 
 A closing destination explicitly flushes its current document even when a gesture was ending. A failed flush blocks automatic project transfer for all remaining leases until the next actual reopening, avoiding eviction after a stale save. This follow-up requires the final native regression run.
+
+Security advisory follow-up: the two private tables intentionally have no public RLS policies or anonymous/authenticated grants. The new project's separate Auth issuer currently serves only generated isolated CI identities; the original service controls real user passwords. Its default leaked-password checking is disabled ([Supabase remediation](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection)). No plan upgrade or original-auth setting was changed.
+
+Additional server-only capacity regression: 1,024 retained revisions per owner and 4,096 globally bound tiny-project metadata. A rolled-back live SQL test verified both bounds and idempotent retry at capacity. Existing byte limits and private grants remain intact.
+
+Import is initially performed on the device. This release offloads a closed project after verified saving; bulk chapter imports still require temporary space for their incoming pages and are not streamed directly into server storage. Global libraries and chapter/folder structure remain device/backup data. This is not full-application synchronization or remote rendering.

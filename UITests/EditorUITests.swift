@@ -358,7 +358,11 @@ final class EditorUITests:XCTestCase {
         XCTAssertTrue(app.staticTexts["مساحة لمشاريعك"].waitForExistence(timeout:10))
         XCTAssertTrue(app.buttons["تسجيل الدخول"].exists)
         app.buttons["تم"].firstMatch.tap()
-        XCTAssertTrue(app.buttons["import-image"].waitForExistence(timeout:8))
+        // Returning preserves the gallery's scroll position. SwiftUI removes
+        // offscreen action cards from its accessibility tree on iPhone.
+        let importButton=app.buttons["import-image"]
+        for _ in 0..<8{if importButton.exists && importButton.isHittable{break};app.scrollViews.firstMatch.swipeDown()}
+        XCTAssertTrue(importButton.waitForExistence(timeout:8));XCTAssertTrue(importButton.isHittable)
     }
 
 }

@@ -50,6 +50,12 @@ begin
   if coalesce((select sum(byte_size) from public.cookies_vault_revisions where owner_id=p_owner),0)+n>536870912 then
     raise sqlstate 'PT507' using message='Account vault capacity reached';
   end if;
+  -- Byte budgets alone must not permit unbounded tiny pending revisions.
+  -- The same transaction lock serializes these metadata capacity checks.
+  if (select count(*) from public.cookies_vault_revisions)>=4096 or
+     (select count(*) from public.cookies_vault_revisions where owner_id=p_owner)>=1024 then
+    raise sqlstate 'PT507' using message='Vault project index capacity reached';
+  end if;
   insert into public.cookies_vault_revisions(owner_id,project_id,revision_id,expected_generation,head,byte_size,stage)
     values(p_owner,p_project,p_revision,p_expected,p_head,n,'pending') returning * into existing;
   return to_jsonb(existing);
