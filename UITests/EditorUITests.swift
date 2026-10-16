@@ -383,6 +383,7 @@ final class EditorUITests:XCTestCase {
         XCTAssertTrue(app.staticTexts["نتيجة الاختبار"].waitForExistence(timeout:8),"An error/result dialog must be able to follow dismissal")
         app.buttons["حسنًا"].tap();XCTAssertTrue(show.waitForExistence(timeout:5))
         XCTAssertEqual(app.staticTexts["dialog-removal-count"].label,"1","The original selected project must survive until the action runs, exactly once")
+        XCTAssertEqual(app.staticTexts["dialog-underlay-disappearances"].label,"0","A dialog must never run the editor underlay cleanup")
         show.tap();XCTAssertTrue(confirm.waitForExistence(timeout:5));app.buttons["cookies-dialog-close"].tap()
         XCTAssertTrue(show.waitForExistence(timeout:5));XCTAssertEqual(app.staticTexts["dialog-removal-count"].label,"1")
     }
