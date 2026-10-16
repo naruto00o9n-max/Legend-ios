@@ -24,5 +24,7 @@ for index,step in enumerate(steps):
         (output/(name+'.xml')).write_text(adb('shell','cat','/sdcard/ibis-window.xml'))
     except Exception as error:(output/(name+'-accessibility.txt')).write_text(str(error))
 (output/'logcat.txt').write_text(adb('logcat','-d'))
-(output/'activity.txt').write_text(adb('shell','dumpsys','activity','activities'))
+activity=adb('shell','dumpsys','activity','activities')
+(output/'activity.txt').write_text(activity)
+assert any('jp.ne.ibis.ibispaintx.app' in line for line in activity.splitlines() if 'mResumedActivity' in line or 'topResumedActivity' in line),'Reference is not in the foreground; screenshots alone are not a passing interaction test'
 print('Saved real reference screenshots:',len(steps))
