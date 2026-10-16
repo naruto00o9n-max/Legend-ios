@@ -1,0 +1,23 @@
+name: Retire completed vault binary baseline
+on:
+  push:
+    branches: [maintenance/vault-baseline-oct16]
+permissions:
+  contents: read
+  actions: write
+jobs:
+  retire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const id=38885545041,expected='cc6f0c8ae68aac84a082297ef6d2ce621d7cf588';
+            const run=(await github.rest.actions.getWorkflowRun({...context.repo,run_id:id})).data;
+            if(run.head_sha!==expected)throw new Error('Unexpected baseline source');
+            const jobs=(await github.rest.actions.listJobsForWorkflowRun({...context.repo,run_id:id,per_page:100})).data.jobs;
+            for(const name of ['package','local (ipad)','local (iphone)'])if(jobs.find(j=>j.name===name)?.conclusion!=='success')throw new Error('Unverified baseline '+name);
+            if(run.status==='completed'){core.notice('Baseline already completed');return;}
+            await github.rest.actions.cancelWorkflowRun({...context.repo,run_id:id});
+            core.notice('Retired only the superseded baseline; verified packages and local artifacts remain available');
