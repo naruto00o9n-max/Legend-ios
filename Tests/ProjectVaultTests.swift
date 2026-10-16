@@ -49,7 +49,7 @@ final class ProjectVaultTests:XCTestCase {
         let (page,root,directory)=try fixture();defer{try? FileManager.default.removeItem(at:root)}
         let (file,_)=try VaultArchive.create(page,directory:directory);defer{try? FileManager.default.removeItem(at:file)}
         let archive=try Archive(url:file,accessMode:.update)
-        try archive.addEntry(with:"../escape",type:.file,uncompressedSize:1){_,_ in Data([1])}
+        try archive.addEntry(with:"../escape",type:.file,uncompressedSize:Int64(1)){_,_ in Data([1])}
         let head=try VaultArchive.manifest(file,page:page),staging=root.appendingPathComponent(".vault-stage-test")
         XCTAssertThrowsError(try VaultArchive.unpack(file,head:head,id:page.id,staging:staging))
         XCTAssertFalse(FileManager.default.fileExists(atPath:root.appendingPathComponent("escape").path))
