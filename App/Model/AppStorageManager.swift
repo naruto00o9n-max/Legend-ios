@@ -53,8 +53,9 @@ enum AppStorageManager {
         while let bytes=try handle.read(upToCount:1024*1024),!bytes.isEmpty{hash.update(data:bytes)}
         return hash.finalize().map{String(format:"%02x",$0)}.joined()
     }
-    static func library(at base:URL=root)throws->[LibraryItem]{guard fm.fileExists(atPath:base.appendingPathComponent("library.json").path) else{return []};return try JSONDecoder().decode([LibraryItem].self,from:Data(contentsOf:base.appendingPathComponent("library.json")))}
-    static func units(at base:URL=root)throws->[BackupUnit] {
+    static func library(at location:URL=root)throws->[LibraryItem]{let base=location.resolvingSymlinksInPath().standardizedFileURL;guard fm.fileExists(atPath:base.appendingPathComponent("library.json").path) else{return []};return try JSONDecoder().decode([LibraryItem].self,from:Data(contentsOf:base.appendingPathComponent("library.json")))}
+    static func units(at location:URL=root)throws->[BackupUnit] {
+        let base=location.resolvingSymlinksInPath().standardizedFileURL
         let items=try library(at:base);var output:[BackupUnit]=[]
         let purgePages=Set(items.filter{$0.purgePending==true}.flatMap(\.pages)).subtracting(items.filter{$0.purgePending != true}.flatMap(\.pages))
         for directory in (try? fm.contentsOfDirectory(at:base,includingPropertiesForKeys:nil)) ?? []{
@@ -73,7 +74,8 @@ enum AppStorageManager {
         let keys=defaults.dictionaryRepresentation().filter{key,_ in key.hasPrefix("editor-") || key.hasPrefix("typer-") || key.hasPrefix("font") || key.hasPrefix("reader-") || key.hasPrefix("text-") || key.hasPrefix("default-")}
         return try PropertyListSerialization.data(fromPropertyList:keys,format:.binary,options:0)
     }
-    static func createBackup(selected:Set<String>,at base:URL=root,settings:Data?=nil)throws->URL {
+    static func createBackup(selected:Set<String>,at location:URL=root,settings:Data?=nil)throws->URL {
+        let base=location.resolvingSymlinksInPath().standardizedFileURL
         let choices=try units(at:base).filter{selected.contains($0.id)};guard !choices.isEmpty else{throw ImageFailure.message("حدد بيانات النسخة الاحتياطية")}
         let output=fm.temporaryDirectory.appendingPathComponent("Cookies-Backup-\(UUID()).cookiesbackup")
         let archive=try Archive(url:output,accessMode:.create);var files:[BackupFile]=[]
