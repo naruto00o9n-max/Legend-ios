@@ -18,8 +18,8 @@ struct LibraryTrashView:View {
         LazyVStack(spacing:12){ForEach(roots){item in row(item)}}
     }.padding(20).frame(maxWidth:760).frame(maxWidth:.infinity)}}.foregroundStyle(Palette.pale).navigationTitle("المحذوفات").navigationBarTitleDisplayMode(.inline).toolbar{ToolbarItem(placement:.topBarLeading){IconButton(icon:"chevron.right",title:"العودة"){dismiss()}.accessibilityIdentifier("trash-close")}}
     .disabled(library.purgingTrash)
-    .alert("حذف نهائي؟",isPresented:$confirm){Button("حذف \(deletion.count) عناصر نهائيًا",role:.destructive){let ids=deletion;Task{do{try await library.purgeTrash(ids);selected.subtract(ids);await measure()}catch{failure=error.localizedDescription}}}.accessibilityIdentifier("trash-confirm-purge");Button("إلغاء",role:.cancel){deletion=[]}}message:{Text("ستُحذف الصور والتعديلات التابعة لهذه العناصر من الجهاز. لن يمكن استعادتها من السلة.")}
-    .alert("تعذر إكمال العملية",isPresented:Binding(get:{failure != nil},set:{if !$0{failure=nil}})){Button("حسنًا"){failure=nil}}message:{Text(failure ?? "")}
+    .cookiesAlert("حذف نهائي؟",isPresented:$confirm){Button("حذف \(deletion.count) عناصر نهائيًا",role:.destructive){let ids=deletion;Task{do{try await library.purgeTrash(ids);selected.subtract(ids);await measure()}catch{failure=error.localizedDescription}}}.accessibilityIdentifier("trash-confirm-purge");Button("إلغاء",role:.cancel){deletion=[]}}message:{Text("ستُحذف الصور والتعديلات التابعة لهذه العناصر من الجهاز. لن يمكن استعادتها من السلة.")}
+    .cookiesAlert("تعذر إكمال العملية",isPresented:Binding(get:{failure != nil},set:{if !$0{failure=nil}})){Button("حسنًا"){failure=nil}}message:{Text(failure ?? "")}
     .task{await library.resumeTrashPurge();if let error=library.error{failure=error;library.error=nil};await measure()}
     .onChange(of:library.trashedItems){_,_ in selected.formIntersection(Set(roots.map(\.id)));Task{await measure()}}
     }.cookiesInterface()}

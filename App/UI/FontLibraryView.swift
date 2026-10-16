@@ -43,8 +43,8 @@ struct FontLibraryView:View {
         .toolbar{ToolbarItem(placement:.topBarLeading){Button("إغلاق"){if let onClose{onClose()}else{dismiss()}}.accessibilityIdentifier("font-close")};ToolbarItem(placement:.topBarTrailing){Button{picker=true}label:{Image(systemName:"plus")}.accessibilityLabel("استيراد خطوط").accessibilityIdentifier("font-import")}}
         .disabled(importing).overlay{if importing{ProgressView("جارٍ استيراد الخطوط…").padding(20).glass(20)}}
         .cookiesFileImporter(isPresented:$picker,allowedContentTypes:[.data],allowsMultipleSelection:true){result in do{importFonts(try result.get())}catch{self.error=error.localizedDescription}}
-        .alert("مجموعة خطوط",isPresented:$naming){TextField("اسم المجموعة",text:$groupName);Button("حفظ"){let name=groupName.trimmingCharacters(in:.whitespacesAndNewlines);if !name.isEmpty{groups[name]=selected.sorted();saveGroups();filter=name;groupName=""}};Button("إلغاء",role:.cancel){}}
-        .alert("مكتبة الخطوط",isPresented:Binding(get:{error != nil},set:{if !$0{error=nil}})){Button("حسنًا"){error=nil}}message:{Text(error ?? "")}.onAppear{if !(["الكل","العربية","الإنجليزية","المفضلة","آخر استخدام","المستوردة"]+groups.keys.sorted()).contains(filter){filter="الكل"};classifyFonts()}.onChange(of:version){_,_ in classifyFonts()}.cookiesInterface()}
+        .cookiesAlert("مجموعة خطوط",isPresented:$naming){TextField("اسم المجموعة",text:$groupName);Button("حفظ"){let name=groupName.trimmingCharacters(in:.whitespacesAndNewlines);if !name.isEmpty{groups[name]=selected.sorted();saveGroups();filter=name;groupName=""}};Button("إلغاء",role:.cancel){}}
+        .cookiesAlert("مكتبة الخطوط",isPresented:Binding(get:{error != nil},set:{if !$0{error=nil}})){Button("حسنًا"){error=nil}}message:{Text(error ?? "")}.onAppear{if !(["الكل","العربية","الإنجليزية","المفضلة","آخر استخدام","المستوردة"]+groups.keys.sorted()).contains(filter){filter="الكل"};classifyFonts()}.onChange(of:version){_,_ in classifyFonts()}.cookiesInterface()}
     }
     private func row(_ url:URL)->some View {
         let name=url.lastPathComponent

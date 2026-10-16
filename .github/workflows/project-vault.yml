@@ -100,7 +100,7 @@ jobs:
       - name: Require an actual native private-vault round trip
         run: python3 scripts/provision_vault_ci.py verify-log 'build/test-${{ matrix.screen }}-core.log'
       - name: Real layer controls and live eraser gestures, Photos and service regressions
-        run: bash scripts/test_simulators.sh '${{ matrix.screen }}' ui 'CookiesUITests/EditorUITests/testVaultOverviewKeepsLocalEditingAvailableWithoutLogin,CookiesUITests/EditorUITests/testManualSniperKeepsIndependentWhiteningMethodPerBubble,CookiesUITests/EditorUITests/testLayerButtonsActuallyHideUnlockAndDelete,CookiesUITests/EditorUITests/testLayerTypeChipsMatchTheVisibleRows,CookiesUITests/EditorUITests/testEraserKeepsSelectedTextEditableWithoutCreatingDrawingLayers,CookiesUITests/EditorUITests/testPinchAndDrawing,CookiesUITests/EditorUITests/testCanvasTapDoesNotCreateUnrequestedTextAndFontsStayInsideEditor'
+        run: bash scripts/test_simulators.sh '${{ matrix.screen }}' ui 'CookiesUITests/EditorUITests/testGlassVaultConfirmationCancelsAndRetainsExactTargetAfterDismissal,CookiesUITests/EditorUITests/testGlassNamingDialogCreatesRealChapterAndCloses,CookiesUITests/EditorUITests/testVaultOverviewKeepsLocalEditingAvailableWithoutLogin,CookiesUITests/EditorUITests/testManualSniperKeepsIndependentWhiteningMethodPerBubble,CookiesUITests/EditorUITests/testLayerButtonsActuallyHideUnlockAndDelete,CookiesUITests/EditorUITests/testLayerTypeChipsMatchTheVisibleRows,CookiesUITests/EditorUITests/testEraserKeepsSelectedTextEditableWithoutCreatingDrawingLayers,CookiesUITests/EditorUITests/testPinchAndDrawing,CookiesUITests/EditorUITests/testCanvasTapDoesNotCreateUnrequestedTextAndFontsStayInsideEditor'
       - name: Remove temporary vault account and test objects
         if: always()
         run: python3 scripts/provision_vault_ci.py cleanup
@@ -219,7 +219,7 @@ jobs:
               '',
               'نسختان غير موقعتين. النسخة Local دون الحساب والمجتمع. يحتاج تثبيتهما إلى توقيعك.',
               '',
-              'الحفظ في الخادم محدود بالمساحة المجانية: 512 ميغابايت للحساب وحد إجمالي مشترك. إعادة البناء الإضافية تجريبية: تجربتان لكل اتصال وخمس تجارب مشتركة يوميًا، وتحتاج مراجعة النتيجة. ليست مطابقة ibisPaint مكتملة.',
+              'الحفظ في الخادم محدود بالمساحة المجانية: 512 ميغابايت للحساب وحد إجمالي مشترك. إعادة البناء الإضافية تجريبية: حد التطبيق 50 معالجة لكل اتصال يوميًا، و250 للخدمة يوميًا، و1000 شهريًا؛ تبقى خاضعة لسعة حساب الاستضافة، وتحتاج مراجعة النتيجة. ليست مطابقة ibisPaint مكتملة.',
               '',
               'App source: '+binarySource,
               'Server and verification source: '+context.sha,

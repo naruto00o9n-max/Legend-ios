@@ -88,6 +88,17 @@ final class ProjectVaultTests:XCTestCase {
         await library.vault.store(page.id,evict:true)
         XCTAssertNil(library.vault.error);XCTAssertTrue(FileManager.default.fileExists(atPath:directory.appendingPathComponent(page.source).path));XCTAssertNil(try VaultFiles.receipt(directory))
     }
+    @MainActor func testRemoteDeleteOfOpenProjectReportsReasonAndPreservesSource()async throws {
+        let(page,root,directory)=try fixture();defer{try? FileManager.default.removeItem(at:root)}
+        let original=try Data(contentsOf:directory.appendingPathComponent(page.source))
+        let library=LibraryStore(root:root);try await library.vault.open(page.id)
+        let hash=String(repeating:"a",count:64)
+        let project=remote(page.id,VaultHead(title:page.title,bytes:1,sha256:hash,chunks:[VaultChunk(bytes:1,sha256:hash)],width:page.width,height:page.height))
+        await library.vault.removeRemote(project)
+        XCTAssertTrue(library.vault.error?.contains("أغلق محرر") == true)
+        XCTAssertEqual(try Data(contentsOf:directory.appendingPathComponent(page.source)),original)
+        XCTAssertNil(try VaultFiles.receipt(directory))
+    }
     func testManifestRejectsInconsistentChunkBoundaryAndOversizedProject()throws {
         let hash=String(repeating:"a",count:64)
         var head=VaultHead(title:"فصل",bytes:VaultArchive.chunkSize+1,sha256:hash,chunks:[VaultChunk(bytes:VaultArchive.chunkSize,sha256:hash),VaultChunk(bytes:1,sha256:hash)],width:800,height:15000)

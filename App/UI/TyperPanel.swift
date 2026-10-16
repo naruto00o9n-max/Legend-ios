@@ -31,7 +31,7 @@ struct TyperPanel:View {
         .fullScreenCover(isPresented:$library){TyperLibraryView()}
         .sheet(isPresented:$settings){TyperSettingsView()}
         .sheet(item:$editing){bubble in if let chapter{BubbleEditor(bubble:bubble,chapter:chapter.id).cookiesInterface()}}
-        .alert("إعادة تعيين التقدّم؟",isPresented:$reset){Button("إعادة تعيين",role:.destructive){if let chapter{do{try typer.reset(chapter.id);scrollRequest=UUID()}catch{typer.error=error.localizedDescription}}};Button("إلغاء",role:.cancel){}}message:{Text("تصبح الفقاعات متاحة مجددًا. تبقى طبقات النص الموجودة في الصور.")}
+        .cookiesAlert("إعادة تعيين التقدّم؟",isPresented:$reset){Button("إعادة تعيين",role:.destructive){if let chapter{do{try typer.reset(chapter.id);scrollRequest=UUID()}catch{typer.error=error.localizedDescription}}};Button("إلغاء",role:.cancel){}}message:{Text("تصبح الفقاعات متاحة مجددًا. تبقى طبقات النص الموجودة في الصور.")}
         .typerErrors(typer)
         .onAppear{preferences=typer.panelPreferences;model.typerOverrideTag=preferences.overrideTag;model.typerQuickFont=preferences.quickFont;loaded=true;scrollRequest=UUID()}
         .onChange(of:preferences){old,new in

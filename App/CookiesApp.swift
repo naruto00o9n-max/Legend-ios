@@ -4,7 +4,13 @@ import SwiftUI
     @State private var generation=UUID()
     @State private var recoveryError:String?
     init(){if ProcessInfo.processInfo.arguments.contains("-ui-tests"){UserDefaults.standard.removeObject(forKey:"welcome-complete");UserDefaults.standard.removeObject(forKey:"editor-tap-add-text");UserDefaults.standard.removeObject(forKey:"editor-grid-data");UserDefaults.standard.removeObject(forKey:WhiteningPreferences.methodKey);UserDefaults.standard.removeObject(forKey:WhiteningPreferences.executionKey)};do{try AppStorageManager.recoverInterruptedRestore();try VaultFiles.recover(root:AppStorageManager.root)}catch{_recoveryError=State(initialValue:error.localizedDescription)};try? AppStorageManager.migrateDiagnostics();Fonts.register();DiagnosticReporter.shared.start();UIView.appearance().tintColor=UIColor.white}
-    var body:some Scene{WindowGroup{Group{if let recoveryError{VStack(spacing:20){Image(systemName:"externaldrive.badge.exclamationmark").font(.largeTitle);Text("توقفت استعادة البيانات").font(.title2);Text(recoveryError);Text("احتُفظ بنسخة الاسترجاع؛ لم تُفتح المشاريع لحماية ملفاتها.").font(.footnote);Button("إعادة المحاولة"){do{try AppStorageManager.recoverInterruptedRestore();try VaultFiles.recover(root:AppStorageManager.root);self.recoveryError=nil;generation=UUID()}catch{self.recoveryError=error.localizedDescription}}}.padding(30).cookiesInterface()}else{CookiesSessionRoot().id(generation)}}.onReceive(NotificationCenter.default.publisher(for:AppStorageManager.changed)){_ in generation=UUID()}.onReceive(NotificationCenter.default.publisher(for:AppStorageManager.reset)){_ in generation=UUID()}}}
+    var body:some Scene{WindowGroup{Group{if let recoveryError{VStack(spacing:20){Image(systemName:"externaldrive.badge.exclamationmark").font(.largeTitle);Text("توقفت استعادة البيانات").font(.title2);Text(recoveryError);Text("احتُفظ بنسخة الاسترجاع؛ لم تُفتح المشاريع لحماية ملفاتها.").font(.footnote);Button("إعادة المحاولة"){do{try AppStorageManager.recoverInterruptedRestore();try VaultFiles.recover(root:AppStorageManager.root);self.recoveryError=nil;generation=UUID()}catch{self.recoveryError=error.localizedDescription}}}.padding(30).cookiesInterface()}else{
+                #if DEBUG
+                if ProcessInfo.processInfo.arguments.contains("-ui-tests") && ProcessInfo.processInfo.arguments.contains("-dialog-workbench"){CookiesDialogWorkbench()}else{CookiesSessionRoot().id(generation)}
+                #else
+                CookiesSessionRoot().id(generation)
+                #endif
+            }}.onReceive(NotificationCenter.default.publisher(for:AppStorageManager.changed)){_ in generation=UUID()}.onReceive(NotificationCenter.default.publisher(for:AppStorageManager.reset)){_ in generation=UUID()}}}
 }
 struct CookiesSessionRoot:View {
     @StateObject private var library=LibraryStore()

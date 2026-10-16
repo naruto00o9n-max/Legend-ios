@@ -55,15 +55,15 @@ struct LibraryView:View {
         }
         .sheet(isPresented:$batchExport){ChapterExportSheet(chapter:UUID(),ids:selectedPages,independentProjects:true)}
         .sheet(isPresented:$driveImport){DriveImportView(parent:parent)}
-        .confirmationDialog("اجمع المشاريع في فصل",isPresented:$chapterCollect,titleVisibility:.visible){
+        .cookiesConfirmationDialog("اجمع المشاريع في فصل",isPresented:$chapterCollect,titleVisibility:.visible){
             Button("فصل جديد"){do{let id=try library.createChapter("فصل مجمّع",parent:parent);try library.collectProjects(projectSelection,in:id);selecting=false;projectSelection=[]}catch{library.error=error.localizedDescription}}
             ForEach(library.items.filter{$0.isChapter==true}){chapter in Button(chapter.title){do{try library.collectProjects(projectSelection,in:chapter.id);selecting=false;projectSelection=[]}catch{library.error=error.localizedDescription}}}
         }
-        .alert("مجلد جديد",isPresented:$folderPrompt){TextField("اسم العمل أو الفصل",text:$name);Button("إنشاء"){if !name.trimmingCharacters(in:.whitespaces).isEmpty{library.createFolder(name,parent:parent);name=""}};Button("إلغاء",role:.cancel){}}
-        .alert("فصل جديد",isPresented:$chapterPrompt){TextField("اسم الفصل",text:$name);Button("إنشاء"){do{try library.createChapter(name,parent:parent);name=""}catch{library.error=error.localizedDescription}};Button("إلغاء",role:.cancel){}}
-        .alert("تغيير الاسم",isPresented:Binding(get:{renaming != nil},set:{if !$0{renaming=nil}})){TextField("الاسم",text:$renameText);Button("حفظ"){if let item=renaming,!renameText.isEmpty{library.rename(item,to:renameText)};renaming=nil};Button("إلغاء",role:.cancel){renaming=nil}}
+        .cookiesAlert("مجلد جديد",isPresented:$folderPrompt){TextField("اسم العمل أو الفصل",text:$name);Button("إنشاء"){if !name.trimmingCharacters(in:.whitespaces).isEmpty{library.createFolder(name,parent:parent);name=""}};Button("إلغاء",role:.cancel){}}
+        .cookiesAlert("فصل جديد",isPresented:$chapterPrompt){TextField("اسم الفصل",text:$name);Button("إنشاء"){do{try library.createChapter(name,parent:parent);name=""}catch{library.error=error.localizedDescription}};Button("إلغاء",role:.cancel){}}
+        .cookiesAlert("تغيير الاسم",isPresented:Binding(get:{renaming != nil},set:{if !$0{renaming=nil}})){TextField("الاسم",text:$renameText);Button("حفظ"){if let item=renaming,!renameText.isEmpty{library.rename(item,to:renameText)};renaming=nil};Button("إلغاء",role:.cancel){renaming=nil}}
         .fullScreenCover(isPresented:$projectVault){ProjectVaultView(vault:library.vault)}.sheet(isPresented:$guide){AppGuideView()}.fullScreenCover(isPresented:$assistant){TyperLibraryView(folder:parent)}.fullScreenCover(isPresented:$settings){SettingsView()}.sheet(isPresented:$fontLibrary){FontLibraryView()}.fullScreenCover(isPresented:$community){ServiceHub()}.fullScreenCover(isPresented:$accountWorkspace){AccountWorkspaceView()}
-        .alert("تعذر إكمال العملية",isPresented:Binding(get:{library.error != nil},set:{if !$0{library.error=nil}})){Button("حسنًا"){library.error=nil}}message:{Text(library.error ?? "")}
+        .cookiesAlert("تعذر إكمال العملية",isPresented:Binding(get:{library.error != nil},set:{if !$0{library.error=nil}})){Button("حسنًا"){library.error=nil}}message:{Text(library.error ?? "")}
         .fullScreenCover(isPresented:$trash){LibraryTrashView()}
     }
     private var projectGrid:some View{

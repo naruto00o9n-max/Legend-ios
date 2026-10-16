@@ -150,7 +150,10 @@ enum VaultFiles {
         do{if let receipt=try VaultFiles.receipt(library.directory(id)),!receipt.resident{try await download(receipt.project,installInLibrary:false)};guard !busy,var receipt=try VaultFiles.receipt(library.directory(id)) else{return};receipt.managed=false;try VaultFiles.write(receipt,directory:library.directory(id));revision+=1}catch{self.error=error.localizedDescription}
     }
     func removeRemote(_ project:VaultProject)async {
-        guard !busy,!suspended,!isOpen(project.id),let library=owner else{return}
+        guard !busy else{error="تجري عملية نقل حاليًا. انتظر اكتمالها ثم أعد الحذف";return}
+        guard !suspended,let library=owner else{error="تعذر بدء الحذف. افتح مساحة المشاريع مجددًا";return}
+        guard !isOpen(project.id) else{error="أغلق محرر هذا المشروع قبل حذف نسخته من الخادم. بقيت النسختان محفوظتين";return}
+        error=nil
         do{
             let directory=library.directory(project.id)
             if !FileManager.default.fileExists(atPath:directory.path){try await download(project,installInLibrary:true)}

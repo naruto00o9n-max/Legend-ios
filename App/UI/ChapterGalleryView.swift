@@ -53,8 +53,8 @@ struct ChapterGalleryView:View {
         .sheet(isPresented:$exporting){ChapterExportSheet(chapter:id,ids:chosen).cookiesInterface()}
         .fullScreenCover(isPresented:$reading){ChapterReaderView(chapter:id).cookiesInterface()}
         .fullScreenCover(isPresented:$browser){WebtoonImportView(chapter:id).cookiesInterface()}
-        .confirmationDialog("إزالة \(chosen.count) صفحة من الفصل؟",isPresented:$deleting,titleVisibility:.visible){Button("إزالة الصفحات",role:.destructive){perform{try library.setPages(ids.filter{!chosen.contains($0)},chapter:id);selection=[]}}}
-        .alert("تعذر إكمال العملية",isPresented:Binding(get:{failure != nil},set:{if !$0{failure=nil}})){Button("حسنًا"){failure=nil}}message:{Text(failure ?? "")}
+        .cookiesConfirmationDialog("إزالة \(chosen.count) صفحة من الفصل؟",isPresented:$deleting,titleVisibility:.visible){Button("إزالة الصفحات",role:.destructive){perform{try library.setPages(ids.filter{!chosen.contains($0)},chapter:id);selection=[]}}}
+        .cookiesAlert("تعذر إكمال العملية",isPresented:Binding(get:{failure != nil},set:{if !$0{failure=nil}})){Button("حسنًا"){failure=nil}}message:{Text(failure ?? "")}
     }
     private var pageActions:some View{Menu{
         Button{operation="لوحة فارغة"}label:{Label("لوحة فارغة",systemImage:"rectangle.badge.plus")}
@@ -99,7 +99,7 @@ struct PageOperationSheet:View {
             if operation=="دمج"{Picker("محاذاة الصور المختلفة العرض",selection:$alignment){Text("يسار").tag(0);Text("وسط").tag(1);Text("يمين").tag(2)}.pickerStyle(.segmented);Text("تُضم الصور وطبقاتها بأبعادها الأصلية. يمكن استعادة صفحات الفصل قبل آخر عملية من إدارة الصفحات.").font(.system(size:12)).foregroundStyle(Palette.secondary).lineSpacing(5)}
         }
         if busy{VStack(spacing:14){ProgressView("جارٍ تنفيذ العملية…");Button{job?.cancel()}label:{Label("إلغاء العملية",systemImage:"xmark")}.buttonStyle(CapsuleActionStyle())}.frame(maxWidth:.infinity).padding(20).glass(22)}else{Button{run()}label:{Label("تنفيذ "+operation,systemImage:"checkmark")}.buttonStyle(GoldButtonStyle(primary:true)).accessibilityIdentifier("chapter-operation-apply")}
-    }.padding(20).frame(maxWidth:700).frame(maxWidth:.infinity)}}.foregroundStyle(Palette.pale).interactiveDismissDisabled(busy).navigationTitle(operation).navigationBarTitleDisplayMode(.inline).toolbar{ToolbarItem(placement:.topBarLeading){Button("إغلاق"){if !busy{completed()}}}}.alert("تعذر تعديل الصفحات",isPresented:Binding(get:{failure != nil},set:{if !$0{failure=nil}})){Button("حسنًا"){failure=nil}}message:{Text(failure ?? "")}}}
+    }.padding(20).frame(maxWidth:700).frame(maxWidth:.infinity)}}.foregroundStyle(Palette.pale).interactiveDismissDisabled(busy).navigationTitle(operation).navigationBarTitleDisplayMode(.inline).toolbar{ToolbarItem(placement:.topBarLeading){Button("إغلاق"){if !busy{completed()}}}}.cookiesAlert("تعذر تعديل الصفحات",isPresented:Binding(get:{failure != nil},set:{if !$0{failure=nil}})){Button("حسنًا"){failure=nil}}message:{Text(failure ?? "")}}}
 
     func run(){job=Task{busy=true;defer{busy=false};do{
         guard let item=library.chapter(chapter) else{throw ImageFailure.message("الفصل غير موجود")}
@@ -170,7 +170,7 @@ struct ChapterExportSheet:View {
         Text("الحفظ في الصور يستخدم PNG بالأبعاد الأصلية. لا تصغّر الأبعاد إلا عند اختيار تغيير المقاس صراحةً.").font(.system(size:11)).foregroundStyle(Palette.quiet).lineSpacing(4)
     }.padding(20).frame(maxWidth:700).frame(maxWidth:.infinity)}}.foregroundStyle(Palette.pale).navigationTitle(independentProjects ? "تصدير المشاريع":"تصدير الفصل").navigationBarTitleDisplayMode(.inline).toolbar{ToolbarItem(placement:.topBarLeading){Button("تم"){dismiss()}.disabled(busy)}}}
     .sheet(isPresented:$provider,onDismiss:{if let driveFolder{try? FileManager.default.removeItem(at:driveFolder)};driveURLs=[];driveFolder=nil}){DocumentFileExporter(urls:driveURLs,presented:$provider){accepted in providerMessage=accepted ? "سُلّمت الملفات إلى المزوّد الذي اخترته. تحقق من حالة المزامنة في Drive.":"أُلغي اختيار مجلد الحفظ"}}
-    .alert("تعذر التصدير",isPresented:Binding(get:{failure != nil},set:{if !$0{failure=nil}})){Button("حسنًا"){failure=nil}}message:{Text(failure ?? "")}}
+    .cookiesAlert("تعذر التصدير",isPresented:Binding(get:{failure != nil},set:{if !$0{failure=nil}})){Button("حسنًا"){failure=nil}}message:{Text(failure ?? "")}}
 
     func savePhotos(){task=Task{busy=true;completed=0;total=ids.count;defer{busy=false};do{try await library.withProjectFiles(ids){for id in ids{try Task.checkCancellation();let page=try library.load(id),directory=library.directory(id);let file=try await BackgroundWork.run{try ImagePipeline.exportPNG(page,directory:directory)};defer{try? FileManager.default.removeItem(at:file)};try await PhotoSave.save(file);completed+=1}}}catch is CancellationError{}catch{failure=error.localizedDescription}}}
     func export(){task=Task{busy=true;completed=0;total=ids.count;defer{busy=false};do{

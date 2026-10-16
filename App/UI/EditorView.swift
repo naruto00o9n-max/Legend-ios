@@ -118,7 +118,7 @@ struct EditorView:View {
             case .success(let urls):if let url=urls.first{Task{defer{try? FileManager.default.removeItem(at:url)};await model.importImageLayer(url)}}}
         }}
 
-        .alert("تعذر إكمال العملية",isPresented:Binding(get:{model.error != nil},set:{if !$0{model.error=nil}})){Button("حسنًا"){model.error=nil}}message:{Text(model.error ?? "")}
+        .cookiesAlert("تعذر إكمال العملية",isPresented:Binding(get:{model.error != nil},set:{if !$0{model.error=nil}})){Button("حسنًا"){model.error=nil}}message:{Text(model.error ?? "")}
         .onDisappear{model.cancelWhitening();model.commitTextMask();model.discardCleaning();model.save()}
     }
     private var fontDock:some View {

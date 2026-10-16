@@ -11,5 +11,5 @@ import SwiftUI
         else if assets.ready{Button(role:.destructive){removal=true}label:{Label("إزالة التنزيل لتوفير المساحة",systemImage:"trash")}.buttonStyle(CapsuleActionStyle()).disabled(assets.activeUses>0).accessibilityIdentifier("lama-remove")}
         else{Button{assets.startInstallation()}label:{Label("تنزيل المعالجة دون إنترنت",systemImage:"arrow.down.circle")}.buttonStyle(GoldButtonStyle()).accessibilityIdentifier("lama-download")}
         if let message=failure ?? assets.failure{Label(message,systemImage:"exclamationmark.circle").font(.system(size:12)).foregroundStyle(Palette.secondary).lineSpacing(4)}
-    }.disabled(assets.removing).task{assets.refresh()}.alert("إزالة التنزيل؟",isPresented:$removal){Button("إزالة",role:.destructive){Task{do{try await assets.remove()}catch{failure=error.localizedDescription}}};Button("إلغاء",role:.cancel){}}message:{Text("تبقى صورك ومشاريعك كما هي. يمكنك إعادة تنزيل الملفات لاحقًا.")}}
+    }.disabled(assets.removing).task{assets.refresh()}.cookiesAlert("إزالة التنزيل؟",isPresented:$removal){Button("إزالة",role:.destructive){Task{do{try await assets.remove()}catch{failure=error.localizedDescription}}};Button("إلغاء",role:.cancel){}}message:{Text("تبقى صورك ومشاريعك كما هي. يمكنك إعادة تنزيل الملفات لاحقًا.")}}
 }

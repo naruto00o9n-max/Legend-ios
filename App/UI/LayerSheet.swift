@@ -48,9 +48,9 @@ struct LayerSheet:View {
         }
         .foregroundStyle(Palette.pale).background(Palette.ink.opacity(0.94)).glass(26)
         .sheet(item:$preview){ExpandedLayerPreview(layer:$0,directory:model.directory)}
-        .alert("اسم الطبقة",isPresented:$renaming){TextField("الاسم",text:$layerName);Button("حفظ"){if let id=model.selected{model.renameLayer(id,to:layerName)}};Button("إلغاء",role:.cancel){}}
-        .alert("مجموعة طبقات",isPresented:$grouping){TextField("اسم المجموعة",text:$groupName);Button("حفظ"){model.groupLayers(selection,name:groupName.isEmpty ? "مجموعة":groupName)};Button("إلغاء",role:.cancel){}}
-        .alert(confirmation?.title ?? "",isPresented:Binding(get:{confirmation != nil},set:{if !$0{confirmation=nil}})){
+        .cookiesAlert("اسم الطبقة",isPresented:$renaming){TextField("الاسم",text:$layerName);Button("حفظ"){if let id=model.selected{model.renameLayer(id,to:layerName)}};Button("إلغاء",role:.cancel){}}
+        .cookiesAlert("مجموعة طبقات",isPresented:$grouping){TextField("اسم المجموعة",text:$groupName);Button("حفظ"){model.groupLayers(selection,name:groupName.isEmpty ? "مجموعة":groupName)};Button("إلغاء",role:.cancel){}}
+        .cookiesAlert(confirmation?.title ?? "",isPresented:Binding(get:{confirmation != nil},set:{if !$0{confirmation=nil}})){
             Button("تنفيذ",role:.destructive){performConfirmation()};Button("إلغاء",role:.cancel){confirmation=nil}
         }message:{Text(confirmation?.detail ?? "")}
         .onAppear{model.organizeLegacyTextLayers()}

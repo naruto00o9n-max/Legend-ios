@@ -84,7 +84,7 @@ final class EditorUITests:XCTestCase {
     }
     func testChapterBlankMergeSplitReaderAndExport(){
         func page(_ index:Int)->XCUIElement{app.descendants(matching:.any).matching(identifier:"chapter-page-\(index)").firstMatch}
-        start();app.buttons["new-chapter"].tap();app.alerts.textFields.firstMatch.tap();app.alerts.textFields.firstMatch.typeText("فصل الجودة");app.alerts.buttons["إنشاء"].tap()
+        start();app.buttons["new-chapter"].tap();app.textFields.firstMatch.tap();app.textFields.firstMatch.typeText("فصل الجودة");app.buttons["إنشاء"].tap()
         let project=app.descendants(matching:.any).matching(NSPredicate(format:"identifier MATCHES %@","^project-[0-9A-Fa-f-]{36}$")).firstMatch;XCTAssertTrue(project.waitForExistence(timeout:10));project.tap();XCTAssertTrue(app.buttons["chapter-actions"].waitForExistence(timeout:10));capture("batch-01-chapter-empty")
         for index in 0..<2{tapVisible("chapter-actions");app.buttons["لوحة فارغة"].tap();XCTAssertTrue(app.buttons["chapter-operation-apply"].waitForExistence(timeout:5));capture("batch-02-blank-canvas-options");app.buttons["chapter-operation-apply"].tap();XCTAssertTrue(page(index).waitForExistence(timeout:30))}
         capture("batch-03-two-pages");tapVisible("chapter-select");revealVertical(page(0));page(0).tap();revealVertical(page(1));page(1).tap();capture("batch-04-multiple-selection")
@@ -93,7 +93,7 @@ final class EditorUITests:XCTestCase {
         tapVisible("chapter-select");tapVisible("chapter-actions");app.buttons["تقسيم الصفحات"].tap();XCTAssertTrue(app.buttons["chapter-operation-apply"].waitForExistence(timeout:5));capture("batch-06-split-options");app.buttons["chapter-operation-apply"].tap();XCTAssertTrue(page(1).waitForExistence(timeout:30));capture("batch-07-split-result")
         app.buttons["chapter-reader"].tap();XCTAssertTrue(app.buttons["إغلاق"].waitForExistence(timeout:10));capture("batch-08-multipage-reader");app.buttons["إغلاق"].tap();app.buttons["chapter-export-open"].tap();XCTAssertTrue(app.buttons["chapter-export"].waitForExistence(timeout:10));capture("batch-09-export-studio");app.buttons["chapter-export"].tap();XCTAssertTrue(app.buttons["chapter-export-share"].waitForExistence(timeout:60));capture("batch-10-export-complete")
     }
-    func testWelcomeFoldersAndAssistant(){start();app.buttons["new-folder"].tap();capture("04-new-folder");app.alerts.textFields.firstMatch.tap();app.alerts.textFields.firstMatch.typeText("الفصل الأول");app.alerts.buttons["إنشاء"].tap();capture("05-folder-created");tapVisible("assistant");XCTAssertTrue(app.buttons["typer-new"].waitForExistence(timeout:5));app.buttons["typer-new"].tap();let source=app.textViews["typer-source"];XCTAssertTrue(source.waitForExistence(timeout:5));source.tap();source.typeText("حوار أول\nحوار ثان");capture("06-typer-chapter-source");app.buttons["typer-save"].tap();XCTAssertTrue(app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH 'typer-chapter-'")).firstMatch.waitForExistence(timeout:5));capture("37-typer-saved-chapter");assertLayout()}
+    func testWelcomeFoldersAndAssistant(){start();app.buttons["new-folder"].tap();capture("04-new-folder");app.textFields.firstMatch.tap();app.textFields.firstMatch.typeText("الفصل الأول");app.buttons["إنشاء"].tap();capture("05-folder-created");tapVisible("assistant");XCTAssertTrue(app.buttons["typer-new"].waitForExistence(timeout:5));app.buttons["typer-new"].tap();let source=app.textViews["typer-source"];XCTAssertTrue(source.waitForExistence(timeout:5));source.tap();source.typeText("حوار أول\nحوار ثان");capture("06-typer-chapter-source");app.buttons["typer-save"].tap();XCTAssertTrue(app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH 'typer-chapter-'")).firstMatch.waitForExistence(timeout:5));capture("37-typer-saved-chapter");assertLayout()}
     func testTyperPlacesBubbleAndRetainsGreyUsedProgress(){
         openEditor();app.buttons["tool-assistant"].tap();XCTAssertTrue(app.buttons["إضافة نص الفصل"].waitForExistence(timeout:5));app.buttons["إضافة نص الفصل"].tap();app.buttons["typer-new"].tap();let source=app.textViews["typer-source"];XCTAssertTrue(source.waitForExistence(timeout:5));source.tap();source.typeText("حوار أول\nحوار ثان");app.buttons["typer-save"].tap();XCTAssertTrue(app.buttons["typer-close"].waitForExistence(timeout:5));app.buttons["typer-close"].tap()
         let first=app.buttons["typer-bubble-0"];XCTAssertTrue(first.waitForExistence(timeout:5));first.tap();XCTAssertEqual(first.value as? String,"مستخدمة");XCTAssertTrue((app.scrollViews["canvas-scroll"].value as? String ?? "").contains("1 طبقات"));capture("38-typer-bubble-used-on-canvas")
@@ -366,6 +366,33 @@ final class EditorUITests:XCTestCase {
         let importButton=app.buttons["import-image"]
         for _ in 0..<8{if importButton.exists && importButton.isHittable{break};app.scrollViews.firstMatch.swipeDown()}
         XCTAssertTrue(importButton.waitForExistence(timeout:8));XCTAssertTrue(importButton.isHittable)
+    }
+
+    func testGlassVaultConfirmationCancelsAndRetainsExactTargetAfterDismissal(){
+        app.terminate();app.launchArguments=["-ui-tests","-dialog-workbench"];app.launch()
+        let show=app.buttons["dialog-show-delete"]
+        XCTAssertTrue(show.waitForExistence(timeout:15));show.tap()
+        let confirm=app.buttons["vault-confirm-delete"]
+        XCTAssertTrue(confirm.waitForExistence(timeout:5));XCTAssertTrue(confirm.isHittable)
+        XCTAssertTrue(app.staticTexts.containing(NSPredicate(format:"label CONTAINS %@","فصل الاختبار")).firstMatch.exists)
+        XCTAssertEqual(app.alerts.count,0,"This must be an app card, not a system alert or iPad action popover")
+        capture("glass-vault-confirmation")
+        app.buttons["إلغاء"].tap()
+        XCTAssertTrue(show.waitForExistence(timeout:5));XCTAssertEqual(app.staticTexts["dialog-removal-count"].label,"0")
+        show.tap();XCTAssertTrue(confirm.waitForExistence(timeout:5));confirm.tap()
+        XCTAssertTrue(app.staticTexts["نتيجة الاختبار"].waitForExistence(timeout:8),"An error/result dialog must be able to follow dismissal")
+        app.buttons["حسنًا"].tap();XCTAssertTrue(show.waitForExistence(timeout:5))
+        XCTAssertEqual(app.staticTexts["dialog-removal-count"].label,"1","The original selected project must survive until the action runs, exactly once")
+        show.tap();XCTAssertTrue(confirm.waitForExistence(timeout:5));app.buttons["cookies-dialog-close"].tap()
+        XCTAssertTrue(show.waitForExistence(timeout:5));XCTAssertEqual(app.staticTexts["dialog-removal-count"].label,"1")
+    }
+    func testGlassNamingDialogCreatesRealChapterAndCloses(){
+        start();app.buttons["new-chapter"].tap()
+        let field=app.textFields.firstMatch;XCTAssertTrue(field.waitForExistence(timeout:5))
+        XCTAssertEqual(app.alerts.count,0);field.tap();field.typeText("فصل زجاجي")
+        app.buttons["إنشاء"].tap()
+        XCTAssertTrue(app.staticTexts["فصل زجاجي"].waitForExistence(timeout:8))
+        XCTAssertFalse(app.buttons["cookies-dialog-close"].exists)
     }
 
 }

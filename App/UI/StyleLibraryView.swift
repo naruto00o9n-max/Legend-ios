@@ -63,10 +63,10 @@ struct StyleLibraryView:View {
             try store.updateKeywords(id,words)
             category=folder
         }}
-        .alert(renamedFolder==nil ? "مجلد أنماط جديد":"تعديل المجلد",isPresented:$folderNaming){TextField("اسم المجلد",text:$folderName);Button("حفظ"){perform{if let old=renamedFolder{try store.renameFolder(old,to:folderName)}else{try store.createFolder(folderName)};group=folderName}};Button("إلغاء",role:.cancel){}}
+        .cookiesAlert(renamedFolder==nil ? "مجلد أنماط جديد":"تعديل المجلد",isPresented:$folderNaming){TextField("اسم المجلد",text:$folderName);Button("حفظ"){perform{if let old=renamedFolder{try store.renameFolder(old,to:folderName)}else{try store.createFolder(folderName)};group=folderName}};Button("إلغاء",role:.cancel){}}
         .fullScreenCover(item:$designing){tag in SavedStyleDesigner(tag:tag,replacing:designID,group:category)}
         .cookiesFileImporter(isPresented:$importer,allowedContentTypes:[UTType(filenameExtension:"cookiesstyles") ?? .zip,.zip]){result in perform{let tags=try store.importPackage(result.get());for tag in tags{try typer.saveTag(tag)}}}
-        .alert("تعذر حفظ النمط",isPresented:Binding(get:{failure != nil},set:{if !$0{failure=nil}})){Button("حسنًا"){failure=nil}}message:{Text(failure ?? "")}
+        .cookiesAlert("تعذر حفظ النمط",isPresented:Binding(get:{failure != nil},set:{if !$0{failure=nil}})){Button("حسنًا"){failure=nil}}message:{Text(failure ?? "")}
     }
     func perform(_ action:()throws->Void){do{try action()}catch{failure=error.localizedDescription}}
 }

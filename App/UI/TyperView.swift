@@ -29,7 +29,7 @@ struct TyperLibraryView:View {
         .fullScreenCover(item:$editing){chapter in ChapterSourceView(chapter:chapter,folder:chapter.folder)}
         .fullScreenCover(item:$draft){chapter in ChapterSourceView(chapter:chapter,folder:chapter.folder,isDraft:true)}
         .cookiesFileImporter(isPresented:$importing,allowedContentTypes:[.plainText,.json],allowsMultipleSelection:false){result in do{try typer.importFile(result.get()[0],folder:folder)}catch{typer.error=error.localizedDescription}}
-        .alert("حذف الفصل؟",isPresented:Binding(get:{deletion != nil},set:{if !$0{deletion=nil}})){Button("حذف",role:.destructive){if let chapter=deletion{do{try typer.remove(chapter.id)}catch{typer.error=error.localizedDescription}};deletion=nil};Button("إلغاء",role:.cancel){deletion=nil}}message:{Text("سيُحذف النص وتقدّمه من التايبر. تبقى طبقات النص الموجودة في الصور.")}
+        .cookiesAlert("حذف الفصل؟",isPresented:Binding(get:{deletion != nil},set:{if !$0{deletion=nil}})){Button("حذف",role:.destructive){if let chapter=deletion{do{try typer.remove(chapter.id)}catch{typer.error=error.localizedDescription}};deletion=nil};Button("إلغاء",role:.cancel){deletion=nil}}message:{Text("سيُحذف النص وتقدّمه من التايبر. تبقى طبقات النص الموجودة في الصور.")}
         }.foregroundStyle(Palette.pale).cookiesInterface().typerErrors(typer)
     }
 }
@@ -75,6 +75,6 @@ struct BubbleEditor:View {
 }
 private struct TyperError:ViewModifier {
     @ObservedObject var store:TyperStore
-    func body(content:Content)->some View{content.alert("تعذر حفظ التايبر",isPresented:Binding(get:{store.error != nil},set:{if !$0{store.error=nil}})){Button("حسنًا"){store.error=nil}}message:{Text(store.error ?? "")}}
+    func body(content:Content)->some View{content.cookiesAlert("تعذر حفظ التايبر",isPresented:Binding(get:{store.error != nil},set:{if !$0{store.error=nil}})){Button("حسنًا"){store.error=nil}}message:{Text(store.error ?? "")}}
 }
 extension View {func typerErrors(_ store:TyperStore)->some View{modifier(TyperError(store:store))}}

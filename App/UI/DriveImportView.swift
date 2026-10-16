@@ -29,7 +29,7 @@ struct DriveImportView:View {
     }.padding(20).frame(maxWidth:650).frame(maxWidth:.infinity)}}.foregroundStyle(Palette.pale).navigationTitle("Google Drive").navigationBarTitleDisplayMode(.inline).toolbar{ToolbarItem(placement:.topBarLeading){Button("تم"){dismiss()}.disabled(busy)}}}
         .interactiveDismissDisabled(busy)
         .cookiesFileImporter(isPresented:$files,allowedContentTypes:[.image],allowsMultipleSelection:true){result in do{let urls=try result.get();task=Task{await importFiles(urls)}}catch{failure=error.localizedDescription}}
-        .alert("Google Drive",isPresented:Binding(get:{failure != nil},set:{if !$0{failure=nil}})){Button("حسنًا"){failure=nil}}message:{Text(failure ?? "")}
+        .cookiesAlert("Google Drive",isPresented:Binding(get:{failure != nil},set:{if !$0{failure=nil}})){Button("حسنًا"){failure=nil}}message:{Text(failure ?? "")}
     }
     private func importFiles(_ urls:[URL])async{
         busy=true;defer{busy=false};var created:UUID?

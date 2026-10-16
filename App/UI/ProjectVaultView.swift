@@ -45,17 +45,38 @@ struct ProjectVaultView:View {
             .safeAreaInset(edge:.bottom){if vault.busy{VStack(spacing:8){HStack{ProgressView().tint(.white);Text(vault.activity).font(.subheadline);Spacer();Text(vault.progress,format:.percent.precision(.fractionLength(0))).font(.caption)};ProgressView(value:vault.progress).tint(Palette.gold)}.padding(18).glass(22).padding(12)}}
             .fullScreenCover(isPresented:$account){AccountView()}
             .task(id:service.session?.user.id){vault.service=service;if service.session != nil{await vault.refresh()}}
-            .confirmationDialog("حذف نسخة الخادم؟",isPresented:Binding(get:{deleting != nil},set:{if !$0{deleting=nil}}),titleVisibility:.visible){Button("إبقاء نسخة الجهاز وحذف نسخة الخادم",role:.destructive){if let project=deleting{Task{await vault.removeRemote(project)}};deleting=nil};Button("إلغاء",role:.cancel){deleting=nil}}message:{Text("سينزّل المشروع أولًا إن كان غير موجود على الجهاز، لحماية عملك. قد تبقى النسخة المحذوفة ضمن المساحة لفترة التنظيف القصيرة.")}
-            .alert("حفظ المشاريع",isPresented:Binding(get:{vault.error != nil},set:{if !$0{vault.error=nil}})){Button("حسنًا"){vault.error=nil}}message:{Text(vault.error ?? "")}
+            .vaultRemovalConfirmation(project:$deleting){project in Task{await vault.removeRemote(project)}}
+            .cookiesAlert("حفظ المشاريع",isPresented:Binding(get:{vault.error != nil},set:{if !$0{vault.error=nil}})){Button("حسنًا"){vault.error=nil}}message:{Text(vault.error ?? "")}
         }.cookiesInterface()
     }
     private func remoteRow(_ project:VaultProject)->some View {
-        HStack(spacing:14){Image(systemName:"checkmark.icloud").font(.title2).foregroundStyle(Palette.gold);VStack(alignment:.leading,spacing:6){Text(project.head.title).font(.subheadline);Text(bytes(Int64(project.head.bytes))+" · نسخة \(project.generation)").font(.caption).foregroundStyle(Palette.secondary)};Spacer();if !library.items.contains(where:{$0.pages.contains(project.id)}){Button("تنزيل"){Task{do{try await vault.download(project,installInLibrary:true)}catch{vault.error=error.localizedDescription}}}.buttonStyle(CapsuleActionStyle()).disabled(vault.busy)};Button{deleting=project}label:{Image(systemName:"trash")}.accessibilityLabel("حذف نسخة الخادم").disabled(vault.busy)}.padding(18).glass(22)
+        HStack(spacing:14){Image(systemName:"checkmark.icloud").font(.title2).foregroundStyle(Palette.gold);VStack(alignment:.leading,spacing:6){Text(project.head.title).font(.subheadline);Text(bytes(Int64(project.head.bytes))+" · نسخة \(project.generation)").font(.caption).foregroundStyle(Palette.secondary)};Spacer();if !library.items.contains(where:{$0.pages.contains(project.id)}){Button("تنزيل"){Task{do{try await vault.download(project,installInLibrary:true)}catch{vault.error=error.localizedDescription}}}.buttonStyle(CapsuleActionStyle()).disabled(vault.busy)};Button{deleting=project}label:{Image(systemName:"trash")}.accessibilityLabel("حذف نسخة الخادم").accessibilityIdentifier("vault-delete-"+project.id.uuidString).disabled(vault.busy)}.padding(18).glass(22)
     }
     private func localRow(_ id:UUID,title:String)->some View {
         let receipt=vault.receipt(id)
         return VStack(alignment:.leading,spacing:14){HStack{Image(systemName:receipt?.resident==false ? "icloud.and.arrow.down":"photo.on.rectangle");Text(title).font(.subheadline);Spacer()};Text(receipt?.resident==false ? "الصور في الخادم؛ تُنزّل عند الفتح":receipt==nil ? "محفوظ على الجهاز":receipt?.managed==false ? "متاح على الجهاز دون إخلاء تلقائي":"على الجهاز؛ سيرفع ويخلى بعد الإغلاق").font(.caption).foregroundStyle(Palette.secondary)
             HStack(spacing:12){if receipt?.resident != false{Button("رفع وإخلاء المساحة"){Task{await vault.store(id,evict:true)}}.buttonStyle(CapsuleActionStyle())};if receipt != nil{Button("إبقاء على الجهاز"){Task{await vault.keepOnDevice(id)}}.buttonStyle(CapsuleActionStyle())}}.disabled(vault.busy)
         }.padding(18).glass(22)
+    }
+}
+
+/// Shared by the real account screen and the isolated DEBUG presentation check.
+/// Taking the selected item here keeps the exact target valid until confirmation.
+struct VaultRemovalConfirmation:ViewModifier {
+    @Binding var project:VaultProject?
+    let remove:(VaultProject)->Void
+    func body(content:Content)->some View {
+        content.cookiesConfirmationDialog("حذف نسخة الخادم؟",isPresented:Binding(get:{project != nil},set:{if !$0{project=nil}})){
+            Button("إبقاء نسخة الجهاز وحذف نسخة الخادم",role:.destructive){if let target=project{remove(target)}}
+                .accessibilityIdentifier("vault-confirm-delete")
+            Button("إلغاء",role:.cancel){}
+        }message:{
+            Text("المشروع: \(project?.head.title ?? "")\n\nتبقى نسخة المشروع على جهازك. إذا كانت الصور محفوظة في الخادم فقط، سينزّلها التطبيق ويتحقق منها أولًا لحماية عملك، ثم يحذف نسخة الخادم. عند فشل التنزيل لن تُحذف نسخة الخادم.\n\nقد تبقى النسخة المحذوفة ضمن المساحة لفترة التنظيف القصيرة.")
+        }
+    }
+}
+extension View {
+    func vaultRemovalConfirmation(project:Binding<VaultProject?>,remove:@escaping (VaultProject)->Void)->some View {
+        modifier(VaultRemovalConfirmation(project:project,remove:remove))
     }
 }
