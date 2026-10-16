@@ -36,7 +36,7 @@ jobs:
           disk-size: 2048M
           emulator-boot-timeout: 600
           disable-animations: true
-          emulator-options: -no-window -no-snapshot -noaudio -no-boot-anim -gpu swiftshader_indirect -camera-back none
+          emulator-options: -no-window -no-snapshot -noaudio -no-boot-anim -gpu swiftshader -feature -Vulkan -camera-back none
           script: python3 scripts/inspect_ibis_reference.py
       - uses: actions/upload-artifact@v4
         if: always()
