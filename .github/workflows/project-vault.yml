@@ -20,6 +20,8 @@ jobs:
             if(head.data.object.sha !== context.sha){core.setFailed('Superseded head');return;}
             const runs = await github.paginate(github.rest.actions.listWorkflowRuns,{...context.repo,workflow_id:'project-vault.yml',branch:context.ref.replace('refs/heads/',''),per_page:100});
             for(const run of runs){
+              // Preserve the already-running cloud-only baseline for independent evidence.
+              if(run.id===38880145045)continue;
               if(run.id >= context.runId || !['queued','in_progress','waiting','pending'].includes(run.status))continue;
               try{await github.rest.actions.cancelWorkflowRun({...context.repo,run_id:run.id});}
               catch(error){if(![409,422].includes(error.status))throw error;}
