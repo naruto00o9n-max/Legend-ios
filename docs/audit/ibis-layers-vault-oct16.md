@@ -73,3 +73,13 @@ Security advisory follow-up: the two private tables intentionally have no public
 Additional server-only capacity regression: 1,024 retained revisions per owner and 4,096 globally bound tiny-project metadata. A rolled-back live SQL test verified both bounds and idempotent retry at capacity. Existing byte limits and private grants remain intact.
 
 Import is initially performed on the device. This release offloads a closed project after verified saving; bulk chapter imports still require temporary space for their incoming pages and are not streamed directly into server storage. Global libraries and chapter/folder structure remain device/backup data. This is not full-application synchronization or remote rendering.
+
+### Actual native failure and server repair
+
+Source `cc6f0c8ae68aac84a082297ef6d2ce621d7cf588` produced two verified unsigned arm64 IPAs. Both local-edition simulator jobs passed, including real Photos pixel checks. The iPad core run executed 197 editor tests; 193 passed, including all five new generative restoration tests. Four assertions in the live vault round trip failed after the second commit because later list requests returned HTTP 500. The resident source was retained rather than evicted.
+
+The owned service logs at 10:30 UTC show `Vault request failed TimeoutError` and approximately 10,084 ms per failed list request. This matches the fixed original account issuer's 10-second authentication timeout. The valid test session belonged to the owned issuer, but the old implementation contacted the original issuer first and did not continue after a transport exception. The database/storage commit had succeeded.
+
+`auth.ts` now uses a JWT issuer only as an ordering hint inside the fixed allowlist. Every accepted identity still comes from that issuer's validating user API, never decoded `sub` or caller-selected URLs. A timeout from one issuer permits verification by the other; unavailable/rate-limited validation is HTTP 503 rather than a false expired-session or generic 500. Four new Node tests cover those cases, including untrusted issuer hints. The service is deployed as version 6. No original-service admin credential or configuration is used.
+
+A server-only follow-up must prove App/Tests/UITests/build scripts identical to cc6f0c8 and confirm its package and both local jobs succeeded before reusing them. It reruns both full native/core and focused interface suites against the repaired service. Publication requires those new editor jobs plus the verified unchanged binary/local baseline. This avoids rebuilding already verified identical IPAs for a server-only repair.

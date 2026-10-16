@@ -1,4 +1,5 @@
 import { CHUNK, UUID, validateHead, digest, ownerID } from './protocol.ts';
+import {authenticatedOwner,AuthFailure} from './auth.ts';
 import reference from './trusted-auth.json' with {type:'json'};
 
 const url=Deno.env.get('SUPABASE_URL')!;
@@ -18,14 +19,8 @@ async function limited(req:Request,limit:number){
 }
 async function body(req:Request){try{return JSON.parse(new TextDecoder().decode(await limited(req,16384)))}catch(error){if(error instanceof Failure)throw error;throw new Failure(400,'Invalid JSON body')}}
 async function authenticate(req:Request){
-  const token=req.headers.get('Authorization');if(!token?.startsWith('Bearer ') || token.length>8192)throw new Failure(401,'Sign in first');
-  // Never trust decoded JWT fields. Both issuers are fixed and their user API
-  // verifies signature, expiration and revocation. No caller-supplied auth URL.
-  for(const issuer of [{url:reference.url,key:reference.key},{url,key:Deno.env.get('SUPABASE_ANON_KEY')!}]){
-    const r=await fetch(issuer.url+'/auth/v1/user',{headers:{'apikey':issuer.key,Authorization:token},signal:AbortSignal.timeout(10000)});
-    if(r.ok){const user=await r.json();if(typeof user.id==='string' && UUID.test(user.id) && user.is_anonymous!==true)return ownerID(issuer.url,user.id)}
-  }
-  throw new Failure(401,'Session expired');
+  const publicKey=JSON.parse(Deno.env.get('SUPABASE_PUBLISHABLE_KEYS')||'{}').default||Deno.env.get('SUPABASE_ANON_KEY')!;
+  return authenticatedOwner(req,[{url:reference.url,key:reference.key},{url,key:publicKey}]);
 }
 function ids(project:string,revision?:string){if(!UUID.test(project) || (revision!==undefined&&!UUID.test(revision)))throw new Failure(400,'Invalid identifier')}
 function prefix(owner:string,project:string,revision:string){return `${owner}/${project}/${revision}`}
@@ -92,5 +87,5 @@ Deno.serve(async(req:Request)=>{
     }
     if(req.method==='POST' && op==='cleanup'){await cleanup(owner);return response({ok:true})}
     throw new Failure(404,'Unknown operation');
-  }catch(error){if(error instanceof Failure)return response({message:error.message},error.status);console.error('Vault request failed',error instanceof Error ? error.name:'Unknown');return response({message:'Could not complete vault request'},500)}
+  }catch(error){if(error instanceof Failure || error instanceof AuthFailure)return response({message:error.message},error.status);console.error('Vault request failed',error instanceof Error ? error.name:'Unknown');return response({message:'Could not complete vault request'},500)}
 });
