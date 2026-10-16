@@ -6,7 +6,7 @@ final class EditorUITests:XCTestCase {
     func capture(_ name:String){Thread.sleep(forTimeInterval:0.5);let a=XCTAttachment(screenshot:XCUIScreen.main.screenshot());a.name=name;a.lifetime = .keepAlways;add(a)}
     func start(){let start=app.buttons["welcome-start"];XCTAssertTrue(start.waitForExistence(timeout:15));Thread.sleep(forTimeInterval:0.8);capture("01-welcome");start.tap();if app.buttons["account-skip"].waitForExistence(timeout:3){app.buttons["account-skip"].tap()};XCTAssertTrue(app.buttons["demo-project"].waitForExistence(timeout:8));capture("02-library");assertLayout()}
     func openEditor(){start();openDemoFromLibrary()}
-    func openDemoFromLibrary(){app.buttons["demo-project"].tap();let project=app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH 'project-'")).firstMatch;let link=app.otherElements.matching(NSPredicate(format:"identifier BEGINSWITH 'project-'")).firstMatch
+    func openDemoFromLibrary(){app.buttons["demo-project"].tap();let project=app.buttons.matching(NSPredicate(format:"identifier MATCHES %@","^project-[0-9A-Fa-f-]{36}$")).firstMatch;let link=app.otherElements.matching(NSPredicate(format:"identifier MATCHES %@","^project-[0-9A-Fa-f-]{36}$")).firstMatch
         if project.waitForExistence(timeout:30){project.tap()}else{XCTAssertTrue(link.waitForExistence(timeout:30));link.tap()}
         XCTAssertTrue(app.buttons["tool-text"].waitForExistence(timeout:15));capture("03-editor-long-image");assertLayout()
     }
@@ -40,7 +40,7 @@ final class EditorUITests:XCTestCase {
         capture("30-photos-picker");asset.tap()
         let add=app.buttons.matching(NSPredicate(format:"label == 'Add' OR label == 'إضافة' OR label == 'تم' OR label == 'Done'")).firstMatch
         XCTAssertTrue(add.waitForExistence(timeout:5));XCTAssertTrue(add.isEnabled,"A real photo must be selected before Add");capture("30-photos-selected");add.tap()
-        let project=app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH 'project-'")).firstMatch
+        let project=app.descendants(matching:.any).matching(NSPredicate(format:"identifier MATCHES %@","^project-[0-9A-Fa-f-]{36}$")).firstMatch
         XCTAssertTrue(project.waitForExistence(timeout:40),"Photos selection must create an editable project")
         project.tap();XCTAssertTrue(app.buttons["tool-text"].waitForExistence(timeout:10))
         XCTAssertTrue(app.staticTexts["canvas-zoom"].label.contains("800 × 15000"))
@@ -82,7 +82,7 @@ final class EditorUITests:XCTestCase {
     func testChapterBlankMergeSplitReaderAndExport(){
         func page(_ index:Int)->XCUIElement{app.descendants(matching:.any).matching(identifier:"chapter-page-\(index)").firstMatch}
         start();app.buttons["new-chapter"].tap();app.alerts.textFields.firstMatch.tap();app.alerts.textFields.firstMatch.typeText("فصل الجودة");app.alerts.buttons["إنشاء"].tap()
-        let project=app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH 'project-'")).firstMatch;XCTAssertTrue(project.waitForExistence(timeout:10));project.tap();XCTAssertTrue(app.buttons["chapter-actions"].waitForExistence(timeout:10));capture("batch-01-chapter-empty")
+        let project=app.descendants(matching:.any).matching(NSPredicate(format:"identifier MATCHES %@","^project-[0-9A-Fa-f-]{36}$")).firstMatch;XCTAssertTrue(project.waitForExistence(timeout:10));project.tap();XCTAssertTrue(app.buttons["chapter-actions"].waitForExistence(timeout:10));capture("batch-01-chapter-empty")
         for index in 0..<2{tapVisible("chapter-actions");app.buttons["لوحة فارغة"].tap();XCTAssertTrue(app.buttons["chapter-operation-apply"].waitForExistence(timeout:5));capture("batch-02-blank-canvas-options");app.buttons["chapter-operation-apply"].tap();XCTAssertTrue(page(index).waitForExistence(timeout:30))}
         capture("batch-03-two-pages");tapVisible("chapter-select");revealVertical(page(0));page(0).tap();revealVertical(page(1));page(1).tap();capture("batch-04-multiple-selection")
         tapVisible("chapter-actions");app.buttons["دمج المحدد"].tap();XCTAssertTrue(app.buttons["chapter-operation-apply"].waitForExistence(timeout:5));capture("batch-05-merge-studio");app.buttons["chapter-operation-apply"].tap()
@@ -133,7 +133,7 @@ final class EditorUITests:XCTestCase {
     func testPinchAndDrawing(){openEditor();let canvas=app.scrollViews["canvas-scroll"],zoom=app.staticTexts["canvas-zoom"],before=zoom.label;canvas.pinch(withScale:3,velocity:1);let changed=XCTNSPredicateExpectation(predicate:NSPredicate{_,_ in zoom.label != before},object:zoom);XCTAssertEqual(XCTWaiter.wait(for:[changed],timeout:8),.completed,"Pinch must change the displayed zoom");capture("13-pinch-zoom");tool("brush");let start=canvas.coordinate(withNormalizedOffset:CGVector(dx:0.3,dy:0.3));start.press(forDuration:0.05,thenDragTo:canvas.coordinate(withNormalizedOffset:CGVector(dx:0.7,dy:0.5)));XCTAssertTrue(app.buttons["undo"].isEnabled,"Drawing must create an undoable edit");XCTAssertTrue((canvas.value as? String ?? "").contains("1 خطوط رسم"),"Drawing gesture must commit a stroke");capture("14-drawing");assertLayout();let editorZoom=zoom.label;tool("reader");XCTAssertTrue(app.buttons["إغلاق القراءة"].waitForExistence(timeout:5));capture("24-reader-after-editing");app.buttons["إغلاق القراءة"].tap();XCTAssertEqual(zoom.label,editorZoom,"Returning from reading must preserve editor zoom")}
     func testShapesReaderBrushSettingsAndFontLibrary(){
         start();app.buttons["settings"].tap();XCTAssertTrue(app.buttons["settings-font-library"].waitForExistence(timeout:5));capture("15-settings");tapVisible("settings-font-library");XCTAssertTrue(app.buttons["font-close"].waitForExistence(timeout:5));capture("16-font-library");app.buttons["font-close"].tap();app.buttons["settings-close"].tap()
-        app.buttons["demo-project"].tap();let project=app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH 'project-'")).firstMatch;XCTAssertTrue(project.waitForExistence(timeout:30));project.tap();XCTAssertTrue(app.buttons["tool-brush"].waitForExistence(timeout:10))
+        app.buttons["demo-project"].tap();let project=app.descendants(matching:.any).matching(NSPredicate(format:"identifier MATCHES %@","^project-[0-9A-Fa-f-]{36}$")).firstMatch;XCTAssertTrue(project.waitForExistence(timeout:30));project.tap();XCTAssertTrue(app.buttons["tool-brush"].waitForExistence(timeout:10))
         tool("brush");app.buttons["إعدادات الفرشاة"].tap();XCTAssertTrue(app.buttons["brush-close"].waitForExistence(timeout:5));capture("17-brush-settings");app.buttons["brush-close"].tap();tool("shapes");XCTAssertTrue(app.buttons["شكل 1"].waitForExistence(timeout:5));capture("18-shapes");app.buttons["شكل 1"].tap();tool("reader");XCTAssertTrue(app.buttons["إغلاق القراءة"].waitForExistence(timeout:5));capture("19-reader");app.buttons["إغلاق القراءة"].tap()
     }
     func testLayerButtonsActuallyHideUnlockAndDelete() {
