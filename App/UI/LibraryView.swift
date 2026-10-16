@@ -71,6 +71,7 @@ struct PageDestination:View {
     private let id:UUID
     private let lease=UUID()
     private var opened=false
+    private var retainedModel:EditorModel?
     init(id:UUID,library:LibraryStore){self.id=id;self.library=library}
     func load()async {
         guard model==nil else{return};failure=nil
@@ -80,14 +81,14 @@ struct PageDestination:View {
             let saved=try await BackgroundWork.run{guard let saved=try RecoveryFile.read(EditorPage.self,at:directory.appendingPathComponent("page.json")) else{throw ImageFailure.message("ملف الصفحة مفقود")};return saved}
             try Task.checkCancellation()
             if saved.recovered{library.error="استُعيدت الصفحة من آخر حفظ سليم."}
-            model=EditorModel(page:saved.value,library:library)
+            let loaded=EditorModel(page:saved.value,library:library);retainedModel=loaded;model=loaded
         }catch{
             if opened{library.vault.close(id,lease:lease);opened=false}
             if !(error is CancellationError){failure=error.localizedDescription}
         }
     }
     deinit{
-        let library=library,id=id,lease=lease,model=model,opened=opened
+        let library=library,id=id,lease=lease,model=retainedModel,opened=opened
         Task{@MainActor in model?.save();model?.cancelPendingSaves();if opened{library.vault.close(id,lease:lease)}}
     }
 }

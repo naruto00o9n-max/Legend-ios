@@ -19,7 +19,7 @@ Deno.serve(async req=>{
  try{
   const token=req.headers.get('Authorization')?.replace(/^Bearer /,'');if(!token)return new Response('Unauthorized',{status:401});
   const {payload:p}=await jwtVerify(token,keys,{issuer:'https://token.actions.githubusercontent.com',audience:'cookies-vault-native-tests',maxTokenAge:'10 minutes'});
-  if(p.repository_id!=='1411265955' || p.repository_owner_id!=='319563334' || p.ref!=='refs/heads/verify/project-vault-oct16' || p.workflow_ref!=='naruto00o9n-max/Legend-ios/.github/workflows/project-vault.yml@refs/heads/verify/project-vault-oct16')return new Response('Forbidden',{status:403});
+  if(p.repository_id!=='1411265955' || p.repository_owner_id!=='319563334' || p.ref!=='refs/heads/verify/project-vault-oct16' || p.workflow_ref!=='naruto00o9n-max/Legend-ios/.github/workflows/project-vault.yml@refs/heads/verify/project-vault-oct16')return Response.json({error:'Unexpected CI identity',repository_id:p.repository_id,ref:p.ref,workflow_ref:p.workflow_ref},{status:403});
   if(!isPublicKey(api))throw new Error('No public test client key configured');
   const run=String(p.run_id),action=new URL(req.url).pathname.split('/').pop();
   if(action==='cleanup'){
@@ -33,5 +33,5 @@ Deno.serve(async req=>{
   const r=await fetch(root+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:api,'Content-Type':'application/json'},body:JSON.stringify({email,password})});const session=await r.json();
   if(!r.ok){await clean(user,run);throw new Error('Could not sign into test account')}
   return Response.json({configuration:{url:root,key:api},session},{headers:{'Cache-Control':'no-store'}});
- }catch(error){console.error('CI vault setup failed',error instanceof Error?error.name:'Unknown');return new Response('Test setup failed',{status:403})}
+ }catch(error){console.error('CI vault setup failed',error instanceof Error?error.name:'Unknown');return Response.json({error:error instanceof Error?error.message:'Test setup failed'},{status:403})}
 });

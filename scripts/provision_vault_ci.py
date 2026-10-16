@@ -1,7 +1,7 @@
 """Short-lived ordinary test sessions, authenticated with GitHub's OIDC identity.
 No production credential is stored in GitHub or written into the app target.
 """
-import json, os, pathlib, sys, urllib.request, urllib.parse
+import json, os, pathlib, sys, urllib.request, urllib.parse, urllib.error
 endpoint='https://ilagswvocznnrrreiswq.supabase.co/functions/v1/vault-native-ci/'
 fixture=pathlib.Path('Tests/TransientVaultSession.json')
 action=sys.argv[1]
@@ -18,7 +18,11 @@ with urllib.request.urlopen(req,timeout=30) as response:token=json.load(response
 body={}
 if action=='cleanup':body={'users':[json.loads(fixture.read_text())['session']['user']['id']]}
 req=urllib.request.Request(endpoint+action,data=json.dumps(body).encode(),headers={'Authorization':'Bearer '+token,'Content-Type':'application/json'})
-with urllib.request.urlopen(req,timeout=45) as response:data=json.load(response)
+try:
+    with urllib.request.urlopen(req,timeout=45) as response:data=json.load(response)
+except urllib.error.HTTPError as error:
+    print('CI provisioner rejected the request:',error.code,error.read().decode()[:800])
+    raise SystemExit(1)
 if action=='provision':
     assert data['configuration']['key'].startswith('sb_publishable_') or data['configuration']['key'].startswith('eyJ')
     fixture.write_text(json.dumps(data));fixture.chmod(0o600)
