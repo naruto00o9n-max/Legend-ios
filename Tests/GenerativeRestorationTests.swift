@@ -44,7 +44,7 @@ final class GenerativeRestorationTests:XCTestCase {
     func testCapacityAndCancellationNeverBecomeSuccessfulPatches()async throws {
         let client=session();defer{client.invalidateAndCancel()}
         GenerativeMock.respond={_ in(429,[:],Data("{\"error\":\"daily_capacity_reached\"}".utf8))}
-        do{_ = try await GenerativeRestoration.repair(source:source(),mask:mask(),endpoint:URL(string:"https://restoration.test"),session:client);XCTFail("Capacity accepted")}catch{XCTAssertTrue(error.localizedDescription.contains("حصة"))}
+        do{_ = try await GenerativeRestoration.repair(source:source(),mask:mask(),endpoint:URL(string:"https://restoration.test"),session:client);XCTFail("Capacity accepted")}catch{XCTAssertTrue(error.localizedDescription.contains("سعتها المشتركة"))}
         let task=Task{try Task.checkCancellation();return try await GenerativeRestoration.repair(source:source(),mask:mask(),endpoint:URL(string:"https://restoration.test"),session:client)};task.cancel()
         do{_ = try await task.value;XCTFail("Cancelled work accepted")}catch{XCTAssertTrue(error is CancellationError)}
     }

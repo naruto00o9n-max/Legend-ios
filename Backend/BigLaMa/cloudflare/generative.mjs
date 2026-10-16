@@ -56,13 +56,15 @@ export async function reconstruct(request,env,state){
     return new Response(bytes,{headers:{'content-type':bytes[0]===137?'image/png':'image/jpeg','cache-control':'no-store','x-cookies-source-sha256':[...new Uint8Array(digest)].map(v=>v.toString(16).padStart(2,'0')).join('')}});
   }catch(error){
     // Provider failures are not successful user edits. Release the application
-    // reservation; upstream billing remains controlled by Cloudflare itself.
+    // daily reservation. Keep ambiguous attempts in the shared monthly cost
+    // ceiling: a provider can bill even if its response is lost or invalid.
+    const message=String(error?.message || ''),code=Number(error?.code || error?.errors?.[0]?.code);
+    const notCharged=[3036,3040].includes(code) || /3036|daily free allocation|10,?000 neurons/i.test(message);
     await state.storage.transaction(async storage=>{
       const budget=await storage.get('generative-budget'),usage=await storage.get('generative-month');
       if(budget?.day===day){budget.total=Math.max(0,budget.total-1);budget.clients[client]=Math.max(0,(budget.clients[client] || 0)-1);await storage.put('generative-budget',budget)}
-      if(usage?.month===month){usage.total=Math.max(0,usage.total-1);await storage.put('generative-month',usage)}
+      if(notCharged && usage?.month===month){usage.total=Math.max(0,usage.total-1);await storage.put('generative-month',usage)}
     });
-    const message=String(error?.message || ''),code=Number(error?.code || error?.errors?.[0]?.code);
     if(code===3036 || /3036|daily free allocation|10,?000 neurons/i.test(message))return json({error:'provider_account_capacity_reached'},503);
     return json({error:'service_unavailable'},503);
   }

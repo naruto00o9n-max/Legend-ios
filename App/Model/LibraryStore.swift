@@ -115,7 +115,7 @@ import SwiftUI
     var directory:URL {library.directory(page.id)}
     var active:EditorLayer? {page.layers.first{$0.id==selected}}
     @discardableResult func insertDialogues(_ values:[(String,TextStyle?)],targets:[SniperTarget]=[],bubbleLayout:BubbleLayoutRequest?=nil,preparedLayout:EditorLayer?=nil,preparedLayouts:[EditorLayer]=[],transforms:[TextLayerTransform]=[])throws->[UUID] {
-        let previous=page.layers;var next=page
+        var inserted:[UUID]=[];var next=page
         let textStack=page.layers.last(where:{$0.kind == .text && $0.textOrigin == .typer})?.stackID ?? UUID()
         let center = !EditorPreferences.smartPosition || visibleCenter == .zero ? CGPoint(x:Double(page.width)/2,y:200):visibleCenter
         for (index,value) in values.enumerated() {
@@ -128,11 +128,12 @@ import SwiftUI
             else if let bubbleLayout{item=try BubbleLayout.fit(item,request:bubbleLayout)}
             if prepared==nil,index<targets.count{item=try SniperDetector.fitted(item,to:targets[index])}
             if transforms.indices.contains(index){transforms[index].apply(to:&item)}
-            next.layers.append(item)
+            let insertion=next.layers.lastIndex(where:{$0.stackID==textStack}).map{$0+1} ?? next.layers.count
+            next.layers.insert(item,at:insertion);inserted.append(item.id)
         }
         next.modified=Date();try library.persist(next)
-        checkpoint();page=next;selected=next.layers.last?.id;tool = .text;panel=nil;save()
-        return Array(next.layers.dropFirst(previous.count)).map(\.id)
+        checkpoint();page=next;selected=inserted.last;tool = .text;panel=nil;save()
+        return inserted
     }
     func detectSniper(at point:CGPoint) async {
         guard !busy,point.x>=0,point.y>=0,point.x<Double(page.width),point.y<Double(page.height) else{return}
@@ -155,14 +156,20 @@ import SwiftUI
             }catch{self.error=error.localizedDescription;return}
         }
         if kind == .drawing{lastDrawingLayer=l.id;l.frame=Box(x:0,y:0,width:Double(page.width),height:Double(page.height))}
-        let insertion=selected.flatMap{id in page.layers.firstIndex{$0.id==id}}.map{$0+1} ?? page.layers.count
+        let insertion=l.stackID.flatMap{stack in page.layers.lastIndex{$0.stackID==stack}}.map{$0+1} ?? selected.flatMap{id in page.layers.firstIndex{$0.id==id}}.map{$0+1} ?? page.layers.count
         checkpoint();page.layers.insert(l,at:insertion);selected=l.id;save();if kind == .text{panel = .content}
     }
     @discardableResult func confirmTextSettings()->Bool {
         do{if let active{try manualTextStore.rememberManualText(active,from:directory);for color in active.style.usedColors{colorStore.record(color)}};return true}catch{self.error=error.localizedDescription;return false}
     }
     func delete() {guard stylePreviewLayer==nil,active?.isLocked==false else{return};let ids=selectedLayerObjects;guard !page.layers.contains(where:{ids.contains($0.id) && $0.isLocked}) else{return};checkpoint();page.layers.removeAll{ids.contains($0.id)};self.selected=nil;save()}
-    func duplicate() {guard stylePreviewLayer==nil,var l=active else{return};guard let index=page.layers.firstIndex(where:{$0.id==l.id}) else{return};checkpoint();l.id=UUID();page.layers.insert(l,at:index+1);selected=l.id;save()}
+    func duplicate() {
+        guard stylePreviewLayer==nil,let active else{return};let ids=selectedLayerObjects
+        let originals=page.layers.filter{ids.contains($0.id)};guard let index=page.layers.lastIndex(where:{ids.contains($0.id)}) else{return}
+        let wholeStack=stackSelection,newStack=UUID()
+        let copies=originals.map{source->EditorLayer in var copy=source;copy.id=UUID();if source.stackID != nil{copy.stackID=wholeStack ? newStack:source.stackID};return copy}
+        checkpoint();page.layers.insert(contentsOf:copies,at:index+1);selected=copies.last?.id ?? active.id;stackSelection=wholeStack;save()
+    }
     func cancelPendingSaves(){whiteningTask?.cancel();editSaveTask?.cancel();editSaveTask=nil;previewTask?.cancel();previewTask=nil}
     /// Flush a closing destination before storage may remove resident assets.
     @discardableResult func flushForClosing()->Bool {

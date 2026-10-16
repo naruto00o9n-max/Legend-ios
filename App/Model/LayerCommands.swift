@@ -10,6 +10,18 @@ extension EditorLayer {
 }
 
 extension EditorModel {
+    var logicalLayerCount:Int{Set(page.layers.map{$0.stackID ?? $0.id}).count}
+    /// Older documents encoded each text object as a stack row. Adjacent text
+    /// objects can share a logical text layer without rasterization or reordering.
+    func organizeLegacyTextLayers(){
+        var next=page,stack:UUID?,changed=false
+        for i in next.layers.indices{
+            if next.layers[i].kind != .text{stack=nil;continue}
+            if let existing=next.layers[i].stackID{stack=existing;continue}
+            let id=stack ?? UUID();stack=id;next.layers[i].stackID=id;next.layers[i].stackName="النصوص";changed=true
+        }
+        if changed{checkpoint();page=next;save()}
+    }
     var selectedLayerObjects:Set<UUID>{
         guard let active else{return []}
         if stackSelection,let stack=active.stackID{return Set(page.layers.filter{$0.stackID==stack}.map(\.id))}
@@ -70,6 +82,7 @@ extension EditorModel {
             guard active.isVisible else{error="الطبقة مخفية؛ أظهرها قبل المسح";return false}
             return true
         }
+        if let lastDrawingLayer,let layer=page.layers.first(where:{$0.id==lastDrawingLayer && $0.isVisible && !$0.isLocked}){selected=layer.id;return true}
         guard page.baseHidden != true else{error="اختر الطبقة التي تريد المسح منها";return false}
         var layer=EditorLayer(kind:.image,name:"الصورة الأصلية")
         layer.imagePath=page.source;layer.isWorkingImage=true
@@ -79,6 +92,7 @@ extension EditorModel {
         return true
     }
     func renameLayer(_ id:UUID,to name:String) {
+        if stackSelection,let stack=active?.stackID{let title=name.trimmingCharacters(in:.whitespacesAndNewlines);guard !title.isEmpty else{return};checkpoint();for i in page.layers.indices where page.layers[i].stackID==stack{page.layers[i].stackName=String(title.prefix(120))};save();return}
         let title=name.trimmingCharacters(in:.whitespacesAndNewlines)
         guard !title.isEmpty,let index=page.layers.firstIndex(where:{$0.id==id}),page.layers[index].name != title else{return}
         checkpoint();page.layers[index].name=String(title.prefix(120));save()
@@ -107,7 +121,7 @@ extension EditorModel {
     func clearActiveLayer() {
         guard let active,!active.isLocked else{return};checkpoint()
         let bounds=LayerRenderer.bounds(active)
-        change{layer in
+        changeLayerObjects{layer in
             switch layer.kind {
             case .drawing:layer.strokes=[];layer.erasures=nil
             case .text:layer.textContent="";layer.textMask=nil;layer.erasures=nil
@@ -125,8 +139,8 @@ extension EditorModel {
         await mergeLayers([id,page.layers[index-1].id])
     }
     func exportActiveLayerPNG() async->URL? {
-        guard let active,!busy else{return nil};busy=true;defer{busy=false}
-        var snapshot=page;snapshot.baseHidden=true;snapshot.layers=[active]
+        guard active != nil,!busy else{return nil};busy=true;defer{busy=false}
+        var snapshot=page;snapshot.baseHidden=true;snapshot.layers=page.layers.filter{selectedLayerObjects.contains($0.id)}
         let directory=self.directory
         do{return try await BackgroundWork.run{try ImagePipeline.exportPNG(snapshot,directory:directory)}}
         catch{self.error=error.localizedDescription;return nil}

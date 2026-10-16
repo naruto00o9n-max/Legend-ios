@@ -32,12 +32,7 @@ struct LibraryView:View {
                 HStack(spacing:10){Button{batchExport=true}label:{Label("تصدير وحفظ",systemImage:"square.and.arrow.up")}.disabled(projectSelection.isEmpty);Button{chapterCollect=true}label:{Label("جمع في فصل",systemImage:"rectangle.stack.badge.plus")}.disabled(projectSelection.isEmpty)}.buttonStyle(CapsuleActionStyle())}
             if !children.isEmpty{SearchBar(placeholder:"بحث في المشاريع والمجلدات",text:$search)}
             if children.isEmpty{WorkspaceEmpty(title:search.isEmpty ? "مساحة تنتظر حكايتك":"لا توجد نتائج",detail:search.isEmpty ? "أضف صورك، ثم اجمع العمل في مجلد وفصول. يبقى كل مشروع قابلًا للتعديل.":"جرّب اسمًا آخر للبحث.",icon:search.isEmpty ? "rectangle.stack.badge.plus":"magnifyingglass")}
-            LazyVGrid(columns:[GridItem(.adaptive(minimum:158),spacing:14)],spacing:14){ForEach(children){item in
-                if selecting,!item.folder,item.isChapter != true{Button{if !projectSelection.insert(item.id).inserted{projectSelection.remove(item.id)}}label:{card(item).overlay(alignment:.topTrailing){Image(systemName:projectSelection.contains(item.id) ? "checkmark.circle.fill":"circle").font(.system(size:24)).foregroundStyle(projectSelection.contains(item.id) ? Palette.gold:Palette.pale).padding(18)}}}
-                else if item.folder{NavigationLink{LibraryView(parent:item.id,title:item.title)}label:{card(item)}}
-                else if item.isChapter==true{NavigationLink{ChapterGalleryView(id:item.id)}label:{card(item)}}
-                else{NavigationLink{PageDestination(id:item.id)}label:{card(item)}.onLongPressGesture{selecting=true;projectSelection=[item.id]}}
-            }}.buttonStyle(.plain)}
+            projectGrid
             SectionHeading(title:"أدوات مساحة العمل",detail:"كل ما تحتاج إليه، قريب منك")
             ResponsiveActionGrid(items:NetworkPolicy.enabled ? 8:5){
                 ActionTile(title:"التايبر",subtitle:"نصوص الفصول والوسوم والتقدّم",icon:"text.bubble"){assistant=true}.accessibilityIdentifier("assistant")
@@ -70,6 +65,14 @@ struct LibraryView:View {
         .fullScreenCover(isPresented:$projectVault){ProjectVaultView(vault:library.vault)}.sheet(isPresented:$guide){AppGuideView()}.fullScreenCover(isPresented:$assistant){TyperLibraryView(folder:parent)}.fullScreenCover(isPresented:$settings){SettingsView()}.sheet(isPresented:$fontLibrary){FontLibraryView()}.fullScreenCover(isPresented:$community){ServiceHub()}.fullScreenCover(isPresented:$accountWorkspace){AccountWorkspaceView()}
         .alert("تعذر إكمال العملية",isPresented:Binding(get:{library.error != nil},set:{if !$0{library.error=nil}})){Button("حسنًا"){library.error=nil}}message:{Text(library.error ?? "")}
         .fullScreenCover(isPresented:$trash){LibraryTrashView()}
+    }
+    private var projectGrid:some View{
+        LazyVGrid(columns:[GridItem(.adaptive(minimum:158),spacing:14)],spacing:14){ForEach(children){item in
+                if selecting,!item.folder,item.isChapter != true{Button{if !projectSelection.insert(item.id).inserted{projectSelection.remove(item.id)}}label:{card(item).overlay(alignment:.topTrailing){Image(systemName:projectSelection.contains(item.id) ? "checkmark.circle.fill":"circle").font(.system(size:24)).foregroundStyle(projectSelection.contains(item.id) ? Palette.gold:Palette.pale).padding(18)}}}
+                else if item.folder{NavigationLink{LibraryView(parent:item.id,title:item.title)}label:{card(item)}}
+                else if item.isChapter==true{NavigationLink{ChapterGalleryView(id:item.id)}label:{card(item)}}
+                else{NavigationLink{PageDestination(id:item.id)}label:{card(item)}.onLongPressGesture{selecting=true;projectSelection=[item.id]}}
+            }}.buttonStyle(.plain)
     }
     private func importSelection(_ urls:[URL],owned:Bool=false){Task{importing=true;defer{importing=false;if owned{for url in urls{try? FileManager.default.removeItem(at:url)}}};do{try await library.importSelection(urls,parent:parent)}catch{library.error=error.localizedDescription}}}
     func card(_ item:LibraryItem)->some View {

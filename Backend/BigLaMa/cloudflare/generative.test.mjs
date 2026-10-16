@@ -23,6 +23,7 @@ test('Provider failure refunds usage and distinguishes hosting capacity from per
  const env={AI:{async run(){throw new Error('private implementation detail')}}};
  for(let n=0;n<4;n++){const result=await reconstruct(request(),env,{storage:s});assert.equal(result.status,503);assert.deepEqual(await result.json(),{error:'service_unavailable'})}
  assert.equal((await s.get('generative-budget')).total,0);
+ assert.equal((await s.get('generative-month')).total,4,'Ambiguous upstream failures remain in the cost ceiling');
  const full={AI:{async run(){throw Object.assign(new Error('3036 account limited'),{code:3036})}}};
  assert.deepEqual(await (await reconstruct(request(),full,{storage:s})).json(),{error:'provider_account_capacity_reached'});
  assert.equal((await s.get('generative-budget')).total,0);

@@ -164,3 +164,20 @@ final class ProjectVaultTests:XCTestCase {
         XCTAssertNil(library.vault.error,"No upload may start after a failed flush");XCTAssertTrue(FileManager.default.fileExists(atPath:directory.appendingPathComponent(page.source).path))
     }
 }
+
+extension ProjectVaultTests {
+    @MainActor func testOpeningResidentProjectDoesNotWaitForAnotherUploadOrItsOwnQueuedClose()async throws{
+        let(page,root,directory)=try fixture();defer{try? FileManager.default.removeItem(at:root)}
+        let library=LibraryStore(root:root),lease=UUID()
+        let defaults=UserDefaults.standard,key="storage-projects-server",old=defaults.object(forKey:key);defaults.set(true,forKey:key);defer{if let old{defaults.set(old,forKey:key)}else{defaults.removeObject(forKey:key)}}
+        library.vault.busy=true
+        try await library.vault.open(page.id,lease:lease)
+        library.vault.close(page.id,lease:lease)
+        let began=Date();try await library.vault.open(page.id,lease:lease)
+        XCTAssertLessThan(Date().timeIntervalSince(began),1,"A queued close must not block the resident canvas")
+        XCTAssertEqual(try library.load(page.id),page)
+        XCTAssertTrue(FileManager.default.fileExists(atPath:directory.appendingPathComponent(page.source).path))
+        library.vault.suspended=true;library.vault.busy=false;library.vault.close(page.id,lease:lease)
+        await library.vault.waitForPendingTransfer(page.id)
+    }
+}

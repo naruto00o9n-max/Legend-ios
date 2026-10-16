@@ -7,7 +7,10 @@ final class EditorUITests:XCTestCase {
     func start(){let start=app.buttons["welcome-start"];XCTAssertTrue(start.waitForExistence(timeout:15));Thread.sleep(forTimeInterval:0.8);capture("01-welcome");start.tap();if app.buttons["account-skip"].waitForExistence(timeout:3){app.buttons["account-skip"].tap()};XCTAssertTrue(app.buttons["demo-project"].waitForExistence(timeout:8));capture("02-library");assertLayout()}
     func openEditor(){start();openDemoFromLibrary()}
     func openDemoFromLibrary(){app.buttons["demo-project"].tap();let project=app.buttons.matching(NSPredicate(format:"identifier MATCHES %@","^project-[0-9A-Fa-f-]{36}$")).firstMatch;let link=app.otherElements.matching(NSPredicate(format:"identifier MATCHES %@","^project-[0-9A-Fa-f-]{36}$")).firstMatch
-        if project.waitForExistence(timeout:30){project.tap()}else{XCTAssertTrue(link.waitForExistence(timeout:30));link.tap()}
+        // The gallery is lazy: newly created cards can be below the hero and
+        // must enter the viewport before XCTest can discover them.
+        for _ in 0..<10{if project.exists || link.exists{break};app.scrollViews.firstMatch.swipeUp()}
+        if project.exists{revealVertical(project);project.tap()}else{revealVertical(link);link.tap()}
         XCTAssertTrue(app.buttons["tool-text"].waitForExistence(timeout:15));capture("03-editor-long-image");assertLayout()
     }
     func reveal(_ button:XCUIElement,in strip:XCUIElement){

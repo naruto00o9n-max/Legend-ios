@@ -51,6 +51,7 @@ struct LayerSheet:View {
         .alert(confirmation?.title ?? "",isPresented:Binding(get:{confirmation != nil},set:{if !$0{confirmation=nil}})){
             Button("تنفيذ",role:.destructive){performConfirmation()};Button("إلغاء",role:.cancel){confirmation=nil}
         }message:{Text(confirmation?.detail ?? "")}
+        .onAppear{model.organizeLegacyTextLayers()}
         .onChange(of:model.page.layers.map(\.id)){_,ids in selection.formIntersection(Set(ids))}
         .onChange(of:model.selected){_,_ in shared=nil}
     }
