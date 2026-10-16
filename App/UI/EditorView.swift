@@ -4,6 +4,8 @@ import ImageIO
 struct EditorView:View {
     @StateObject var model:EditorModel
     @Environment(\.dismiss) var dismiss
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @State private var importAfterLayerDismiss=false
     @EnvironmentObject private var typer:TyperStore
     @EnvironmentObject private var styles:StyleStore
     @State private var layers=false;@State private var shapes=false;@State private var assistant=false
@@ -59,6 +61,7 @@ struct EditorView:View {
                 ScrollView(.horizontal,showsIndicators:false){HStack(spacing:2){
                     toolButton(Tool.text.icon,"نص",id:"tool-text"){select(.text)}
                     toolButton(Tool.brush.icon,"رسم",id:"tool-brush"){select(.brush)}
+                    toolButton(Tool.eraser.icon,"ممحاة",id:"tool-eraser"){select(.eraser)}
                     toolButton("photo.badge.checkmark","تأثيرات الصورة",id:"tool-image-effects"){Task{await model.openImageEffects()}}
                     toolButton("photo.badge.plus","صورة",id:"tool-image"){imagePicker=true}
                     toolButton(Tool.shapes.icon,"أشكال",id:"tool-shapes"){select(.shapes)}
@@ -92,18 +95,18 @@ struct EditorView:View {
         .sheet(isPresented:$model.sniperWhiteningOpen){SniperWhiteningPanel(model:model).presentationDetents([.large]).presentationContentInteraction(.scrolls).presentationDragIndicator(.visible).presentationBackground(.clear)}
         .sheet(isPresented:$gridSettingsOpen){CanvasGridSettingsView().presentationDetents([.medium,.large]).presentationBackground(.clear)}
         .sheet(isPresented:$brushSettings){BrushSheet(model:model).cookiesInterface().presentationDetents([.height(300)]).presentationBackground(.clear)}
-        .sheet(isPresented:$layers){LayerSheet(model:model).cookiesInterface().presentationDetents([.medium,.large]).presentationBackground(.clear)}
+        .overlay(alignment:.trailing){if layers,horizontalSizeClass == .regular{GeometryReader{geometry in
+            LayerSheet(model:model,onImport:{layers=false;imagePicker=true},onClose:{layers=false}).cookiesInterface()
+                .frame(width:min(760,max(320,geometry.size.width-24)),height:min(720,max(240,geometry.size.height-24)))
+                .shadow(color:.black.opacity(0.45),radius:24,y:10).padding(12).frame(maxWidth:.infinity,maxHeight:.infinity,alignment:.trailing)
+        }}}
+        .sheet(isPresented:Binding(get:{layers && horizontalSizeClass != .regular},set:{layers=$0}),onDismiss:{if importAfterLayerDismiss{importAfterLayerDismiss=false;imagePicker=true}}){LayerSheet(model:model,onImport:{importAfterLayerDismiss=true;layers=false}).cookiesInterface().presentationDetents([.large]).presentationBackground(.clear)}
         .sheet(isPresented:$shapes){ShapeSheet(model:model).cookiesInterface().presentationDetents([.medium,.large]).presentationBackground(.clear)}
         .sheet(isPresented:$showExport){ExportSheet(model:model).cookiesInterface().presentationDetents([.height(390)]).presentationBackground(.clear)}
         .sheet(isPresented:$replacingBackground){PhotoLibraryPicker{result in switch result{case .failure(let error):model.error=error.localizedDescription;case .success(let urls):if let url=urls.first{Task{defer{try? FileManager.default.removeItem(at:url)};await model.replaceBackground(url)}}}}}
         .sheet(isPresented:$imagePicker){PhotoLibraryPicker{result in
             switch result{case .failure(let error):model.error=error.localizedDescription
-            case .success(let urls):if let url=urls.first{defer{try? FileManager.default.removeItem(at:url)};do{
-                let name=UUID().uuidString+"."+url.pathExtension;let destination=model.directory.appendingPathComponent(name)
-                try FileManager.default.copyItem(at:url,to:destination)
-                guard let image=ImagePipeline.asset(destination),image.size.width>0 else{throw ImageFailure.message("تعذر قراءة الصورة المختارة")}
-                model.add(.image);model.tool = .move;model.change{$0.imagePath=name;$0.frame.height=$0.frame.width*Double(image.size.height/image.size.width)}
-            }catch{model.error=error.localizedDescription}}}
+            case .success(let urls):if let url=urls.first{Task{defer{try? FileManager.default.removeItem(at:url)};await model.importImageLayer(url)}}}
         }}
 
         .alert("تعذر إكمال العملية",isPresented:Binding(get:{model.error != nil},set:{if !$0{model.error=nil}})){Button("حسنًا"){model.error=nil}}message:{Text(model.error ?? "")}
@@ -127,5 +130,5 @@ struct EditorView:View {
     }
     private var gridControl:some View{toolButton("grid","الشبكة",id:"tool-grid",selected:CanvasGridSettings.decode(gridData).enabled){var value=CanvasGridSettings.decode(gridData);value.enabled.toggle();gridData=value.data;if value.enabled{gridSettingsOpen=true}}.contextMenu{Button("إعدادات الشبكة"){gridSettingsOpen=true}}}
     func toolButton(_ icon:String,_ title:String,id:String,selected:Bool=false,action:@escaping ()->Void)->some View{Button(action:action){VStack(spacing:6){Image(systemName:icon).font(.system(size:20*min(1.2,max(0.8,iconScale)),weight:.regular));Text(title).font(.system(size:10*min(1.3,max(0.85,labelScale)))).lineLimit(1)}.frame(width:62,height:60*min(1.15,max(0.85,toolbarScale))).background(selected ? Palette.gold.opacity(0.16):.clear,in:RoundedRectangle(cornerRadius:12))}.accessibilityIdentifier(id).accessibilityLabel(title)}
-    func select(_ tool:Tool){model.sniperMode=false;model.bubbleShape=nil;model.gradientTarget=nil;model.tool=tool;switch tool{case .layers:layers=true;case .shapes:shapes=true;case .text:if model.active?.kind != .text{model.add(.text)}else{model.panel = .content};case .brush,.eraser:if model.active?.kind != .drawing{model.add(.drawing)};default:break}}
+    func select(_ tool:Tool){model.sniperMode=false;model.bubbleShape=nil;model.gradientTarget=nil;model.tool=tool;switch tool{case .layers:layers=true;case .shapes:shapes=true;case .text:if model.active?.kind != .text{model.add(.text)}else{model.panel = .content};case .brush:if model.active?.kind != .drawing{model.add(.drawing)};case .eraser:break;default:break}}
 }

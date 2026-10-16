@@ -373,10 +373,10 @@ final class DocumentCanvas: UIView {
             // Erasure and textured/soft ink must not rasterize a drawing sprite
             // synchronously for every touch. Coalesce an exact composite off-main.
             if let index=page.layers.firstIndex(where:{$0.id==selected}),let directory{
-                let transform=page.layers[index].kind == .drawing ? LayerRenderer.transform(page.layers[index]):CGAffineTransform.identity
+                let transform=LayerRenderer.transform(page.layers[index])
                 let inkBounds=BrushRenderer.path(stroke).bounds.insetBy(dx:-stroke.width*2,dy:-stroke.width*2).applying(transform)
                 let region=inkBounds.intersection(visible.insetBy(dx:-stroke.width,dy:-stroke.width)).integral.intersection(CGRect(x:0,y:0,width:page.width,height:page.height))
-                if region.width>0,region.height>0{if !softwareStroke{softwareStroke=true;softwareCommitRevision=nil;inkGeneration=UUID()};var live=page;live.layers[index].strokes.append(stroke);let sample=max(1,Int(ceil(sqrt(region.width*region.height/1_048_576))));latestInk=(live,directory,region,sample);liveInk.path=nil;renderLatestInk();return}
+                if region.width>0,region.height>0{if !softwareStroke{softwareStroke=true;softwareCommitRevision=nil;inkGeneration=UUID()};var live=page;live.layers[index].appendEditorStroke(stroke);let sample=max(1,Int(ceil(sqrt(region.width*region.height/1_048_576))));latestInk=(live,directory,region,sample);liveInk.path=nil;renderLatestInk();return}
             }
         }
         let path = BrushRenderer.path(stroke)

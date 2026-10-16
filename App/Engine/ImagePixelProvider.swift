@@ -34,7 +34,8 @@ enum ImageAssetPixels {
     private static let decodeLock=NSLock()
     private static let hashes=NSCache<NSString,NSString>()
     private static let providers=NSCache<NSString,ImagePixelProvider>()
-    static func clear(){providers.removeAllObjects();hashes.removeAllObjects()}
+    private static let inputs=NSCache<NSString,ImagePixelProvider>()
+    static func clear(){providers.removeAllObjects();inputs.removeAllObjects();hashes.removeAllObjects()}
     private static func cachedProvider(_ raw:URL,width:Int,height:Int,profile:URL)->ImagePixelProvider {
         let key="\(raw.path)|\(width)|\(height)" as NSString
         if let hit=providers.object(forKey:key),hit.error==nil{return hit}
@@ -47,9 +48,10 @@ enum ImageAssetPixels {
             if (try? FileManager.default.attributesOfItem(atPath:raw.path)[.size] as? NSNumber)?.int64Value == Int64(width)*Int64(height)*4{return cachedProvider(raw,width:width,height:height,profile:directory.appendingPathComponent(layer.imagePath))}
         }
         let input=directory.appendingPathComponent(layer.imagePath)
-        guard let source=CGImageSourceCreateWithURL(input as CFURL,nil),let info=CGImageSourceCopyPropertiesAtIndex(source,0,nil) as? [CFString:Any],let width=info[kCGImagePropertyPixelWidth] as? Int,let height=info[kCGImagePropertyPixelHeight] as? Int,width>0,height>0 else{throw ImageFailure.message("تعذر فتح أصل طبقة الصورة")}
         let attributes=try FileManager.default.attributesOfItem(atPath:input.path)
         let identity=input.path+"|\(attributes[.size] ?? 0)|\(attributes[.modificationDate] ?? Date.distantPast)"
+        if let hit=inputs.object(forKey:identity as NSString),hit.error==nil,FileManager.default.fileExists(atPath:hit.url.path){return hit}
+        guard let source=CGImageSourceCreateWithURL(input as CFURL,nil),let info=CGImageSourceCopyPropertiesAtIndex(source,0,nil) as? [CFString:Any],let width=info[kCGImagePropertyPixelWidth] as? Int,let height=info[kCGImagePropertyPixelHeight] as? Int,width>0,height>0 else{throw ImageFailure.message("تعذر فتح أصل طبقة الصورة")}
         let key:String
         if let cached=hashes.object(forKey:identity as NSString){key=cached as String}else{key=try AppStorageManager.hash(input);hashes.countLimit=256;hashes.setObject(key as NSString,forKey:identity as NSString)}
         let folder=AppStorageManager.caches.appendingPathComponent("CookiesImagePixels",isDirectory:true),raw=folder.appendingPathComponent(key+".rgba"),png=folder.appendingPathComponent(key+".png")
@@ -68,6 +70,7 @@ enum ImageAssetPixels {
             guard LIImportPNG(decodeInput.path,temporary.path,&w,&h,&error,error.count)==1,Int(w)==width,Int(h)==height else{throw ImageFailure.message("تعذر قراءة أصل الصورة؛ لم يُغيّر")}
             try FileManager.default.moveItem(at:temporary,to:raw)
         }
-        return cachedProvider(raw,width:width,height:height,profile:FileManager.default.fileExists(atPath:png.path) ? png:input)
+        let result=cachedProvider(raw,width:width,height:height,profile:FileManager.default.fileExists(atPath:png.path) ? png:input)
+        inputs.countLimit=8;inputs.setObject(result,forKey:identity as NSString);return result
     }
 }

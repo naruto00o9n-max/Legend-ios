@@ -150,13 +150,14 @@ import SwiftUI
             }catch{self.error=error.localizedDescription;return}
         }
         if kind == .drawing{l.frame=Box(x:0,y:0,width:Double(page.width),height:Double(page.height))}
-        checkpoint();page.layers.append(l);selected=l.id;save();if kind == .text{panel = .content}
+        let insertion=selected.flatMap{id in page.layers.firstIndex{$0.id==id}}.map{$0+1} ?? page.layers.count
+        checkpoint();page.layers.insert(l,at:insertion);selected=l.id;save();if kind == .text{panel = .content}
     }
     @discardableResult func confirmTextSettings()->Bool {
         do{if let active{try manualTextStore.rememberManualText(active,from:directory);for color in active.style.usedColors{colorStore.record(color)}};return true}catch{self.error=error.localizedDescription;return false}
     }
     func delete() {guard stylePreviewLayer==nil,let selected,active?.isLocked==false else{return};checkpoint();page.layers.removeAll{$0.id==selected};self.selected=nil;save()}
-    func duplicate() {guard stylePreviewLayer==nil,var l=active else{return};checkpoint();l.id=UUID();l.frame.x+=20;l.frame.y+=20;page.layers.append(l);selected=l.id;save()}
+    func duplicate() {guard stylePreviewLayer==nil,var l=active else{return};guard let index=page.layers.firstIndex(where:{$0.id==l.id}) else{return};checkpoint();l.id=UUID();page.layers.insert(l,at:index+1);selected=l.id;save()}
     func cancelPendingSaves(){whiteningTask?.cancel();editSaveTask?.cancel();editSaveTask=nil;previewTask?.cancel();previewTask=nil}
     func undo(){guard let previous=undoStack.popLast() else{return};redoStack.append(page.layers);redoDocuments.append(page);if let document=undoDocuments.popLast(){page=document}else{page.layers=previous};if textMaskDraft==nil{selected=nil};save()}
     func redo(){guard let next=redoStack.popLast() else{return};undoStack.append(page.layers);undoDocuments.append(page);if let document=redoDocuments.popLast(){page=document}else{page.layers=next};if textMaskDraft==nil{selected=nil};save()}

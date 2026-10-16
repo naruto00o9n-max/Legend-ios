@@ -1,0 +1,115 @@
+import UIKit
+
+extension EditorLayer {
+    /// Raster strokes erase their own ink history. Other kinds retain editable
+    /// content and use a separate alpha mask in the same local coordinate space.
+    mutating func appendEditorStroke(_ stroke:Stroke) {
+        if stroke.erase && kind != .drawing{erasures=(erasures ?? [])+[stroke]}
+        else{strokes.append(stroke)}
+    }
+}
+
+extension EditorModel {
+    func importImageLayer(_ input:URL) async {
+        guard !busy else{return};busy=true;defer{busy=false}
+        let directory=self.directory,pageID=page.id
+        do{
+            let result=try await BackgroundWork.run{()->(String,Int,Int) in
+                let scratch=FileManager.default.temporaryDirectory.appendingPathComponent("layer-import-"+UUID().uuidString)
+                try FileManager.default.createDirectory(at:scratch,withIntermediateDirectories:true)
+                defer{try? FileManager.default.removeItem(at:scratch)}
+                let imported=try ImagePipeline.importImage(input,root:scratch),name="picture-"+UUID().uuidString+".png"
+                try FileManager.default.copyItem(at:scratch.appendingPathComponent(imported.id.uuidString).appendingPathComponent(imported.source),to:directory.appendingPathComponent(name))
+                return(name,imported.width,imported.height)
+            }
+            guard page.id==pageID else{try? FileManager.default.removeItem(at:directory.appendingPathComponent(result.0));return}
+            let center=visibleCenter == .zero ? CGPoint(x:Double(page.width)/2,y:Double(page.height)/2):visibleCenter
+            let width=min(Double(result.1),Double(page.width)*0.75),height=width*Double(result.2)/Double(result.1)
+            var layer=EditorLayer(kind:.image,name:input.deletingPathExtension().lastPathComponent)
+            layer.imagePath=result.0;layer.frame=Box(x:center.x-width/2,y:center.y-height/2,width:width,height:height)
+            let insertion=selected.flatMap{id in page.layers.firstIndex{$0.id==id}}.map{$0+1} ?? page.layers.count
+            checkpoint();page.layers.insert(layer,at:insertion);selected=layer.id;tool = .move;panel=nil;save()
+        }catch{self.error=error.localizedDescription}
+    }
+    /// Returns false for locked/hidden targets rather than silently making a
+    /// new layer that has nothing to erase. The base is promoted by reference.
+    @discardableResult func prepareEraserTarget()->Bool {
+        if let active {
+            guard !active.isLocked else{error="الطبقة مقفلة؛ افتح قفلها قبل المسح";return false}
+            guard active.isVisible else{error="الطبقة مخفية؛ أظهرها قبل المسح";return false}
+            return true
+        }
+        guard page.baseHidden != true else{error="اختر الطبقة التي تريد المسح منها";return false}
+        var layer=EditorLayer(kind:.image,name:"الصورة الأصلية")
+        layer.imagePath=page.source;layer.isWorkingImage=true
+        layer.imagePixelFile=page.raw;layer.imagePixelWidth=page.width;layer.imagePixelHeight=page.height
+        layer.frame=Box(x:0,y:0,width:Double(page.width),height:Double(page.height))
+        checkpoint();page.layers.insert(layer,at:0);page.baseHidden=true;selected=layer.id;save()
+        return true
+    }
+    func renameLayer(_ id:UUID,to name:String) {
+        let title=name.trimmingCharacters(in:.whitespacesAndNewlines)
+        guard !title.isEmpty,let index=page.layers.firstIndex(where:{$0.id==id}),page.layers[index].name != title else{return}
+        checkpoint();page.layers[index].name=String(title.prefix(120));save()
+    }
+    func setLayerVisibility(_ id:UUID,_ visible:Bool) {
+        guard let index=page.layers.firstIndex(where:{$0.id==id}),page.layers[index].isVisible != visible else{return}
+        checkpoint();page.layers[index].isVisible=visible;save()
+    }
+    func setLayerLocked(_ id:UUID,_ locked:Bool) {
+        guard let index=page.layers.firstIndex(where:{$0.id==id}),page.layers[index].isLocked != locked else{return}
+        checkpoint();page.layers[index].isLocked=locked;save()
+    }
+    func moveActiveLayer(by distance:Int) {
+        guard let id=selected,let index=page.layers.firstIndex(where:{$0.id==id}),!page.layers[index].isLocked else{return}
+        let destination=min(page.layers.count-1,max(0,index+distance))
+        guard destination != index else{return}
+        checkpoint();let layer=page.layers.remove(at:index);page.layers.insert(layer,at:destination);save()
+    }
+    func flipActiveLayer(horizontal:Bool) {
+        guard active?.isLocked==false else{return};checkpoint()
+        change{if horizontal{$0.scaleX *= -1}else{$0.scaleY *= -1}}
+    }
+    /// A clear is reversible and leaves the layer in its stack position. For
+    /// pictures/shapes the mask replaces prior marks without altering the source.
+    func clearActiveLayer() {
+        guard let active,!active.isLocked else{return};checkpoint()
+        let bounds=LayerRenderer.bounds(active)
+        change{layer in
+            switch layer.kind {
+            case .drawing:layer.strokes=[];layer.erasures=nil
+            case .text:layer.textContent="";layer.textMask=nil;layer.erasures=nil
+            case .image,.shape:
+                layer.erasures=[Stroke(points:[Point(x:bounds.minX,y:bounds.minY),Point(x:bounds.maxX,y:bounds.maxY)],width:1,color:"000000",erase:true,shape:"rectangle",filled:true)]
+            }
+        }
+    }
+    func restoreActiveErasure() {
+        guard active?.isLocked==false,!(active?.erasures ?? []).isEmpty else{return}
+        checkpoint();change{$0.erasures=nil}
+    }
+    func mergeActiveDown() async {
+        guard let id=selected,let index=page.layers.firstIndex(where:{$0.id==id}),index>0 else{return}
+        await mergeLayers([id,page.layers[index-1].id])
+    }
+    func exportActiveLayerPNG() async->URL? {
+        guard let active,!busy else{return nil};busy=true;defer{busy=false}
+        var snapshot=page;snapshot.baseHidden=true;snapshot.layers=[active]
+        let directory=self.directory
+        do{return try await BackgroundWork.run{try ImagePipeline.exportPNG(snapshot,directory:directory)}}
+        catch{self.error=error.localizedDescription;return nil}
+    }
+    func rasterizeActiveLayer() async {
+        guard let active,!active.isLocked,!busy else{return}
+        busy=true;defer{busy=false};let snapshot=page,directory=self.directory
+        do {
+            let result=try await BackgroundWork.run{try LayerBitmap.merge([active],page:snapshot,directory:directory)}
+            guard page==snapshot,let index=page.layers.firstIndex(where:{$0.id==active.id}) else{
+                try? FileManager.default.removeItem(at:directory.appendingPathComponent(result.imagePath));return
+            }
+            var raster=result;raster.id=active.id;raster.name=active.name;raster.isVisible=active.isVisible
+            raster.groupID=active.groupID;raster.groupName=active.groupName;raster.blend=active.blend
+            checkpoint();page.layers[index]=raster;save()
+        }catch{self.error=error.localizedDescription}
+    }
+}

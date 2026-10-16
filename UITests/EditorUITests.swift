@@ -97,7 +97,17 @@ final class EditorUITests:XCTestCase {
         app.buttons["typer-panel-close"].tap();XCTAssertTrue(app.buttons["selection-edit"].waitForExistence(timeout:5));app.buttons["tool-assistant"].tap();XCTAssertEqual(app.buttons["typer-bubble-0"].value as? String,"مستخدمة");app.buttons["typer-next"].tap();XCTAssertEqual(app.buttons["typer-bubble-1"].value as? String,"مستخدمة");capture("39-typer-next-bubble");app.buttons["typer-panel-close"].tap()
     }
 
-    func testEditorTextLayersAndExport(){openEditor();tool("text");let text=app.textViews["text-input"];XCTAssertTrue(text.waitForExistence(timeout:6));XCTAssertFalse(app.scrollViews["tool-strip"].exists,"Text mode replaces primary tools");XCTAssertTrue(app.buttons["text-add"].exists);text.tap();text.typeText("كوكيز إيدتور\nاختبار الحوار العربي");capture("07-text-entry-keyboard");app.buttons["تم"].tap();capture("08-text-layer");assertLayout();reveal(app.buttons["panel-format"],in:app.scrollViews["panel-strip"]);app.buttons["panel-format"].tap();capture("09-format");app.buttons["تم"].tap();tool("layers");capture("10-layers");app.buttons["تم"].tap();app.buttons["export"].tap();capture("11-export-settings");app.buttons["export-png"].tap();XCTAssertTrue(app.buttons["share-png"].waitForExistence(timeout:60));capture("12-export-complete")}
+    func testEditorTextLayersAndExport(){openEditor();tool("text");let text=app.textViews["text-input"];XCTAssertTrue(text.waitForExistence(timeout:6));XCTAssertFalse(app.scrollViews["tool-strip"].exists,"Text mode replaces primary tools");XCTAssertTrue(app.buttons["text-add"].exists);text.tap();text.typeText("كوكيز إيدتور\nاختبار الحوار العربي");capture("07-text-entry-keyboard");app.buttons["تم"].tap();capture("08-text-layer");assertLayout();reveal(app.buttons["panel-format"],in:app.scrollViews["panel-strip"]);app.buttons["panel-format"].tap();capture("09-format");app.buttons["تم"].tap();tool("layers");capture("10-layers");app.buttons["layers-close"].tap();app.buttons["export"].tap();capture("11-export-settings");app.buttons["export-png"].tap();XCTAssertTrue(app.buttons["share-png"].waitForExistence(timeout:60));capture("12-export-complete")}
+    func testEraserKeepsSelectedTextEditableWithoutCreatingDrawingLayers(){
+        openEditor();tool("text");XCTAssertTrue(app.textViews["text-input"].waitForExistence(timeout:8));app.buttons["text-inspector-close"].tap();tool("eraser")
+        let canvas=app.scrollViews["canvas-scroll"]
+        canvas.coordinate(withNormalizedOffset:CGVector(dx:0.4,dy:0.35)).press(forDuration:0.05,thenDragTo:canvas.coordinate(withNormalizedOffset:CGVector(dx:0.6,dy:0.4)))
+        let committed=XCTNSPredicateExpectation(predicate:NSPredicate{_,_ in let value=canvas.value as? String ?? "";return value.hasPrefix("1 طبقات") && value.contains("1 مناطق مسح")},object:canvas)
+        XCTAssertEqual(XCTWaiter.wait(for:[committed],timeout:12),.completed)
+        tool("layers");XCTAssertTrue(app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH 'layer-row-text-'")).firstMatch.waitForExistence(timeout:6))
+        XCTAssertFalse(app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH 'layer-row-drawing-'")).firstMatch.exists)
+        capture("layers-native-eraser-keeps-editable-text");app.buttons["layers-close"].tap()
+    }
     func testLayerTypeChipsMatchTheVisibleRows(){
         openEditor();tool("text");XCTAssertTrue(app.textViews["text-input"].waitForExistence(timeout:5));app.buttons["تم"].tap();tool("shapes");app.buttons["شكل 1"].tap();tool("layers")
         let text=app.buttons["layers-filter-text"];XCTAssertTrue(text.waitForExistence(timeout:5));text.tap();XCTAssertEqual(text.value as? String,"مختار")
@@ -128,7 +138,7 @@ final class EditorUITests:XCTestCase {
     }
     func testLayerButtonsActuallyHideUnlockAndDelete() {
         openEditor();tool("text");app.buttons["text-inspector-close"].tap();tool("layers")
-        let eye=app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH 'layer-eye-' ")).firstMatch,lock=app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH 'layer-lock-' ")).firstMatch,delete=app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH 'layer-delete-' ")).firstMatch
+        let eye=app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH 'layer-eye-' ")).firstMatch,lock=app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH 'layer-lock-' ")).firstMatch,delete=app.buttons["layer-delete"]
         XCTAssertTrue(eye.waitForExistence(timeout:5));XCTAssertEqual(eye.value as? String,"visible");eye.tap();XCTAssertEqual(eye.value as? String,"hidden");eye.tap();XCTAssertEqual(eye.value as? String,"visible")
         lock.tap();XCTAssertEqual(lock.value as? String,"locked");XCTAssertFalse(delete.isEnabled);lock.tap();XCTAssertEqual(lock.value as? String,"unlocked");XCTAssertTrue(delete.isEnabled);capture("fix-layer-controls");delete.tap();XCTAssertFalse(eye.exists);app.buttons["layers-close"].tap();XCTAssertTrue((app.scrollViews["canvas-scroll"].value as? String ?? "").hasPrefix("0 طبقات"))
     }

@@ -1,40 +1,5 @@
 import SwiftUI
 
-struct LayerSheet:View {
-    @ObservedObject var model:EditorModel
-    @Environment(\.dismiss) private var dismiss
-    @State private var filter="all"
-    @State private var multiple=false
-    @State private var selection=Set<UUID>()
-    @State private var preview:EditorLayer?
-    @State private var grouping=false
-    @State private var groupName=""
-    @State private var flattening=false
-    private var layers:[EditorLayer]{model.page.layers.reversed().filter{filter=="all" || $0.kind.rawValue==filter}}
-    var body:some View {VStack(spacing:0){header;filters;if multiple{operations};layerList;opacity}
-        .foregroundStyle(Palette.pale).background(Palette.ink.opacity(0.85)).glass(24)
-        .sheet(item:$preview){layer in ExpandedLayerPreview(layer:layer,directory:model.directory)}
-        .alert("مجموعة طبقات",isPresented:$grouping){TextField("اسم المجموعة",text:$groupName);Button("حفظ"){model.groupLayers(selection,name:groupName.isEmpty ? "مجموعة":groupName)};Button("إلغاء",role:.cancel){}}
-        .alert("تسطيح العمل؟",isPresented:$flattening){Button("تسطيح"){Task{await model.flattenLayers()}};Button("إلغاء",role:.cancel){}}message:{Text("تتحول الصورة والطبقات إلى طبقة صورة واحدة. التراجع يعيد الطبقات القابلة للتعديل.")}
-    }
-    private var header:some View{HStack{Text("الطبقات").font(.system(size:18,weight:.semibold));Text("\(model.page.layers.count+1)").font(.system(size:11,design:.monospaced)).foregroundStyle(Palette.quiet);Spacer();IconButton(icon:"plus",title:"طبقة رسم"){model.add(.drawing)};IconButton(icon:"checkmark",title:"تم"){dismiss()}.accessibilityIdentifier("layers-close")}.padding(.horizontal,16).frame(height:56)}
-    private var filters:some View{VStack(alignment:.leading,spacing:8){ScrollView(.horizontal,showsIndicators:false){HStack(spacing:8){filterChip("الكل","all");filterChip("نص","text");filterChip("صور","image");filterChip("أشكال","shape");filterChip("رسم","drawing")}.padding(.horizontal,16)};HStack{Spacer();Button{multiple.toggle()}label:{Label("تحديد متعدد",systemImage:multiple ? "checkmark.circle.fill":"checkmark.circle")}.accessibilityIdentifier("layers-multiple").accessibilityValue(multiple ? "مفعل":"غير مفعل")}.padding(.horizontal,16)}.font(.system(size:12)).padding(.bottom,8)}
-    private func filterChip(_ title:String,_ type:String)->some View{Button{filter=type}label:{Text(title).font(.system(size:12,weight:.medium)).padding(.horizontal,16).frame(height:36).background(filter==type ? Palette.gold.opacity(0.16):.white.opacity(0.04),in:RoundedRectangle(cornerRadius:12)).overlay(RoundedRectangle(cornerRadius:12).stroke(filter==type ? Palette.gold.opacity(0.6):.white.opacity(0.08),lineWidth:1))}.foregroundStyle(Palette.pale).accessibilityIdentifier("layers-filter-"+type).accessibilityValue(filter==type ? "مختار":"غير مختار")}
-    private var operations:some View{ScrollView(.horizontal,showsIndicators:false){HStack(spacing:14){Button("الكل"){selection=Set(layers.map(\.id))};Button("دمج"){Task{await model.mergeLayers(selection)}}.disabled(selection.count<2 || model.busy);Button("تجميع"){grouping=true}.disabled(selection.isEmpty);Button("فك التجميع"){model.ungroupLayers(selection)}.disabled(selection.isEmpty);Button("تسطيح"){flattening=true}}.font(.system(size:12)).padding(12)}}
-    private var layerList:some View{List{ForEach(layers){item in layerRow(item)}.onMove{source,destination in model.reorderLayers(kind:LayerKind(rawValue:filter),from:source,to:destination)};backgroundRow}.environment(\.editMode,.constant(.active)).buttonStyle(.borderless).scrollContentBackground(.hidden).listStyle(.plain)}
-    private func layerRow(_ item:EditorLayer)->some View{HStack(spacing:8){
-        if multiple{Image(systemName:selection.contains(item.id) ? "checkmark.circle.fill":"circle")}
-        LayerThumbnail(layer:item,directory:model.directory).frame(width:48,height:48).clipShape(RoundedRectangle(cornerRadius:8))
-        VStack(alignment:.leading,spacing:6){Text(item.kind == .text ? item.textContent:item.name).font(.system(size:13,weight:.medium)).lineLimit(1);Text("\(Int(item.opacity*100))% · \(item.blend.title)").font(.system(size:11)).foregroundStyle(Palette.quiet);if let group=item.groupName{Text(group).font(.system(size:10)).foregroundStyle(Palette.quiet)}}
-        Spacer(minLength:0)
-        if !multiple{IconButton(icon:item.isVisible ? "eye":"eye.slash",title:"إظهار الطبقة"){model.selected=item.id;model.checkpoint();if let i=model.page.layers.firstIndex(where:{$0.id==item.id}){model.page.layers[i].isVisible.toggle();model.save()}}.accessibilityIdentifier("layer-eye-"+item.id.uuidString).accessibilityValue(item.isVisible ? "visible":"hidden");IconButton(icon:item.isLocked ? "lock":"lock.open",title:"قفل الطبقة"){if let i=model.page.layers.firstIndex(where:{$0.id==item.id}){model.checkpoint();model.page.layers[i].isLocked.toggle();model.save()}}.accessibilityIdentifier("layer-lock-"+item.id.uuidString).accessibilityValue(item.isLocked ? "locked":"unlocked");Button{model.selected=item.id;model.delete()}label:{Image(systemName:"trash").font(.system(size:15)).frame(width:32,height:44)}.accessibilityIdentifier("layer-delete-"+item.id.uuidString).accessibilityLabel("حذف الطبقة").disabled(item.isLocked)}
-    }.accessibilityElement(children:.contain).accessibilityIdentifier("layer-row-"+item.kind.rawValue+"-"+item.id.uuidString).contentShape(Rectangle()).onTapGesture{select(item)}.listRowBackground(model.selected==item.id ? Palette.gold.opacity(0.1):.clear)
-        .contextMenu{Button("معاينة مكبرة"){preview=item};Button("نسخ"){model.selected=item.id;model.duplicate()};Button("حذف",role:.destructive){model.selected=item.id;model.delete()}}
-    }
-    private func select(_ item:EditorLayer){if multiple{let ids:Set<UUID>=item.groupID.map{group in Set(model.page.layers.filter{$0.groupID==group}.map(\.id))} ?? Set([item.id]);if selection.contains(item.id){selection.subtract(ids)}else{selection.formUnion(ids)}}else{model.selected=item.id;model.panel=nil;model.tool=item.kind == .text ? .text:.move}}
-    private var backgroundRow:some View{HStack(spacing:12){if let image=UIImage(contentsOfFile:model.directory.appendingPathComponent("thumbnail.png").path){Image(uiImage:image).resizable().scaledToFill().frame(width:48,height:48).clipped().clipShape(RoundedRectangle(cornerRadius:8))};VStack(alignment:.leading,spacing:6){Text("الصورة الأصلية").font(.system(size:13));Text("\(model.page.width) × \(model.page.height)").font(.system(size:11,design:.monospaced)).foregroundStyle(Palette.quiet)};Spacer();Button{model.checkpoint();model.page.baseHidden = !(model.page.baseHidden ?? false);model.save()}label:{Image(systemName:model.page.baseHidden==true ? "eye.slash":"eye")}}.listRowBackground(Color.clear)}
-    @ViewBuilder private var opacity:some View{if model.active != nil{HStack{Text("الشفافية").font(.system(size:12));StepSlider(value:Binding(get:{model.active?.opacity ?? 1},set:{v in model.change{$0.opacity=v}}),in:0...1);Text("\(Int((model.active?.opacity ?? 1)*100))%").font(.system(size:11,design:.monospaced)).frame(width:40)}.padding(.horizontal,20).padding(.vertical,12).disabled(model.active?.isLocked==true)}}
-}
 struct LayerThumbnail: View {
     let layer:EditorLayer
     let directory:URL
@@ -44,12 +9,20 @@ struct LayerThumbnail: View {
     var body:some View { ZStack {
         Canvas{context,size in let cell:CGFloat=previewSize>48 ? 20:8;for y in 0..<Int(ceil(size.height/cell)){for x in 0..<Int(ceil(size.width/cell)){context.fill(Path(CGRect(x:CGFloat(x)*cell,y:CGFloat(y)*cell,width:cell,height:cell)),with:.color(Color(white:previewBackground=="dark" ? 0.05:previewBackground=="light" ? 0.96:(x+y)%2==0 ? 0.78:0.58)))}}}.allowsHitTesting(false)
         if let image{Image(uiImage:image).resizable().scaledToFit()}
-    }.task(id:layer){var item=layer;item.frame.x=0;item.frame.y=0;item.rotation=0;item.scaleX=1;item.scaleY=1;item.shearX=nil;item.opacity=1
-        let snapshot=item,directory=self.directory,previewSize=self.previewSize
-        let rendered=await Task.detached(priority:.utility){let bounds=snapshot.kind == .text ? TextVisualBounds.rect(snapshot):LayerRenderer.bounds(snapshot),format=UIGraphicsImageRendererFormat();format.scale=2;format.opaque=false;let scale=min((previewSize-4)/max(1,bounds.width),(previewSize-4)/max(1,bounds.height));return UIGraphicsImageRenderer(size:CGSize(width:previewSize,height:previewSize),format:format).image{output in output.cgContext.translateBy(x:(previewSize-bounds.width*scale)/2,y:(previewSize-bounds.height*scale)/2);output.cgContext.scaleBy(x:scale,y:scale);output.cgContext.translateBy(x:-bounds.minX,y:-bounds.minY);LayerRenderer.draw([snapshot],in:output.cgContext,directory:directory)}}.value
-        guard !Task.isCancelled else{return};image=rendered
+    }.task(id:previewIdentity){
+        do{
+            try await Task.sleep(nanoseconds:70_000_000)
+            let snapshot=previewLayer,directory=self.directory,previewSize=self.previewSize
+            let rendered=try await BackgroundWork.run{try Task.checkCancellation();let bounds=snapshot.kind == .text ? TextVisualBounds.rect(snapshot):LayerRenderer.bounds(snapshot),format=UIGraphicsImageRendererFormat();format.scale=2;format.opaque=false;let scale=min((previewSize-4)/max(1,bounds.width),(previewSize-4)/max(1,bounds.height));return RenderBudget.screen{UIGraphicsImageRenderer(size:CGSize(width:previewSize,height:previewSize),format:format).image{output in output.cgContext.translateBy(x:(previewSize-bounds.width*scale)/2,y:(previewSize-bounds.height*scale)/2);output.cgContext.scaleBy(x:scale,y:scale);output.cgContext.translateBy(x:-bounds.minX,y:-bounds.minY);LayerRenderer.draw([snapshot],in:output.cgContext,directory:directory)}}}
+            try Task.checkCancellation();image=rendered
+        }catch{}
     }}
+    private var previewLayer:EditorLayer{
+        var item=layer;item.frame.x=0;item.frame.y=0;item.rotation=0;item.scaleX=1;item.scaleY=1;item.shearX=nil;item.opacity=1;item.isVisible=true;item.isLocked=false;item.name="";item.groupName=nil;item.groupID=nil;item.blend = .normal;return item
+    }
+    private var previewIdentity:LayerPreviewIdentity{LayerPreviewIdentity(layer:previewLayer,size:previewSize,directory:directory.path)}
 }
+private struct LayerPreviewIdentity:Hashable{let layer:EditorLayer;let size:CGFloat;let directory:String}
 struct ShapeSheet:View {
     @ObservedObject var model:EditorModel;@Environment(\.dismiss) var dismiss
     var body:some View{VStack(alignment:.leading,spacing:20){Text("الأشكال وفقاعات الحوار").font(.system(size:18,weight:.semibold));ScrollView{LazyVGrid(columns:[GridItem(.adaptive(minimum:64))],spacing:12){ForEach(0..<20,id:\.self){i in Button{model.add(.shape,shape:i);model.tool = .move;dismiss()}label:{ShapePreview(index:i).frame(height:56).padding(10).glass(16)}.accessibilityLabel("شكل \(i+1)")}}}}.padding(22).foregroundStyle(Palette.pale).background(Palette.ink.opacity(0.8)).glass(28)}

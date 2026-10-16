@@ -85,6 +85,9 @@ struct EditorLayer: Codable, Equatable, Identifiable, Hashable {
     var textOrigin:TextOrigin?
     var gradientMapBaseline:GradientMapBaseline?
     var textMask:[Stroke]?
+    /// Non-destructive eraser marks in layer coordinates. The encoded source,
+    /// editable text and geometry remain intact; undo never resamples them.
+    var erasures:[Stroke]?
     var groupID:UUID?;var groupName:String?
     var strokes: [Stroke] = []; var isMaskEnabled = false; var maskX = 0.0; var maskY = 0.0; var maskRadius = 80.0
 }

@@ -23,7 +23,7 @@ enum BrushRenderer {
     static func draw(_ s:Stroke,in ctx:CGContext,directory:URL){
         guard let first=s.points.first,visible(s,in:ctx.boundingBoxOfClipPath) else{return};ctx.saveGState();defer{ctx.restoreGState()}
         let path=path(s),alpha=min(1,max(0,s.opacity ?? 1))*(s.brush=="water" ? 0.25:s.brush=="marker" ? 0.55:1)
-        ctx.setAlpha(CGFloat(alpha));if s.erase{ctx.setBlendMode(.clear)}
+        ctx.setAlpha(CGFloat(alpha));if s.erase{ctx.setBlendMode(.destinationOut)}
         UIColor(hex:s.color).setStroke();UIColor(hex:s.color).setFill()
         if s.brush=="neon"{ctx.setShadow(offset:.zero,blur:CGFloat(s.width),color:UIColor(hex:s.color).cgColor)}
         if s.brush=="soft"{
