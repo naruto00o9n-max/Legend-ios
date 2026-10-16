@@ -73,6 +73,26 @@ static UIImage *patchImage(const cv::Mat &patch) {
     CGImageRef cg=CGImageCreate(patch.cols,patch.rows,8,32,patch.cols*4,space,kCGImageAlphaLast,provider,NULL,false,kCGRenderingIntentDefault);
     UIImage *result=[UIImage imageWithCGImage:cg];CGImageRelease(cg);CGColorSpaceRelease(space);CGDataProviderRelease(provider);return result;
 }
+UIImage *CookiesMatchRestoration(UIImage *source,UIImage *candidate,UIImage *mask) {
+    @try {try {
+        if(!source.CGImage||!candidate.CGImage||!mask.CGImage)return nil;
+        size_t width=CGImageGetWidth(source.CGImage),height=CGImageGetHeight(source.CGImage);
+        if(width<4||height<4||width*height>4194304||CGImageGetWidth(candidate.CGImage)!=width||CGImageGetHeight(candidate.CGImage)!=height||CGImageGetWidth(mask.CGImage)!=width||CGImageGetHeight(mask.CGImage)!=height)return nil;
+        cv::Mat original=pixels(source),generated=pixels(candidate),selection=pixels(mask),a,b,m,blended,patch;
+        cv::cvtColor(original,a,cv::COLOR_RGBA2BGR);cv::cvtColor(generated,b,cv::COLOR_RGBA2BGR);
+        // Preserve the application's exact positive-red mask convention.
+        cv::extractChannel(selection,m,0);cv::threshold(m,m,0,255,cv::THRESH_BINARY);
+        if(cv::countNonZero(m)<6)return nil;
+        cv::Rect box=cv::boundingRect(m);
+        if(box.x<1||box.y<1||box.br().x>m.cols-1||box.br().y>m.rows-1)return nil;
+        // seamlessClone may mutate its mask. Keep m immutable for final alpha.
+        cv::Mat working=m.clone();
+        cv::seamlessClone(b,a,working,cv::Point(box.x+box.width/2,box.y+box.height/2),blended,cv::NORMAL_CLONE);
+        cv::cvtColor(blended,patch,cv::COLOR_BGR2RGBA);
+        for(int y=0;y<patch.rows;y++)for(int x=0;x<patch.cols;x++){if(m.at<unsigned char>(y,x))patch.at<cv::Vec4b>(y,x)[3]=255;else patch.at<cv::Vec4b>(y,x)=cv::Vec4b(0,0,0,0);}
+        return patchImage(patch);
+    }catch(const cv::Exception &){return nil;}}@catch(NSException *exception){return nil;}
+}
 NSDictionary<NSString *, id> *CookiesCreateBubbleTextMask(CGSize size,NSArray<NSValue *> *outline,NSArray<NSValue *> *textRects,double padding) {
     @try {try {
         if(!std::isfinite(size.width)||!std::isfinite(size.height)||size.width<24||size.height<24||size.width>4096||size.height>4096||size.width*size.height>4194304||outline.count<3||outline.count>2048||textRects.count==0)return nil;

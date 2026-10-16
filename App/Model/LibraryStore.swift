@@ -161,6 +161,14 @@ import SwiftUI
     func delete() {guard stylePreviewLayer==nil,let selected,active?.isLocked==false else{return};checkpoint();page.layers.removeAll{$0.id==selected};self.selected=nil;save()}
     func duplicate() {guard stylePreviewLayer==nil,var l=active else{return};guard let index=page.layers.firstIndex(where:{$0.id==l.id}) else{return};checkpoint();l.id=UUID();page.layers.insert(l,at:index+1);selected=l.id;save()}
     func cancelPendingSaves(){whiteningTask?.cancel();editSaveTask?.cancel();editSaveTask=nil;previewTask?.cancel();previewTask=nil}
+    /// Flush a closing destination before storage may remove resident assets.
+    @discardableResult func flushForClosing()->Bool {
+        cancelPendingSaves()
+        guard textMaskDraft==nil else{return false}
+        continuousEditing=false
+        do{try library.persist(page);return true}
+        catch{let message="تعذر حفظ آخر تعديل؛ احتُفظ بملفات المشروع على الجهاز. "+error.localizedDescription;self.error=message;library.error=message;return false}
+    }
     func undo(){guard let previous=undoStack.popLast() else{return};redoStack.append(page.layers);redoDocuments.append(page);if let document=undoDocuments.popLast(){page=document}else{page.layers=previous};if textMaskDraft==nil{selected=nil};save()}
     func redo(){guard let next=redoStack.popLast() else{return};undoStack.append(page.layers);undoDocuments.append(page);if let document=redoDocuments.popLast(){page=document}else{page.layers=next};if textMaskDraft==nil{selected=nil};save()}
     private var continuousEditing=false

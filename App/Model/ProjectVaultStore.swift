@@ -52,6 +52,7 @@ enum VaultFiles {
     @Published var error:String?
     @Published var revision=0
     private var opened:[UUID:Set<UUID>]=[:]
+    private var transferBlocked=Set<UUID>()
     private func isOpen(_ id:UUID)->Bool{opened[id]?.isEmpty==false}
     private var closing:[UUID:Task<Void,Never>]=[:]
     init(library:LibraryStore){owner=library;root=library.root}
@@ -68,17 +69,21 @@ enum VaultFiles {
     func open(_ id:UUID,lease:UUID?=nil)async throws {
         guard !suspended,let library=owner else{throw CancellationError()}
         if let close=closing[id]{await close.value}
+        if !isOpen(id){transferBlocked.remove(id)}
         opened[id,default:[]].insert(lease ?? id)
         do{if let receipt=try VaultFiles.receipt(library.directory(id)),!receipt.resident{try await download(receipt.project,installInLibrary:false)}}catch{opened[id]?.remove(lease ?? id);if opened[id]?.isEmpty==true{opened[id]=nil};throw error}
     }
-    func close(_ id:UUID,lease:UUID?=nil){
+    func close(_ id:UUID,lease:UUID?=nil,allowTransfer:Bool=true){
+        if !allowTransfer{transferBlocked.insert(id)}
         opened[id]?.remove(lease ?? id);guard !isOpen(id) else{return};opened[id]=nil
-        guard !suspended,receipt(id)?.managed != false,(enabled || receipt(id) != nil) else{return}
+        guard !suspended,!transferBlocked.contains(id),receipt(id)?.managed != false,(enabled || receipt(id) != nil) else{return}
         closing[id]=Task{[weak self] in guard let self else{return};while self.busy{try? await Task.sleep(nanoseconds:100_000_000);if Task.isCancelled{return}};await self.store(id,evict:true);if let error=self.error{self.owner?.error=error};self.closing[id]=nil}
     }
     func waitForPendingTransfer(_ id:UUID)async{if let task=closing[id]{await task.value}}
     func store(_ id:UUID,evict:Bool)async {
-        guard !busy,!suspended,!isOpen(id),let library=owner else{return};busy=true;error=nil;activity="تجهيز المشروع";progress=0;defer{busy=false;revision+=1}
+        guard !busy,!suspended,!isOpen(id),let library=owner else{return}
+        guard !transferBlocked.contains(id) else{error="توقف الحفظ السابق؛ افتح المشروع وراجع آخر تعديل قبل نقله";return}
+        busy=true;error=nil;activity="تجهيز المشروع";progress=0;defer{busy=false;revision+=1}
         do{
             let (c,user)=try await client();let remote=try await c.list();try checkAccount(user)
             let directory=library.directory(id),root=library.root

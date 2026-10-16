@@ -3,6 +3,7 @@
   "main": "worker.mjs",
   "compatibility_date": "2026-10-14",
   "workers_dev": true,
+  "ai": {"binding":"AI"},
   "durable_objects": {
     "bindings": [
       {

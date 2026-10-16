@@ -1,0 +1,47 @@
+{
+  "date": "2026-10-16",
+  "stable_main": "58f93c032fec080727041368ee4ff7fb5b186698",
+  "verified_layers": {
+    "commit": "f9e6eb9e7a0fbba5aa40884f4046e91e7f4679b5",
+    "run": 38868021071,
+    "all_jobs": "success",
+    "ipad_editor_tests": 178,
+    "ipad_service_unit_tests": 14,
+    "focused_ui": 4,
+    "real_photos_bytes": 48000000
+  },
+  "cloud_candidate": {
+    "branch": "verify/project-vault-oct16",
+    "commit": "9352770747a668befef4db46f383b0b5499e5266",
+    "tree": "6c3d5c41f44e427a276a9f268e826d6df5e5f3f4",
+    "run": 38880145045,
+    "status": "in_progress"
+  },
+  "supabase": {
+    "connection": "Z",
+    "org": "klmpzgcbnjkiwvzittip",
+    "project": "ilagswvocznnrrreiswq",
+    "function_version": 4,
+    "server_checks_passed": 17,
+    "probe": "disabled/JWT-protected 410",
+    "ci_function": "vault-native-ci; GitHub OIDC exact repo/branch/workflow; ordinary synthetic users only"
+  },
+  "ibis_reference": {
+    "version": "14.1.2",
+    "sha256": "7c52acb5d784eef2d4b9f39c4f83829a5d0ff99cc36d9e23626330be4f55ff12",
+    "static_analysis": "completed inventory and selected command/eraser analysis",
+    "runtime_inspection": "failed native initialization on available emulators; not verified"
+  },
+  "restoration_alternatives": {
+    "implemented": "native source prepared, not yet built or released",
+    "hosted_endpoint": "/v1/reconstruct deployed and real request passed",
+    "private_evaluation_worker": "deleted",
+    "actual_real_crop_inferences": 5,
+    "outside_mask_changed_pixels": 0,
+    "native_tests": "5 new tests prepared; verification pending",
+    "capacity": "5 global/day, 2 per connection/day; fixed 512 output; failures charged",
+    "quality": "Pattern reconstruction improved on supplied purple crop; color seams corrected by masked Poisson blending in local experiments. No universal or exact hidden-background claim.",
+    "other_providers": "Official SnapEdit, Clipdrop and Bria APIs found; not connected, require provider keys/credits"
+  },
+  "warning": "This file is a progress ledger, not release certification; do not overwrite unrelated existing audit work."
+}

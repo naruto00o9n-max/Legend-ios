@@ -148,5 +148,19 @@ final class ProjectVaultTests:XCTestCase {
         XCTAssertNil(library.vault.error);XCTAssertTrue(FileManager.default.fileExists(atPath:directory.appendingPathComponent(page.source).path))
         library.vault.suspended=true;library.vault.close(page.id,lease:reader)
     }
-
+    @MainActor func testClosingDuringGestureFlushesTheActualEditableDocument()throws {
+        let(page,root,_)=try fixture();defer{try? FileManager.default.removeItem(at:root)}
+        let library=LibraryStore(root:root),model=EditorModel(page:page,library:library)
+        model.setContinuousEditing(true);model.page.layers[0].textContent="آخر تعديل في الإيماءة"
+        XCTAssertTrue(model.flushForClosing());XCTAssertEqual(try library.load(page.id),model.page)
+    }
+    @MainActor func testFailedFlushBlocksAutomaticTransferForAllRemainingLeases()async throws {
+        let(page,root,directory)=try fixture();defer{try? FileManager.default.removeItem(at:root)}
+        let defaults=UserDefaults.standard,key="storage-projects-server",old=defaults.object(forKey:key);defaults.set(true,forKey:key);defer{if let old{defaults.set(old,forKey:key)}else{defaults.removeObject(forKey:key)}}
+        let library=LibraryStore(root:root),first=UUID(),second=UUID()
+        try await library.vault.open(page.id,lease:first);try await library.vault.open(page.id,lease:second)
+        library.vault.close(page.id,lease:first,allowTransfer:false);library.vault.close(page.id,lease:second)
+        await library.vault.waitForPendingTransfer(page.id)
+        XCTAssertNil(library.vault.error,"No upload may start after a failed flush");XCTAssertTrue(FileManager.default.fileExists(atPath:directory.appendingPathComponent(page.source).path))
+    }
 }

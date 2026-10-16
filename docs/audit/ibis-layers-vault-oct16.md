@@ -30,7 +30,7 @@ The reference engine architecture explains useful design directions, not a prove
 ## Verification branches
 
 - `verify/layer-workbench-oct16`, source `f9e6eb9e7a0fbba5aa40884f4046e91e7f4679b5`, Actions run 38868021071.
-- Both unsigned arm64 layer-only IPAs built successfully; all four simulator jobs passed. iPad logs confirm 178 editor tests (including 9 new layer tests), 14 service unit tests, four focused layer/gesture UI tests, real Photos import and two external-service checks. Local iPad/iPhone UI/source-integrity checks also passed. Source comparison covered all 48,000,000 RGBA bytes of an 800×15,000 image. iPhone job status is green; its detailed artifact still needs to be archived alongside iPad evidence.
+- Both unsigned arm64 layer-only IPAs built successfully; all four simulator jobs passed. iPad logs confirm 178 editor tests (including 9 new layer tests), 14 service unit tests, four focused layer/gesture UI tests, real Photos import and two external-service checks. Local iPad/iPhone UI/source-integrity checks also passed. Source comparison covered all 48,000,000 RGBA bytes of an 800×15,000 image. The iPhone artifact has also been archived: 178 editor tests and 14 service unit tests passed; all 48,000,000 Photos RGBA bytes matched.
 - New native tests cover layer alpha isolation, partial erasure, metadata serialization, base source references, locked/hidden behavior, stack order, reversible clear, export and rasterization, and native-resolution image import.
 
 ## Project vault
@@ -58,10 +58,12 @@ Native archive/recovery/client/coordinator/UI tests and full native builds are r
 
 ## Restoration alternatives
 
-Not yet implemented in this work. User requested this after layers and project storage. Future providers must offer a documented/authorized hosted API and be compared on the same comic regions. A modified SnapEdit client's private entitlement cannot be reused or bypassed. Provider billing/keys are not invented. Existing restoration service is unchanged.
+The additional hosted reconstruction route is deployed and was tested on the supplied real comic crops. Native source, mask-only color matching, independent provider choices and tests are prepared, with native verification still pending. The balanced restoration route remains available. See [provider evidence and limits](restoration-providers-oct16.md). Official SnapEdit/Clipdrop/Bria APIs were identified but not connected without credentials or credits.
 
 ### Native live integration gate
 
 The vault verification workflow now requests a signed GitHub OIDC token with audience `cookies-vault-native-tests`. A separate test-only function verifies GitHub signature, repository ID/owner ID, exact branch and workflow path before provisioning a short-lived **ordinary user in this owned test project**. It returns only that user's session and a public client key, never a platform admin key. The JSON fixture is generated in the XCTest resource directory, ignored by git, never part of the production app target or IPA job, and excluded from uploaded artifacts. Cleanup checks the same run ID and CI account metadata before removing test accounts/objects. Native logs must show the actual round-trip test **passed**, not skipped. This verifies archive, live transfer, eviction, reopening, editing/resaving and keeping a device copy before server deletion.
 
 Project leases follow navigation destination lifetime rather than disappearance callbacks: covering the editor with a full-screen tool must not upload/evict its source. Reader/editor leases for the same project are independent. Closing the last lease permits the transfer. Cache/reset/restore/backup operations refuse to race an active transfer.
+
+A closing destination explicitly flushes its current document even when a gesture was ending. A failed flush blocks automatic project transfer for all remaining leases until the next actual reopening, avoiding eviction after a stale save. This follow-up requires the final native regression run.

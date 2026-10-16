@@ -7,9 +7,11 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (request.method === 'GET' && url.pathname === '/health') {
-      return json({ protocol: 1, service: 'Cookies AI Restoration', backendConfigured: !!env.BACKEND_URL, localDownloadRequired: false });
+      return json({ protocol: 1, service: 'Cookies AI Restoration', backendConfigured: !!env.BACKEND_URL, generative: !!env.AI, localDownloadRequired: false });
     }
-    if (request.method !== 'POST' || url.pathname !== '/v1/restore') return json({ error: 'not_found' }, 404);
+    const advanced=url.pathname==='/v1/reconstruct';
+    if (request.method !== 'POST' || (!advanced && url.pathname !== '/v1/restore')) return json({ error: 'not_found' }, 404);
+    if (advanced && !env.AI) return json({ error: 'not_configured' }, 503);
     if (!env.BACKEND_URL || !env.BACKEND_TOKEN) return json({ error: 'not_configured' }, 503);
     const length = Number(request.headers.get('content-length'));
     if (length > MAX_BODY) return json({ error: 'region_too_large' }, 413);
@@ -20,8 +22,8 @@ export default {
     const client = [...new Uint8Array(hash)].map(v => v.toString(16).padStart(2, '0')).join('');
     // The public client cannot choose its origin credentials or quota identity.
     const headers = new Headers({ 'content-type': request.headers.get('content-type'), 'x-cookies-client': client });
-    const gate = env.GATE.get(env.GATE.idFromName('global-v1'));
-    return gate.fetch(new Request('https://internal/v1/restore', { method: 'POST', headers, body: request.body, duplex: 'half' }));
+    const gate = env.GATE.get(env.GATE.idFromName(advanced?'global-advanced-v1':'global-v1'));
+    return gate.fetch(new Request('https://internal'+url.pathname, { method: 'POST', headers, body: request.body, duplex: 'half' }));
   }
 };
 
@@ -31,6 +33,7 @@ export class RestorationGateCore {
     if (this.inFlight) return json({ error: 'restoration_busy' }, 429, { 'retry-after': '5' });
     this.inFlight = true;
     try {
+      if(new URL(request.url).pathname==='/v1/reconstruct')return await reconstruct(request,this.env,this.state);
       const client = request.headers.get('x-cookies-client');
       const day = new Date().toISOString().slice(0, 10);
       const maxDaily = Math.max(1, Math.min(10_000, Number(this.env.MAX_DAILY_REQUESTS || 300)));
@@ -59,3 +62,4 @@ export class RestorationGateCore {
     } finally { this.inFlight = false; }
   }
 }
+import {reconstruct} from './generative.mjs';

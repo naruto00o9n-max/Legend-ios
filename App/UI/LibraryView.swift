@@ -89,7 +89,7 @@ struct PageDestination:View {
     }
     deinit{
         let library=library,id=id,lease=lease,model=retainedModel,opened=opened
-        Task{@MainActor in model?.save();model?.cancelPendingSaves();if opened{library.vault.close(id,lease:lease)}}
+        Task{@MainActor in let flushed=model?.flushForClosing() ?? true;if opened{library.vault.close(id,lease:lease,allowTransfer:flushed)}}
     }
 }
 struct PageSessionView:View {

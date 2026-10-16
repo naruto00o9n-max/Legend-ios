@@ -3,7 +3,7 @@ import UIKit
 @testable import CookiesEditor
 
 final class ManualWhiteningTests:XCTestCase {
-    @MainActor private func setup()throws->(URL,EditorModel){UserDefaults.standard.removeObject(forKey:WhiteningPreferences.methodKey);UserDefaults.standard.removeObject(forKey:WhiteningPreferences.executionKey);let root=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString),library=LibraryStore(root:root),page=try PageOperations.blank(title:"فقاعات",width:400,height:600,color:"FFFFFF",transparent:false,root:root);XCTAssertTrue(library.add(page,parent:nil));return(root,EditorModel(page:page,library:library))}
+    @MainActor private func setup()throws->(URL,EditorModel){UserDefaults.standard.removeObject(forKey:WhiteningPreferences.providerKey);UserDefaults.standard.removeObject(forKey:WhiteningPreferences.methodKey);UserDefaults.standard.removeObject(forKey:WhiteningPreferences.executionKey);let root=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString),library=LibraryStore(root:root),page=try PageOperations.blank(title:"فقاعات",width:400,height:600,color:"FFFFFF",transparent:false,root:root);XCTAssertTrue(library.add(page,parent:nil));return(root,EditorModel(page:page,library:library))}
     private let rectangle=[CGPoint(x:30,y:40),CGPoint(x:250,y:40),CGPoint(x:250,y:260),CGPoint(x:30,y:260)]
     @MainActor func testManualContourIsRealTargetAndDoesNotEditImage()throws{
         let (root,model)=try setup();defer{try? FileManager.default.removeItem(at:root)};let before=model.page
@@ -11,10 +11,10 @@ final class ManualWhiteningTests:XCTestCase {
         let target=try XCTUnwrap(model.sniperTargets.first);XCTAssertTrue(target.manuallySelected);XCTAssertFalse(target.pin);XCTAssertEqual(target.outline.count,4);XCTAssertEqual(target.whiteningMethod,.classic);XCTAssertEqual(model.page,before);XCTAssertNil(model.manualSniperTool)
     }
     @MainActor func testReplacingContourKeepsPerBubbleMethodIdentityAndReturnsToInspector()throws{
-        let (root,model)=try setup();defer{try? FileManager.default.removeItem(at:root)};model.beginManualSniper(.rectangle);model.finishManualSniper(rectangle);let id=try XCTUnwrap(model.sniperTargets.first?.id);model.sniperTargets[0].whiteningMethod = .bigLaMa;model.sniperTargets[0].restorationExecution = .cloud
+        let (root,model)=try setup();defer{try? FileManager.default.removeItem(at:root)};model.beginManualSniper(.rectangle);model.finishManualSniper(rectangle);let id=try XCTUnwrap(model.sniperTargets.first?.id);model.sniperTargets[0].whiteningMethod = .bigLaMa;model.sniperTargets[0].restorationExecution = .cloud;model.sniperTargets[0].restorationProvider = .generative
         model.beginManualSniper(.rectangle);model.finishManualSniper(rectangle.map{CGPoint(x:$0.x+10,y:$0.y+280)})
         model.beginManualSniper(.freehand,replacing:id,returnToWhitening:true);model.finishManualSniper([CGPoint(x:50,y:50),CGPoint(x:180,y:65),CGPoint(x:210,y:180),CGPoint(x:45,y:220)])
-        XCTAssertEqual(model.sniperTargets.count,2);XCTAssertEqual(model.sniperTargets[0].id,id);XCTAssertEqual(model.sniperTargets[0].whiteningMethod,.bigLaMa);XCTAssertEqual(model.sniperTargets[1].whiteningMethod,.classic);XCTAssertEqual(model.sniperTargets[0].restorationExecution,.cloud);XCTAssertEqual(model.sniperTargets[1].restorationExecution,.cloud);XCTAssertTrue(model.sniperWhiteningOpen);XCTAssertEqual(model.focusedSniperTarget,id)
+        XCTAssertEqual(model.sniperTargets[0].restorationProvider,.generative);XCTAssertEqual(model.sniperTargets[1].restorationProvider,.balanced);XCTAssertEqual(model.sniperTargets.count,2);XCTAssertEqual(model.sniperTargets[0].id,id);XCTAssertEqual(model.sniperTargets[0].whiteningMethod,.bigLaMa);XCTAssertEqual(model.sniperTargets[1].whiteningMethod,.classic);XCTAssertEqual(model.sniperTargets[0].restorationExecution,.cloud);XCTAssertEqual(model.sniperTargets[1].restorationExecution,.cloud);XCTAssertTrue(model.sniperWhiteningOpen);XCTAssertEqual(model.focusedSniperTarget,id)
     }
     @MainActor func testManualTextRegionsAreClippedAndOutsideOrTinyContoursAreRejected()throws{
         let (root,model)=try setup();defer{try? FileManager.default.removeItem(at:root)};model.beginManualSniper(.rectangle);model.finishManualSniper(rectangle);let id=try XCTUnwrap(model.sniperTargets.first?.id)

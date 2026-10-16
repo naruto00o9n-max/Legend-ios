@@ -24,6 +24,14 @@ jobs:
               try{await github.rest.actions.cancelWorkflowRun({...context.repo,run_id:run.id});}
               catch(error){if(![409,422].includes(error.status))throw error;}
             }
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Hosted restoration budget and archive protocol checks
+        run: |
+          node --test Backend/BigLaMa/cloudflare/*.test.mjs
+          node --test Backend/ProjectVault/protocol.test.ts
   editor:
     permissions:
       contents: read
@@ -56,7 +64,7 @@ jobs:
       - name: Require an actual native private-vault round trip
         run: python3 scripts/provision_vault_ci.py verify-log 'build/test-${{ matrix.screen }}-core.log'
       - name: Real layer controls and live eraser gestures, Photos and service regressions
-        run: bash scripts/test_simulators.sh '${{ matrix.screen }}' ui 'CookiesUITests/EditorUITests/testVaultOverviewKeepsLocalEditingAvailableWithoutLogin,CookiesUITests/EditorUITests/testLayerButtonsActuallyHideUnlockAndDelete,CookiesUITests/EditorUITests/testLayerTypeChipsMatchTheVisibleRows,CookiesUITests/EditorUITests/testEraserKeepsSelectedTextEditableWithoutCreatingDrawingLayers,CookiesUITests/EditorUITests/testPinchAndDrawing'
+        run: bash scripts/test_simulators.sh '${{ matrix.screen }}' ui 'CookiesUITests/EditorUITests/testVaultOverviewKeepsLocalEditingAvailableWithoutLogin,CookiesUITests/EditorUITests/testManualSniperKeepsIndependentWhiteningMethodPerBubble,CookiesUITests/EditorUITests/testLayerButtonsActuallyHideUnlockAndDelete,CookiesUITests/EditorUITests/testLayerTypeChipsMatchTheVisibleRows,CookiesUITests/EditorUITests/testEraserKeepsSelectedTextEditableWithoutCreatingDrawingLayers,CookiesUITests/EditorUITests/testPinchAndDrawing'
       - name: Remove temporary vault account and test objects
         if: always()
         run: python3 scripts/provision_vault_ci.py cleanup
@@ -126,3 +134,44 @@ jobs:
         with:
           name: project-vault-unsigned-ipas
           path: build/
+  publish:
+    needs: [editor, local, package]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: project-vault-unsigned-ipas
+          path: verified-package
+      - name: Publish only the fully verified candidate and its two unsigned IPAs
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
+            const ref=await github.rest.git.getRef({...context.repo,ref:context.ref.replace('refs/','')});
+            if(ref.data.object.sha!==context.sha)throw new Error('Refusing to publish a superseded candidate');
+            const names=['Cookies-Editor-unsigned.ipa','Cookies-Editor-Local-unsigned.ipa'];
+            const files=names.map(name=>({name,file:path.join('verified-package',name)}));
+            for(const item of files){if(!fs.existsSync(item.file))throw new Error('Missing '+item.name);item.bytes=fs.readFileSync(item.file);item.hash=crypto.createHash('sha256').update(item.bytes).digest('hex');}
+            const tag='cookies-20261016-'+context.sha.slice(0,7);
+            const body=[
+              'تحسين الطبقات والصور والممحاة؛ حفظ المشاريع مع التحقق قبل إخلاء الجهاز؛ وخيار إضافي لإعادة بناء الخلفية لكل فقاعة.',
+              '',
+              'نسختان غير موقعتين. النسخة Local دون الحساب والمجتمع. يحتاج تثبيتهما إلى توقيعك.',
+              '',
+              'الحفظ في الخادم محدود بالمساحة المجانية: 512 ميغابايت للحساب وحد إجمالي مشترك. إعادة البناء الإضافية تجريبية: تجربتان لكل اتصال وخمس تجارب مشتركة يوميًا، وتحتاج مراجعة النتيجة. ليست مطابقة ibisPaint مكتملة.',
+              '',
+              'Source: '+context.sha,
+              'Validation: https://github.com/'+context.repo.owner+'/'+context.repo.repo+'/actions/runs/'+context.runId,
+              '',
+              ...files.map(f=>f.name+': `'+f.hash+'`')
+            ].join('\n');
+            let release;
+            try{release=(await github.rest.repos.getReleaseByTag({...context.repo,tag})).data;if(!release.body.includes(context.sha))throw new Error('Existing release does not identify this source');}
+            catch(error){if(error.status!==404)throw error;release=(await github.rest.repos.createRelease({...context.repo,tag_name:tag,target_commitish:context.sha,name:'Cookies Editor · طبقات وحفظ المشاريع · '+context.sha.slice(0,7),body,prerelease:true,draft:false})).data;}
+            const existing=(await github.rest.repos.listReleaseAssets({...context.repo,release_id:release.id,per_page:100})).data;
+            for(const f of files){const found=existing.find(a=>a.name===f.name);if(found){if(found.size!==f.bytes.length)throw new Error('Existing asset size mismatch');continue;}await github.rest.repos.uploadReleaseAsset({...context.repo,release_id:release.id,name:f.name,data:f.bytes,headers:{'content-type':'application/octet-stream','content-length':f.bytes.length}});}
+            core.notice('Verified unsigned IPAs: '+release.html_url);

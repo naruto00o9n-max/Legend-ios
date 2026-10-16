@@ -14,6 +14,9 @@ enum RestorationExecution:String,CaseIterable,Identifiable {
 /// switching between existing bubbles with their independent choices.
 enum WhiteningPreferences {
     static let methodKey="editor-whitening-method",executionKey="editor-whitening-execution"
+    static let providerKey="editor-whitening-provider"
+    static func provider(defaults:UserDefaults = .standard)->RestorationProvider{RestorationProvider(rawValue:defaults.string(forKey:providerKey) ?? "") ?? .balanced}
+    static func remember(_ provider:RestorationProvider,defaults:UserDefaults = .standard){defaults.set(provider.rawValue,forKey:providerKey)}
     static func method(defaults:UserDefaults = .standard)->BubbleWhiteningMethod {
         BubbleWhiteningMethod(rawValue:defaults.string(forKey:methodKey) ?? "") ?? .classic
     }
@@ -28,9 +31,16 @@ enum WhiteningPreferences {
     static func apply(to target:inout SniperTarget,available:Bool,defaults:UserDefaults = .standard){
         target.whiteningMethod=method(defaults:defaults)
         target.restorationExecution=execution(available:available,defaults:defaults)
+        target.restorationProvider=provider(defaults:defaults)
     }
 }
 enum ManualSniperTool:String {case rectangle,freehand,textRectangle}
+enum RestorationProvider:String,CaseIterable,Identifiable {
+    case balanced,generative
+    var id:String{rawValue}
+    var title:String{self == .balanced ? "ترميم متوازن":"إعادة بناء توليدية"}
+    var detail:String{self == .balanced ? "يصل المناطق المحيطة بالنص ويحافظ على ألوانها":"يعيد تخيل التفاصيل والزخارف. يحتاج مراجعة؛ قد يغيّر النمط المخفي. حصة تجريبية محدودة"}
+}
 struct SniperTarget: Identifiable, Equatable {
     var id=UUID()
     var bounds:Box
@@ -39,6 +49,7 @@ struct SniperTarget: Identifiable, Equatable {
     var point:Point
     var whiteningMethod=BubbleWhiteningMethod.classic
     var restorationExecution=RestorationExecution.cloud
+    var restorationProvider=RestorationProvider.balanced
     var manualTextRegions:[Box]=[]
     var manuallySelected=false
 }

@@ -35,7 +35,9 @@ extension BubbleWhitening {
     }
     static func prepareCloud(page:EditorPage,directory:URL,target:SniperTarget)async throws->BubbleWhiteningResult {
         let input=try prepareInput(page:page,directory:directory,target:target)
-        let patch=try await CloudRestoration.repair(source:input.source,mask:input.mask)
+        let patch:CGImage
+        if target.restorationProvider == .generative{patch=try await GenerativeRestoration.repair(source:input.source,mask:input.mask)}
+        else{patch=try await CloudRestoration.repair(source:input.source,mask:input.mask)}
         try Task.checkCancellation()
         return try savePatch(patch,region:input.region,directory:directory)
     }
