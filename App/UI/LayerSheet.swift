@@ -123,7 +123,7 @@ struct LayerSheet:View {
     private var inspector:some View {
         VStack(spacing:16){
             Spacer(minLength:6)
-            if let active{
+            if let active=model.active{
                 LayerThumbnail(layer:active,directory:model.directory,previewSize:180).frame(width:180,height:180).clipShape(RoundedRectangle(cornerRadius:16))
                     .onTapGesture{preview=active}
                 Text(active.name).font(.system(size:13,weight:.semibold)).lineLimit(2)
