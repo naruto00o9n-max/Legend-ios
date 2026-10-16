@@ -8,7 +8,8 @@ def adb(*args,timeout=90,raw=False):
 adb('shell','wm','size','800x1280');adb('shell','wm','density','160')
 adb('install-multiple','-r',*[str(root/x) for x in ['jp.ne.ibis.ibispaintx.app.apk','config.x86_64.apk','config.hdpi.apk','config.en.apk']],timeout=300)
 (output/'package.txt').write_text(adb('shell','dumpsys','package','jp.ne.ibis.ibispaintx.app'))
-adb('shell','am','start','-n','jp.ne.ibis.ibispaintx.app/.InitializeCheckActivity')
+adb('logcat','-c')
+adb('shell','am','start','-a','android.intent.action.MAIN','-c','android.intent.category.LAUNCHER','-n','jp.ne.ibis.ibispaintx.app/.InitializeCheckActivity')
 time.sleep(15)
 steps=json.loads(pathlib.Path('scripts/ibis-reference-steps.json').read_text())
 for index,step in enumerate(steps):
@@ -22,5 +23,6 @@ for index,step in enumerate(steps):
         adb('shell','uiautomator','dump','/sdcard/ibis-window.xml',timeout=20)
         (output/(name+'.xml')).write_text(adb('shell','cat','/sdcard/ibis-window.xml'))
     except Exception as error:(output/(name+'-accessibility.txt')).write_text(str(error))
-(output/'logcat.txt').write_text(adb('logcat','-d','-t','600'))
+(output/'logcat.txt').write_text(adb('logcat','-d'))
+(output/'activity.txt').write_text(adb('shell','dumpsys','activity','activities'))
 print('Saved real reference screenshots:',len(steps))
