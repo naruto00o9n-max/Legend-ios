@@ -23,7 +23,20 @@ struct EditorView:View {
     @AppStorage("typer-panel-width") private var typerWidth=320.0
     @AppStorage("typer-panel-height") private var typerHeight=490.0
     var body:some View {
-        ZStack(alignment:textDock=="top" ? .top:.bottom){Palette.ink.ignoresSafeArea();CanvasHost(model:model,gridSettings:CanvasGridSettings.decode(gridData),onBubble:{rect,shape in placeBubble(rect,shape:shape)});if let objectPanel,model.tool == .move,[LayerKind.image,.shape].contains(model.active?.kind ?? .text){TextInspector(model:model,panel:objectPanel,close:{self.objectPanel=nil}).frame(maxWidth:560).frame(height:290).padding(.horizontal,12).padding(.bottom,8)};if model.tool == .text{if let panel=model.panel,model.active?.kind == .text{TextInspector(model:model,panel:panel,close:{model.panel=nil}).frame(maxWidth:560).frame(height:panel == .content ? 240:290).padding(.horizontal,12).padding(.bottom,8).transition(.move(edge:.bottom).combined(with:.opacity))}}}
+        VStack(spacing:0){
+            HStack(spacing:0){
+                ZStack(alignment:textDock=="top" ? .top:.bottom){
+                    Palette.ink.ignoresSafeArea()
+                    CanvasHost(model:model,gridSettings:CanvasGridSettings.decode(gridData),onBubble:{rect,shape in placeBubble(rect,shape:shape)})
+                    if let objectPanel,model.tool == .move,[LayerKind.image,.shape].contains(model.active?.kind ?? .text){TextInspector(model:model,panel:objectPanel,close:{self.objectPanel=nil}).frame(maxWidth:560).frame(height:290).padding(.horizontal,12).padding(.bottom,8)}
+                    if model.tool == .text,let panel=model.panel,panel != .font,model.active?.kind == .text{TextInspector(model:model,panel:panel,close:{model.panel=nil}).frame(maxWidth:560).frame(height:panel == .content ? 240:290).padding(.horizontal,12).padding(.bottom,8)}
+                }.frame(maxWidth:.infinity,maxHeight:.infinity)
+                if horizontalSizeClass == .regular,model.panel == .font,model.tool == .text{fontDock.frame(width:340)}
+                if horizontalSizeClass == .regular,layers{LayerSheet(model:model,onImport:{layers=false;imagePicker=true},onClose:{layers=false}).cookiesInterface().frame(width:370)}
+            }
+            if horizontalSizeClass != .regular,model.panel == .font,model.tool == .text{fontDock.frame(height:280)}
+        }
+
         .overlay(alignment:.bottom){if model.imageEffectsOpen,model.active?.kind == .image{ImageEffectsPanel(model:model).frame(maxWidth:560).frame(height:420).padding(.horizontal,12).padding(.bottom,8)}}
         .safeAreaInset(edge:.top,spacing:0){HStack(spacing:4){IconButton(icon:"chevron.right",title:"العودة"){model.save();dismiss()};VStack(alignment:.leading,spacing:2){Text(model.page.title).font(.system(size:12,weight:.medium)).lineLimit(1);Text(verbatim:"\(model.page.width) × \(model.page.height) · \(Int(model.zoom*100))%").font(.system(size:9,design:.monospaced)).foregroundStyle(Palette.quiet).accessibilityIdentifier("canvas-zoom")};Spacer(minLength:4);IconButton(icon:"arrow.uturn.backward",title:"تراجع"){model.undo()}.disabled(model.undoStack.isEmpty).accessibilityIdentifier("undo");IconButton(icon:"arrow.uturn.forward",title:"إعادة"){model.redo()}.disabled(model.redoStack.isEmpty).accessibilityIdentifier("redo");IconButton(icon:"square.3.layers.3d",title:"الطبقات"){layers=true}.accessibilityIdentifier("layers-header");IconButton(icon:"square.and.arrow.up",title:"تصدير"){showExport=true}.accessibilityIdentifier("export")}.padding(.horizontal,4).glass(0).frame(height:52)}
         .safeAreaInset(edge:.bottom,spacing:0){VStack(spacing:0){
@@ -95,12 +108,7 @@ struct EditorView:View {
         .sheet(isPresented:$model.sniperWhiteningOpen){SniperWhiteningPanel(model:model).presentationDetents([.large]).presentationContentInteraction(.scrolls).presentationDragIndicator(.visible).presentationBackground(.clear)}
         .sheet(isPresented:$gridSettingsOpen){CanvasGridSettingsView().presentationDetents([.medium,.large]).presentationBackground(.clear)}
         .sheet(isPresented:$brushSettings){BrushSheet(model:model).cookiesInterface().presentationDetents([.height(300)]).presentationBackground(.clear)}
-        .overlay(alignment:.trailing){if layers,horizontalSizeClass == .regular{GeometryReader{geometry in
-            LayerSheet(model:model,onImport:{layers=false;imagePicker=true},onClose:{layers=false}).cookiesInterface()
-                .frame(width:min(760,max(320,geometry.size.width-24)),height:min(720,max(240,geometry.size.height-24)))
-                .shadow(color:.black.opacity(0.45),radius:24,y:10).padding(12).frame(maxWidth:.infinity,maxHeight:.infinity,alignment:.trailing)
-        }}}
-        .sheet(isPresented:Binding(get:{layers && horizontalSizeClass != .regular},set:{layers=$0}),onDismiss:{if importAfterLayerDismiss{importAfterLayerDismiss=false;imagePicker=true}}){LayerSheet(model:model,onImport:{importAfterLayerDismiss=true;layers=false}).cookiesInterface().presentationDetents([.large]).presentationBackground(.clear)}
+        .sheet(isPresented:Binding(get:{layers && horizontalSizeClass != .regular},set:{layers=$0}),onDismiss:{if importAfterLayerDismiss{importAfterLayerDismiss=false;imagePicker=true}}){LayerSheet(model:model,onImport:{importAfterLayerDismiss=true;layers=false}).cookiesInterface().presentationDetents([.height(280),.medium,.large]).presentationBackgroundInteraction(.enabled(upThrough:.medium)).presentationBackground(.clear)}
         .sheet(isPresented:$shapes){ShapeSheet(model:model).cookiesInterface().presentationDetents([.medium,.large]).presentationBackground(.clear)}
         .sheet(isPresented:$showExport){ExportSheet(model:model).cookiesInterface().presentationDetents([.height(390)]).presentationBackground(.clear)}
         .sheet(isPresented:$replacingBackground){PhotoLibraryPicker{result in switch result{case .failure(let error):model.error=error.localizedDescription;case .success(let urls):if let url=urls.first{Task{defer{try? FileManager.default.removeItem(at:url)};await model.replaceBackground(url)}}}}}
@@ -111,6 +119,9 @@ struct EditorView:View {
 
         .alert("تعذر إكمال العملية",isPresented:Binding(get:{model.error != nil},set:{if !$0{model.error=nil}})){Button("حسنًا"){model.error=nil}}message:{Text(model.error ?? "")}
         .onDisappear{model.cancelWhitening();model.commitTextMask();model.discardCleaning();model.save()}
+    }
+    private var fontDock:some View {
+        FontLibraryView(onSelect:{name in model.change{$0.style.fontPath=name}},currentFont:model.active?.style.fontPath,embedded:true,onClose:{model.panel=nil;model.save()}).cookiesInterface().background(Palette.ink).onAppear{model.checkpoint()}
     }
     func placeBubble(_ rect:CGRect,shape:BubbleShape){
         guard let chapter=typer.activeChapter else{model.error="افتح التايبر واختر فصلًا أولًا";assistant=true;return}
@@ -130,5 +141,5 @@ struct EditorView:View {
     }
     private var gridControl:some View{toolButton("grid","الشبكة",id:"tool-grid",selected:CanvasGridSettings.decode(gridData).enabled){var value=CanvasGridSettings.decode(gridData);value.enabled.toggle();gridData=value.data;if value.enabled{gridSettingsOpen=true}}.contextMenu{Button("إعدادات الشبكة"){gridSettingsOpen=true}}}
     func toolButton(_ icon:String,_ title:String,id:String,selected:Bool=false,action:@escaping ()->Void)->some View{Button(action:action){VStack(spacing:6){Image(systemName:icon).font(.system(size:20*min(1.2,max(0.8,iconScale)),weight:.regular));Text(title).font(.system(size:10*min(1.3,max(0.85,labelScale)))).lineLimit(1)}.frame(width:62,height:60*min(1.15,max(0.85,toolbarScale))).background(selected ? Palette.gold.opacity(0.16):.clear,in:RoundedRectangle(cornerRadius:12))}.accessibilityIdentifier(id).accessibilityLabel(title)}
-    func select(_ tool:Tool){model.sniperMode=false;model.bubbleShape=nil;model.gradientTarget=nil;model.tool=tool;switch tool{case .layers:layers=true;case .shapes:shapes=true;case .text:if model.active?.kind != .text{model.add(.text)}else{model.panel = .content};case .brush:if model.active?.kind != .drawing{model.add(.drawing)};case .eraser:break;default:break}}
+    func select(_ tool:Tool){model.sniperMode=false;model.bubbleShape=nil;model.gradientTarget=nil;model.tool=tool;switch tool{case .layers:layers=true;case .shapes:shapes=true;case .text:if model.active?.kind != .text{model.add(.text)}else{model.panel = .content};case .brush:_ = model.prepareBrushTarget();case .eraser:break;default:break}}
 }

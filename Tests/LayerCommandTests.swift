@@ -47,8 +47,8 @@ final class LayerCommandTests:XCTestCase {
             var layer=EditorLayer(kind:kind);layer.textContent="حوار قابل للتعديل";let original=layer.textContent
             layer.appendEditorStroke(mark)
             XCTAssertEqual(layer.textContent,original)
-            XCTAssertEqual(layer.erasures?.count ?? 0,kind == .drawing ? 0:1)
-            XCTAssertEqual(layer.strokes.count,kind == .drawing ? 1:0)
+            XCTAssertEqual(layer.erasures?.count ?? 0,[LayerKind.drawing,.image].contains(kind) ? 0:1)
+            XCTAssertEqual(layer.strokes.count,[LayerKind.drawing,.image].contains(kind) ? 1:0)
             XCTAssertEqual(try JSONDecoder().decode(EditorLayer.self,from:JSONEncoder().encode(layer)),layer)
         }
     }
@@ -114,5 +114,42 @@ final class LayerCommandTests:XCTestCase {
         XCTAssertEqual(provider.width,96);XCTAssertEqual(provider.height,128)
         XCTAssertEqual(try Data(contentsOf:directory.appendingPathComponent(imported.imagePath)),original)
         model.undo();XCTAssertEqual(model.page.layers,[lower,upper]);XCTAssertEqual(try Data(contentsOf:source),original)
+    }
+}
+
+extension LayerCommandTests {
+    @MainActor func testBrushReusesSelectedImageOrExistingDrawingAcrossRepeatedTouches()throws{
+        var (page,root,_)=try fixture();defer{try? FileManager.default.removeItem(at:root)}
+        let model=EditorModel(page:page,library:LibraryStore(root:root));defer{model.cancelPendingSaves()}
+        for _ in 0..<20{XCTAssertTrue(model.prepareBrushTarget());model.change{$0.appendEditorStroke(Stroke(points:[Point(x:20,y:20)],width:4,color:"FFFFFF"))}}
+        XCTAssertEqual(model.page.layers.count,1);XCTAssertEqual(model.active?.strokes.count,20)
+        model.selected=nil;XCTAssertTrue(model.prepareBrushTarget());XCTAssertEqual(model.page.layers.count,1)
+        var image=EditorLayer(kind:.image);image.imagePath=page.source;image.frame=Box(x:0,y:0,width:96,height:128);page.layers=[image];model.page=page;model.selected=image.id
+        XCTAssertTrue(model.prepareBrushTarget());XCTAssertEqual(model.active?.id,image.id);XCTAssertEqual(model.page.layers.count,1)
+    }
+    func testImagePaintAndEraseStayChronologicalAndExportDoesNotBypassThem()throws{
+        var (page,root,directory)=try fixture();defer{try? FileManager.default.removeItem(at:root)}
+        let source=try Data(contentsOf:directory.appendingPathComponent(page.source))
+        var image=EditorLayer(kind:.image);image.isWorkingImage=true;image.imagePath=page.source;image.imagePixelFile=page.raw;image.imagePixelWidth=page.width;image.imagePixelHeight=page.height;image.frame=Box(x:0,y:0,width:96,height:128)
+        image.appendEditorStroke(Stroke(points:[Point(x:48,y:64)],width:30,color:"FFFFFF"))
+        image.appendEditorStroke(Stroke(points:[Point(x:48,y:64)],width:10,color:"000000",erase:true))
+        page.baseHidden=true;page.layers=[image]
+        XCTAssertLessThan(try sample(page,directory)[3],5)
+        XCTAssertGreaterThan(try sample(page,directory,58,64)[1],245)
+        let file=try ImagePipeline.exportPNG(page,directory:directory);defer{try? FileManager.default.removeItem(at:file)}
+        XCTAssertNotEqual(try Data(contentsOf:file),source,"Working-image shortcut must include edits")
+        XCTAssertEqual(try Data(contentsOf:directory.appendingPathComponent(page.source)),source)
+    }
+    @MainActor func testTyperObjectsShareLayerButStayIndividuallyEditable()throws{
+        let (page,root,_)=try fixture();defer{try? FileManager.default.removeItem(at:root)}
+        let model=EditorModel(page:page,library:LibraryStore(root:root));defer{model.cancelPendingSaves()}
+        let ids=try model.insertDialogues([("الأول",.plainText()),("الثاني",.plainText())])
+        XCTAssertEqual(model.page.layers.count,2);XCTAssertEqual(Set(model.page.layers.compactMap(\.stackID)).count,1)
+        _ = try model.insertDialogues([("الثالث",.plainText())]);XCTAssertEqual(Set(model.page.layers.compactMap(\.stackID)).count,1)
+        model.selected=ids[0];model.change{$0.textContent="نص معدل"};XCTAssertEqual(model.page.layers[1].textContent,"الثاني")
+        model.setStackVisibility(ids[0],false);XCTAssertTrue(model.page.layers.allSatisfy{!$0.isVisible})
+        model.undo();XCTAssertTrue(model.page.layers.allSatisfy(\.isVisible))
+        model.selected=ids[0];model.stackSelection=true;model.delete();XCTAssertTrue(model.page.layers.isEmpty)
+        model.undo();XCTAssertEqual(model.page.layers.count,3)
     }
 }

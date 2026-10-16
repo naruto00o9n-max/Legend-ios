@@ -55,7 +55,10 @@ enum VaultFiles {
     private var transferBlocked=Set<UUID>()
     private func isOpen(_ id:UUID)->Bool{opened[id]?.isEmpty==false}
     private var closing:[UUID:Task<Void,Never>]=[:]
+    private var closeGeneration:[UUID:UUID]=[:]
+    @Published private(set) var downloading=Set<UUID>()
     init(library:LibraryStore){owner=library;root=library.root}
+    var hasTransfers:Bool{busy || !downloading.isEmpty}
     var enabled:Bool{NetworkPolicy.enabled && UserDefaults.standard.bool(forKey:"storage-projects-server")}
     func receipt(_ id:UUID)->VaultReceipt?{try? VaultFiles.receipt(root.appendingPathComponent(id.uuidString))}
     private func client()async throws->(ProjectVaultClient,String){guard let service else{throw ImageFailure.message("اتصال الحساب غير جاهز")};let (token,user)=try await service.projectVaultCredentials();return(ProjectVaultClient(token:token),user)}
@@ -68,7 +71,6 @@ enum VaultFiles {
     /// of the same page, preventing a late upload from removing an active source.
     func open(_ id:UUID,lease:UUID?=nil)async throws {
         guard !suspended,let library=owner else{throw CancellationError()}
-        if let close=closing[id]{await close.value}
         if !isOpen(id){transferBlocked.remove(id)}
         opened[id,default:[]].insert(lease ?? id)
         do{if let receipt=try VaultFiles.receipt(library.directory(id)),!receipt.resident{try await download(receipt.project,installInLibrary:false)}}catch{opened[id]?.remove(lease ?? id);if opened[id]?.isEmpty==true{opened[id]=nil};throw error}
@@ -77,7 +79,15 @@ enum VaultFiles {
         if !allowTransfer{transferBlocked.insert(id)}
         opened[id]?.remove(lease ?? id);guard !isOpen(id) else{return};opened[id]=nil
         guard !suspended,!transferBlocked.contains(id),receipt(id)?.managed != false,(enabled || receipt(id) != nil) else{return}
-        closing[id]=Task{[weak self] in guard let self else{return};while self.busy{try? await Task.sleep(nanoseconds:100_000_000);if Task.isCancelled{return}};await self.store(id,evict:true);if let error=self.error{self.owner?.error=error};self.closing[id]=nil}
+        let previous=closing[id],generation=UUID();closeGeneration[id]=generation
+        closing[id]=Task{[weak self] in
+            if let previous{await previous.value}
+            guard let self else{return}
+            while self.busy{try? await Task.sleep(nanoseconds:100_000_000);if Task.isCancelled{return}}
+            await self.store(id,evict:true)
+            if let error=self.error{self.owner?.error=error}
+            if self.closeGeneration[id]==generation{self.closing[id]=nil;self.closeGeneration[id]=nil}
+        }
     }
     func waitForPendingTransfer(_ id:UUID)async{if let task=closing[id]{await task.value}}
     func store(_ id:UUID,evict:Bool)async {
@@ -114,8 +124,9 @@ enum VaultFiles {
     }
     func download(_ project:VaultProject,installInLibrary:Bool)async throws {
         guard !suspended,let library=owner else{throw CancellationError()}
-        guard !busy else{throw ImageFailure.message("انتظر انتهاء نقل المشروع الحالي")}
-        busy=true;activity="تنزيل المشروع";progress=0;defer{busy=false;revision+=1}
+        let downloadID=project.project_id
+        guard !downloading.contains(downloadID) else{throw ImageFailure.message("هذا المشروع قيد التنزيل")}
+        downloading.insert(downloadID);defer{downloading.remove(downloadID);revision+=1}
         let(c,user)=try await client(),remote=try await c.list();try checkAccount(user)
         guard remote.owner==project.owner_id,remote.projects.contains(project) else{throw ImageFailure.message("تغيرت نسخة المشروع؛ حدّث القائمة ثم أعد المحاولة")}
         let id=project.project_id,directory=library.directory(id),root=library.root
@@ -127,6 +138,8 @@ enum VaultFiles {
         try checkAccount(user)
         let fontFolder=staging.appendingPathComponent("Fonts"),fonts=(try? FileManager.default.contentsOfDirectory(at:fontFolder,includingPropertiesForKeys:nil)) ?? []
         if !fonts.isEmpty{try FontPackage.importFiles(fonts)}
+        let thumbnail=directory.appendingPathComponent("thumbnail.png")
+        if FileManager.default.fileExists(atPath:thumbnail.path){try FileManager.default.copyItem(at:thumbnail,to:staging.appendingPathComponent("thumbnail.png"))}
         try VaultFiles.write(VaultReceipt(project:project,resident:true),directory:staging)
         try VaultFiles.replace(staging,id:id,root:root)
         if installInLibrary,!library.items.contains(where:{$0.pages.contains(id)}){guard library.add(page,parent:nil) else{throw ImageFailure.message("تم التنزيل لكن تعذر تحديث المعرض؛ أعد المحاولة")}}

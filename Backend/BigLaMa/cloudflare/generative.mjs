@@ -29,17 +29,21 @@ export async function reconstruct(request,env,state){
   }catch(error){return json({error:error.message==='large'?'region_too_large':'invalid_region'},error.message==='large'?413:400)}
   const client=request.headers.get('x-cookies-client');
   if(!client)return json({error:'client_unavailable'},400);
-  const day=new Date().toISOString().slice(0,10);
-  const accepted=await state.storage.transaction(async storage=>{
-    let budget=await storage.get('generative-budget');
-    // Four private evaluations were run before release on this date. They
-    // count toward the same conservative free daily allocation.
-    if(!budget || budget.day!==day)budget={day,total:day==='2026-10-16'?4:0,clients:{}};
-    if(budget.total>=5 || (budget.clients[client] || 0)>=2)return false;
-    budget.total++;budget.clients[client]=(budget.clients[client] || 0)+1;
-    await storage.put('generative-budget',budget);return true;
+  const now=new Date(),day=now.toISOString().slice(0,10),month=day.slice(0,7);
+  const limit=(value,fallback,max)=>Number.isSafeInteger(Number(value)) && Number(value)>0 ? Math.min(max,Number(value)):fallback;
+  const daily=limit(env.GENERATIVE_DAILY_REQUESTS,250,10_000),perClient=limit(env.GENERATIVE_CLIENT_DAILY_REQUESTS,50,daily),monthly=limit(env.GENERATIVE_MONTHLY_REQUESTS,1000,100_000);
+  const reservation=await state.storage.transaction(async storage=>{
+    let budget=await storage.get('generative-budget'),usage=await storage.get('generative-month');
+    // Preserve genuine prior usage, but never seed synthetic daily exhaustion.
+    if(!budget || budget.day!==day)budget={day,total:0,clients:{}};
+    if(!usage || usage.month!==month)usage={month,total:0};
+    if((budget.clients[client] || 0)>=perClient)return 'client_daily_capacity_reached';
+    if(budget.total>=daily)return 'service_daily_capacity_reached';
+    if(usage.total>=monthly)return 'service_monthly_capacity_reached';
+    budget.total++;budget.clients[client]=(budget.clients[client] || 0)+1;usage.total++;
+    await storage.put('generative-budget',budget);await storage.put('generative-month',usage);return null;
   });
-  if(!accepted)return json({error:'daily_capacity_reached'},429);
+  if(reservation)return json({error:reservation},429);
   try{
     const form=new FormData();form.set('prompt',PROMPT);form.set('width','512');form.set('height','512');
     images.forEach((bytes,i)=>form.set('input_image_'+i,new Blob([bytes],{type:'image/png'}),'region.png'));
@@ -50,5 +54,16 @@ export async function reconstruct(request,env,state){
     if(bytes[0]!==137 && !(bytes[0]===255 && bytes[1]===216))throw new Error('invalid');
     const digest=await crypto.subtle.digest('SHA-256',images[0]);
     return new Response(bytes,{headers:{'content-type':bytes[0]===137?'image/png':'image/jpeg','cache-control':'no-store','x-cookies-source-sha256':[...new Uint8Array(digest)].map(v=>v.toString(16).padStart(2,'0')).join('')}});
-  }catch{return json({error:'service_unavailable'},503)}
+  }catch(error){
+    // Provider failures are not successful user edits. Release the application
+    // reservation; upstream billing remains controlled by Cloudflare itself.
+    await state.storage.transaction(async storage=>{
+      const budget=await storage.get('generative-budget'),usage=await storage.get('generative-month');
+      if(budget?.day===day){budget.total=Math.max(0,budget.total-1);budget.clients[client]=Math.max(0,(budget.clients[client] || 0)-1);await storage.put('generative-budget',budget)}
+      if(usage?.month===month){usage.total=Math.max(0,usage.total-1);await storage.put('generative-month',usage)}
+    });
+    const message=String(error?.message || ''),code=Number(error?.code || error?.errors?.[0]?.code);
+    if(code===3036 || /3036|daily free allocation|10,?000 neurons/i.test(message))return json({error:'provider_account_capacity_reached'},503);
+    return json({error:'service_unavailable'},503);
+  }
 }

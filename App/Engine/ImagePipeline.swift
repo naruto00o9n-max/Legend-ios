@@ -84,7 +84,7 @@ enum ImagePipeline {
         let output=FileManager.default.temporaryDirectory.appendingPathComponent("Cookies-\(page.id.uuidString)-\(UUID().uuidString).png")
         let original=directory.appendingPathComponent(page.source)
         let visible=page.layers.filter(\.isVisible)
-        if page.baseHidden==true,visible.count==1,let layer=visible.first,layer.isWorkingImage==true,layer.effectiveImageEffects.isEmpty,layer.blend == .normal,layer.opacity==1,layer.rotation==0,layer.scaleX==1,layer.scaleY==1,(layer.shearX ?? 0)==0,layer.frame==Box(x:0,y:0,width:Double(page.width),height:Double(page.height)),layer.imagePixelWidth==page.width,layer.imagePixelHeight==page.height {
+        if page.baseHidden==true,visible.count==1,let layer=visible.first,layer.isWorkingImage==true,layer.strokes.isEmpty,(layer.erasures ?? []).isEmpty,layer.effectiveImageEffects.isEmpty,layer.blend == .normal,layer.opacity==1,layer.rotation==0,layer.scaleX==1,layer.scaleY==1,(layer.shearX ?? 0)==0,layer.frame==Box(x:0,y:0,width:Double(page.width),height:Double(page.height)),layer.imagePixelWidth==page.width,layer.imagePixelHeight==page.height {
             try FileManager.default.copyItem(at:directory.appendingPathComponent(layer.imagePath),to:output);return output
         }
         if page.baseHidden != true && page.layers.allSatisfy({!$0.isVisible}){try FileManager.default.copyItem(at:original,to:output);return output}

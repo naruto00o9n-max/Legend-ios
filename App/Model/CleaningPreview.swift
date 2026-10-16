@@ -61,7 +61,13 @@ extension EditorModel {
                     var detail="أزيل النص المكتشف داخل \(results.count) فقاعة. الصورة الأصلية محفوظة، والحدود خارج القناع لم تُعدّل."
                     if skipped>0{detail += " تُركت \(skipped) فقاعة دون تعديل.";if let firstFailure{detail += " "+firstFailure}}
                     if review>0{detail += " راجع \(review) فقاعة: استُخدم ترميم أو تحليل دون تعرف مؤكد على النص."}
-                    return CleaningCandidate(title:"تبييض \(results.count) فقاعات",layer:first.layer,additionalLayers:results.dropFirst().map(\.layer),underlays:true,detail:detail,baseline:snapshot)
+                    var layer=first.layer
+                    if results.count>1{
+                        layer=try LayerBitmap.merge(results.map(\.layer),page:snapshot,directory:directory)
+                        for result in results{try? FileManager.default.removeItem(at:directory.appendingPathComponent(result.layer.imagePath))}
+                    }
+                    layer.name="تبييض \(results.count) فقاعات"
+                    return CleaningCandidate(title:layer.name,layer:layer,underlays:true,detail:detail,baseline:snapshot)
                 }catch{for result in results{try? FileManager.default.removeItem(at:directory.appendingPathComponent(result.layer.imagePath))};throw error}
             }
             whiteningTask=task

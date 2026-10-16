@@ -12,15 +12,26 @@ test('Invalid geometry and injected prompts never reserve quota or call AI',asyn
 });
 test('Fixed hosted request and persisted budget survive object recreation',async()=>{
  const s=storage();let calls=0;
- const env={AI:{async run(model,body){calls++;assert.equal(model,'@cf/black-forest-labs/flux-2-klein-9b');const form=await new Response(body.multipart.body,{headers:{'content-type':body.multipart.contentType}}).formData();assert.equal(form.get('width'),'512');assert.equal(form.get('height'),'512');assert.match(form.get('prompt'),/No new letters/);return{image:btoa(String.fromCharCode(...png()))}}}};
+ const env={GENERATIVE_DAILY_REQUESTS:5,GENERATIVE_CLIENT_DAILY_REQUESTS:2,AI:{async run(model,body){calls++;assert.equal(model,'@cf/black-forest-labs/flux-2-klein-9b');const form=await new Response(body.multipart.body,{headers:{'content-type':body.multipart.contentType}}).formData();assert.equal(form.get('width'),'512');assert.equal(form.get('height'),'512');assert.match(form.get('prompt'),/No new letters/);return{image:btoa(String.fromCharCode(...png()))}}}};
  const today=new Date().toISOString().slice(0,10);await s.put('generative-budget',{day:today,total:3,clients:{}});
  const first=await reconstruct(request(),env,{storage:s});assert.equal(first.status,200);assert.match(first.headers.get('x-cookies-source-sha256'),/^[0-9a-f]{64}$/);assert.equal(first.headers.get('cache-control'),'no-store');
  assert.equal((await reconstruct(request(),env,{storage:s})).status,200);
  assert.equal((await reconstruct(request({client:'second'}),env,{storage:s})).status,429);assert.equal(calls,2);
 });
-test('Client limit and failed inference retain reservations without exposing model errors',async()=>{
+test('Provider failure refunds usage and distinguishes hosting capacity from personal quota',async()=>{
  const s=storage(),today=new Date().toISOString().slice(0,10);await s.put('generative-budget',{day:today,total:0,clients:{}});
  const env={AI:{async run(){throw new Error('private implementation detail')}}};
- for(let n=0;n<2;n++){const result=await reconstruct(request(),env,{storage:s});assert.equal(result.status,503);assert.deepEqual(await result.json(),{error:'service_unavailable'})}
- assert.equal((await reconstruct(request(),env,{storage:s})).status,429);assert.equal((await s.get('generative-budget')).total,2);
+ for(let n=0;n<4;n++){const result=await reconstruct(request(),env,{storage:s});assert.equal(result.status,503);assert.deepEqual(await result.json(),{error:'service_unavailable'})}
+ assert.equal((await s.get('generative-budget')).total,0);
+ const full={AI:{async run(){throw Object.assign(new Error('3036 account limited'),{code:3036})}}};
+ assert.deepEqual(await (await reconstruct(request(),full,{storage:s})).json(),{error:'provider_account_capacity_reached'});
+ assert.equal((await s.get('generative-budget')).total,0);
+});
+test('Practical per-client and monthly limits are configurable and independently enforced',async()=>{
+ const s=storage(),env={GENERATIVE_CLIENT_DAILY_REQUESTS:50,GENERATIVE_DAILY_REQUESTS:250,GENERATIVE_MONTHLY_REQUESTS:1000,AI:{async run(){return{image:btoa(String.fromCharCode(...png()))}}}};
+ for(let i=0;i<50;i++)assert.equal((await reconstruct(request(),env,{storage:s})).status,200);
+ assert.deepEqual(await (await reconstruct(request(),env,{storage:s})).json(),{error:'client_daily_capacity_reached'});
+ assert.equal((await reconstruct(request({client:'second'}),env,{storage:s})).status,200);
+ const month=new Date().toISOString().slice(0,7);await s.put('generative-month',{month,total:1000});
+ assert.deepEqual(await (await reconstruct(request({client:'third'}),env,{storage:s})).json(),{error:'service_monthly_capacity_reached'});
 });

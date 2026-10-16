@@ -46,7 +46,13 @@ enum GenerativeRestoration {
         do{(data,response)=try await session.data(for:request)}catch{if Task.isCancelled{throw CancellationError()};throw LaMaFailure.message("تعذر الاتصال بخدمة إعادة البناء. تحقق من الإنترنت")}
         try Task.checkCancellation()
         guard let http=response as? HTTPURLResponse else{throw LaMaFailure.message("تعذر قراءة نتيجة الترميم")}
-        if http.statusCode==429{let reason=(try? JSONSerialization.jsonObject(with:data) as? [String:String])?["error"];throw LaMaFailure.message(reason=="daily_capacity_reached" ? "انتهت حصة إعادة البناء المتاحة لليوم. جرّب «ترميم متوازن» أو التبييض المعتاد":"الخدمة مشغولة بفقاعة أخرى؛ أعد المحاولة بعد قليل")}
+        let reason=(try? JSONSerialization.jsonObject(with:data) as? [String:String])?["error"]
+        if reason=="provider_account_capacity_reached"{throw LaMaFailure.message("توقفت استضافة هذا الأسلوب عند حد حساب الخدمة، وليس حد استخدامك الشخصي. استخدم الترميم المتوازن مؤقتًا")}
+        if http.statusCode==429{
+            let message:String
+            switch reason{case "client_daily_capacity_reached":message="بلغ هذا الاتصال حد الاستخدام اليومي لهذا الأسلوب؛ يمكنك استعمال الترميم المتوازن";case "service_monthly_capacity_reached":message="بلغت الخدمة ميزانية الاستضافة الشهرية؛ يمكنك استعمال الترميم المتوازن";case "service_daily_capacity_reached","daily_capacity_reached":message="بلغت الخدمة سعتها المشتركة اليوم؛ يمكنك استعمال الترميم المتوازن";default:message="الخدمة مشغولة بفقاعة أخرى؛ أعد المحاولة بعد قليل"}
+            throw LaMaFailure.message(message)
+        }
         guard http.statusCode==200 else{throw LaMaFailure.message("تعذر إكمال إعادة البناء الآن. جرّب الترميم المتوازن؛ لم تتغير الصورة الأصلية")}
         let digest=SHA256.hash(data:input.image).map{String(format:"%02x",$0)}.joined()
         guard data.count<=8_000_000,http.value(forHTTPHeaderField:"X-Cookies-Source-SHA256")==digest,let container=CGImageSourceCreateWithData(data as CFData,nil),CGImageSourceGetCount(container)==1,let info=CGImageSourceCopyPropertiesAtIndex(container,0,nil) as? [CFString:Any],(info[kCGImagePropertyPixelWidth] as? NSNumber)?.intValue==512,(info[kCGImagePropertyPixelHeight] as? NSNumber)?.intValue==512,let generated=CGImageSourceCreateImageAtIndex(container,0,nil) else{throw LaMaFailure.message("لم تتطابق نتيجة الترميم؛ رُفضت لحماية الصورة")}

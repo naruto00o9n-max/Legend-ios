@@ -83,8 +83,10 @@ enum AppStorageManager {
                 let candidates=directory ? (fm.enumerator(at:input,includingPropertiesForKeys:[.isRegularFileKey,.isSymbolicLinkKey])?.allObjects as? [URL] ?? []):[input]
                 var raw:String?
                 if let page=try? JSONDecoder().decode(EditorPage.self,from:Data(contentsOf:input.appendingPathComponent("page.json"))){if try VaultFiles.receipt(input)?.resident==false{throw ImageFailure.message("نزّل المشروع «"+page.title+"» من حفظ المشاريع قبل إدراجه في النسخة الاحتياطية")};guard validPage(page),LIValidatePNG(input.appendingPathComponent(page.source).path,Int32(page.width),Int32(page.height))==1 else{throw ImageFailure.message("تعذر التحقق من أصل المشروع قبل النسخ الاحتياطي")};raw=page.raw}
-                for file in candidates {let v=try file.resourceValues(forKeys:[.isRegularFileKey,.isSymbolicLinkKey]);guard v.isRegularFile==true,v.isSymbolicLink != true else{continue};if file.lastPathComponent==raw{continue}
-                    let relative=String(file.path.dropFirst(base.path.count+1));guard safe(relative) else{throw ImageFailure.message("مسار غير صالح")}
+                for file in candidates {let v=try file.resourceValues(forKeys:[.isRegularFileKey,.isSymbolicLinkKey]);guard v.isRegularFile==true,v.isSymbolicLink != true else{continue};if file.lastPathComponent==raw || ["vault.json","vault-transfer.json"].contains(file.lastPathComponent){continue}
+                    let canonicalBase=base.resolvingSymlinksInPath().standardizedFileURL.path,canonicalFile=file.resolvingSymlinksInPath().standardizedFileURL.path
+                    guard canonicalFile.hasPrefix(canonicalBase+"/") else{throw ImageFailure.message("ملف خارج مجلد النسخة الاحتياطية")}
+                    let relative=String(canonicalFile.dropFirst(canonicalBase.count+1));guard safe(relative) else{throw ImageFailure.message("مسار غير صالح")}
                     let bytes=(try file.resourceValues(forKeys:[.fileSizeKey])).fileSize ?? 0
                     files.append(BackupFile(path:relative,size:Int64(bytes),sha256:try hash(file),unit:unit.id))
                     try archive.addEntry(with:relative,fileURL:file,compressionMethod:.deflate)
@@ -110,7 +112,7 @@ enum AppStorageManager {
         let manifest=try JSONDecoder().decode(CookiesBackup.self,from:data)
         guard manifest.version==1,manifest.files.count<=100000,manifest.files.reduce(Int64(0),{$0+max(0,min($1.size,20*1024*1024*1024))})<=20*1024*1024*1024,Set(manifest.units.map(\.id)).count==manifest.units.count,Set(manifest.files.map(\.path)).count==manifest.files.count else{throw ImageFailure.message("إصدار النسخة أو فهرسها غير صالح")}
         for file in manifest.files{guard safe(file.path),file.size>=0,manifest.units.contains(where:{$0.id==file.unit}),let entry=archive[file.path],entry.type == .file,entry.uncompressedSize==file.size else{throw ImageFailure.message("ملفات النسخة ناقصة أو غير صالحة")}}
-        for unit in manifest.units{guard (UUID(uuidString:unit.id) != nil ? unit.paths==[unit.id]:unit.id.hasPrefix("font:") ? unit.paths==["Fonts/"+String(unit.id.dropFirst(5))]:["settings","gallery"].contains(unit.id) ? unit.paths.isEmpty:unit.paths==[unit.id]), unit.paths.allSatisfy(safe),unit.paths.allSatisfy({$0 != "library.json" && !$0.hasPrefix(".")}) else{throw ImageFailure.message("وجهة الاستعادة غير صالحة")};for file in manifest.files where file.unit==unit.id{guard unit.id=="settings" ? file.path=="settings.plist":unit.paths.contains(where:{file.path==$0 || file.path.hasPrefix($0+"/")}) else{throw ImageFailure.message("تعارض في فهرس الاستعادة")}}}
+        for unit in manifest.units{guard (UUID(uuidString:unit.id) != nil ? unit.paths==[unit.id]:unit.id.hasPrefix("font:") ? unit.paths==["Fonts/"+String(unit.id.dropFirst(5))]:["settings","gallery"].contains(unit.id) ? unit.paths.isEmpty:unit.paths==[unit.id]), unit.paths.allSatisfy(safe),unit.paths.allSatisfy({$0 != "library.json" && !$0.hasPrefix(".")}) else{throw ImageFailure.message("وجهة الاستعادة غير صالحة")};for file in manifest.files where file.unit==unit.id{guard unit.id=="settings" ? file.path=="settings.plist":unit.paths.contains(where:{file.path==$0 || file.path.hasPrefix($0+"/")}) else{throw ImageFailure.message("مسار الملف لا ينتمي إلى قسمه في النسخة: "+file.path+" · "+unit.id)}}}
         return manifest
     }
     private struct RestoreJournal:Codable {var paths:[String];var existed:Set<String>;var rollback:String;var staging:String}
@@ -137,7 +139,10 @@ enum AppStorageManager {
         var keepRollback=false
         try fm.createDirectory(at:staging,withIntermediateDirectories:true);defer{try? fm.removeItem(at:staging);if !keepRollback{try? fm.removeItem(at:rollback)}}
         for info in files {let destination=staging.appendingPathComponent(info.path);try fm.createDirectory(at:destination.deletingLastPathComponent(),withIntermediateDirectories:true);_ = try archive.extract(archive[info.path]!,to:destination);guard try hash(destination)==info.sha256 else{throw ImageFailure.message("فشل فحص سلامة النسخة؛ لم تتغير بياناتك")}}
-        for unit in choices where UUID(uuidString:unit.id) != nil {let directory=staging.appendingPathComponent(unit.id);let page=try JSONDecoder().decode(EditorPage.self,from:Data(contentsOf:directory.appendingPathComponent("page.json")));guard validPage(page),page.id.uuidString==unit.id,safe(page.source),!page.source.contains("/"),safe(page.raw),!page.raw.contains("/"),fm.fileExists(atPath:directory.appendingPathComponent(page.source).path),LIValidatePNG(directory.appendingPathComponent(page.source).path,Int32(page.width),Int32(page.height))==1 else{throw ImageFailure.message("مشروع ناقص في النسخة")}}
+        for unit in choices where UUID(uuidString:unit.id) != nil {let directory=staging.appendingPathComponent(unit.id);
+            // Backups are portable documents, never leases on another edition/account.
+            for name in ["vault.json","vault-transfer.json"]{try? fm.removeItem(at:directory.appendingPathComponent(name))}
+            let page=try JSONDecoder().decode(EditorPage.self,from:Data(contentsOf:directory.appendingPathComponent("page.json")));guard validPage(page),page.id.uuidString==unit.id,safe(page.source),!page.source.contains("/"),safe(page.raw),!page.raw.contains("/"),fm.fileExists(atPath:directory.appendingPathComponent(page.source).path),LIValidatePNG(directory.appendingPathComponent(page.source).path,Int32(page.width),Int32(page.height))==1 else{throw ImageFailure.message("مشروع ناقص في النسخة")}}
         for unit in choices {
             if unit.id=="Colors"{_ = try JSONDecoder().decode(ColorLibrary.self,from:Data(contentsOf:staging.appendingPathComponent("Colors/colors.json")))}
             if unit.id=="Styles"{

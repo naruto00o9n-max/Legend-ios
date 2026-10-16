@@ -72,7 +72,7 @@ struct CanvasHost:UIViewRepresentable {
             if model.tool == .brush,model.drawingShape=="fill"{Task{await model.fillBucket(at:point)};return}
             if [.brush,.eraser,.cleaner].contains(model.tool){
                 if model.tool == .eraser{guard model.prepareEraserTarget() else{return}}
-                if model.tool == .brush{ColorLibraryStore.shared.record(model.brushColor);if model.active?.kind != .drawing{model.add(.drawing)}}
+                if model.tool == .brush{ColorLibraryStore.shared.record(model.brushColor);guard model.prepareBrushTarget() else{return}}
                 guard model.tool == .cleaner || (model.active?.isLocked==false && model.active?.isVisible==true) else{return}
                 let drawingPoint=model.tool != .cleaner ? point.applying(model.active.map{LayerRenderer.transform($0).inverted()} ?? .identity):point
                 let dot=Stroke(points:[Point(x:drawingPoint.x,y:drawingPoint.y)],width:model.brushWidth,color:model.brushColor,erase:model.tool == .eraser,brush:model.brushStyle,opacity:model.brushOpacity,texturePath:model.brushTexture,shape:model.drawingShape,filled:model.drawingFilled)
@@ -177,7 +177,7 @@ struct CanvasHost:UIViewRepresentable {
             }
             if [.brush,.eraser,.cleaner].contains(model.tool){
                 if g.state == .began{
-                    if model.tool == .eraser{guard model.prepareEraserTarget() else{return}};if model.tool == .brush{ColorLibraryStore.shared.record(model.brushColor);if model.active?.kind != .drawing{model.add(.drawing)}};if model.tool != .cleaner{guard model.active?.isLocked==false,model.active?.isVisible==true else{return};model.checkpoint()};let local=model.tool == .cleaner ? point:point.applying(model.active.map{LayerRenderer.transform($0).inverted()} ?? .identity);stroke=Stroke(points:[Point(x:local.x,y:local.y)],width:model.brushWidth,color:model.tool == .cleaner ? "FFFFFF":model.brushColor,erase:model.tool == .eraser,brush:model.brushStyle,opacity:model.brushOpacity,texturePath:model.brushTexture,shape:model.drawingShape,filled:model.drawingFilled)
+                    if model.tool == .eraser{guard model.prepareEraserTarget() else{return}};if model.tool == .brush{ColorLibraryStore.shared.record(model.brushColor);guard model.prepareBrushTarget() else{return}};if model.tool != .cleaner{guard model.active?.isLocked==false,model.active?.isVisible==true else{return};model.checkpoint()};let local=model.tool == .cleaner ? point:point.applying(model.active.map{LayerRenderer.transform($0).inverted()} ?? .identity);stroke=Stroke(points:[Point(x:local.x,y:local.y)],width:model.brushWidth,color:model.tool == .cleaner ? "FFFFFF":model.brushColor,erase:model.tool == .eraser,brush:model.brushStyle,opacity:model.brushOpacity,texturePath:model.brushTexture,shape:model.drawingShape,filled:model.drawingFilled)
                 }
                 guard stroke != nil else{return}
                 if g.state == .changed || g.state == .ended{let local=model.tool == .cleaner ? point:point.applying(model.active.map{LayerRenderer.transform($0).inverted()} ?? .identity);if model.drawingShape=="free"{stroke?.points.append(Point(x:local.x,y:local.y))}else if let first=stroke?.points.first{stroke?.points=[first,Point(x:local.x,y:local.y)]};canvas.showStroke(stroke,on:model.page,selected:model.selected)}

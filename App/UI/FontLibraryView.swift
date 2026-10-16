@@ -6,6 +6,8 @@ import ZIPFoundation
 struct FontLibraryView:View {
     var onSelect:((String)->Void)?=nil
     var currentFont:String?=nil
+    var embedded=false
+    var onClose:(()->Void)?=nil
     @State private var recent=UserDefaults.standard.stringArray(forKey:"fontRecent") ?? []
     @Environment(\.dismiss) var dismiss
     @State private var picker=false
@@ -17,7 +19,7 @@ struct FontLibraryView:View {
     @State private var importedNames=Set<String>()
     @State private var classification=UUID()
     @State private var query=""
-    @State private var filter="الكل"
+    @AppStorage("font-library-last-category") private var filter="الكل"
     @State private var favorites=Set(UserDefaults.standard.stringArray(forKey:"fontFavorites") ?? [])
     @State private var groups=UserDefaults.standard.dictionary(forKey:"fontGroups") as? [String:[String]] ?? [:]
     @State private var selected=Set<String>()
@@ -29,23 +31,35 @@ struct FontLibraryView:View {
         return (query.isEmpty || name.localizedCaseInsensitiveContains(query)) && (filter=="الكل" || scripts[name]?.contains(filter)==true || (filter=="المفضلة" && favorites.contains(name)) || (filter=="آخر استخدام" && recent.contains(name)) || (filter=="المستوردة" && importedNames.contains(name)) || (groups[filter]?.contains(name)==true))
     }.sorted{if filter=="آخر استخدام"{return (recent.firstIndex(of:$0.lastPathComponent) ?? Int.max)<(recent.firstIndex(of:$1.lastPathComponent) ?? Int.max)};return $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending}}
     var body:some View {
-        NavigationStack{ZStack{Ambient();VStack(spacing:12){
-            HStack{SurfaceHeader(title:"حروف تصنع الحوار",subtitle:"\(catalogue.count) خطوط · اسم واضح ومعاينة حقيقية",icon:"textformat.alt")}.padding(.horizontal,20)
+        NavigationStack{ZStack{if !embedded{Ambient()};VStack(spacing:10){
+            HStack(spacing:10){SurfaceSymbol(icon:"textformat.alt",size:36);VStack(alignment:.leading,spacing:3){Text("اختر صوت الحوار").font(.system(size:15,weight:.semibold));Text("\(catalogue.count) خطوط · معاينة مباشرة على الصورة").font(.system(size:10)).foregroundStyle(Palette.secondary)};Spacer(minLength:0)}.padding(.horizontal,16)
             SearchBar(placeholder:"البحث في الخطوط",text:$query).padding(.horizontal,20)
             ScrollView(.horizontal,showsIndicators:false){HStack{ForEach(["الكل","العربية","الإنجليزية","المفضلة","آخر استخدام","المستوردة"]+groups.keys.sorted(),id:\.self){name in Button(name){filter=name}.buttonStyle(CapsuleActionStyle(selected:filter==name)).accessibilityIdentifier("font-category-"+name).accessibilityLabel(name)}}.padding(.horizontal).padding(.vertical,8)}.frame(height:54).accessibilityIdentifier("font-filter-strip")
             List{ForEach(files,id:\.self){url in row(url)}}.id(version).listStyle(.plain).buttonStyle(.borderless).scrollContentBackground(.hidden)
-            HStack{Text("\(selected.count) محدد");Spacer();Button("مجموعة جديدة"){naming=true}.disabled(selected.isEmpty);Button("تصدير"){exportFonts()}.disabled(selected.isEmpty);if let output{ShareLink(item:output){Image(systemName:"square.and.arrow.up")}}}.font(.system(size:12)).padding(14).glass(0)
+            HStack{Text("\(selected.count) للتنظيم");Spacer();Button("مجموعة جديدة"){naming=true}.disabled(selected.isEmpty);Button("تصدير"){exportFonts()}.disabled(selected.isEmpty);if let output{ShareLink(item:output){Image(systemName:"square.and.arrow.up")}}}.font(.system(size:12)).padding(14).glass(0)
         }}.foregroundStyle(Palette.pale).navigationTitle("مكتبة الخطوط").navigationBarTitleDisplayMode(.inline)
-        .toolbar{ToolbarItem(placement:.topBarLeading){Button("إغلاق"){dismiss()}.accessibilityIdentifier("font-close")};ToolbarItem(placement:.topBarTrailing){Button{picker=true}label:{Image(systemName:"plus")}.accessibilityLabel("استيراد خطوط").accessibilityIdentifier("font-import")}}
+        .toolbar{ToolbarItem(placement:.topBarLeading){Button("إغلاق"){if let onClose{onClose()}else{dismiss()}}.accessibilityIdentifier("font-close")};ToolbarItem(placement:.topBarTrailing){Button{picker=true}label:{Image(systemName:"plus")}.accessibilityLabel("استيراد خطوط").accessibilityIdentifier("font-import")}}
         .disabled(importing).overlay{if importing{ProgressView("جارٍ استيراد الخطوط…").padding(20).glass(20)}}
         .cookiesFileImporter(isPresented:$picker,allowedContentTypes:[.data],allowsMultipleSelection:true){result in do{importFonts(try result.get())}catch{self.error=error.localizedDescription}}
         .alert("مجموعة خطوط",isPresented:$naming){TextField("اسم المجموعة",text:$groupName);Button("حفظ"){let name=groupName.trimmingCharacters(in:.whitespacesAndNewlines);if !name.isEmpty{groups[name]=selected.sorted();saveGroups();filter=name;groupName=""}};Button("إلغاء",role:.cancel){}}
-        .alert("مكتبة الخطوط",isPresented:Binding(get:{error != nil},set:{if !$0{error=nil}})){Button("حسنًا"){error=nil}}message:{Text(error ?? "")}.onAppear{classifyFonts()}.onChange(of:version){_,_ in classifyFonts()}.cookiesInterface()}
+        .alert("مكتبة الخطوط",isPresented:Binding(get:{error != nil},set:{if !$0{error=nil}})){Button("حسنًا"){error=nil}}message:{Text(error ?? "")}.onAppear{if !(["الكل","العربية","الإنجليزية","المفضلة","آخر استخدام","المستوردة"]+groups.keys.sorted()).contains(filter){filter="الكل"};classifyFonts()}.onChange(of:version){_,_ in classifyFonts()}.cookiesInterface()}
     }
     private func row(_ url:URL)->some View {
         let name=url.lastPathComponent
-        return HStack{Button{if selected.contains(name){selected.remove(name)}else{selected.insert(name)}}label:{Image(systemName:selected.contains(name) ? "checkmark.circle.fill":"circle")};Button{choose(name)}label:{VStack(alignment:.leading,spacing:8){Text(name).font(.system(size:10,design:.monospaced)).foregroundStyle(Palette.quiet).lineLimit(1);Text("حروف تصنع الحوار - "+url.deletingPathExtension().lastPathComponent).font(Font(Fonts.font({var s=TextStyle();s.fontPath=name;s.fontSize=22;return s}()))).lineLimit(2)}}.disabled(onSelect==nil);if currentFont==name{Image(systemName:"checkmark")};Spacer();Button{if favorites.contains(name){favorites.remove(name)}else{favorites.insert(name)};UserDefaults.standard.set(favorites.sorted(),forKey:"fontFavorites")}label:{Image(systemName:favorites.contains(name) ? "star.fill":"star")}}
-        .padding(.vertical,8).listRowBackground(Color.clear).contextMenu{
+        let active=currentFont==name
+        return HStack(spacing:10){
+            Button{choose(name)}label:{HStack(spacing:10){
+                ZStack{RoundedRectangle(cornerRadius:10).fill(active ? Palette.gold.opacity(0.18):.white.opacity(0.04));Image(systemName:active ? "checkmark.circle.fill":"textformat").font(.system(size:19)).foregroundStyle(active ? Palette.gold:Palette.pale)}.frame(width:38,height:48)
+                VStack(alignment:.leading,spacing:7){
+                    Text(url.deletingPathExtension().lastPathComponent).font(.system(size:11,weight:.semibold)).foregroundStyle(active ? Palette.pale:Palette.secondary).lineLimit(1)
+                    Text("حروف تصنع الحوار").font(Font(Fonts.font({var s=TextStyle();s.fontPath=name;s.fontSize=23;return s}()))).foregroundStyle(Palette.pale).lineLimit(2)
+                    if active{Text("الخط المستخدم الآن").font(.system(size:9,weight:.medium)).foregroundStyle(Palette.gold)}
+                }.frame(maxWidth:.infinity,alignment:.leading)
+            }.padding(10).background(active ? Palette.gold.opacity(0.07):.white.opacity(0.025),in:RoundedRectangle(cornerRadius:16)).overlay(RoundedRectangle(cornerRadius:16).stroke(active ? Palette.gold.opacity(0.65):.white.opacity(0.07),lineWidth:active ? 1.2:0.6))}.buttonStyle(.plain).disabled(onSelect==nil).accessibilityIdentifier("font-choice-"+name).accessibilityValue(active ? "مختار":"غير مختار")
+            VStack(spacing:12){Button{if favorites.contains(name){favorites.remove(name)}else{favorites.insert(name)};UserDefaults.standard.set(favorites.sorted(),forKey:"fontFavorites")}label:{Image(systemName:favorites.contains(name) ? "star.fill":"star").foregroundStyle(favorites.contains(name) ? Palette.gold:Palette.secondary)}.accessibilityLabel("تفضيل الخط")
+                Button{if selected.contains(name){selected.remove(name)}else{selected.insert(name)}}label:{Image(systemName:selected.contains(name) ? "checkmark.square.fill":"square").font(.system(size:13)).foregroundStyle(Palette.quiet)}.accessibilityLabel("تحديد الخط للتنظيم والتصدير")}
+        }
+        .padding(.vertical,4).listRowInsets(EdgeInsets(top:0,leading:12,bottom:0,trailing:12)).listRowSeparator(.hidden).listRowBackground(Color.clear).contextMenu{
             ForEach(groups.keys.sorted(),id:\.self){group in Button("إضافة إلى \(group)"){groups[group]=Array(Set((groups[group] ?? [])+[name])).sorted();saveGroups()}}
             if groups[filter] != nil{Button("إزالة من المجموعة"){groups[filter]?.removeAll{$0==name};saveGroups()}}
             if importedNames.contains(name){Button("حذف الخط المستورد",role:.destructive){do{try FileManager.default.removeItem(at:url);CTFontManagerUnregisterFontsForURL(url as CFURL,.process,nil);Fonts.register();selected.remove(name);favorites.remove(name);UserDefaults.standard.set(favorites.sorted(),forKey:"fontFavorites");for key in Array(groups.keys){groups[key]?.removeAll{$0==name}};saveGroups();version+=1}catch{self.error=error.localizedDescription}}}

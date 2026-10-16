@@ -4,11 +4,13 @@ import UniformTypeIdentifiers
 
 /// Own the provider's file before its callback returns; its URL is temporary.
 enum PhotoImport {
-    static func ownFile(_ url: URL) throws -> URL {
+    static func ownFile(_ url: URL, suggestedName:String?=nil) throws -> URL {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("PhotoImports/"+UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        let name = url.deletingPathExtension().lastPathComponent
-        let target = folder.appendingPathComponent(name).appendingPathExtension(url.pathExtension)
+        let suggested=suggestedName?.trimmingCharacters(in:.whitespacesAndNewlines)
+        let sourceName=(suggested?.isEmpty==false ? suggested!:url.lastPathComponent).replacingOccurrences(of:"/",with:"_").replacingOccurrences(of:"\\",with:"_")
+        let named=URL(fileURLWithPath:sourceName)
+        let target=folder.appendingPathComponent(named.pathExtension.isEmpty ? sourceName+"."+url.pathExtension:sourceName)
         try FileManager.default.copyItem(at: url, to: target)
         guard (try target.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0) > 0 else {
             throw ImageFailure.message("الصورة المختارة فارغة. أعد تنزيلها من iCloud ثم حاول مجددًا.")
@@ -51,7 +53,7 @@ struct PhotoLibraryPicker: UIViewControllerRepresentable {
                                 do {
                                     if let error { throw error }
                                     guard let url else { throw ImageFailure.message("لم تُنزّل الصورة من مكتبة الصور.") }
-                                    continuation.resume(returning: try PhotoImport.ownFile(url))
+                                    continuation.resume(returning: try PhotoImport.ownFile(url,suggestedName:provider.suggestedName))
                                 } catch { continuation.resume(throwing: error) }
                             }
                         }

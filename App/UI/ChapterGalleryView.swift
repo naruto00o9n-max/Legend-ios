@@ -13,6 +13,7 @@ struct ChapterGalleryView:View {
     @State private var exporting=false
     @State private var reading=false
     @State private var browser=false
+    @State private var drive=false
     @State private var busy=false
     @State private var task:Task<Void,Never>?
     @State private var failure:String?
@@ -23,9 +24,10 @@ struct ChapterGalleryView:View {
         ZStack{Ambient();ScrollView{VStack(alignment:.leading,spacing:20){
             SurfaceHeader(title:chapter?.title ?? "الفصل",subtitle:"استورد، رتّب، وحرّر صفحاتك في استوديو واحد",icon:"rectangle.stack")
             HStack(spacing:8){QuietBadge(text:"\(ids.count) صفحة",icon:"rectangle.stack");if selecting{QuietBadge(text:"\(selection.count) محدد",icon:"checkmark.circle")};Spacer();Button(selecting ? "تم":"تحديد"){selecting.toggle();if !selecting{selection=[]}}.buttonStyle(CapsuleActionStyle(selected:selecting)).accessibilityIdentifier("chapter-select")}
-            ResponsiveActionGrid(items:4){
+            ResponsiveActionGrid(items:5){
                 ActionTile(title:"إضافة صور",subtitle:"من مكتبة الجهاز",icon:"photo.badge.plus"){photos=true}.accessibilityIdentifier("chapter-import-photos")
                 ActionTile(title:"فتح ملفات",subtitle:"صور وحزم ومشاريع",icon:"folder.badge.plus"){files=true}.accessibilityIdentifier("chapter-import-files")
+                ActionTile(title:"Google Drive",subtitle:"رابط مجلد أو ملفات حسابك",icon:"externaldrive.badge.plus"){drive=true}
                 ActionTile(title:"سحب الفصل",subtitle:"من رابط إلى صفحات مرتبة",icon:"globe"){browser=true}.accessibilityIdentifier("chapter-webtoon")
                 ActionTile(title:"دمج الصفحات",subtitle:selecting ? "دمج \(chosen.count) صفحات مختارة":"اجمع صفحات الفصل في صورة طويلة",icon:"rectangle.stack",prominent:chosen.count>1){operation="دمج"}.disabled(chosen.count<2).accessibilityIdentifier("chapter-merge")
             }
@@ -43,6 +45,7 @@ struct ChapterGalleryView:View {
 
         .foregroundStyle(Palette.pale).navigationTitle(chapter?.title ?? "الفصل").navigationBarTitleDisplayMode(.inline)
         .toolbar{ToolbarItemGroup(placement:.topBarTrailing){Button{reading=true}label:{Image(systemName:"book")}.disabled(ids.isEmpty).accessibilityIdentifier("chapter-reader");Button{exporting=true}label:{Image(systemName:"square.and.arrow.up")}.disabled(chosen.isEmpty).accessibilityIdentifier("chapter-export-open")}}
+        .sheet(isPresented:$drive){DriveImportView(chapter:id)}
         .overlay{if busy{VStack(spacing:12){ProgressView("جارٍ تجهيز الصفحات…");Button("إلغاء"){task?.cancel()}}.padding(24).glass(20)}}
         .sheet(isPresented:$photos){PhotoLibraryPicker(multiple:true){result in switch result{case .failure(let error):failure=error.localizedDescription;case .success(let urls):importFiles(urls,owned:true)}}}
         .cookiesFileImporter(isPresented:$files,allowedContentTypes:[.image,.pdf,.zip,UTType(filenameExtension:"cookies") ?? .zip,UTType(filenameExtension:"cookieschapter") ?? .zip],allowsMultipleSelection:true){result in switch result{case .failure(let error):failure=error.localizedDescription;case .success(let urls):importFiles(urls)}}
@@ -135,6 +138,11 @@ struct ReadOnlyPage:View {@StateObject var model:EditorModel;var body:some View{
 struct ChapterExportSheet:View {
     @EnvironmentObject var library:LibraryStore
     let chapter:UUID;let ids:[UUID]
+    var independentProjects=false
+    @State private var provider=false
+    @State private var driveURLs:[URL]=[]
+    @State private var driveFolder:URL?
+    @State private var providerMessage=""
     @State private var format="PNG"
     @State private var prefix="صفحة"
     @State private var smart=false
@@ -149,20 +157,43 @@ struct ChapterExportSheet:View {
     @Environment(\.dismiss) private var dismiss
     var body:some View{NavigationStack{ZStack{Ambient();ScrollView{VStack(alignment:.leading,spacing:18){
         SurfaceHeader(title:"استوديو التصدير",subtitle:"\(ids.count) صفحات · اختر الحزمة المناسبة لعملك",icon:"square.and.arrow.up")
-        GlassSection("صيغة الحزمة",icon:"doc.zipper"){Picker("الصيغة",selection:$format){ForEach(["PNG","JPEG","PSD","مشروع","فصل قابل للتعديل"],id:\.self){Text($0)}}.pickerStyle(.menu);TextField("بادئة أسماء الصفحات",text:$prefix).glassField();if format=="JPEG"{HStack{Text("جودة JPEG");Spacer();Text("\(Int(quality*100))%").font(.system(size:11,design:.monospaced))};StepSlider(value:$quality,in:0.1...1)};Text(format=="JPEG" ? "JPEG يستخدم ضغطًا مع فقدان. PNG يحفظ الصورة بلا فقدان.":format=="PSD" ? "PSD يحتفظ بالطبقات مرسومة؛ احتفظ بملف المشروع لتعديل النصوص.":"المشروع والفصل القابل للتعديل يحتفظان بأصول الصور والطبقات.").font(.system(size:12)).foregroundStyle(Palette.secondary).lineSpacing(4)}
+        GlassSection("صيغة الحزمة",icon:"doc.zipper"){Picker("الصيغة",selection:$format){ForEach(independentProjects ? ["PNG","JPEG","PSD","مشروع"]:["PNG","JPEG","PSD","مشروع","فصل قابل للتعديل"],id:\.self){Text($0)}}.pickerStyle(.menu);TextField("بادئة أسماء الصفحات",text:$prefix).glassField();if format=="JPEG"{HStack{Text("جودة JPEG");Spacer();Text("\(Int(quality*100))%").font(.system(size:11,design:.monospaced))};StepSlider(value:$quality,in:0.1...1)};Text(format=="JPEG" ? "JPEG يستخدم ضغطًا مع فقدان. PNG يحفظ الصورة بلا فقدان.":format=="PSD" ? "PSD يحتفظ بالطبقات مرسومة؛ احتفظ بملف المشروع لتعديل النصوص.":"المشروع والفصل القابل للتعديل يحتفظان بأصول الصور والطبقات.").font(.system(size:12)).foregroundStyle(Palette.secondary).lineSpacing(4)}
         if format != "فصل قابل للتعديل"{GlassSection("تصدير ذكي",icon:"square.split.1x2"){SettingToggle(title:"دمج ثم تقطيع",detail:"اجمع صفحات الفصل ثم قسّمها بطول ثابت.",value:$smart);if smart{MetricField(title:"طول الجزء",value:$maxHeight)}}}
         if busy{VStack(spacing:12){ProgressView(value:Double(completed),total:Double(max(1,total))).tint(Palette.gold);Text("\(completed) / \(total)").font(.system(size:12,design:.monospaced));Button("إلغاء"){task?.cancel()}.buttonStyle(CapsuleActionStyle())}.padding(20).glass(22)}else{Button{export()}label:{Label("تصدير \(ids.count) صفحة",systemImage:"square.and.arrow.up")}.buttonStyle(GoldButtonStyle(primary:true)).accessibilityIdentifier("chapter-export")}
         if let output{ShareLink(item:output){Label("حفظ أو مشاركة الحزمة",systemImage:"square.and.arrow.up")}.buttonStyle(GoldButtonStyle()).accessibilityIdentifier("chapter-export-share")}
+        GlassSection("Google Drive",icon:"externaldrive"){
+            Text("تُرفع الصور منفردة دفعة واحدة إلى المجلد الذي تختاره من حساب Drive في «الملفات». ثبّت Drive وسجّل دخولك فيه وفعّله من استعراض ← تعديل. تأكيد النقل والاتصال بالخادم يديرهما مزوّد Drive.").font(.system(size:12)).foregroundStyle(Palette.secondary).lineSpacing(4)
+            Button{prepareDrive()}label:{Label("حفظ الصور في Google Drive / الملفات",systemImage:"folder.badge.plus")}.buttonStyle(GoldButtonStyle()).disabled(busy)
+            if !providerMessage.isEmpty{Text(providerMessage).font(.system(size:11)).foregroundStyle(Palette.secondary)}
+        }
         Button{savePhotos()}label:{Label("حفظ المحدد في الاستوديو",systemImage:"photo")}.buttonStyle(GoldButtonStyle()).disabled(busy)
         Text("الحفظ في الصور يستخدم PNG بالأبعاد الأصلية. لا تصغّر الأبعاد إلا عند اختيار تغيير المقاس صراحةً.").font(.system(size:11)).foregroundStyle(Palette.quiet).lineSpacing(4)
-    }.padding(20).frame(maxWidth:700).frame(maxWidth:.infinity)}}.foregroundStyle(Palette.pale).navigationTitle("تصدير الفصل").navigationBarTitleDisplayMode(.inline).toolbar{ToolbarItem(placement:.topBarLeading){Button("تم"){dismiss()}.disabled(busy)}}}.alert("تعذر التصدير",isPresented:Binding(get:{failure != nil},set:{if !$0{failure=nil}})){Button("حسنًا"){failure=nil}}message:{Text(failure ?? "")}}
+    }.padding(20).frame(maxWidth:700).frame(maxWidth:.infinity)}}.foregroundStyle(Palette.pale).navigationTitle(independentProjects ? "تصدير المشاريع":"تصدير الفصل").navigationBarTitleDisplayMode(.inline).toolbar{ToolbarItem(placement:.topBarLeading){Button("تم"){dismiss()}.disabled(busy)}}}
+    .sheet(isPresented:$provider,onDismiss:{if let driveFolder{try? FileManager.default.removeItem(at:driveFolder)};driveURLs=[];driveFolder=nil}){DocumentFileExporter(urls:driveURLs,presented:$provider){accepted in providerMessage=accepted ? "سُلّمت الملفات إلى المزوّد الذي اخترته. تحقق من حالة المزامنة في Drive.":"أُلغي اختيار مجلد الحفظ"}}
+    .alert("تعذر التصدير",isPresented:Binding(get:{failure != nil},set:{if !$0{failure=nil}})){Button("حسنًا"){failure=nil}}message:{Text(failure ?? "")}}
 
-    func savePhotos(){task=Task{busy=true;completed=0;total=ids.count;defer{busy=false};do{for id in ids{try Task.checkCancellation();let page=try library.load(id),directory=library.directory(id);let file=try await BackgroundWork.run{try ImagePipeline.exportPNG(page,directory:directory)};defer{try? FileManager.default.removeItem(at:file)};try await PhotoSave.save(file);completed+=1}}catch is CancellationError{}catch{failure=error.localizedDescription}}}
+    func savePhotos(){task=Task{busy=true;completed=0;total=ids.count;defer{busy=false};do{try await library.withProjectFiles(ids){for id in ids{try Task.checkCancellation();let page=try library.load(id),directory=library.directory(id);let file=try await BackgroundWork.run{try ImagePipeline.exportPNG(page,directory:directory)};defer{try? FileManager.default.removeItem(at:file)};try await PhotoSave.save(file);completed+=1}}}catch is CancellationError{}catch{failure=error.localizedDescription}}}
     func export(){task=Task{busy=true;completed=0;total=ids.count;defer{busy=false};do{
+        try await library.withProjectFiles(ids){
         let pages=try ids.map{try library.load($0)},root=library.root,format=self.format,prefix=self.prefix,quality=self.quality,h=smart ? Int(maxHeight):nil
         if format=="فصل قابل للتعديل",var item=library.chapter(chapter){item.pages=ids;output=try await BackgroundWork.run{try ChapterArchive.export(item,root:root)}}
         else{output=try await BackgroundWork.run{try BatchExport.export(pages:pages,root:root,format:format,quality:quality,prefix:prefix,smartHeight:h){done,count in Task{@MainActor in completed=done;total=count}}}}
+        }
     }catch is CancellationError{}catch{failure=error.localizedDescription}}}
+    func prepareDrive(){task=Task{busy=true;completed=0;total=ids.count;defer{busy=false}
+        let folder=FileManager.default.temporaryDirectory.appendingPathComponent("Cookies-Drive-"+UUID().uuidString)
+        do{try FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true)
+            let urls=try await library.withProjectFiles(ids){()->[URL] in
+                var result:[URL]=[]
+                for (index,id) in ids.enumerated(){try Task.checkCancellation();let page=try library.load(id),directory=library.directory(id)
+                    let file=try await BackgroundWork.run{try ImagePipeline.exportPNG(page,directory:directory)};defer{try? FileManager.default.removeItem(at:file)}
+                    let name=page.title.replacingOccurrences(of:"/",with:"_").replacingOccurrences(of:"\\",with:"_")
+                    let target=folder.appendingPathComponent(String(format:"%03d-",index+1)+String(name.prefix(120))+".png");try FileManager.default.moveItem(at:file,to:target);result.append(target);completed+=1
+                };return result
+            }
+            driveURLs=urls;driveFolder=folder;provider=true
+        }catch{try? FileManager.default.removeItem(at:folder);failure=error.localizedDescription}
+    }}
 }
 
 private struct ChapterPageCard:View {

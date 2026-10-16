@@ -22,7 +22,7 @@ final class TextRenderKey:NSObject {
     let layer:EditorLayer;let directory:String;let resolution:CGFloat;let width:CGFloat;let height:CGFloat;let policy:Int
     private let value:Int
     init(_ source:EditorLayer,directory:URL,resolution:CGFloat,size:CGSize){
-        var layer=source;layer.id=UUID(uuidString:"00000000-0000-0000-0000-000000000000")!;layer.name="";layer.frame.x=0;layer.frame.y=0;layer.rotation=0;layer.scaleX=1;layer.scaleY=1;layer.shearX=nil;layer.opacity=1;layer.isLocked=false;layer.isVisible=true;layer.gradientMapBaseline=nil;layer.groupID=nil;layer.groupName=nil;layer.textOrigin=nil
+        var layer=source;layer.id=UUID(uuidString:"00000000-0000-0000-0000-000000000000")!;layer.name="";layer.frame.x=0;layer.frame.y=0;layer.rotation=0;layer.scaleX=1;layer.scaleY=1;layer.shearX=nil;layer.opacity=1;layer.isLocked=false;layer.isVisible=true;layer.gradientMapBaseline=nil;layer.groupID=nil;layer.groupName=nil;layer.stackID=nil;layer.stackName=nil;layer.textOrigin=nil
         layer.erasures=nil // The outer layer compositor applies these marks.
         policy=RenderBudget.isPreview ? (RenderBudget.isInteractive ? 2:1):0
         self.layer=layer;self.directory=directory.path;self.resolution=resolution;width=size.width;height=size.height

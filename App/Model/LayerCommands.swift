@@ -4,12 +4,43 @@ extension EditorLayer {
     /// Raster strokes erase their own ink history. Other kinds retain editable
     /// content and use a separate alpha mask in the same local coordinate space.
     mutating func appendEditorStroke(_ stroke:Stroke) {
-        if stroke.erase && kind != .drawing{erasures=(erasures ?? [])+[stroke]}
+        if stroke.erase && kind != .drawing && kind != .image{erasures=(erasures ?? [])+[stroke]}
         else{strokes.append(stroke)}
     }
 }
 
 extension EditorModel {
+    var selectedLayerObjects:Set<UUID>{
+        guard let active else{return []}
+        if stackSelection,let stack=active.stackID{return Set(page.layers.filter{$0.stackID==stack}.map(\.id))}
+        return [active.id]
+    }
+    func layerObjects(_ id:UUID)->[EditorLayer]{
+        guard let layer=page.layers.first(where:{$0.id==id}) else{return []}
+        guard let stack=layer.stackID else{return [layer]}
+        return page.layers.filter{$0.stackID==stack}
+    }
+    @discardableResult func prepareBrushTarget()->Bool {
+        if let active,[LayerKind.drawing,.image].contains(active.kind){
+            guard !active.isLocked,active.isVisible else{error="اختر طبقة ظاهرة وغير مقفلة للرسم";return false}
+            if active.kind == .drawing{lastDrawingLayer=active.id};return true
+        }
+        if let drawing=page.layers.last(where:{($0.id==lastDrawingLayer || selected==nil) && $0.kind == .drawing && !$0.isLocked && $0.isVisible}){selected=drawing.id;return true}
+        add(.drawing);return true
+    }
+    func changeLayerObjects(_ body:(inout EditorLayer)->Void){
+        let ids=selectedLayerObjects;var next=page
+        for index in next.layers.indices where ids.contains(next.layers[index].id) && !next.layers[index].isLocked{body(&next.layers[index])}
+        next.modified=Date();page=next;save()
+    }
+    func setStackVisibility(_ id:UUID,_ visible:Bool){
+        let ids=Set(layerObjects(id).map(\.id));checkpoint()
+        for index in page.layers.indices where ids.contains(page.layers[index].id){page.layers[index].isVisible=visible};save()
+    }
+    func setStackLocked(_ id:UUID,_ locked:Bool){
+        let ids=Set(layerObjects(id).map(\.id));checkpoint()
+        for index in page.layers.indices where ids.contains(page.layers[index].id){page.layers[index].isLocked=locked};save()
+    }
     func importImageLayer(_ input:URL) async {
         guard !busy else{return};busy=true;defer{busy=false}
         let directory=self.directory,pageID=page.id
@@ -62,9 +93,10 @@ extension EditorModel {
     }
     func moveActiveLayer(by distance:Int) {
         guard let id=selected,let index=page.layers.firstIndex(where:{$0.id==id}),!page.layers[index].isLocked else{return}
-        let destination=min(page.layers.count-1,max(0,index+distance))
-        guard destination != index else{return}
-        checkpoint();let layer=page.layers.remove(at:index);page.layers.insert(layer,at:destination);save()
+        let ids=selectedLayerObjects,objects=page.layers.filter{ids.contains($0.id)}
+        var remaining=page.layers.filter{!ids.contains($0.id)}
+        let position=min(remaining.count,max(0,index+(distance>0 ? 1:-1)))
+        checkpoint();remaining.insert(contentsOf:objects,at:position);page.layers=remaining;save()
     }
     func flipActiveLayer(horizontal:Bool) {
         guard active?.isLocked==false else{return};checkpoint()

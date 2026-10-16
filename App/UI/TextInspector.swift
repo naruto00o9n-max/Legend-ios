@@ -41,8 +41,7 @@ struct TextInspector:View {
                 Button("مسح تنسيق التحديد"){let start=textRange.location,end=start+textRange.length;model.change{$0.style.spans.removeAll{$0.start<end && $0.end>start}}}.disabled(textRange.length==0)
             }.font(.system(size:12))
         case .font:
-            Button{fontLibrary=true}label:{Label("الخطوط · بحث ومفضلة واستيراد",systemImage:"textformat.alt")}.buttonStyle(.bordered).accessibilityIdentifier("editor-font-library")
-            ForEach((Fonts.files+Fonts.otf).sorted{$0.lastPathComponent<$1.lastPathComponent},id:\.self){url in Button{model.change{$0.style.fontPath=url.lastPathComponent};var recent=UserDefaults.standard.stringArray(forKey:"fontRecent") ?? [];recent.removeAll{$0==url.lastPathComponent};recent.insert(url.lastPathComponent,at:0);UserDefaults.standard.set(Array(recent.prefix(30)),forKey:"fontRecent")}label:{HStack{Text("حروف تصنع الحوار - "+url.deletingPathExtension().lastPathComponent).font(Font(Fonts.font({var s=style;s.fontPath=url.lastPathComponent;s.fontSize=20;return s}())));Spacer();if style.fontPath==url.lastPathComponent{Image(systemName:"checkmark")}}.padding(12).glass(14)}}
+            FontLibraryView(onSelect:{name in model.change{$0.style.fontPath=name}},currentFont:style.fontPath,embedded:true)
         case .format:
             knob("الحجم",value(\.fontSize),8...240);knob("عرض النص",value(\.boxWidth),40...Double(model.page.width))
             HStack{Toggle("غامق",isOn:flag(\.isBold));Toggle("مائل",isOn:flag(\.isItalic))}.toggleStyle(.button)

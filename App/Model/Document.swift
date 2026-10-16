@@ -71,6 +71,7 @@ struct ExtraOutline:Codable,Equatable,Identifiable, Hashable {var id=UUID();var 
 struct TextRun: Codable, Equatable, Hashable { var start: Int; var end: Int; var color: String?; var fontSize: Double?; var isBold: Bool? }
 struct Stroke: Codable, Equatable, Hashable { var points: [Point]; var width: Double; var color: String; var erase = false; var brush = "normal";var opacity:Double?;var texturePath:String?;var shape:String?;var filled:Bool? }
 struct EditorLayer: Codable, Equatable, Identifiable, Hashable {
+    var stackID:UUID?;var stackName:String?
     var id = UUID(); var kind: LayerKind; var name = "طبقة"; var frame = Box()
     var rotation = 0.0; var scaleX = 1.0; var scaleY = 1.0; var opacity = 1.0
     var shearX:Double?

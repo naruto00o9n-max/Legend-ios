@@ -99,3 +99,36 @@ final class StorageAndInteractionTests:XCTestCase {
     }
 
 }
+
+extension StorageAndInteractionTests {
+    func testPortableBackupRestoresUnderAnotherEditionRootWithoutCloudOwnership()throws{
+        let fm=FileManager.default,parent=fm.temporaryDirectory.appendingPathComponent(UUID().uuidString),source=parent.appendingPathComponent("Local وثائق"),target=parent.appendingPathComponent("Connected وثائق")
+        defer{try? fm.removeItem(at:parent)}
+        let page=try fixture(source,title:"صفحة أصلية"),directory=source.appendingPathComponent(page.id.uuidString)
+        let archiveAndHead=try VaultArchive.create(page,directory:directory);defer{try? fm.removeItem(at:archiveAndHead.0)}
+        let remote=VaultProject(owner_id:UUID().uuidString,project_id:page.id,revision_id:UUID(),generation:4,head:archiveAndHead.1)
+        try VaultFiles.write(VaultReceipt(project:remote,resident:true),directory:directory)
+        try Data("pending transfer".utf8).write(to:directory.appendingPathComponent("vault-transfer.json"))
+        let chapter=LibraryItem(title:"فصل من المحلي",folder:false,pages:[page.id],isChapter:true)
+        try JSONEncoder().encode([chapter]).write(to:source.appendingPathComponent("library.json"))
+        let ids:Set<String>=[page.id.uuidString,"gallery","settings"],file=try AppStorageManager.createBackup(selected:ids,at:source,settings:PropertyListSerialization.data(fromPropertyList:["font-library-last-category":"العربية"],format:.binary,options:0));defer{try? fm.removeItem(at:file)}
+        let manifest=try AppStorageManager.inspect(file);XCTAssertFalse(manifest.files.contains{$0.path.hasSuffix("vault.json") || $0.path.hasSuffix("vault-transfer.json")})
+        let settings=try AppStorageManager.restore(file,selected:ids,at:target)
+        XCTAssertEqual(settings?["font-library-last-category"] as? String,"العربية")
+        XCTAssertNil(try VaultFiles.receipt(target.appendingPathComponent(page.id.uuidString)))
+        XCTAssertEqual(try Data(contentsOf:target.appendingPathComponent(page.id.uuidString).appendingPathComponent(page.source)),try Data(contentsOf:directory.appendingPathComponent(page.source)))
+        XCTAssertEqual(try AppStorageManager.library(at:target).first?.pages,[page.id])
+        let reverse=try AppStorageManager.createBackup(selected:ids,at:target);defer{try? fm.removeItem(at:reverse)}
+        _ = try AppStorageManager.restore(reverse,selected:ids,at:source)
+        XCTAssertNil(try VaultFiles.receipt(directory));XCTAssertEqual(try AppStorageManager.library(at:source).first?.isChapter,true)
+    }
+    func testBackupUsesCanonicalRelativePathsThroughSandboxSymlink()throws{
+        let fm=FileManager.default,parent=fm.temporaryDirectory.appendingPathComponent(UUID().uuidString),root=parent.appendingPathComponent("actual"),alias=parent.appendingPathComponent("alias")
+        defer{try? fm.removeItem(at:parent)}
+        let page=try fixture(root,title:"unicode عنوان");try fm.createSymbolicLink(at:alias,withDestinationURL:root)
+        try JSONEncoder().encode([LibraryItem(id:page.id,title:page.title,folder:false,pages:[page.id])]).write(to:root.appendingPathComponent("library.json"))
+        let file=try AppStorageManager.createBackup(selected:[page.id.uuidString],at:alias);defer{try? fm.removeItem(at:file)}
+        let manifest=try AppStorageManager.inspect(file)
+        XCTAssertTrue(manifest.files.allSatisfy{$0.path.hasPrefix(page.id.uuidString+"/")})
+    }
+}

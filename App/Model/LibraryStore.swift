@@ -60,7 +60,9 @@ import SwiftUI
 
 @MainActor final class EditorModel:ObservableObject {
     @Published var page:EditorPage
-    @Published var selected:UUID?
+    @Published var selected:UUID?{didSet{stackSelection=false}}
+    var stackSelection=false
+    var lastDrawingLayer:UUID?
     @Published var tool:Tool = .move
     @Published var panel:Panel?
     @Published var imageEffectsOpen=false
@@ -114,10 +116,11 @@ import SwiftUI
     var active:EditorLayer? {page.layers.first{$0.id==selected}}
     @discardableResult func insertDialogues(_ values:[(String,TextStyle?)],targets:[SniperTarget]=[],bubbleLayout:BubbleLayoutRequest?=nil,preparedLayout:EditorLayer?=nil,preparedLayouts:[EditorLayer]=[],transforms:[TextLayerTransform]=[])throws->[UUID] {
         let previous=page.layers;var next=page
+        let textStack=page.layers.last(where:{$0.kind == .text && $0.textOrigin == .typer})?.stackID ?? UUID()
         let center = !EditorPreferences.smartPosition || visibleCenter == .zero ? CGPoint(x:Double(page.width)/2,y:200):visibleCenter
         for (index,value) in values.enumerated() {
             var item=EditorLayer(kind:.text,name:value.0);item.textContent=value.0
-            item.textOrigin = .typer
+            item.textOrigin = .typer;item.stackID=textStack;item.stackName="نصوص التايبر"
             if let style=value.1{item.style=style}
             item.style.fontSize*=EditorPreferences.typerScale;item.style.boxWidth=min(item.style.boxWidth*EditorPreferences.typerScale,Double(page.width));let bounds=LayerRenderer.bounds(item);item.frame=Box(x:max(0,center.x-bounds.width/2),y:max(0,center.y-bounds.height/2),width:bounds.width,height:bounds.height)
             let prepared=preparedLayouts.indices.contains(index) ? preparedLayouts[index]:preparedLayout
@@ -146,19 +149,19 @@ import SwiftUI
         let center = !EditorPreferences.smartPosition || visibleCenter == .zero ? CGPoint(x:Double(page.width)/2,y:200):visibleCenter
         var l=EditorLayer(kind:kind,name:kind == .text ? "نص جديد":"طبقة \(page.layers.count+1)");l.frame=Box(x:max(0,Double(center.x)-160),y:max(0,Double(center.y)-65),width:min(320,Double(page.width)),height:130);l.style.boxWidth=l.frame.width;l.style.fontSize=UserDefaults.standard.object(forKey:"default-text-size") as? Double ?? 48;l.shape=shape
         if kind == .text{
-            l.textOrigin = .manual;l.style=TextStyle.plainText(fontSize:l.style.fontSize,boxWidth:l.frame.width)
+            l.textOrigin = .manual;l.stackID=page.layers.last(where:{$0.kind == .text && $0.textOrigin == .manual})?.stackID ?? UUID();l.stackName="النصوص";l.style=TextStyle.plainText(fontSize:l.style.fontSize,boxWidth:l.frame.width)
             do{if let preset=try manualTextStore.manualTextPreset(){l.style=try manualTextStore.resolved(preset.style,from:manualTextStore.directory,into:directory);preset.transform.apply(to:&l)}
                 let bounds=LayerRenderer.bounds(l);l.frame=Box(x:Double(center.x)-Double(bounds.width)/2,y:Double(center.y)-Double(bounds.height)/2,width:bounds.width,height:bounds.height)
             }catch{self.error=error.localizedDescription;return}
         }
-        if kind == .drawing{l.frame=Box(x:0,y:0,width:Double(page.width),height:Double(page.height))}
+        if kind == .drawing{lastDrawingLayer=l.id;l.frame=Box(x:0,y:0,width:Double(page.width),height:Double(page.height))}
         let insertion=selected.flatMap{id in page.layers.firstIndex{$0.id==id}}.map{$0+1} ?? page.layers.count
         checkpoint();page.layers.insert(l,at:insertion);selected=l.id;save();if kind == .text{panel = .content}
     }
     @discardableResult func confirmTextSettings()->Bool {
         do{if let active{try manualTextStore.rememberManualText(active,from:directory);for color in active.style.usedColors{colorStore.record(color)}};return true}catch{self.error=error.localizedDescription;return false}
     }
-    func delete() {guard stylePreviewLayer==nil,let selected,active?.isLocked==false else{return};checkpoint();page.layers.removeAll{$0.id==selected};self.selected=nil;save()}
+    func delete() {guard stylePreviewLayer==nil,active?.isLocked==false else{return};let ids=selectedLayerObjects;guard !page.layers.contains(where:{ids.contains($0.id) && $0.isLocked}) else{return};checkpoint();page.layers.removeAll{ids.contains($0.id)};self.selected=nil;save()}
     func duplicate() {guard stylePreviewLayer==nil,var l=active else{return};guard let index=page.layers.firstIndex(where:{$0.id==l.id}) else{return};checkpoint();l.id=UUID();page.layers.insert(l,at:index+1);selected=l.id;save()}
     func cancelPendingSaves(){whiteningTask?.cancel();editSaveTask?.cancel();editSaveTask=nil;previewTask?.cancel();previewTask=nil}
     /// Flush a closing destination before storage may remove resident assets.

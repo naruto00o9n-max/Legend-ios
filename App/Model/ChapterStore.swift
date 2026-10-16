@@ -10,6 +10,24 @@ extension LibraryStore {
         let item=LibraryItem(parent:parent,title:name,folder:false,isChapter:true)
         var next=items;next.append(item);try commitItems(next);return item.id
     }
+    /// Both Photos and Files use the same chapter decision and title rules.
+    func importSelection(_ urls:[URL],parent:UUID?)async throws {
+        let imageExtensions:Set<String>=["png","jpg","jpeg","heic","heif","webp","tif","tiff","bmp","gif"]
+        if urls.count>1,urls.allSatisfy({imageExtensions.contains($0.pathExtension.lowercased())}){
+            let id=try createChapter("فصل مستورد",parent:parent)
+            do{try await importPages(urls,chapter:id)}catch{try? commitItems(items.filter{$0.id != id});throw error}
+        }else{for url in urls{try Task.checkCancellation();await importImage(url,parent:parent)}}
+    }
+    func collectProjects(_ ids:Set<UUID>,in chapterID:UUID)throws {
+        guard let chapter=chapter(chapterID) else{throw ImageFailure.message("اختر فصلًا موجودًا")}
+        let projects=items.filter{ids.contains($0.id) && !$0.folder && $0.isChapter != true}
+        let pages=projects.flatMap(\.pages)
+        guard !pages.isEmpty else{return}
+        var next=items.filter{!ids.contains($0.id)}
+        guard let index=next.firstIndex(where:{$0.id==chapterID}) else{return}
+        next[index].pages=chapter.pages+pages.filter{!chapter.pages.contains($0)};next[index].cover=chapter.cover ?? next[index].pages.first;next[index].modified=Date()
+        try commitItems(next)
+    }
     func chapter(_ id:UUID)->LibraryItem?{items.first{$0.id==id && $0.isChapter==true}}
     func chapters(containing page:UUID)->[LibraryItem]{items.filter{$0.isChapter==true && $0.pages.contains(page)}}
     func commitItems(_ next:[LibraryItem])throws {try writeItems(next);items=next}
@@ -98,5 +116,16 @@ enum ChapterArchive {
         let files=(FileManager.default.enumerator(at:folder,includingPropertiesForKeys:nil)?.allObjects as? [URL] ?? []).filter{["png","jpg","jpeg","heic","webp","cookies"].contains($0.pathExtension.lowercased())}.sorted{$0.path.localizedStandardCompare($1.path) == .orderedAscending}
         guard !files.isEmpty else{throw ImageFailure.message("الأرشيف لا يحتوي صورًا مدعومة")}
         var result:[EditorPage]=[];do{for file in files{try Task.checkCancellation();result.append(try file.pathExtension=="cookies" ? ProjectArchive.importFile(file,root:root):ImagePipeline.importImage(file,root:root))};return result}catch{for page in result{try? FileManager.default.removeItem(at:root.appendingPathComponent(page.id.uuidString))};throw error}
+    }
+}
+
+extension LibraryStore {
+    /// Read leases protect every selected source from eviction during batch
+    /// export. Other projects remain editable while uploads continue.
+    func withProjectFiles<T>(_ ids:[UUID],perform:()async throws->T)async throws->T{
+        let lease=UUID();var opened:[UUID]=[]
+        defer{for id in opened{vault.close(id,lease:lease)}}
+        for id in ids{try Task.checkCancellation();try await vault.open(id,lease:lease);opened.append(id)}
+        return try await perform()
     }
 }

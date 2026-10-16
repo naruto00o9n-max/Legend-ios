@@ -91,7 +91,7 @@ jobs:
       - name: Require an actual native private-vault round trip
         run: python3 scripts/provision_vault_ci.py verify-log 'build/test-${{ matrix.screen }}-core.log'
       - name: Real layer controls and live eraser gestures, Photos and service regressions
-        run: bash scripts/test_simulators.sh '${{ matrix.screen }}' ui 'CookiesUITests/EditorUITests/testVaultOverviewKeepsLocalEditingAvailableWithoutLogin,CookiesUITests/EditorUITests/testManualSniperKeepsIndependentWhiteningMethodPerBubble,CookiesUITests/EditorUITests/testLayerButtonsActuallyHideUnlockAndDelete,CookiesUITests/EditorUITests/testLayerTypeChipsMatchTheVisibleRows,CookiesUITests/EditorUITests/testEraserKeepsSelectedTextEditableWithoutCreatingDrawingLayers,CookiesUITests/EditorUITests/testPinchAndDrawing'
+        run: bash scripts/test_simulators.sh '${{ matrix.screen }}' ui 'CookiesUITests/EditorUITests/testVaultOverviewKeepsLocalEditingAvailableWithoutLogin,CookiesUITests/EditorUITests/testManualSniperKeepsIndependentWhiteningMethodPerBubble,CookiesUITests/EditorUITests/testLayerButtonsActuallyHideUnlockAndDelete,CookiesUITests/EditorUITests/testLayerTypeChipsMatchTheVisibleRows,CookiesUITests/EditorUITests/testEraserKeepsSelectedTextEditableWithoutCreatingDrawingLayers,CookiesUITests/EditorUITests/testPinchAndDrawing,CookiesUITests/EditorUITests/testCanvasTapDoesNotCreateUnrequestedTextAndFontsStayInsideEditor'
       - name: Remove temporary vault account and test objects
         if: always()
         run: python3 scripts/provision_vault_ci.py cleanup
@@ -165,7 +165,7 @@ jobs:
           path: build/
   publish:
     needs: [supersede, editor, local, package]
-    if: ${{ always() && needs.supersede.result == 'success' && needs.editor.result == 'success' && (needs.local.result == 'success' || (needs.supersede.outputs.reuse == 'true' && needs.local.result == 'skipped')) && (needs.package.result == 'success' || (needs.supersede.outputs.reuse == 'true' && needs.package.result == 'skipped')) }}
+    if: ${{ !contains(github.event.head_commit.message, '[repair checkpoint]') && always() && needs.supersede.result == 'success' && needs.editor.result == 'success' && (needs.local.result == 'success' || (needs.supersede.outputs.reuse == 'true' && needs.local.result == 'skipped')) && (needs.package.result == 'success' || (needs.supersede.outputs.reuse == 'true' && needs.package.result == 'skipped')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

@@ -57,3 +57,22 @@ extension View {
         }
     }
 }
+
+/// Destination authentication belongs to the selected Files provider (including
+/// the user's Google Drive account), never to a shared application account.
+struct DocumentFileExporter:UIViewControllerRepresentable {
+    let urls:[URL]
+    @Binding var presented:Bool
+    var completion:(Bool)->Void
+    func makeCoordinator()->Coordinator{Coordinator(self)}
+    func makeUIViewController(context:Context)->UIDocumentPickerViewController{
+        let picker=UIDocumentPickerViewController(forExporting:urls,asCopy:true);picker.delegate=context.coordinator;picker.shouldShowFileExtensions=true;return picker
+    }
+    func updateUIViewController(_ controller:UIDocumentPickerViewController,context:Context){context.coordinator.parent=self}
+    final class Coordinator:NSObject,UIDocumentPickerDelegate{
+        var parent:DocumentFileExporter
+        init(_ parent:DocumentFileExporter){self.parent=parent}
+        func documentPickerWasCancelled(_ controller:UIDocumentPickerViewController){parent.presented=false;parent.completion(false)}
+        func documentPicker(_ controller:UIDocumentPickerViewController,didPickDocumentsAt urls:[URL]){parent.presented=false;parent.completion(true)}
+    }
+}

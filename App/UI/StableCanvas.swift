@@ -113,8 +113,8 @@ final class DocumentCanvas: UIView {
         return page?.layers.contains{item in item.isVisible && !item.isLocked && item.kind != .drawing && LayerRenderer.bounds(item).contains(point.applying(LayerRenderer.transform(item).inverted()))} ?? false
     }
     override init(frame: CGRect) {
-        super.init(frame: frame)
-        isOpaque = false; backgroundColor = .clear; clipsToBounds = false
+        super.init(frame: frame);backgroundColor = .white
+        isOpaque = false; backgroundColor = .white; clipsToBounds = false
         preview.frame = bounds; preview.isUserInteractionEnabled = false
         preview.layer.magnificationFilter = .linear; addSubview(preview)
         sourceCache.totalCostLimit = 24 * 1024 * 1024

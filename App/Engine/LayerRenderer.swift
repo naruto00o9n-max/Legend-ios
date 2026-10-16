@@ -79,7 +79,7 @@ enum LayerRenderer {
             ctx.saveGState();ctx.setAlpha(CGFloat(l.opacity));ctx.setBlendMode(l.blend.cg)
             let b=bounds(l);ctx.concatenate(transform(l))
             if l.isMaskEnabled{ctx.addEllipse(in:CGRect(x:l.maskX-l.maskRadius,y:l.maskY-l.maskRadius,width:l.maskRadius*2,height:l.maskRadius*2));ctx.clip()}
-            let erased = !(l.erasures ?? []).isEmpty
+            let erased = !(l.erasures ?? []).isEmpty || (l.kind == .image && !l.strokes.isEmpty)
             // Erasing one layer must reveal lower layers, never clear the
             // already composed scene. Group alpha/blend apply once at the end.
             if erased{ctx.beginTransparencyLayer(auxiliaryInfo:nil)}
@@ -93,7 +93,11 @@ enum LayerRenderer {
                 for stroke in l.strokes{BrushRenderer.draw(stroke,in:ctx,directory:directory)}
                 ctx.endTransparencyLayer()
             }
-            if erased{for stroke in l.erasures ?? []{var mark=stroke;mark.erase=true;BrushRenderer.draw(mark,in:ctx,directory:directory)};ctx.endTransparencyLayer()}
+            if erased{
+                for stroke in l.erasures ?? []{var mark=stroke;mark.erase=true;BrushRenderer.draw(mark,in:ctx,directory:directory)}
+                if l.kind == .image{for stroke in l.strokes{BrushRenderer.draw(stroke,in:ctx,directory:directory)}}
+                ctx.endTransparencyLayer()
+            }
             ctx.restoreGState()
         }
     }
