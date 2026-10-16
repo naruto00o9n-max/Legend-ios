@@ -139,23 +139,35 @@ private struct CookiesDialogCard<Actions:View,Message:View>:View {
 private struct CookiesDialogActionStyle:PrimitiveButtonStyle {
     let choose:(@escaping ()->Void)->Void
     func makeBody(configuration:Configuration)->some View {
-        Button{choose{configuration.trigger()}}label:{
-            HStack(spacing:10){
-                if configuration.role == .destructive{Image(systemName:"trash").foregroundStyle(Palette.gold)}
-                configuration.label.multilineTextAlignment(.center)
-            }.frame(maxWidth:.infinity).padding(.horizontal,16).padding(.vertical,15)
-        }
-        .buttonStyle(CookiesDialogPressedStyle(cancel:configuration.role == .cancel))
+        // Rendering another Button here nests primitive styles, duplicating
+        // destructive glyphs/padding. Keep one label and one activation path.
+        CookiesDialogActionLabel(label:configuration.label,role:configuration.role){choose{configuration.trigger()}}
     }
 }
-private struct CookiesDialogPressedStyle:ButtonStyle {
-    let cancel:Bool
-    func makeBody(configuration:Configuration)->some View {
-        configuration.label.font(.system(size:15,weight:cancel ? .medium:.semibold))
-            .foregroundStyle(cancel ? Palette.secondary:Palette.pale)
-            .background((configuration.isPressed ? .white.opacity(0.14):cancel ? .white.opacity(0.025):Palette.gold.opacity(0.09)),in:RoundedRectangle(cornerRadius:16))
-            .overlay(RoundedRectangle(cornerRadius:16).stroke(cancel ? Palette.line:Palette.gold.opacity(0.4),lineWidth:0.8))
-            .contentShape(RoundedRectangle(cornerRadius:16))
+private struct CookiesDialogActionLabel<Label:View>:View {
+    let label:Label
+    let role:ButtonRole?
+    let activate:()->Void
+    @Environment(\.isEnabled) private var enabled
+    @GestureState private var pressed=false
+    private var cancel:Bool{role == .cancel}
+    var body:some View {
+        HStack(spacing:10){
+            if role == .destructive{Image(systemName:"trash").foregroundStyle(Palette.gold).accessibilityHidden(true)}
+            label.multilineTextAlignment(.center)
+        }
+        .font(.system(size:15,weight:cancel ? .medium:.semibold))
+        .foregroundStyle(cancel ? Palette.secondary:Palette.pale)
+        .frame(maxWidth:.infinity).padding(.horizontal,16).padding(.vertical,15)
+        .background(pressed ? .white.opacity(0.14):cancel ? .white.opacity(0.025):Palette.gold.opacity(0.09),in:RoundedRectangle(cornerRadius:16))
+        .overlay(RoundedRectangle(cornerRadius:16).stroke(cancel ? Palette.line:Palette.gold.opacity(0.4),lineWidth:0.8))
+        .opacity(enabled ? 1:0.4).contentShape(RoundedRectangle(cornerRadius:16))
+        .onTapGesture{if enabled{activate()}}
+        .simultaneousGesture(DragGesture(minimumDistance:0).updating($pressed){_,state,_ in state=true})
+        .accessibilityElement(children:.combine).accessibilityAddTraits(.isButton)
+        .accessibilityAction{if enabled{activate()}}
+        .focusable(enabled)
+        .onKeyPress(keys:[.return,.space]){_ in if enabled{activate();return .handled};return .ignored}
     }
 }
 private struct CookiesDialogFieldStyle:TextFieldStyle {

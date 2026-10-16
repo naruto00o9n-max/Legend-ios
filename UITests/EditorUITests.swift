@@ -6,11 +6,11 @@ final class EditorUITests:XCTestCase {
     func capture(_ name:String){Thread.sleep(forTimeInterval:0.5);let a=XCTAttachment(screenshot:XCUIScreen.main.screenshot());a.name=name;a.lifetime = .keepAlways;add(a)}
     func start(){let start=app.buttons["welcome-start"];XCTAssertTrue(start.waitForExistence(timeout:15));Thread.sleep(forTimeInterval:0.8);capture("01-welcome");start.tap();if app.buttons["account-skip"].waitForExistence(timeout:3){app.buttons["account-skip"].tap()};XCTAssertTrue(app.buttons["demo-project"].waitForExistence(timeout:8));capture("02-library");assertLayout()}
     func openEditor(){start();openDemoFromLibrary()}
-    func openDemoFromLibrary(){app.buttons["demo-project"].tap();let project=app.buttons.matching(NSPredicate(format:"identifier MATCHES %@","^project-[0-9A-Fa-f-]{36}$")).firstMatch;let link=app.otherElements.matching(NSPredicate(format:"identifier MATCHES %@","^project-[0-9A-Fa-f-]{36}$")).firstMatch
+    func openDemoFromLibrary(){app.buttons["demo-project"].tap();let project=app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH %@ AND label CONTAINS %@","project-","الفصل التجريبي")).firstMatch;let link=app.otherElements.matching(NSPredicate(format:"identifier BEGINSWITH %@ AND label CONTAINS %@","project-","الفصل التجريبي")).firstMatch
         // The gallery is lazy: newly created cards can be below the hero and
         // must enter the viewport before XCTest can discover them.
         for _ in 0..<10{if project.exists || link.exists{break};app.scrollViews.firstMatch.swipeUp()}
-        if project.exists{revealVertical(project);project.tap()}else{revealVertical(link);link.tap()}
+        if project.exists{revealVertical(project);project.coordinate(withNormalizedOffset:CGVector(dx:0.5,dy:0.8)).tap()}else{revealVertical(link);link.coordinate(withNormalizedOffset:CGVector(dx:0.5,dy:0.8)).tap()}
         XCTAssertTrue(app.buttons["tool-text"].waitForExistence(timeout:15));capture("03-editor-long-image");assertLayout()
     }
     func reveal(_ button:XCUIElement,in strip:XCUIElement){
@@ -375,7 +375,7 @@ final class EditorUITests:XCTestCase {
         let confirm=app.buttons["vault-confirm-delete"]
         XCTAssertTrue(confirm.waitForExistence(timeout:5));XCTAssertTrue(confirm.isHittable)
         XCTAssertTrue(app.staticTexts.containing(NSPredicate(format:"label CONTAINS %@","فصل الاختبار")).firstMatch.exists)
-        XCTAssertEqual(app.alerts.count,0,"This must be an app card, not a system alert or iPad action popover")
+        XCTAssertTrue(app.descendants(matching:.any)["cookies-dialog"].exists,"The modal must expose our own Cookies card; accessibility correctly identifies a modal as an alert")
         capture("glass-vault-confirmation")
         app.buttons["إلغاء"].tap()
         XCTAssertTrue(show.waitForExistence(timeout:5));XCTAssertEqual(app.staticTexts["dialog-removal-count"].label,"0")
@@ -390,9 +390,11 @@ final class EditorUITests:XCTestCase {
     func testGlassNamingDialogCreatesRealChapterAndCloses(){
         start();app.buttons["new-chapter"].tap()
         let field=app.textFields.firstMatch;XCTAssertTrue(field.waitForExistence(timeout:5))
-        XCTAssertEqual(app.alerts.count,0);field.tap();field.typeText("فصل زجاجي")
+        XCTAssertTrue(app.descendants(matching:.any)["cookies-dialog"].exists);field.tap();field.typeText("فصل زجاجي")
         app.buttons["إنشاء"].tap()
-        XCTAssertTrue(app.staticTexts["فصل زجاجي"].waitForExistence(timeout:8))
+        let closed=XCTNSPredicateExpectation(predicate:NSPredicate{_,_ in !self.app.buttons["cookies-dialog-close"].exists},object:nil)
+        XCTAssertEqual(XCTWaiter.wait(for:[closed],timeout:8),.completed)
+        let chapter=app.staticTexts["فصل زجاجي"];revealVertical(chapter);XCTAssertTrue(chapter.waitForExistence(timeout:8))
         XCTAssertFalse(app.buttons["cookies-dialog-close"].exists)
     }
 
