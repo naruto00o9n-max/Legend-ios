@@ -59,7 +59,7 @@ extension EditorModel {
                     guard let first=results.first else{throw ImageFailure.message(firstFailure ?? "تعذر فصل نص الفقاعات المحددة بأمان. أعد تحديد داخل الفقاعة أو استخدم فرشاة التنظيف.")}
                     let review=results.filter(\.reviewRequired).count
                     var detail="أزيل النص المكتشف داخل \(results.count) فقاعة. الصورة الأصلية محفوظة، والحدود خارج القناع لم تُعدّل."
-                    if skipped>0{detail += " تُركت \(skipped) فقاعة دون تعديل لعدم وضوح النص أو المحيط."}
+                    if skipped>0{detail += " تُركت \(skipped) فقاعة دون تعديل.";if let firstFailure{detail += " "+firstFailure}}
                     if review>0{detail += " راجع \(review) فقاعة: استُخدم ترميم أو تحليل دون تعرف مؤكد على النص."}
                     return CleaningCandidate(title:"تبييض \(results.count) فقاعات",layer:first.layer,additionalLayers:results.dropFirst().map(\.layer),underlays:true,detail:detail,baseline:snapshot)
                 }catch{for result in results{try? FileManager.default.removeItem(at:directory.appendingPathComponent(result.layer.imagePath))};throw error}
