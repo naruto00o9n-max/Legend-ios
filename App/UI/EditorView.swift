@@ -31,14 +31,14 @@ struct EditorView:View {
                     if let objectPanel,model.tool == .move,[LayerKind.image,.shape].contains(model.active?.kind ?? .text){TextInspector(model:model,panel:objectPanel,close:{self.objectPanel=nil}).frame(maxWidth:560).frame(height:290).padding(.horizontal,12).padding(.bottom,8)}
                     if model.tool == .text,let panel=model.panel,panel != .font,model.active?.kind == .text{TextInspector(model:model,panel:panel,close:{model.panel=nil}).frame(maxWidth:560).frame(height:panel == .content ? 240:290).padding(.horizontal,12).padding(.bottom,8)}
                 }.frame(maxWidth:.infinity,maxHeight:.infinity)
-                if horizontalSizeClass == .regular,model.panel == .font,model.tool == .text{fontDock.frame(width:340)}
+                if horizontalSizeClass == .regular,!layers,model.panel == .font,model.tool == .text{fontDock.frame(width:340)}
                 if horizontalSizeClass == .regular,layers{LayerSheet(model:model,onImport:{layers=false;imagePicker=true},onClose:{layers=false}).cookiesInterface().frame(width:370)}
             }
             if horizontalSizeClass != .regular,model.panel == .font,model.tool == .text{fontDock.frame(height:280)}
         }
 
         .overlay(alignment:.bottom){if model.imageEffectsOpen,model.active?.kind == .image{ImageEffectsPanel(model:model).frame(maxWidth:560).frame(height:420).padding(.horizontal,12).padding(.bottom,8)}}
-        .safeAreaInset(edge:.top,spacing:0){HStack(spacing:4){IconButton(icon:"chevron.right",title:"العودة"){model.save();dismiss()};VStack(alignment:.leading,spacing:2){Text(model.page.title).font(.system(size:12,weight:.medium)).lineLimit(1);Text(verbatim:"\(model.page.width) × \(model.page.height) · \(Int(model.zoom*100))%").font(.system(size:9,design:.monospaced)).foregroundStyle(Palette.quiet).accessibilityIdentifier("canvas-zoom")};Spacer(minLength:4);IconButton(icon:"arrow.uturn.backward",title:"تراجع"){model.undo()}.disabled(model.undoStack.isEmpty).accessibilityIdentifier("undo");IconButton(icon:"arrow.uturn.forward",title:"إعادة"){model.redo()}.disabled(model.redoStack.isEmpty).accessibilityIdentifier("redo");IconButton(icon:"square.3.layers.3d",title:"الطبقات"){layers=true}.accessibilityIdentifier("layers-header");IconButton(icon:"square.and.arrow.up",title:"تصدير"){showExport=true}.accessibilityIdentifier("export")}.padding(.horizontal,4).glass(0).frame(height:52)}
+        .safeAreaInset(edge:.top,spacing:0){HStack(spacing:4){IconButton(icon:"chevron.right",title:"العودة"){model.save();dismiss()};VStack(alignment:.leading,spacing:2){Text(model.page.title).font(.system(size:12,weight:.medium)).lineLimit(1);Text(verbatim:"\(model.page.width) × \(model.page.height) · \(Int(model.zoom*100))%").font(.system(size:9,design:.monospaced)).foregroundStyle(Palette.quiet).accessibilityIdentifier("canvas-zoom")};Spacer(minLength:4);IconButton(icon:"arrow.uturn.backward",title:"تراجع"){model.undo()}.disabled(model.undoStack.isEmpty).accessibilityIdentifier("undo");IconButton(icon:"arrow.uturn.forward",title:"إعادة"){model.redo()}.disabled(model.redoStack.isEmpty).accessibilityIdentifier("redo");IconButton(icon:"square.3.layers.3d",title:"الطبقات"){model.panel=nil;layers=true}.accessibilityIdentifier("layers-header");IconButton(icon:"square.and.arrow.up",title:"تصدير"){showExport=true}.accessibilityIdentifier("export")}.padding(.horizontal,4).glass(0).frame(height:52)}
         .safeAreaInset(edge:.bottom,spacing:0){VStack(spacing:0){
             if [.brush,.eraser,.cleaner].contains(model.tool){HStack(spacing:12){Button{brushSettings=true}label:{Circle().fill(Color(uiColor:UIColor(hex:model.brushColor))).frame(width:24,height:24).overlay(Circle().stroke(Palette.gold.opacity(0.5),lineWidth:1))}.accessibilityLabel("إعدادات الفرشاة");StepSlider(value:$model.brushWidth,in:1...160,onEditingChanged:{model.brushSizePreview=$0}).tint(Palette.gold);Text("\(Int(model.brushWidth))").font(.system(size:10,design:.monospaced)).frame(width:30)}.padding(.horizontal,16).frame(height:38)}
             if model.tool == .text {
@@ -56,7 +56,7 @@ struct EditorView:View {
                     toolButton("eraser","ممحاة",id:"tool-eraser",selected:model.tool == .eraser){model.tool = .eraser}
                     toolButton("paintpalette","اللون والحجم",id:"brush-settings"){brushSettings=true}
                     gridControl
-                    toolButton("square.3.layers.3d","الطبقات",id:"tool-layers"){layers=true}
+                    toolButton("square.3.layers.3d","الطبقات",id:"tool-layers"){model.panel=nil;layers=true}
                 }.padding(.horizontal,8)}.frame(height:68*min(1.15,max(0.85,toolbarScale))).accessibilityIdentifier("tool-strip")
             }else if model.tool == .move,[LayerKind.image,.shape].contains(model.active?.kind ?? .text){
                 ScrollView(.horizontal,showsIndicators:false){HStack(spacing:2){
@@ -68,7 +68,7 @@ struct EditorView:View {
                     toolButton("doc.on.doc","نسخ",id:"object-duplicate"){model.duplicate()}
                     toolButton("trash","حذف",id:"object-delete"){objectPanel=nil;model.delete()}
                     gridControl
-                    toolButton("square.3.layers.3d","الطبقات",id:"object-layers"){layers=true}
+                    toolButton("square.3.layers.3d","الطبقات",id:"object-layers"){model.panel=nil;layers=true}
                 }.padding(.horizontal,8)}.frame(height:68*min(1.15,max(0.85,toolbarScale))).accessibilityIdentifier("object-strip")
             }else{
                 ScrollView(.horizontal,showsIndicators:false){HStack(spacing:2){
@@ -102,6 +102,7 @@ struct EditorView:View {
         .overlay(alignment:.top){if !model.cleanCandidates.isEmpty{ToolModeCard(title:"مراجعة التنظيف",detail:model.cleanCandidates.first?.detail ?? "قارن النتيجة بالأصل قبل اعتمادها.",icon:"sparkles",close:{model.discardCleaning()}){ForEach(model.cleanCandidates){candidate in Button(candidate.title){model.cleanPreviewID=candidate.id}.buttonStyle(CapsuleActionStyle(selected:model.cleanPreviewID==candidate.id))};Button{model.cleanPreviewID=nil}label:{Label("الأصل",systemImage:"photo")};Button{model.acceptCleaning()}label:{Label("اعتماد",systemImage:"checkmark")}.disabled(model.cleanPreviewID==nil).accessibilityIdentifier("cleaning-accept");Button{model.discardCleaning()}label:{Label("إلغاء",systemImage:"xmark")}.accessibilityIdentifier("cleaning-discard")}.padding(.top,58)}}
 
         .overlay{if model.busy && !showExport{ProgressView("جارٍ معالجة المنطقة…").tint(Palette.gold).padding(20).glass()}}
+        .onChange(of:model.panel){_,panel in if panel == .font{layers=false}}
         .onChange(of:model.selected){_,_ in objectPanel=nil;if model.active?.kind != .image{model.imageEffectsOpen=false}}
         .onChange(of:model.requestTyper){_,open in if open{assistant=true;model.requestTyper=false}}
         .fullScreenCover(isPresented:$reader){ReaderView(model:model).cookiesInterface()}

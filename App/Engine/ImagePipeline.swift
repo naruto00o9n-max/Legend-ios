@@ -71,6 +71,7 @@ enum ImagePipeline {
         guard let cg=image(pixels,width:(page.width+sample-1)/sample,height:(visibleHeight+sample-1)/sample,colorSpace:colorSpace(directory.appendingPathComponent(page.source))) else{return}
         let format=UIGraphicsImageRendererFormat();format.scale=1
         let preview=UIGraphicsImageRenderer(size:CGSize(width:cg.width,height:cg.height),format:format).image{renderer in
+            if page.paperWhite==true{UIColor.white.setFill();renderer.fill(CGRect(x:0,y:0,width:cg.width,height:cg.height))}
             if page.baseHidden != true{UIImage(cgImage:cg).draw(in:CGRect(x:0,y:0,width:cg.width,height:cg.height))};renderer.cgContext.scaleBy(x:1/CGFloat(sample),y:1/CGFloat(sample));LayerRenderer.draw(page.layers,in:renderer.cgContext,directory:directory)
         }
         if let error=ImageLayerRenderer.takeError(){throw ImageFailure.message(error)}
@@ -84,16 +85,17 @@ enum ImagePipeline {
         let output=FileManager.default.temporaryDirectory.appendingPathComponent("Cookies-\(page.id.uuidString)-\(UUID().uuidString).png")
         let original=directory.appendingPathComponent(page.source)
         let visible=page.layers.filter(\.isVisible)
-        if page.baseHidden==true,visible.count==1,let layer=visible.first,layer.isWorkingImage==true,layer.strokes.isEmpty,(layer.erasures ?? []).isEmpty,layer.effectiveImageEffects.isEmpty,layer.blend == .normal,layer.opacity==1,layer.rotation==0,layer.scaleX==1,layer.scaleY==1,(layer.shearX ?? 0)==0,layer.frame==Box(x:0,y:0,width:Double(page.width),height:Double(page.height)),layer.imagePixelWidth==page.width,layer.imagePixelHeight==page.height {
+        if page.baseHidden==true,page.paperWhite != true,visible.count==1,let layer=visible.first,layer.isWorkingImage==true,layer.strokes.isEmpty,(layer.erasures ?? []).isEmpty,layer.effectiveImageEffects.isEmpty,layer.blend == .normal,layer.opacity==1,layer.rotation==0,layer.scaleX==1,layer.scaleY==1,(layer.shearX ?? 0)==0,layer.frame==Box(x:0,y:0,width:Double(page.width),height:Double(page.height)),layer.imagePixelWidth==page.width,layer.imagePixelHeight==page.height {
             try FileManager.default.copyItem(at:directory.appendingPathComponent(layer.imagePath),to:output);return output
         }
-        if page.baseHidden != true && page.layers.allSatisfy({!$0.isVisible}){try FileManager.default.copyItem(at:original,to:output);return output}
+        if page.baseHidden != true && page.paperWhite != true && page.layers.allSatisfy({!$0.isVisible}){try FileManager.default.copyItem(at:original,to:output);return output}
         var error=[CChar](repeating:0,count:512)
         guard let writer=LIWriterOpen(original.path,output.path,Int32(page.width),Int32(page.height),&error,error.count) else{throw ImageFailure.message("تعذر بدء التصدير")}
         defer{LIWriterClose(writer)}
         for y in stride(from:0,to:page.height,by:256) {
             try Task.checkCancellation()
-            let rows=min(256,page.height-y);var base=page.baseHidden==true ? [UInt8](repeating:0,count:page.width*rows*4):(try tile(directory.appendingPathComponent(page.raw),width:page.width,height:page.height,rect:CGRect(x:0,y:y,width:page.width,height:rows)))
+            let rows=min(256,page.height-y);var base=page.baseHidden==true ? [UInt8](repeating:page.paperWhite==true ? 255:0,count:page.width*rows*4):(try tile(directory.appendingPathComponent(page.raw),width:page.width,height:page.height,rect:CGRect(x:0,y:y,width:page.width,height:rows)))
+            if page.paperWhite==true,page.baseHidden != true{for offset in stride(from:0,to:base.count,by:4){let alpha=Int(base[offset+3]);for channel in 0..<3{base[offset+channel]=UInt8(min(255,Int(base[offset+channel])+255-alpha))};base[offset+3]=255}}
             for layer in page.layers where layer.isVisible {
                 var overlay=[UInt8](repeating:0,count:base.count)
                 var isolated=layer;isolated.blend = .normal
@@ -133,7 +135,8 @@ extension ImagePipeline {
     static func compositeRegion(_ page:EditorPage,directory:URL,rect:CGRect,sample:Int=1)throws->CGImage {
         let sample=max(1,sample),region=rect.integral.intersection(CGRect(x:0,y:0,width:page.width,height:page.height)),width=(Int(region.width)+sample-1)/sample,height=(Int(region.height)+sample-1)/sample
         guard width>0,height>0,width*height<=4_194_304 else{throw ImageFailure.message("منطقة المعالجة كبيرة جدًا")}
-        var base=page.baseHidden==true ? [UInt8](repeating:0,count:width*height*4):(try tile(directory.appendingPathComponent(page.raw),width:page.width,height:page.height,rect:region,sample:sample))
+        var base=page.baseHidden==true ? [UInt8](repeating:page.paperWhite==true ? 255:0,count:width*height*4):(try tile(directory.appendingPathComponent(page.raw),width:page.width,height:page.height,rect:region,sample:sample))
+        if page.paperWhite==true,page.baseHidden != true{for offset in stride(from:0,to:base.count,by:4){let alpha=Int(base[offset+3]);for channel in 0..<3{base[offset+channel]=UInt8(min(255,Int(base[offset+channel])+255-alpha))};base[offset+3]=255}}
         for layer in page.layers where layer.isVisible{var overlay=[UInt8](repeating:0,count:base.count);var isolated=layer;isolated.blend = .normal
             let drawn=overlay.withUnsafeMutableBytes{bytes->Bool in guard let c=CGContext(data:bytes.baseAddress,width:width,height:height,bitsPerComponent:8,bytesPerRow:width*4,space:colorSpace(directory.appendingPathComponent(page.source)),bitmapInfo:CGImageAlphaInfo.premultipliedLast.rawValue) else{return false};c.translateBy(x:0,y:CGFloat(height));c.scaleBy(x:1/CGFloat(sample),y:-1/CGFloat(sample));c.translateBy(x:-region.minX,y:-region.minY);LayerRenderer.draw([isolated],in:c,directory:directory);return true};if let error=ImageLayerRenderer.takeError(){throw ImageFailure.message(error)};guard drawn else{throw ImageFailure.message("تعذر تركيب منطقة المعالجة")};LICompositeBlend(&base,&overlay,width*height,Int32(Blend.allCases.firstIndex(of:layer.blend) ?? 0))
         }

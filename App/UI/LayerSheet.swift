@@ -88,6 +88,7 @@ struct LayerSheet:View {
                 }}
             }.onMove{source,destination in model.reorderLayerStacks(layers.map(\.id),from:source,to:destination)}
             if !model.page.layers.contains(where:{$0.isWorkingImage==true}){backgroundRow}
+            if model.page.baseHidden==true{HStack(spacing:12){Image(systemName:"square.on.square");VStack(alignment:.leading,spacing:3){Text("خلفية اللوحة").font(.system(size:12));Text("تُحفظ أيضًا في الصورة المصدّرة").font(.system(size:9)).foregroundStyle(Palette.quiet)};Spacer();Menu{Button("بيضاء"){model.setPaperWhite(true)};Button("شفافة"){model.setPaperWhite(false)}}label:{Text(model.page.paperWhite==true ? "بيضاء":"شفافة").font(.system(size:11)).padding(8).background(.white.opacity(0.05),in:Capsule())}}.padding(.vertical,5).listRowBackground(Color.clear)}
         }.listStyle(.plain).scrollContentBackground(.hidden).environment(\.editMode,.constant(.active)).buttonStyle(.borderless)
         .overlay{if layers.isEmpty && filter != "all"{Text("لا توجد طبقات في هذا القسم").font(.footnote).foregroundStyle(Palette.quiet).allowsHitTesting(false)}}
     }

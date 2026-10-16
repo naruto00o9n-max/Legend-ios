@@ -15,7 +15,9 @@ enum PSDWriter {
         try ImagePipeline.ensureDecoded(directory.appendingPathComponent(page.raw),width:page.width,height:page.height)
         var items=[Item(layer:background,rect:CGRect(x:0,y:0,width:page.width,height:page.height),raw:directory.appendingPathComponent(page.raw))]
         let documentSpace=ImagePipeline.colorSpace(directory.appendingPathComponent(page.source))
-        for layer in page.layers {
+        var exportedLayers=page.layers;var paperID:UUID?
+        if page.paperWhite==true{var paper=EditorLayer(kind:.shape,name:"خلفية بيضاء");paper.frame=Box(x:0,y:0,width:Double(page.width),height:Double(page.height));paper.style.color="FFFFFF";paper.style.strokeWidth=0;paperID=paper.id;exportedLayers.insert(paper,at:0)}
+        for layer in exportedLayers {
             let padding=max(4,layer.style.strokeWidth+layer.style.shadowRadius*3+layer.style.effectValue*3+Double(layer.style.threeDDepth))
             let rect=LayerRenderer.bounds(layer).insetBy(dx:-padding,dy:-padding).applying(LayerRenderer.transform(layer)).intersection(CGRect(x:0,y:0,width:page.width,height:page.height)).integral
             guard !rect.isEmpty else{continue}
@@ -30,6 +32,7 @@ enum PSDWriter {
             }
             items.append(Item(layer:layer,rect:rect,raw:raw))
         }
+        if let paperID,let index=items.firstIndex(where:{$0.layer.id==paperID}){let paper=items.remove(at:index);items.insert(paper,at:0)}
         items.reverse()
         var records=Data();records.i16(-Int16(items.count))
         var pixels:UInt64=0

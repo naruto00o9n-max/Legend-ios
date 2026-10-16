@@ -34,7 +34,7 @@ final class DriveChapterTests:XCTestCase {
 
 extension DriveChapterTests {
     func testRealPublicDriveImageKeepsItsNameAndNativeDimensions()async throws{
-        guard let address=ProcessInfo.processInfo.environment["COOKIES_TEST_PUBLIC_DRIVE"] else{throw XCTSkip("Set a public reference folder for the live Drive check")}
+        guard let address=(ProcessInfo.processInfo.environment["COOKIES_TEST_PUBLIC_DRIVE"] ?? ProcessInfo.processInfo.environment["TEST_RUNNER_COOKIES_TEST_PUBLIC_DRIVE"]) else{throw XCTSkip("Set a public reference folder for the live Drive check")}
         let images=try await DriveChapterImport.list(DriveChapterImport.link(address));XCTAssertFalse(images.isEmpty)
         let folder=FileManager.default.temporaryDirectory.appendingPathComponent("drive-test-"+UUID().uuidString);defer{try? FileManager.default.removeItem(at:folder)}
         let image=try XCTUnwrap(images.first),file=try await DriveChapterImport.download(image,into:folder)

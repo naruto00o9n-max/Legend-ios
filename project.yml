@@ -26,8 +26,7 @@ settings:
     ENABLE_USER_SCRIPT_SANDBOXING: false
 packages:
   ZIPFoundation:
-    url: https://github.com/weichsel/ZIPFoundation.git
-    exactVersion: 0.9.19
+    path: .work/SwiftPackages/ZIPFoundation
   ONNXRuntime:
     path: .work/SwiftPackages/ONNXRuntime
 targetTemplates:

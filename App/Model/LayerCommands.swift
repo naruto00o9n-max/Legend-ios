@@ -98,6 +98,7 @@ extension EditorModel {
         if let active {
             guard !active.isLocked else{error="الطبقة مقفلة؛ افتح قفلها قبل المسح";return false}
             guard active.isVisible else{error="الطبقة مخفية؛ أظهرها قبل المسح";return false}
+            if active.isWorkingImage==true,page.baseHidden==true,page.paperWhite==nil{checkpoint();page.paperWhite=true;save()}
             return true
         }
         if let lastDrawingLayer,let layer=page.layers.first(where:{$0.id==lastDrawingLayer && $0.isVisible && !$0.isLocked}){selected=layer.id;return true}
@@ -106,9 +107,10 @@ extension EditorModel {
         layer.imagePath=page.source;layer.isWorkingImage=true
         layer.imagePixelFile=page.raw;layer.imagePixelWidth=page.width;layer.imagePixelHeight=page.height
         layer.frame=Box(x:0,y:0,width:Double(page.width),height:Double(page.height))
-        checkpoint();page.layers.insert(layer,at:0);page.baseHidden=true;selected=layer.id;save()
+        checkpoint();page.layers.insert(layer,at:0);page.baseHidden=true;page.paperWhite=true;selected=layer.id;save()
         return true
     }
+    func setPaperWhite(_ white:Bool){guard page.paperWhite != white else{return};checkpoint();page.paperWhite=white;save()}
     func renameLayer(_ id:UUID,to name:String) {
         if stackSelection,let stack=active?.stackID{let title=name.trimmingCharacters(in:.whitespacesAndNewlines);guard !title.isEmpty else{return};checkpoint();for i in page.layers.indices where page.layers[i].stackID==stack{page.layers[i].stackName=String(title.prefix(120))};save();return}
         let title=name.trimmingCharacters(in:.whitespacesAndNewlines)
@@ -158,7 +160,7 @@ extension EditorModel {
     }
     func exportActiveLayerPNG() async->URL? {
         guard active != nil,!busy else{return nil};busy=true;defer{busy=false}
-        var snapshot=page;snapshot.baseHidden=true;snapshot.layers=page.layers.filter{selectedLayerObjects.contains($0.id)}
+        var snapshot=page;snapshot.baseHidden=true;snapshot.paperWhite=false;snapshot.layers=page.layers.filter{selectedLayerObjects.contains($0.id)}
         let directory=self.directory
         do{return try await BackgroundWork.run{try ImagePipeline.exportPNG(snapshot,directory:directory)}}
         catch{self.error=error.localizedDescription;return nil}

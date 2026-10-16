@@ -81,6 +81,12 @@ jobs:
             App/Core/Vendor
             App/Resources/cookies-logo.png
           key: cookies-native-v45-opencv411-${{ hashFiles('scripts/vendor-hashes.json') }}
+      - uses: actions/cache@v4
+        with:
+          path: |
+            .work/SwiftPackages
+            ~/Library/Caches/org.swift.swiftpm
+          key: cookies-pinned-swift-xcode164-${{ hashFiles('scripts/fetch_swift_packages.py') }}
       - run: python3 scripts/fetch_resources.py
       - run: python3 scripts/fetch_whitening_fixtures.py
       - name: Provision an ordinary isolated test account with GitHub OIDC
@@ -89,6 +95,7 @@ jobs:
       - name: Native layer compositing, eraser opacity, import, export and regressions
         env:
           COOKIES_TEST_PUBLIC_DRIVE: https://drive.google.com/drive/folders/1xfrsEi3Cdg8_oZX6qr26-LM_jfzTgN88
+          TEST_RUNNER_COOKIES_TEST_PUBLIC_DRIVE: https://drive.google.com/drive/folders/1xfrsEi3Cdg8_oZX6qr26-LM_jfzTgN88
         run: bash scripts/test_simulators.sh '${{ matrix.screen }}' core
       - name: Require an actual native private-vault round trip
         run: python3 scripts/provision_vault_ci.py verify-log 'build/test-${{ matrix.screen }}-core.log'
@@ -127,6 +134,12 @@ jobs:
             App/Core/Vendor
             App/Resources/cookies-logo.png
           key: cookies-native-v45-opencv411-${{ hashFiles('scripts/vendor-hashes.json') }}
+      - uses: actions/cache@v4
+        with:
+          path: |
+            .work/SwiftPackages
+            ~/Library/Caches/org.swift.swiftpm
+          key: cookies-pinned-swift-xcode164-${{ hashFiles('scripts/fetch_swift_packages.py') }}
       - run: python3 scripts/fetch_resources.py
       - run: python3 scripts/fetch_whitening_fixtures.py
       - run: xcodegen generate
@@ -156,6 +169,12 @@ jobs:
             App/Core/Vendor
             App/Resources/cookies-logo.png
           key: cookies-native-v45-opencv411-${{ hashFiles('scripts/vendor-hashes.json') }}
+      - uses: actions/cache@v4
+        with:
+          path: |
+            .work/SwiftPackages
+            ~/Library/Caches/org.swift.swiftpm
+          key: cookies-pinned-swift-xcode164-${{ hashFiles('scripts/fetch_swift_packages.py') }}
       - run: python3 scripts/fetch_resources.py
       - run: python3 scripts/fetch_whitening_fixtures.py
       - run: xcodegen generate
