@@ -25,6 +25,9 @@ jobs:
               catch(error){if(![409,422].includes(error.status))throw error;}
             }
   editor:
+    permissions:
+      contents: read
+      id-token: write
     needs: supersede
     strategy:
       fail-fast: false
@@ -45,11 +48,18 @@ jobs:
           key: cookies-native-v45-opencv411-${{ hashFiles('scripts/vendor-hashes.json') }}
       - run: python3 scripts/fetch_resources.py
       - run: python3 scripts/fetch_whitening_fixtures.py
+      - name: Provision an ordinary isolated test account with GitHub OIDC
+        run: python3 scripts/provision_vault_ci.py provision
       - run: xcodegen generate
       - name: Native layer compositing, eraser opacity, import, export and regressions
         run: bash scripts/test_simulators.sh '${{ matrix.screen }}' core
+      - name: Require an actual native private-vault round trip
+        run: python3 scripts/provision_vault_ci.py verify-log 'build/test-${{ matrix.screen }}-core.log'
       - name: Real layer controls and live eraser gestures, Photos and service regressions
         run: bash scripts/test_simulators.sh '${{ matrix.screen }}' ui 'CookiesUITests/EditorUITests/testVaultOverviewKeepsLocalEditingAvailableWithoutLogin,CookiesUITests/EditorUITests/testLayerButtonsActuallyHideUnlockAndDelete,CookiesUITests/EditorUITests/testLayerTypeChipsMatchTheVisibleRows,CookiesUITests/EditorUITests/testEraserKeepsSelectedTextEditableWithoutCreatingDrawingLayers,CookiesUITests/EditorUITests/testPinchAndDrawing'
+      - name: Remove temporary vault account and test objects
+        if: always()
+        run: python3 scripts/provision_vault_ci.py cleanup
       - uses: actions/upload-artifact@v4
         if: always()
         with:

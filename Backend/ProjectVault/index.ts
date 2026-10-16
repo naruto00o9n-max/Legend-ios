@@ -11,7 +11,12 @@ async function rest(path:string,method='GET',body?:unknown){
   const r=await fetch(url+'/rest/v1/'+path,{method,headers,body:body===undefined ? undefined:JSON.stringify(body),signal:AbortSignal.timeout(15000)});
   const text=await r.text(),data=text?JSON.parse(text):null;if(!r.ok)throw new Failure(r.status,typeof data?.message==='string' ? data.message:'Vault unavailable');return data;
 }
-async function body(req:Request){const bytes=new Uint8Array(await req.arrayBuffer());if(bytes.length>16384)throw new Failure(413,'Request too large');return JSON.parse(new TextDecoder().decode(bytes))}
+async function limited(req:Request,limit:number){
+  const reader=req.body?.getReader();if(!reader)throw new Failure(400,'Missing request body');let count=0;const chunks:Uint8Array[]=[];
+  for(;;){const{done,value}=await reader.read();if(done)break;count+=value.length;if(count>limit){await reader.cancel();throw new Failure(413,'Request too large')}chunks.push(value)}
+  const bytes=new Uint8Array(count);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.length}return bytes;
+}
+async function body(req:Request){try{return JSON.parse(new TextDecoder().decode(await limited(req,16384)))}catch(error){if(error instanceof Failure)throw error;throw new Failure(400,'Invalid JSON body')}}
 async function authenticate(req:Request){
   const token=req.headers.get('Authorization');if(!token?.startsWith('Bearer ') || token.length>8192)throw new Failure(401,'Sign in first');
   // Never trust decoded JWT fields. Both issuers are fixed and their user API
@@ -60,9 +65,7 @@ Deno.serve(async(req:Request)=>{
       if(req.method==='PUT'){
         if(row.stage!=='pending' || Date.parse(row.created_at)<Date.now()-3600000)throw new Failure(409,'Upload expired');
         const stated=Number(req.headers.get('Content-Length'));if(stated>CHUNK)throw new Failure(413,'Chunk too large');
-        const reader=req.body?.getReader();if(!reader)throw new Failure(400,'Missing chunk');let count=0;const parts:Uint8Array[]=[];
-        for(;;){const {done,value}=await reader.read();if(done)break;count+=value.length;if(count>CHUNK){await reader.cancel();throw new Failure(413,'Chunk too large')}parts.push(value)}
-        const bytes=new Uint8Array(count);let offset=0;for(const v of parts){bytes.set(v,offset);offset+=v.length}
+        const bytes=await limited(req,CHUNK),count=bytes.length;
         if(count!==head.chunks[i].bytes || await digest(bytes)!==head.chunks[i].sha256)throw new Failure(422,'Chunk checksum mismatch');
         const r=await fetch(url+'/storage/v1/object/'+bucket+'/'+path,{method:'POST',headers:{...headers,'Content-Type':'application/octet-stream','x-upsert':'false'},body:bytes,signal:AbortSignal.timeout(25000)});
         if(!r.ok){const old=await fetch(url+'/storage/v1/object/'+bucket+'/'+path,{headers,signal:AbortSignal.timeout(25000)});if(!old.ok || await digest(await old.arrayBuffer())!==head.chunks[i].sha256)throw new Failure(503,'Chunk could not be saved')}

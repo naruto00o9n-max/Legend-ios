@@ -30,7 +30,7 @@ The reference engine architecture explains useful design directions, not a prove
 ## Verification branches
 
 - `verify/layer-workbench-oct16`, source `f9e6eb9e7a0fbba5aa40884f4046e91e7f4679b5`, Actions run 38868021071.
-- Both unsigned arm64 layer-only IPAs built successfully; native core/UI/local gates were still running when this note was created. Do not call those gates passed until inspecting their results.
+- Both unsigned arm64 layer-only IPAs built successfully; all four simulator jobs passed. iPad logs confirm 178 editor tests (including 9 new layer tests), 14 service unit tests, four focused layer/gesture UI tests, real Photos import and two external-service checks. Local iPad/iPhone UI/source-integrity checks also passed. Source comparison covered all 48,000,000 RGBA bytes of an 800×15,000 image. iPhone job status is green; its detailed artifact still needs to be archived alongside iPad evidence.
 - New native tests cover layer alpha isolation, partial erasure, metadata serialization, base source references, locked/hidden behavior, stack order, reversible clear, export and rasterization, and native-resolution image import.
 
 ## Project vault
@@ -52,10 +52,16 @@ User explicitly selected Supabase connection **Z**, accepted download-only-open-
 
 Live SQL transaction verified reservation/atomic commit, idempotence, stale-write/delete rejection, current-head removal protection, private grants and deletion. Test transaction rolled back.
 
-Live service probe created two isolated ordinary users **in this newly owned project**, signed them in, uploaded 8 MiB + 97 bytes in two chunks, rejected corruption/incomplete commit, committed and read back identical full SHA256, rejected cross-user access and stale operations, and deleted the test project. All 15 checks passed. Users, storage objects and rows were then removed; readback counts were all zero. The temporary privileged probe was replaced by a JWT-protected `410 Gone` handler. No real user images or account credentials were used.
+Live service probe created two isolated ordinary users **in this newly owned project**, signed them in, uploaded 8 MiB + 97 bytes in two chunks, rejected corruption/incomplete commit, committed and read back identical full SHA256, rejected cross-user access and stale operations, and deleted the test project. All 17 checks passed, including safe global collection of expired transfers without exposing another account’s content. Users, storage objects and rows were then removed; readback counts were all zero. The temporary privileged probe was replaced by a JWT-protected `410 Gone` handler. No real user images or account credentials were used.
 
 Native archive/recovery/client/coordinator/UI tests and full native builds are required before enabling this branch in a release. Project creation or live backend checks alone do not prove the iPad workflow works.
 
 ## Restoration alternatives
 
 Not yet implemented in this work. User requested this after layers and project storage. Future providers must offer a documented/authorized hosted API and be compared on the same comic regions. A modified SnapEdit client's private entitlement cannot be reused or bypassed. Provider billing/keys are not invented. Existing restoration service is unchanged.
+
+### Native live integration gate
+
+The vault verification workflow now requests a signed GitHub OIDC token with audience `cookies-vault-native-tests`. A separate test-only function verifies GitHub signature, repository ID/owner ID, exact branch and workflow path before provisioning a short-lived **ordinary user in this owned test project**. It returns only that user's session and a public client key, never a platform admin key. The JSON fixture is generated in the XCTest resource directory, ignored by git, never part of the production app target or IPA job, and excluded from uploaded artifacts. Cleanup checks the same run ID and CI account metadata before removing test accounts/objects. Native logs must show the actual round-trip test **passed**, not skipped. This verifies archive, live transfer, eviction, reopening, editing/resaving and keeping a device copy before server deletion.
+
+Project leases follow navigation destination lifetime rather than disappearance callbacks: covering the editor with a full-screen tool must not upload/evict its source. Reader/editor leases for the same project are independent. Closing the last lease permits the transfer. Cache/reset/restore/backup operations refuse to race an active transfer.

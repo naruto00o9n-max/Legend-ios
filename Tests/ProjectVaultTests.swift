@@ -118,4 +118,35 @@ final class ProjectVaultTests:XCTestCase {
         XCTAssertEqual(provider.width,page.width);XCTAssertEqual(provider.height,page.height)
     }
 
+    @MainActor func testLivePrivateVaultRoundTripEvictionAndReopen()async throws {
+        struct Fixture:Decodable{var configuration:ReferenceConfig;var session:ServiceSession}
+        guard let file=Bundle(for:Self.self).url(forResource:"TransientVaultSession",withExtension:"json") else{throw XCTSkip("CI provisioned ordinary vault account required")}
+        let identity=try JSONDecoder().decode(Fixture.self,from:Data(contentsOf:file))
+        let service=ReferenceService(configuration:identity.configuration,urlSession:.shared,initialSession:identity.session)
+        let (page,root,directory)=try fixture();defer{try? FileManager.default.removeItem(at:root)}
+        let original=try Data(contentsOf:directory.appendingPathComponent(page.source)),library=LibraryStore(root:root)
+        XCTAssertTrue(library.add(page,parent:nil));library.vault.service=service
+        await library.vault.store(page.id,evict:true)
+        XCTAssertNil(library.vault.error);XCTAssertEqual(try VaultFiles.receipt(directory)?.resident,false)
+        XCTAssertFalse(FileManager.default.fileExists(atPath:directory.appendingPathComponent(page.source).path));XCTAssertThrowsError(try library.load(page.id))
+        try await library.vault.open(page.id)
+        XCTAssertEqual(try library.load(page.id),page);XCTAssertEqual(try Data(contentsOf:directory.appendingPathComponent(page.source)),original)
+        var edited=try library.load(page.id);edited.layers[0].textContent="تعديل بعد الاستعادة";try library.persist(edited)
+        library.vault.close(page.id);await library.vault.waitForPendingTransfer(page.id)
+        XCTAssertNil(library.vault.error);XCTAssertEqual(try VaultFiles.receipt(directory)?.project.generation,2);XCTAssertEqual(try VaultFiles.receipt(directory)?.resident,false)
+        let project=try XCTUnwrap(VaultFiles.receipt(directory)?.project)
+        await library.vault.removeRemote(project)
+        XCTAssertNil(library.vault.error);XCTAssertEqual(try library.load(page.id),edited);XCTAssertEqual(try Data(contentsOf:directory.appendingPathComponent(page.source)),original);XCTAssertEqual(try VaultFiles.receipt(directory)?.managed,false)
+    }
+
+    @MainActor func testReaderAndEditorLeasesProtectTheSameProjectIndependently()async throws {
+        let(page,root,directory)=try fixture();defer{try? FileManager.default.removeItem(at:root)}
+        let library=LibraryStore(root:root),reader=UUID(),editor=UUID()
+        try await library.vault.open(page.id,lease:reader);try await library.vault.open(page.id,lease:editor)
+        library.vault.close(page.id,lease:editor)
+        await library.vault.store(page.id,evict:true)
+        XCTAssertNil(library.vault.error);XCTAssertTrue(FileManager.default.fileExists(atPath:directory.appendingPathComponent(page.source).path))
+        library.vault.suspended=true;library.vault.close(page.id,lease:reader)
+    }
+
 }

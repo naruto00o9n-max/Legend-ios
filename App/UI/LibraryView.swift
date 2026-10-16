@@ -53,20 +53,51 @@ struct LibraryView:View {
     }
     func card(_ item:LibraryItem)->some View {
         VStack(alignment:.leading,spacing:12){ZStack{RoundedRectangle(cornerRadius:14).fill(Palette.gold.opacity(0.06));if item.folder{Image(systemName:"folder").font(.system(size:36,weight:.ultraLight))}else{ProjectThumbnail(url:library.directory(item.cover ?? item.pages.first ?? item.id).appendingPathComponent("thumbnail.png"),revision:library.thumbnailRevision,icon:item.isChapter==true ? "rectangle.stack":"photo").frame(height:140).clipped().clipShape(RoundedRectangle(cornerRadius:14))}}.frame(height:140)
-            Text(item.title).font(.system(size:14,weight:.medium)).lineLimit(1);Text(item.folder ? "\(library.items.filter{$0.parent==item.id}.count) أعمال":item.isChapter==true ? "\(item.pages.count) صفحة":"صورة أصلية · محفوظة محليًا").font(.system(size:10)).foregroundStyle(Palette.quiet)
+            Text(item.title).font(.system(size:14,weight:.medium)).lineLimit(1);Text(item.folder ? "\(library.items.filter{$0.parent==item.id}.count) أعمال":item.isChapter==true ? "\(item.pages.count) صفحة":library.vault.receipt(item.id)?.resident==false ? "محفوظ في الحساب · يُنزّل عند الفتح":"صورة أصلية · محفوظة على الجهاز").font(.system(size:10)).foregroundStyle(Palette.quiet)
         }.padding(12).glass(22).contextMenu{Button("تغيير الاسم"){renameText=item.title;renaming=item};Menu("نقل إلى"){Button("المعرض"){library.move(item,parent:nil)};ForEach(library.items.filter{$0.folder && $0.id != item.id}){folder in Button(folder.title){library.move(item,parent:folder.id)}}};Button("حذف",role:.destructive){library.remove(item)}}.accessibilityIdentifier("project-\(item.id)")
     }
 }
 struct PageDestination:View {
     @EnvironmentObject var library:LibraryStore
     let id:UUID
-    @State private var model:EditorModel?
-    @State private var failed=false
+    var body:some View{PageSessionView(id:id,library:library)}
+}
+/// The resource lease follows the navigation destination's lifetime. Covering
+/// the editor with settings or another full-screen panel does not close it.
+@MainActor final class PageOpenSession:ObservableObject {
+    @Published var model:EditorModel?
+    @Published var failure:String?
+    private let library:LibraryStore
+    private let id:UUID
+    private let lease=UUID()
+    private var opened=false
+    init(id:UUID,library:LibraryStore){self.id=id;self.library=library}
+    func load()async {
+        guard model==nil else{return};failure=nil
+        do{
+            try await library.vault.open(id,lease:lease);opened=true
+            let directory=library.directory(id)
+            let saved=try await BackgroundWork.run{guard let saved=try RecoveryFile.read(EditorPage.self,at:directory.appendingPathComponent("page.json")) else{throw ImageFailure.message("ملف الصفحة مفقود")};return saved}
+            try Task.checkCancellation()
+            if saved.recovered{library.error="استُعيدت الصفحة من آخر حفظ سليم."}
+            model=EditorModel(page:saved.value,library:library)
+        }catch{
+            if opened{library.vault.close(id,lease:lease);opened=false}
+            if !(error is CancellationError){failure=error.localizedDescription}
+        }
+    }
+    deinit{
+        let library=library,id=id,lease=lease,model=model,opened=opened
+        Task{@MainActor in model?.save();model?.cancelPendingSaves();if opened{library.vault.close(id,lease:lease)}}
+    }
+}
+struct PageSessionView:View {
+    @StateObject private var session:PageOpenSession
+    private let readOnly:Bool
+    init(id:UUID,library:LibraryStore,readOnly:Bool=false){_session=StateObject(wrappedValue:PageOpenSession(id:id,library:library));self.readOnly=readOnly}
     var body:some View {
-        Group {if let model{EditorView(model:model)}else if failed{WorkspaceEmpty(title:"تعذر فتح المشروع",detail:"ارجع إلى المعرض وحاول فتحه مجددًا.",icon:"doc.badge.exclamationmark").padding(20)}else{ProgressView("فتح المشروع…")}}
-        .task(id:id){guard model?.page.id != id else{return};model=nil;failed=false;let directory=library.directory(id)
-            do{try await library.vault.open(id);let saved=try await BackgroundWork.run{guard let saved=try RecoveryFile.read(EditorPage.self,at:directory.appendingPathComponent("page.json")) else{throw ImageFailure.message("ملف الصفحة مفقود")};return saved};guard !Task.isCancelled else{return};if saved.recovered{library.error="استُعيدت الصفحة من آخر حفظ سليم."};model=EditorModel(page:saved.value,library:library)}catch{failed=true;library.error=error.localizedDescription}
-        }.onDisappear{model?.save();model?.cancelPendingSaves();model=nil;library.vault.close(id)}
+        Group{if let model=session.model{if readOnly{ReadOnlyPage(model:model)}else{EditorView(model:model)}}else if let failure=session.failure{WorkspaceEmpty(title:"تعذر فتح المشروع",detail:failure,icon:"doc.badge.exclamationmark").padding(20)}else{ProgressView("فتح المشروع…")}}
+            .task{await session.load()}
     }
 }
 

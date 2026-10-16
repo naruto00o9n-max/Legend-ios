@@ -59,6 +59,7 @@ enum AppStorageManager {
         let purgePages=Set(items.filter{$0.purgePending==true}.flatMap(\.pages)).subtracting(items.filter{$0.purgePending != true}.flatMap(\.pages))
         for directory in (try? fm.contentsOfDirectory(at:base,includingPropertiesForKeys:nil)) ?? []{
             let name=directory.lastPathComponent
+            guard !name.hasPrefix(".") else{continue}
             if let id=UUID(uuidString:name),purgePages.contains(id){continue}
             if let id=UUID(uuidString:name),let page=try? JSONDecoder().decode(EditorPage.self,from:Data(contentsOf:directory.appendingPathComponent("page.json"))){let deleted=items.contains{$0.deletedAt != nil && $0.pages.contains(id)} && !items.contains{$0.deletedAt==nil && $0.pages.contains(id)};output.append(BackupUnit(id:name,title:items.first{$0.id==id}?.title ?? page.title,group:deleted ? "سلة المحذوفات":"المشاريع",paths:[name]))}
             else if name=="Fonts"{for font in (try? fm.contentsOfDirectory(at:directory,includingPropertiesForKeys:nil)) ?? []{output.append(BackupUnit(id:"font:"+font.lastPathComponent,title:font.lastPathComponent,group:"الخطوط",paths:["Fonts/"+font.lastPathComponent]))}}
@@ -81,7 +82,7 @@ enum AppStorageManager {
                 let input=base.appendingPathComponent(path),directory=(try input.resourceValues(forKeys:[.isDirectoryKey])).isDirectory==true
                 let candidates=directory ? (fm.enumerator(at:input,includingPropertiesForKeys:[.isRegularFileKey,.isSymbolicLinkKey])?.allObjects as? [URL] ?? []):[input]
                 var raw:String?
-                if let page=try? JSONDecoder().decode(EditorPage.self,from:Data(contentsOf:input.appendingPathComponent("page.json"))){guard validPage(page),LIValidatePNG(input.appendingPathComponent(page.source).path,Int32(page.width),Int32(page.height))==1 else{throw ImageFailure.message("تعذر التحقق من أصل المشروع قبل النسخ الاحتياطي")};raw=page.raw}
+                if let page=try? JSONDecoder().decode(EditorPage.self,from:Data(contentsOf:input.appendingPathComponent("page.json"))){if try VaultFiles.receipt(input)?.resident==false{throw ImageFailure.message("نزّل المشروع «"+page.title+"» من حفظ المشاريع قبل إدراجه في النسخة الاحتياطية")};guard validPage(page),LIValidatePNG(input.appendingPathComponent(page.source).path,Int32(page.width),Int32(page.height))==1 else{throw ImageFailure.message("تعذر التحقق من أصل المشروع قبل النسخ الاحتياطي")};raw=page.raw}
                 for file in candidates {let v=try file.resourceValues(forKeys:[.isRegularFileKey,.isSymbolicLinkKey]);guard v.isRegularFile==true,v.isSymbolicLink != true else{continue};if file.lastPathComponent==raw{continue}
                     let relative=String(file.path.dropFirst(base.path.count+1));guard safe(relative) else{throw ImageFailure.message("مسار غير صالح")}
                     let bytes=(try file.resourceValues(forKeys:[.fileSizeKey])).fileSize ?? 0

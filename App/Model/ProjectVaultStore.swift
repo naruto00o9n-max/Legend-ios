@@ -51,7 +51,8 @@ enum VaultFiles {
     @Published var activity=""
     @Published var error:String?
     @Published var revision=0
-    private var opened=Set<UUID>()
+    private var opened:[UUID:Set<UUID>]=[:]
+    private func isOpen(_ id:UUID)->Bool{opened[id]?.isEmpty==false}
     private var closing:[UUID:Task<Void,Never>]=[:]
     init(library:LibraryStore){owner=library;root=library.root}
     var enabled:Bool{NetworkPolicy.enabled && UserDefaults.standard.bool(forKey:"storage-projects-server")}
@@ -64,19 +65,20 @@ enum VaultFiles {
     }
     /// Called before a canvas can read pixels. Opening waits for an earlier close
     /// of the same page, preventing a late upload from removing an active source.
-    func open(_ id:UUID)async throws {
+    func open(_ id:UUID,lease:UUID?=nil)async throws {
         guard !suspended,let library=owner else{throw CancellationError()}
         if let close=closing[id]{await close.value}
-        opened.insert(id)
-        do{if let receipt=try VaultFiles.receipt(library.directory(id)),!receipt.resident{try await download(receipt.project,installInLibrary:false)}}catch{opened.remove(id);throw error}
+        opened[id,default:[]].insert(lease ?? id)
+        do{if let receipt=try VaultFiles.receipt(library.directory(id)),!receipt.resident{try await download(receipt.project,installInLibrary:false)}}catch{opened[id]?.remove(lease ?? id);if opened[id]?.isEmpty==true{opened[id]=nil};throw error}
     }
-    func close(_ id:UUID){
-        opened.remove(id)
+    func close(_ id:UUID,lease:UUID?=nil){
+        opened[id]?.remove(lease ?? id);guard !isOpen(id) else{return};opened[id]=nil
         guard !suspended,receipt(id)?.managed != false,(enabled || receipt(id) != nil) else{return}
-        closing[id]=Task{[weak self] in guard let self else{return};while self.busy{try? await Task.sleep(nanoseconds:100_000_000);if Task.isCancelled{return}};await self.store(id,evict:true);self.closing[id]=nil}
+        closing[id]=Task{[weak self] in guard let self else{return};while self.busy{try? await Task.sleep(nanoseconds:100_000_000);if Task.isCancelled{return}};await self.store(id,evict:true);if let error=self.error{self.owner?.error=error};self.closing[id]=nil}
     }
+    func waitForPendingTransfer(_ id:UUID)async{if let task=closing[id]{await task.value}}
     func store(_ id:UUID,evict:Bool)async {
-        guard !busy,!suspended,!opened.contains(id),let library=owner else{return};busy=true;activity="تجهيز المشروع";progress=0;defer{busy=false;revision+=1}
+        guard !busy,!suspended,!isOpen(id),let library=owner else{return};busy=true;error=nil;activity="تجهيز المشروع";progress=0;defer{busy=false;revision+=1}
         do{
             let (c,user)=try await client();let remote=try await c.list();try checkAccount(user)
             let directory=library.directory(id),root=library.root
@@ -88,7 +90,7 @@ enum VaultFiles {
             let page=try library.load(id)
             let (archive,head)=try await BackgroundWork.run{try VaultArchive.create(page,directory:directory)}
             defer{try? FileManager.default.removeItem(at:archive)}
-            try checkAccount(user);guard !opened.contains(id),try library.load(id)==page else{throw ImageFailure.message("فُتح المشروع أو تغير أثناء النقل؛ بقي على الجهاز")}
+            try checkAccount(user);guard !isOpen(id),try library.load(id)==page else{throw ImageFailure.message("فُتح المشروع أو تغير أثناء النقل؛ بقي على الجهاز")}
             let expected=old?.project.generation ?? 0,revisionID=UUID()
             let owner=try await c.reserve(id:id,revision:revisionID,expected:expected,head:head);guard owner==remote.owner else{throw ImageFailure.message("لم تتطابق ملكية المشروع")}
             try JSONEncoder().encode(VaultFiles.Transfer(owner:owner,revision:revisionID)).write(to:VaultFiles.transfer(directory),options:.atomic)
@@ -99,7 +101,7 @@ enum VaultFiles {
             activity="التحقق من النسخة المحفوظة";try await c.verify(saved){[weak self] in self?.progress=0.5+$0*0.5}
             try checkAccount(user)
             let confirmed=try await c.list();try checkAccount(user);guard confirmed.projects.contains(saved) else{throw ImageFailure.message("تغيرت نسخة الخادم بعد الرفع؛ احتُفظ بنسختك على الجهاز")}
-            guard !opened.contains(id),try library.load(id)==page else{throw ImageFailure.message("تغير المشروع بعد الرفع؛ احتُفظ بالنسخة المحلية لتجنب فقد تعديلاتك")}
+            guard !isOpen(id),try library.load(id)==page else{throw ImageFailure.message("تغير المشروع بعد الرفع؛ احتُفظ بالنسخة المحلية لتجنب فقد تعديلاتك")}
             try VaultFiles.write(VaultReceipt(project:saved,resident:true),directory:directory)
             if evict{ImagePipeline.clearMemoryCaches();try VaultFiles.evict(page,project:saved,directory:directory,root:root)}
             listing=confirmed;library.thumbnailRevision+=1
@@ -130,7 +132,7 @@ enum VaultFiles {
         do{if let receipt=try VaultFiles.receipt(library.directory(id)),!receipt.resident{try await download(receipt.project,installInLibrary:false)};guard !busy,var receipt=try VaultFiles.receipt(library.directory(id)) else{return};receipt.managed=false;try VaultFiles.write(receipt,directory:library.directory(id));revision+=1}catch{self.error=error.localizedDescription}
     }
     func removeRemote(_ project:VaultProject)async {
-        guard !busy,!suspended,!opened.contains(project.id),let library=owner else{return}
+        guard !busy,!suspended,!isOpen(project.id),let library=owner else{return}
         do{
             let directory=library.directory(project.id)
             if !FileManager.default.fileExists(atPath:directory.path){try await download(project,installInLibrary:true)}
