@@ -6,7 +6,26 @@ on:
 permissions:
   contents: read
 jobs:
+  supersede:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const head = await github.rest.git.getRef({...context.repo, ref:context.ref.replace('refs/', '')});
+            if(head.data.object.sha !== context.sha){core.setFailed('Superseded head');return;}
+            const runs = await github.paginate(github.rest.actions.listWorkflowRuns,{...context.repo,workflow_id:'layer-workbench.yml',branch:context.ref.replace('refs/heads/',''),per_page:100});
+            for(const run of runs){
+              if(run.id >= context.runId || !['queued','in_progress','waiting','pending'].includes(run.status))continue;
+              try{await github.rest.actions.cancelWorkflowRun({...context.repo,run_id:run.id});}
+              catch(error){if(![409,422].includes(error.status))throw error;}
+            }
   editor:
+    needs: supersede
     strategy:
       fail-fast: false
       matrix:
@@ -42,6 +61,7 @@ jobs:
             build/screenshots/
             build/whitening-*/
   local:
+    needs: supersede
     strategy:
       fail-fast: false
       matrix:
@@ -73,6 +93,7 @@ jobs:
             build/photos-integrity-*-local.json
             build/screenshots/*-local/
   package:
+    needs: supersede
     runs-on: macos-15-intel
     timeout-minutes: 55
     steps:
