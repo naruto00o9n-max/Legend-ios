@@ -22,7 +22,7 @@ struct LayerSheet:View {
         var seen=Set<UUID>()
         return model.page.layers.reversed().filter{item in
             guard filter=="all" || item.kind.rawValue==filter else{return false}
-            guard let stack=item.stackID else{return true};return seen.insert(stack).inserted
+            return seen.insert(item.stackID ?? item.id).inserted
         }
     }
     private func members(_ item:EditorLayer)->[EditorLayer]{Array(model.layerObjects(item.id).reversed())}

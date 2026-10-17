@@ -134,7 +134,7 @@ import SwiftUI
             else if let bubbleLayout{item=try BubbleLayout.fit(item,request:bubbleLayout)}
             if prepared==nil,index<targets.count{item=try SniperDetector.fitted(item,to:targets[index])}
             if transforms.indices.contains(index){transforms[index].apply(to:&item)}
-            let insertion=next.layers.lastIndex(where:{$0.stackID==textStack}).map{$0+1} ?? next.layers.count
+            let insertion=next.layers.lastIndex(where:{($0.stackID ?? $0.id)==textStack}).map{$0+1} ?? next.layers.count
             next.layers.insert(item,at:insertion);inserted.append(item.id)
         }
         next.modified=Date();try library.persist(next)
@@ -187,7 +187,7 @@ import SwiftUI
         guard stylePreviewLayer==nil,let active else{return};let ids=selectedLayerObjects
         let originals=page.layers.filter{ids.contains($0.id)};guard let index=page.layers.lastIndex(where:{ids.contains($0.id)}) else{return}
         let wholeStack=stackSelection,newStack=UUID()
-        let copies=originals.map{source->EditorLayer in var copy=source;copy.id=UUID();if source.stackID != nil{copy.stackID=wholeStack ? newStack:source.stackID};return copy}
+        let copies=originals.map{source->EditorLayer in var copy=source;copy.id=UUID();copy.stackID=wholeStack ? newStack:(source.stackID ?? source.id);copy.stackName=source.stackName ?? source.name;return copy}
         checkpoint();page.layers.insert(contentsOf:copies,at:index+1);selected=copies.last?.id ?? active.id;stackSelection=wholeStack;save()
     }
     func cancelPendingSaves(){whiteningTask?.cancel();editSaveTask?.cancel();editSaveTask=nil;previewTask?.cancel();previewTask=nil}

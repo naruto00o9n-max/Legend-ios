@@ -21,7 +21,8 @@ enum PSDWriter {
         if page.paperWhite==true{var paper=EditorLayer(kind:.shape,name:"خلفية بيضاء");paper.frame=Box(x:0,y:0,width:Double(page.width),height:Double(page.height));paper.style.color="FFFFFF";paper.style.strokeWidth=0;paperID=paper.id;exportedLayers.insert(paper,at:0)}
         var groups:[[EditorLayer]]=[]
         for layer in exportedLayers{
-            if let stack=layer.stackID,let index=groups.firstIndex(where:{$0.first?.stackID==stack}){groups[index].append(layer)}else{groups.append([layer])}
+            let stack=layer.stackID ?? layer.id
+            if let index=groups.firstIndex(where:{group in group.first.map{($0.stackID ?? $0.id)==stack} ?? false}){groups[index].append(layer)}else{groups.append([layer])}
         }
         if sourceGrouped,page.baseHidden != true,let index=groups.firstIndex(where:{$0.first?.stackID==page.baseLayerID}){
             var source=background;source.isVisible=true;source.imagePath=page.source;source.imagePixelFile=page.raw;source.imagePixelWidth=page.width;source.imagePixelHeight=page.height;source.isWorkingImage=true
@@ -29,7 +30,7 @@ enum PSDWriter {
         }
         for objects in groups {
             guard var layer=objects.last else{continue}
-            let grouped=layer.stackID != nil
+            let grouped=layer.stackID != nil || objects.count>1
             if grouped{layer.name=layer.stackName ?? layer.name;layer.opacity=1;layer.blend = .normal;layer.isVisible=objects.contains(where:{$0.isVisible})}
             let padding=max(4,layer.style.strokeWidth+layer.style.shadowRadius*3+layer.style.effectValue*3+Double(layer.style.threeDDepth))
             let rect=objects.reduce(CGRect.null){box,item in

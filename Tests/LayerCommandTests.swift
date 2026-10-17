@@ -76,7 +76,7 @@ final class LayerCommandTests:XCTestCase {
         let top=EditorLayer(kind:.shape);page.layers=[first,top]
         let model=EditorModel(page:page,library:LibraryStore(root:root));defer{model.cancelPendingSaves()};model.selected=first.id
         model.duplicate();let copy=try XCTUnwrap(model.active)
-        XCTAssertEqual(model.page.layers.map(\.id),[first.id,copy.id,top.id]);XCTAssertEqual(copy.frame,first.frame);XCTAssertEqual(copy.rotation,30)
+        XCTAssertEqual(model.logicalLayerCount,3,"Copying content does not create a fourth layer");XCTAssertEqual(model.page.layers.map(\.id),[first.id,copy.id,top.id]);XCTAssertEqual(copy.frame,first.frame);XCTAssertEqual(copy.rotation,30)
         model.renameLayer(copy.id,to:"اختبار");XCTAssertEqual(model.active?.name,"اختبار");XCTAssertEqual(model.active?.textContent,"الأصل")
         model.flipActiveLayer(horizontal:true);XCTAssertEqual(model.active?.scaleX,-1)
         model.moveActiveLayer(by:1);XCTAssertEqual(model.page.layers.last?.id,copy.id)
@@ -280,5 +280,19 @@ extension LayerCommandTests {
         let cropped=try PageOperations.cropped(model.page,rect:CGRect(x:0,y:0,width:80,height:100),root:root)
         let editor=EditorModel(page:cropped,library:model.library);defer{editor.cancelPendingSaves()}
         XCTAssertEqual(editor.logicalLayerCount,1);XCTAssertEqual(editor.page.width,80);XCTAssertEqual(editor.page.height,100)
+    }
+}
+
+extension LayerCommandTests {
+    @MainActor func testLegacyImageAndNewTyperContentsUseOneLayerInTheirOriginalPosition()throws{
+        var(page,root,_)=try fixture();defer{try? FileManager.default.removeItem(at:root)}
+        var image=EditorLayer(kind:.image,name:"صورة قديمة");image.imagePath=page.source;image.frame=Box(x:0,y:0,width:96,height:128)
+        let upper=EditorLayer(kind:.shape);page.layers=[image,upper]
+        let model=EditorModel(page:page,library:LibraryStore(root:root));defer{model.cancelPendingSaves()};model.selected=image.id
+        let ids=try model.insertDialogues([("نص جديد",.plainText())])
+        XCTAssertEqual(model.page.layers.map(\.id),[image.id,ids[0],upper.id]);XCTAssertEqual(model.layerObjects(image.id).count,2)
+        model.selectLogicalLayer(image);XCTAssertEqual(model.selectedLayerObjects,Set([image.id,ids[0]]))
+        model.renameLayer(image.id,to:"طبقتي");XCTAssertEqual(Set(model.layerObjects(image.id).compactMap(\.stackName)),["طبقتي"])
+        model.setStackVisibility(image.id,false);XCTAssertTrue(model.layerObjects(image.id).allSatisfy{!$0.isVisible});XCTAssertTrue(model.page.layers.last!.isVisible)
     }
 }

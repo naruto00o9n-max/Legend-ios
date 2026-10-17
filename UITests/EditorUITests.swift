@@ -67,7 +67,7 @@ final class EditorUITests:XCTestCase {
     func testTextHandlesKeepImageWhileEditing() {
         openEditor();tool("text");XCTAssertTrue(app.textViews["text-input"].waitForExistence(timeout:5));app.buttons["تم"].tap()
         let copy=app.buttons["selection-duplicate"];XCTAssertTrue(copy.waitForExistence(timeout:10));copy.tap()
-        let canvas=app.scrollViews["canvas-scroll"];XCTAssertTrue((canvas.value as? String ?? "").contains("2 طبقات"))
+        let canvas=app.scrollViews["canvas-scroll"];XCTAssertTrue((canvas.value as? String ?? "").contains("1 طبقات"),"Duplicating a text object keeps it on the current layer")
         capture("35-text-duplicated-with-stable-image")
         let resize=app.buttons["selection-resize"];XCTAssertTrue(resize.isHittable)
         let before=canvas.value as? String ?? ""

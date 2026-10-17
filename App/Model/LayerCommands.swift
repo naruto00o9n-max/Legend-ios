@@ -15,22 +15,23 @@ extension EditorModel {
     /// objects can share a logical text layer without rasterization or reordering.
     func organizeLegacyTextLayers(){
         var next=page,stack:UUID?,changed=false
+        let references=Set(next.layers.compactMap(\.stackID))
         for i in next.layers.indices{
             if next.layers[i].kind != .text{stack=nil;continue}
             if let existing=next.layers[i].stackID{stack=existing;continue}
-            let id=stack ?? UUID();stack=id;next.layers[i].stackID=id;next.layers[i].stackName="النصوص";changed=true
+            let id=references.contains(next.layers[i].id) ? next.layers[i].id:(stack ?? UUID());stack=id;next.layers[i].stackID=id;next.layers[i].stackName="النصوص";changed=true
         }
         if changed{page=next;save()}
     }
     var selectedLayerObjects:Set<UUID>{
         guard let active else{return []}
-        if stackSelection,let stack=active.stackID{return Set(page.layers.filter{$0.stackID==stack}.map(\.id))}
+        if stackSelection{let stack=active.stackID ?? active.id;return Set(page.layers.filter{($0.stackID ?? $0.id)==stack}.map(\.id))}
         return [active.id]
     }
     func layerObjects(_ id:UUID)->[EditorLayer]{
         guard let layer=page.layers.first(where:{$0.id==id}) else{return []}
-        guard let stack=layer.stackID else{return [layer]}
-        return page.layers.filter{$0.stackID==stack}
+        let stack=layer.stackID ?? layer.id
+        return page.layers.filter{($0.stackID ?? $0.id)==stack}
     }
     @discardableResult func prepareBrushTarget()->Bool {
         guard canEditCurrentLayer() else{return false}
@@ -118,7 +119,7 @@ extension EditorModel {
     }
     func setPaperWhite(_ white:Bool){guard page.paperWhite != white else{return};checkpoint();page.paperWhite=white;save()}
     func renameLayer(_ id:UUID,to name:String) {
-        if stackSelection,let stack=active?.stackID{let title=name.trimmingCharacters(in:.whitespacesAndNewlines);guard !title.isEmpty else{return};checkpoint();for i in page.layers.indices where page.layers[i].stackID==stack{page.layers[i].stackName=String(title.prefix(120))};save();return}
+        if stackSelection,let active{let stack=active.stackID ?? active.id;let title=name.trimmingCharacters(in:.whitespacesAndNewlines);guard !title.isEmpty else{return};checkpoint();for i in page.layers.indices where (page.layers[i].stackID ?? page.layers[i].id)==stack{page.layers[i].stackName=String(title.prefix(120))};save();return}
         let title=name.trimmingCharacters(in:.whitespacesAndNewlines)
         guard !title.isEmpty,let index=page.layers.firstIndex(where:{$0.id==id}),page.layers[index].name != title else{return}
         checkpoint();page.layers[index].name=String(title.prefix(120));save()
