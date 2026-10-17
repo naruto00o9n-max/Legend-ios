@@ -67,7 +67,7 @@ struct VaultRemovalConfirmation:ViewModifier {
     let remove:(VaultProject)->Void
     func body(content:Content)->some View {
         content.cookiesConfirmationDialog("حذف نسخة الخادم؟",isPresented:Binding(get:{project != nil},set:{if !$0{project=nil}})){
-            Button("إبقاء نسخة الجهاز وحذف نسخة الخادم",role:.destructive){if let target=project{remove(target)}}
+            Button("حذف نسخة الخادم فقط",role:.destructive){if let target=project{remove(target)}}
                 .accessibilityIdentifier("vault-confirm-delete")
             Button("إلغاء",role:.cancel){}
         }message:{

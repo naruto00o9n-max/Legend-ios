@@ -144,6 +144,7 @@ struct ChapterExportSheet:View {
     @State private var driveFolder:URL?
     @State private var providerMessage=""
     @State private var format="PNG"
+    @State private var preserveNames=true
     @State private var prefix="صفحة"
     @State private var smart=false
     @State private var maxHeight=15000.0
@@ -157,7 +158,7 @@ struct ChapterExportSheet:View {
     @Environment(\.dismiss) private var dismiss
     var body:some View{NavigationStack{ZStack{Ambient();ScrollView{VStack(alignment:.leading,spacing:18){
         SurfaceHeader(title:"استوديو التصدير",subtitle:"\(ids.count) صفحات · اختر الحزمة المناسبة لعملك",icon:"square.and.arrow.up")
-        GlassSection("صيغة الحزمة",icon:"doc.zipper"){Picker("الصيغة",selection:$format){ForEach(independentProjects ? ["PNG","JPEG","PSD","مشروع"]:["PNG","JPEG","PSD","مشروع","فصل قابل للتعديل"],id:\.self){Text($0)}}.pickerStyle(.menu);TextField("بادئة أسماء الصفحات",text:$prefix).glassField();if format=="JPEG"{HStack{Text("جودة JPEG");Spacer();Text("\(Int(quality*100))%").font(.system(size:11,design:.monospaced))};StepSlider(value:$quality,in:0.1...1)};Text(format=="JPEG" ? "JPEG يستخدم ضغطًا مع فقدان. PNG يحفظ الصورة بلا فقدان.":format=="PSD" ? "PSD يحتفظ بالطبقات مرسومة؛ احتفظ بملف المشروع لتعديل النصوص.":"المشروع والفصل القابل للتعديل يحتفظان بأصول الصور والطبقات.").font(.system(size:12)).foregroundStyle(Palette.secondary).lineSpacing(4)}
+        GlassSection("صيغة الحزمة",icon:"doc.zipper"){Picker("الصيغة",selection:$format){ForEach(independentProjects ? ["PNG","JPEG","PSD","مشروع"]:["PNG","JPEG","PSD","مشروع","فصل قابل للتعديل"],id:\.self){Text($0)}}.pickerStyle(.menu);Toggle("الاحتفاظ بأسماء الصور",isOn:$preserveNames).tint(Palette.gold);if !preserveNames{TextField("بادئة أسماء الصفحات",text:$prefix).glassField()};if format=="JPEG"{HStack{Text("جودة JPEG");Spacer();Text("\(Int(quality*100))%").font(.system(size:11,design:.monospaced))};StepSlider(value:$quality,in:0.1...1)};Text(format=="JPEG" ? "JPEG يستخدم ضغطًا مع فقدان. PNG يحفظ الصورة بلا فقدان.":format=="PSD" ? "PSD يحتفظ بالطبقات مرسومة؛ احتفظ بملف المشروع لتعديل النصوص.":"المشروع والفصل القابل للتعديل يحتفظان بأصول الصور والطبقات.").font(.system(size:12)).foregroundStyle(Palette.secondary).lineSpacing(4)}
         if format != "فصل قابل للتعديل"{GlassSection("تصدير ذكي",icon:"square.split.1x2"){SettingToggle(title:"دمج ثم تقطيع",detail:"اجمع صفحات الفصل ثم قسّمها بطول ثابت.",value:$smart);if smart{MetricField(title:"طول الجزء",value:$maxHeight)}}}
         if busy{VStack(spacing:12){ProgressView(value:Double(completed),total:Double(max(1,total))).tint(Palette.gold);Text("\(completed) / \(total)").font(.system(size:12,design:.monospaced));Button("إلغاء"){task?.cancel()}.buttonStyle(CapsuleActionStyle())}.padding(20).glass(22)}else{Button{export()}label:{Label("تصدير \(ids.count) صفحة",systemImage:"square.and.arrow.up")}.buttonStyle(GoldButtonStyle(primary:true)).accessibilityIdentifier("chapter-export")}
         if let output{ShareLink(item:output){Label("حفظ أو مشاركة الحزمة",systemImage:"square.and.arrow.up")}.buttonStyle(GoldButtonStyle()).accessibilityIdentifier("chapter-export-share")}
@@ -175,20 +176,19 @@ struct ChapterExportSheet:View {
     func savePhotos(){task=Task{busy=true;completed=0;total=ids.count;defer{busy=false};do{try await library.withProjectFiles(ids){for id in ids{try Task.checkCancellation();let page=try library.load(id),directory=library.directory(id);let file=try await BackgroundWork.run{try ImagePipeline.exportPNG(page,directory:directory)};defer{try? FileManager.default.removeItem(at:file)};try await PhotoSave.save(file);completed+=1}}}catch is CancellationError{}catch{failure=error.localizedDescription}}}
     func export(){task=Task{busy=true;completed=0;total=ids.count;defer{busy=false};do{
         try await library.withProjectFiles(ids){
-        let pages=try ids.map{try library.load($0)},root=library.root,format=self.format,prefix=self.prefix,quality=self.quality,h=smart ? Int(maxHeight):nil
+        let pages=try ids.map{try library.load($0)},root=library.root,format=self.format,prefix=self.prefix,quality=self.quality,keepNames=self.preserveNames,h=smart ? Int(maxHeight):nil
         if format=="فصل قابل للتعديل",var item=library.chapter(chapter){item.pages=ids;output=try await BackgroundWork.run{try ChapterArchive.export(item,root:root)}}
-        else{output=try await BackgroundWork.run{try BatchExport.export(pages:pages,root:root,format:format,quality:quality,prefix:prefix,smartHeight:h){done,count in Task{@MainActor in completed=done;total=count}}}}
+        else{output=try await BackgroundWork.run{try BatchExport.export(pages:pages,root:root,format:format,quality:quality,prefix:prefix,preserveNames:keepNames,smartHeight:h){done,count in Task{@MainActor in completed=done;total=count}}}}
         }
     }catch is CancellationError{}catch{failure=error.localizedDescription}}}
     func prepareDrive(){guard !ids.isEmpty else{failure="حدد صورًا أولًا";return};task=Task{busy=true;completed=0;total=ids.count;defer{busy=false}
         let folder=FileManager.default.temporaryDirectory.appendingPathComponent("Cookies-Drive-"+UUID().uuidString)
         do{try FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true)
             let urls=try await library.withProjectFiles(ids){()->[URL] in
-                var result:[URL]=[]
-                for (index,id) in ids.enumerated(){try Task.checkCancellation();let page=try library.load(id),directory=library.directory(id)
+                var result:[URL]=[];var used=Set<String>()
+                for id in ids{try Task.checkCancellation();let page=try library.load(id),directory=library.directory(id)
                     let file=try await BackgroundWork.run{try ImagePipeline.exportPNG(page,directory:directory)};defer{try? FileManager.default.removeItem(at:file)}
-                    let name=page.title.replacingOccurrences(of:"/",with:"_").replacingOccurrences(of:"\\",with:"_")
-                    let target=folder.appendingPathComponent(String(format:"%03d-",index+1)+String(name.prefix(120))+".png");try FileManager.default.moveItem(at:file,to:target);result.append(target);completed+=1
+                    let target=ExportNames.unique(page.title,extension:"png",in:folder,used:&used);try FileManager.default.moveItem(at:file,to:target);result.append(target);completed+=1
                 };return result
             }
             driveURLs=urls;driveFolder=folder;provider=true

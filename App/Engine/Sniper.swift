@@ -36,10 +36,10 @@ enum WhiteningPreferences {
 }
 enum ManualSniperTool:String {case rectangle,freehand,textRectangle}
 enum RestorationProvider:String,CaseIterable,Identifiable {
-    case balanced,generative
+    case balanced,generative,texture
     var id:String{rawValue}
-    var title:String{self == .balanced ? "ترميم متوازن":"إعادة بناء توليدية"}
-    var detail:String{self == .balanced ? "يصل المناطق المحيطة بالنص ويحافظ على ألوانها":"يعيد تخيل التفاصيل والزخارف. يحتاج مراجعة؛ قد يغيّر النمط المخفي. حصة تجريبية محدودة"}
+    var title:String{switch self{case .balanced:"ترميم متوازن";case .generative:"إعادة بناء توليدية";case .texture:"ترميم بديل مجاني"}}
+    var detail:String{switch self{case .balanced:"يصل المناطق المحيطة بالنص ويحافظ على ألوانها";case .generative:"يعيد تخيل التفاصيل والزخارف. يحتاج مراجعة؛ قد يغيّر النمط المخفي. حصة تجريبية محدودة";case .texture:"خدمة ذكاء اصطناعي مختلفة تتطلب الإنترنت. استضافة مجتمعية مجانية بلا حد شخصي داخل التطبيق؛ قد تنشغل أو تتوقف. قارن النتيجة قبل اعتمادها"}}
 }
 struct SniperTarget: Identifiable, Equatable {
     var id=UUID()

@@ -37,6 +37,7 @@ extension BubbleWhitening {
         let input=try prepareInput(page:page,directory:directory,target:target)
         let patch:CGImage
         if target.restorationProvider == .generative{patch=try await GenerativeRestoration.repair(source:input.source,mask:input.mask)}
+        else if target.restorationProvider == .texture{patch=try await HostedTextureRestoration.repair(source:input.source,mask:input.mask)}
         else{patch=try await CloudRestoration.repair(source:input.source,mask:input.mask)}
         try Task.checkCancellation()
         return try savePatch(patch,region:input.region,directory:directory)

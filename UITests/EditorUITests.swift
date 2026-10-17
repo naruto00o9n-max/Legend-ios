@@ -102,10 +102,10 @@ final class EditorUITests:XCTestCase {
 
     func testEditorTextLayersAndExport(){openEditor();tool("text");let text=app.textViews["text-input"];XCTAssertTrue(text.waitForExistence(timeout:6));XCTAssertFalse(app.scrollViews["tool-strip"].exists,"Text mode replaces primary tools");XCTAssertTrue(app.buttons["text-add"].exists);text.tap();text.typeText("كوكيز إيدتور\nاختبار الحوار العربي");capture("07-text-entry-keyboard");app.buttons["تم"].tap();capture("08-text-layer");assertLayout();reveal(app.buttons["panel-format"],in:app.scrollViews["panel-strip"]);app.buttons["panel-format"].tap();capture("09-format");app.buttons["تم"].tap();tool("layers");capture("10-layers");app.buttons["layers-close"].tap();app.buttons["export"].tap();capture("11-export-settings");app.buttons["export-png"].tap();XCTAssertTrue(app.buttons["share-png"].waitForExistence(timeout:60));capture("12-export-complete")}
     func testEraserKeepsSelectedTextEditableWithoutCreatingDrawingLayers(){
-        openEditor();tool("text");XCTAssertTrue(app.textViews["text-input"].waitForExistence(timeout:8));app.buttons["text-inspector-close"].tap();tool("eraser")
+        openEditor();app.buttons["create-layer"].tap();tool("text");XCTAssertTrue(app.textViews["text-input"].waitForExistence(timeout:8));app.buttons["text-inspector-close"].tap();tool("eraser")
         let canvas=app.scrollViews["canvas-scroll"]
         canvas.coordinate(withNormalizedOffset:CGVector(dx:0.4,dy:0.35)).press(forDuration:0.05,thenDragTo:canvas.coordinate(withNormalizedOffset:CGVector(dx:0.6,dy:0.4)))
-        let committed=XCTNSPredicateExpectation(predicate:NSPredicate{_,_ in let value=canvas.value as? String ?? "";return value.hasPrefix("1 طبقات") && value.contains("1 مناطق مسح")},object:canvas)
+        let committed=XCTNSPredicateExpectation(predicate:NSPredicate{_,_ in let value=canvas.value as? String ?? "";return value.hasPrefix("2 طبقات") && value.contains("1 مناطق مسح")},object:canvas)
         XCTAssertEqual(XCTWaiter.wait(for:[committed],timeout:12),.completed)
         tool("layers");XCTAssertTrue(app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH 'layer-row-text-'")).firstMatch.waitForExistence(timeout:6))
         XCTAssertFalse(app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH 'layer-row-drawing-'")).firstMatch.exists)
@@ -140,10 +140,10 @@ final class EditorUITests:XCTestCase {
         tool("brush");app.buttons["إعدادات الفرشاة"].tap();XCTAssertTrue(app.buttons["brush-close"].waitForExistence(timeout:5));capture("17-brush-settings");app.buttons["brush-close"].tap();tool("shapes");XCTAssertTrue(app.buttons["شكل 1"].waitForExistence(timeout:5));capture("18-shapes");app.buttons["شكل 1"].tap();tool("reader");XCTAssertTrue(app.buttons["إغلاق القراءة"].waitForExistence(timeout:5));capture("19-reader");app.buttons["إغلاق القراءة"].tap()
     }
     func testLayerButtonsActuallyHideUnlockAndDelete() {
-        openEditor();tool("text");app.buttons["text-inspector-close"].tap();tool("layers")
+        openEditor();app.buttons["create-layer"].tap();tool("text");app.buttons["text-inspector-close"].tap();tool("layers")
         let eye=app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH 'layer-eye-' ")).firstMatch,lock=app.buttons.matching(NSPredicate(format:"identifier BEGINSWITH 'layer-lock-' ")).firstMatch,delete=app.buttons["layer-delete"]
         XCTAssertTrue(eye.waitForExistence(timeout:5));XCTAssertEqual(eye.value as? String,"visible");eye.tap();XCTAssertEqual(eye.value as? String,"hidden");eye.tap();XCTAssertEqual(eye.value as? String,"visible")
-        lock.tap();XCTAssertEqual(lock.value as? String,"locked");XCTAssertFalse(delete.isEnabled);lock.tap();XCTAssertEqual(lock.value as? String,"unlocked");XCTAssertTrue(delete.isEnabled);capture("fix-layer-controls");delete.tap();XCTAssertFalse(eye.exists);app.buttons["layers-close"].tap();XCTAssertTrue((app.scrollViews["canvas-scroll"].value as? String ?? "").hasPrefix("0 طبقات"))
+        lock.tap();XCTAssertEqual(lock.value as? String,"locked");XCTAssertFalse(delete.isEnabled);lock.tap();XCTAssertEqual(lock.value as? String,"unlocked");XCTAssertTrue(delete.isEnabled);capture("fix-layer-controls");delete.tap();XCTAssertFalse(eye.exists);app.buttons["layers-close"].tap();XCTAssertTrue((app.scrollViews["canvas-scroll"].value as? String ?? "").hasPrefix("1 طبقات"))
     }
     func testCanvasTapDoesNotCreateUnrequestedTextAndFontsStayInsideEditor() {
         openEditor();tool("text");app.buttons["text-inspector-close"].tap();let canvas=app.scrollViews["canvas-scroll"]
@@ -163,7 +163,7 @@ final class EditorUITests:XCTestCase {
         print("Tap-text switch candidates:",candidates.map{["frame":String(describing:$0.frame),"value":$0.value as? String ?? "nil"]})
         XCTAssertEqual(toggle.value as? String,"0")
         if toggle.frame.width>100{toggle.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:30,dy:toggle.frame.height/2)).tap()}else{toggle.tap()};let enabled=XCTNSPredicateExpectation(predicate:NSPredicate(format:"value == %@","1"),object:toggle);XCTAssertEqual(XCTWaiter.wait(for:[enabled],timeout:3),.completed);app.buttons["workspace-settings-close"].tap();app.buttons["settings-close"].tap();openDemoFromLibrary()
-        let canvas=app.scrollViews["canvas-scroll"];canvas.coordinate(withNormalizedOffset:CGVector(dx:0.45,dy:0.3)).tap();let confirm=app.buttons["canvas-add-text-confirm"];XCTAssertTrue(confirm.waitForExistence(timeout:5));XCTAssertTrue((canvas.value as? String ?? "").hasPrefix("0 طبقات"));capture("fix-text-add-confirmation");confirm.tap();XCTAssertTrue(app.textViews["text-input"].waitForExistence(timeout:5));XCTAssertTrue((canvas.value as? String ?? "").hasPrefix("1 طبقات"));XCTAssertFalse(confirm.exists)
+        let canvas=app.scrollViews["canvas-scroll"];canvas.coordinate(withNormalizedOffset:CGVector(dx:0.45,dy:0.3)).tap();let confirm=app.buttons["canvas-add-text-confirm"];XCTAssertTrue(confirm.waitForExistence(timeout:5));XCTAssertTrue((canvas.value as? String ?? "").hasPrefix("1 طبقات"));capture("fix-text-add-confirmation");confirm.tap();XCTAssertTrue(app.textViews["text-input"].waitForExistence(timeout:5));XCTAssertTrue((canvas.value as? String ?? "").hasPrefix("1 طبقات"));XCTAssertFalse(confirm.exists)
     }
 
     func testStrokePlusMinusChangesByExactlyOneWithoutDragging() {

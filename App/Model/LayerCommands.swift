@@ -10,7 +10,7 @@ extension EditorLayer {
 }
 
 extension EditorModel {
-    var logicalLayerCount:Int{Set(page.layers.map{$0.stackID ?? $0.id}).count}
+    var logicalLayerCount:Int{var ids=Set(page.layers.map{$0.stackID ?? $0.id});if page.baseHidden != true{ids.insert(page.id)};return ids.count}
     /// Older documents encoded each text object as a stack row. Adjacent text
     /// objects can share a logical text layer without rasterization or reordering.
     func organizeLegacyTextLayers(){
@@ -33,12 +33,13 @@ extension EditorModel {
         return page.layers.filter{$0.stackID==stack}
     }
     @discardableResult func prepareBrushTarget()->Bool {
-        if let active,[LayerKind.drawing,.image].contains(active.kind){
-            guard !active.isLocked,active.isVisible else{error="اختر طبقة ظاهرة وغير مقفلة للرسم";return false}
-            if active.kind == .drawing{lastDrawingLayer=active.id};return true
-        }
-        if let drawing=page.layers.last(where:{($0.id==lastDrawingLayer || selected==nil) && $0.kind == .drawing && !$0.isLocked && $0.isVisible}){selected=drawing.id;return true}
-        add(.drawing);return true
+        guard canEditCurrentLayer() else{return false}
+        if let item=currentLayerObjects.last,[LayerKind.drawing,.image].contains(item.kind){selected=item.id;if item.kind == .drawing{lastDrawingLayer=item.id};return true}
+        // A paint record belongs to the selected layer. Reuse it after each
+        // finger lift; do not jump to another layer or create a stack row.
+        checkpoint();var item=EditorLayer(kind:.drawing,name:"الرسم")
+        item.frame=Box(x:0,y:0,width:Double(page.width),height:Double(page.height))
+        attachToCurrentLayer(&item);insertInCurrentLayer(item);lastDrawingLayer=item.id;save();return true
     }
     @discardableResult func appendRasterPatch(_ patch:EditorLayer)->Bool{
         guard prepareBrushTarget(),let active else{return false}
@@ -64,7 +65,8 @@ extension EditorModel {
         next.modified=Date();page=next;scheduleEditSave()
     }
     func setStackVisibility(_ id:UUID,_ visible:Bool){
-        let ids=Set(layerObjects(id).map(\.id));checkpoint()
+        let objects=layerObjects(id),ids=Set(objects.map(\.id));checkpoint()
+        if objects.first?.stackID==page.id,!objects.contains(where:{$0.isWorkingImage==true}){page.baseHidden = !visible}
         for index in page.layers.indices where ids.contains(page.layers[index].id){page.layers[index].isVisible=visible};save()
     }
     func setStackLocked(_ id:UUID,_ locked:Bool){
@@ -88,27 +90,31 @@ extension EditorModel {
             let width=min(Double(result.1),Double(page.width)*0.75),height=width*Double(result.2)/Double(result.1)
             var layer=EditorLayer(kind:.image,name:input.deletingPathExtension().lastPathComponent)
             layer.imagePath=result.0;layer.frame=Box(x:center.x-width/2,y:center.y-height/2,width:width,height:height)
-            let insertion=selected.flatMap{id in page.layers.firstIndex{$0.id==id}}.map{$0+1} ?? page.layers.count
-            checkpoint();page.layers.insert(layer,at:insertion);selected=layer.id;tool = .move;panel=nil;save()
+            guard canEditCurrentLayer() else{try? FileManager.default.removeItem(at:directory.appendingPathComponent(result.0));return}
+            checkpoint();attachToCurrentLayer(&layer);insertInCurrentLayer(layer);tool = .move;panel=nil;save()
         }catch{self.error=error.localizedDescription}
     }
     /// Returns false for locked/hidden targets rather than silently making a
     /// new layer that has nothing to erase. The base is promoted by reference.
     @discardableResult func prepareEraserTarget()->Bool {
-        if let active {
-            guard !active.isLocked else{error="الطبقة مقفلة؛ افتح قفلها قبل المسح";return false}
-            guard active.isVisible else{error="الطبقة مخفية؛ أظهرها قبل المسح";return false}
-            if active.isWorkingImage==true,page.baseHidden==true,page.paperWhite==nil{checkpoint();page.paperWhite=true;save()}
+        guard canEditCurrentLayer() else{return false}
+        let contents=currentLayerObjects.filter{$0.kind != .drawing || !$0.strokes.isEmpty || !($0.erasures ?? []).isEmpty}
+        if contents.count+(currentLayerID==page.id && page.baseHidden != true ? 1:0)>1{
+            if contents.contains(where:{$0.kind == .text || $0.kind == .shape}){layerRasterizationRequested=true}
+            else if !busy{Task{await rasterizeCurrentLayerForErasing()}}
+            return false
+        }
+        if let item=contents.first {
+            guard !item.isLocked,item.isVisible else{error="اختر عنصرًا ظاهرًا وغير مقفل للمسح";return false}
+            selected=item.id
+            if item.isWorkingImage==true,page.baseHidden==true,page.paperWhite==nil{checkpoint();page.paperWhite=true;save()}
             return true
         }
-        if let lastDrawingLayer,let layer=page.layers.first(where:{$0.id==lastDrawingLayer && $0.isVisible && !$0.isLocked}){selected=layer.id;return true}
-        guard page.baseHidden != true else{error="اختر الطبقة التي تريد المسح منها";return false}
-        var layer=EditorLayer(kind:.image,name:"الصورة الأصلية")
-        layer.imagePath=page.source;layer.isWorkingImage=true
-        layer.imagePixelFile=page.raw;layer.imagePixelWidth=page.width;layer.imagePixelHeight=page.height
-        layer.frame=Box(x:0,y:0,width:Double(page.width),height:Double(page.height))
-        checkpoint();page.layers.insert(layer,at:0);page.baseHidden=true;page.paperWhite=true;selected=layer.id;save()
-        return true
+        // The only implicit backing is the existing original image, by
+        // reference. A missing selection never falls through to brush creation.
+        guard currentLayerID==page.id,page.baseHidden != true else{error="هذه الطبقة فارغة؛ لا يوجد شيء لمسحه";return false}
+        checkpoint();materializeCurrentLayer();page.paperWhite=true
+        if let item=currentLayerObjects.first{selected=item.id};save();return active != nil
     }
     func setPaperWhite(_ white:Bool){guard page.paperWhite != white else{return};checkpoint();page.paperWhite=white;save()}
     func renameLayer(_ id:UUID,to name:String) {
@@ -174,7 +180,7 @@ extension EditorModel {
             let result=try await BackgroundWork.run{try LayerBitmap.merge(objects,page:snapshot,directory:directory)}
             guard page==snapshot else{try? FileManager.default.removeItem(at:directory.appendingPathComponent(result.imagePath));return}
             var raster=result;raster.id=active.id;raster.name=active.stackName ?? active.name;raster.isVisible=active.isVisible
-            raster.groupID=active.groupID;raster.groupName=active.groupName;raster.blend=active.blend
+            raster.stackID=active.stackID;raster.stackName=active.stackName;raster.groupID=active.groupID;raster.groupName=active.groupName;raster.blend=active.blend
             checkpoint();page.layers.replaceSubrange(first...last,with:[raster]);selected=raster.id;save()
         }catch{self.error=error.localizedDescription}
     }

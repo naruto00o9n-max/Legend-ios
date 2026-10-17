@@ -9,10 +9,23 @@ struct CleaningCandidate:Identifiable {
     var allLayers:[EditorLayer]{[layer]+additionalLayers}
 }
 extension EditorModel {
+    /// A cleaning patch is content of the active layer. Keep the preview and
+    /// committed order identical: above its raster background, below its text.
+    private func insertCleaning(_ preview:CleaningCandidate,into value:inout EditorPage){
+        let id=currentLayerID ?? value.id
+        let title=currentLayerTitle
+        let objects=preview.allLayers.map{item -> EditorLayer in var copy=item;copy.stackID=id;copy.stackName=title;return copy}
+        let members=value.layers.indices.filter{(value.layers[$0].stackID ?? value.layers[$0].id)==id}
+        let position:Int
+        if preview.underlays{position=members.first(where:{value.layers[$0].kind == .text}) ?? members.last.map{$0+1} ?? value.layers.count}
+        else{position=members.last.map{$0+1} ?? value.layers.count}
+        value.layers.insert(contentsOf:objects,at:position)
+    }
+
     var canvasPage:EditorPage{
         var value=page
         if let selected=cleanPreviewID,let preview=cleanCandidates.first(where:{$0.id==selected}){
-            if preview.underlays{value.layers.insert(contentsOf:preview.allLayers,at:0)}else{value.layers.append(contentsOf:preview.allLayers)}
+            insertCleaning(preview,into:&value)
         }
         return value
     }
@@ -25,7 +38,7 @@ extension EditorModel {
         guard let selected=cleanPreviewID,let preview=cleanCandidates.first(where:{$0.id==selected}) else{return}
         if let baseline=preview.baseline,baseline != page{error="تغيرت الصفحة منذ المعاينة؛ أعد التبييض على حالتها الحالية";return}
         var next=page
-        if preview.underlays{next.layers.insert(contentsOf:preview.allLayers,at:0)}else{next.layers.append(contentsOf:preview.allLayers)}
+        insertCleaning(preview,into:&next)
         next.modified=Date()
         do{try library.persist(next)}catch{self.error=error.localizedDescription;return}
         checkpoint();page=next;self.selected=preview.layer.id
@@ -37,7 +50,7 @@ extension EditorModel {
         guard !busy,!sniperTargets.isEmpty else{return}
         let targets=sniperTargets,snapshot=page,directory=self.directory
         guard targets.count<=40 else{error="عالِج حتى 40 فقاعة في المرة الواحدة لتقليل استهلاك الذاكرة";return}
-        guard snapshot.baseHidden != true else{error="أظهر الصورة الأصلية قبل تبييض نصها";return}
+        guard snapshot.baseHidden != true || snapshot.layers.contains(where:{$0.isWorkingImage==true && $0.isVisible}) else{error="أظهر الصورة الأصلية قبل تبييض نصها";return}
         let needsModel=targets.contains{$0.whiteningMethod == .bigLaMa && $0.restorationExecution == .device}
         var compiled:URL?
         do{if needsModel{compiled=try BigLaMaAssets.shared.acquire()}}catch{self.error=error.localizedDescription;return}

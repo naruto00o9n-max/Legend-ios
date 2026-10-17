@@ -149,7 +149,7 @@ extension LayerCommandTests {
         model.selected=ids[0];model.change{$0.textContent="نص معدل"};XCTAssertEqual(model.page.layers[1].textContent,"الثاني")
         model.setStackVisibility(ids[0],false);XCTAssertTrue(model.page.layers.allSatisfy{!$0.isVisible})
         model.undo();XCTAssertTrue(model.page.layers.allSatisfy(\.isVisible))
-        model.selected=ids[0];model.stackSelection=true;model.delete();XCTAssertTrue(model.page.layers.isEmpty)
+        model.selected=ids[0];model.stackSelection=true;model.delete();XCTAssertEqual(model.page.layers.count,1);XCTAssertEqual(model.page.layers.first?.kind,.drawing)
         model.undo();XCTAssertEqual(model.page.layers.count,3)
     }
 }
@@ -179,7 +179,7 @@ extension LayerCommandTests {
         var(page,root,_)=try fixture();defer{try? FileManager.default.removeItem(at:root)}
         var first=EditorLayer(kind:.text),second=EditorLayer(kind:.text);first.textContent="الأول";second.textContent="الثاني";page.layers=[first,second]
         let model=EditorModel(page:page,library:LibraryStore(root:root));defer{model.cancelPendingSaves()};model.organizeLegacyTextLayers()
-        XCTAssertEqual(model.logicalLayerCount,1);XCTAssertTrue(model.undoStack.isEmpty);XCTAssertEqual(model.page.layers.map(\.textContent),page.layers.map(\.textContent))
+        XCTAssertEqual(model.logicalLayerCount,2);XCTAssertTrue(model.undoStack.isEmpty);XCTAssertEqual(model.page.layers.map(\.textContent),page.layers.map(\.textContent))
         let migrated=model.page;model.organizeLegacyTextLayers();XCTAssertEqual(model.page,migrated)
     }
 }
@@ -198,5 +198,63 @@ extension LayerCommandTests {
         let layerBytes=try BigLaMaSession.rgba(XCTUnwrap(UIImage(contentsOfFile:layerPNG.path)?.cgImage));XCTAssertEqual(layerBytes[center+3],0)
         model.setPaperWhite(false);XCTAssertEqual(try sample(model.page,directory)[3],0)
         XCTAssertEqual(try Data(contentsOf:directory.appendingPathComponent(page.source)),original)
+    }
+}
+
+
+extension LayerCommandTests {
+    @MainActor func testClosingImageControlsKeepsLayerAndEraserTarget()async throws{
+        let(page,root,directory)=try fixture();defer{try? FileManager.default.removeItem(at:root)}
+        let model=EditorModel(page:page,library:LibraryStore(root:root));defer{model.cancelPendingSaves()}
+        model.createLayer(name:"الفقاعة");let layerID=try XCTUnwrap(model.currentLayerID)
+        await model.importImageLayer(directory.appendingPathComponent(page.source));let picture=try XCTUnwrap(model.active)
+        XCTAssertEqual(model.logicalLayerCount,2);XCTAssertEqual(picture.stackID,layerID)
+        model.finishObjectEditing();XCTAssertNil(model.selected);XCTAssertEqual(model.currentLayerID,layerID)
+        XCTAssertTrue(model.prepareEraserTarget());XCTAssertEqual(model.active?.id,picture.id)
+        let local=CGPoint(x:48,y:64).applying(LayerRenderer.transform(picture).inverted())
+        model.change{$0.appendEditorStroke(Stroke(points:[Point(x:local.x,y:local.y)],width:24,color:"000000",erase:true))}
+        XCTAssertEqual(model.logicalLayerCount,2);XCTAssertEqual(model.currentLayerObjects.filter{$0.kind == .image}.count,1)
+        XCTAssertGreaterThan(try sample(model.page,directory)[0],245,"Erasing the added red image reveals the red source, not black paint")
+        var isolated=model.page;isolated.baseHidden=true;isolated.paperWhite=false;isolated.layers=model.currentLayerObjects
+        XCTAssertEqual(try sample(isolated,directory)[3],0,"The added image's own alpha must be erased")
+        model.finishObjectEditing();model.add(.text);XCTAssertEqual(model.active?.stackID,layerID);XCTAssertEqual(model.logicalLayerCount,2)
+        model.save();let reopened=EditorModel(page:try model.library.load(page.id),library:model.library);defer{reopened.cancelPendingSaves()}
+        XCTAssertEqual(reopened.currentLayerID,layerID)
+    }
+    @MainActor func testMixedLayerEraseRequiresConfirmationThenPreservesPixelsAndUndo()async throws{
+        let(page,root,directory)=try fixture();defer{try? FileManager.default.removeItem(at:root)}
+        let model=EditorModel(page:page,library:LibraryStore(root:root));defer{model.cancelPendingSaves()}
+        model.createLayer();model.add(.shape);model.change{$0.frame=Box(x:0,y:0,width:96,height:128);$0.style.color="0000FF";$0.style.strokeWidth=0}
+        model.add(.text);model.change{$0.textContent=""};model.finishObjectEditing();let before=model.page,layer=model.currentLayerID,old=try sample(before,directory)
+        XCTAssertFalse(model.prepareEraserTarget());XCTAssertTrue(model.layerRasterizationRequested);XCTAssertEqual(model.page,before)
+        model.layerRasterizationRequested=false;await model.rasterizeCurrentLayerForErasing()
+        XCTAssertNil(model.error);XCTAssertEqual(model.currentLayerID,layer);XCTAssertEqual(model.logicalLayerCount,2)
+        XCTAssertEqual(try sample(model.page,directory),old)
+        model.change{$0.appendEditorStroke(Stroke(points:[Point(x:48,y:64)],width:24,color:"000000",erase:true))}
+        let erased=try sample(model.page,directory);XCTAssertGreaterThan(erased[0],245);XCTAssertLessThan(erased[2],10)
+        model.undo();XCTAssertEqual(model.page.layers,before.layers)
+    }
+    @MainActor func testAllAutomaticContentsStayOnLayerUntilExplicitCreate()async throws{
+        let(page,root,directory)=try fixture();defer{try? FileManager.default.removeItem(at:root)}
+        let model=EditorModel(page:page,library:LibraryStore(root:root));defer{model.cancelPendingSaves()}
+        XCTAssertEqual(model.logicalLayerCount,1)
+        model.add(.text);model.finishObjectEditing();model.add(.text);model.finishObjectEditing()
+        _ = try model.insertDialogues([("حوار",.plainText()),("راوٍ",.plainText())])
+        model.finishObjectEditing();model.add(.shape);model.finishObjectEditing()
+        await model.importImageLayer(directory.appendingPathComponent(page.source));model.finishObjectEditing()
+        for _ in 0..<8{XCTAssertTrue(model.prepareBrushTarget());model.change{$0.appendEditorStroke(Stroke(points:[Point(x:4,y:4)],width:2,color:"FFFFFF"))};model.finishObjectEditing()}
+        XCTAssertEqual(model.logicalLayerCount,1);XCTAssertEqual(Set(model.page.layers.compactMap(\.stackID)),[page.id])
+        model.createLayer();XCTAssertEqual(model.logicalLayerCount,2)
+    }
+    func testExportLeafNamesMatchProjectAcrossFormatsAndDuplicateBatchNames()throws{
+        var(page,root,directory)=try fixture();defer{try? FileManager.default.removeItem(at:root)}
+        page.title="الفصل 20 - 001.jpg"
+        let png=try ImagePipeline.exportPNG(page,directory:directory),psd=try PSDWriter.export(page,directory:directory),archive=try ProjectArchive.export(page,directory:directory)
+        defer{for file in [png,psd,archive]{try? FileManager.default.removeItem(at:file.deletingLastPathComponent())}}
+        XCTAssertEqual(png.lastPathComponent,"الفصل 20 - 001.png");XCTAssertEqual(psd.lastPathComponent,"الفصل 20 - 001.psd");XCTAssertEqual(archive.lastPathComponent,"الفصل 20 - 001.cookies")
+        let image=try XCTUnwrap(UIImage(contentsOfFile:png.path)?.cgImage);XCTAssertEqual(image.width,page.width);XCTAssertEqual(image.height,page.height)
+        var used=Set<String>();XCTAssertEqual(ExportNames.unique(page.title,extension:"png",in:root,used:&used).lastPathComponent,"الفصل 20 - 001.png")
+        XCTAssertEqual(ExportNames.unique(page.title,extension:"png",in:root,used:&used).lastPathComponent,"الفصل 20 - 001 (2).png")
+        XCTAssertFalse(ExportNames.stem("../فصل/001.png").contains("/"))
     }
 }

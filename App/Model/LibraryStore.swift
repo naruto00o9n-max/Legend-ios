@@ -60,11 +60,15 @@ import SwiftUI
 
 @MainActor final class EditorModel:ObservableObject {
     @Published var page:EditorPage
-    @Published var selected:UUID?{didSet{stackSelection=false}}
+    @Published var currentLayerID:UUID?
+    var currentContentID:UUID?
+    @Published var selected:UUID?{didSet{stackSelection=false;if let item=page.layers.first(where:{$0.id==selected}){currentLayerID=item.stackID ?? item.id;currentContentID=item.id;objectControlsOpen=[LayerKind.image,.shape].contains(item.kind);if page.activeLayerID != currentLayerID{page.activeLayerID=currentLayerID}}}}
     var stackSelection=false
     var lastDrawingLayer:UUID?
     @Published var tool:Tool = .move
     @Published var panel:Panel?
+    @Published var objectControlsOpen=false
+    @Published var layerRasterizationRequested=false
     @Published var imageEffectsOpen=false
     @Published var brushWidth = 12.0
     @Published var brushColor = "D4AF37"
@@ -111,16 +115,18 @@ import SwiftUI
     var stylePreviewLayer:UUID?
     private var previewTask:Task<Void,Never>?
     private var editSaveTask:Task<Void,Never>?
-    init(page:EditorPage,library:LibraryStore){self.page=page;self.library=library;colorStore=library.root.standardizedFileURL==AppStorageManager.root.standardizedFileURL ? .shared:ColorLibraryStore(directory:library.root.appendingPathComponent("Colors"));manualTextStore=StyleStore(directory:library.root.appendingPathComponent("Styles"))}
+    init(page:EditorPage,library:LibraryStore){self.page=page;self.library=library;let saved=page.activeLayerID.flatMap{id in (id==page.id && page.baseHidden != true) || page.layers.contains(where:{($0.stackID ?? $0.id)==id}) ? id:nil};let layerID=saved ?? page.layers.last.map{$0.stackID ?? $0.id} ?? page.id;currentLayerID=layerID;currentContentID=page.layers.last(where:{($0.stackID ?? $0.id)==layerID})?.id;colorStore=library.root.standardizedFileURL==AppStorageManager.root.standardizedFileURL ? .shared:ColorLibraryStore(directory:library.root.appendingPathComponent("Colors"));manualTextStore=StyleStore(directory:library.root.appendingPathComponent("Styles"))}
     var directory:URL {library.directory(page.id)}
     var active:EditorLayer? {page.layers.first{$0.id==selected}}
     @discardableResult func insertDialogues(_ values:[(String,TextStyle?)],targets:[SniperTarget]=[],bubbleLayout:BubbleLayoutRequest?=nil,preparedLayout:EditorLayer?=nil,preparedLayouts:[EditorLayer]=[],transforms:[TextLayerTransform]=[])throws->[UUID] {
+        guard !values.isEmpty else{return []}
         var inserted:[UUID]=[];var next=page
-        let textStack=page.layers.last(where:{$0.kind == .text && $0.textOrigin == .typer})?.stackID ?? UUID()
+        guard canEditCurrentLayer() else{throw ImageFailure.message(error ?? "اختر طبقة قابلة للتعديل")}
+        let textStack=currentLayerID ?? page.id
         let center = !EditorPreferences.smartPosition || visibleCenter == .zero ? CGPoint(x:Double(page.width)/2,y:200):visibleCenter
         for (index,value) in values.enumerated() {
             var item=EditorLayer(kind:.text,name:value.0);item.textContent=value.0
-            item.textOrigin = .typer;item.stackID=textStack;item.stackName="نصوص التايبر"
+            item.textOrigin = .typer;item.stackID=textStack;item.stackName=currentLayerTitle
             if let style=value.1{item.style=style}
             item.style.fontSize*=EditorPreferences.typerScale;item.style.boxWidth=min(item.style.boxWidth*EditorPreferences.typerScale,Double(page.width));let bounds=LayerRenderer.bounds(item);item.frame=Box(x:max(0,center.x-bounds.width/2),y:max(0,center.y-bounds.height/2),width:bounds.width,height:bounds.height)
             let prepared=preparedLayouts.indices.contains(index) ? preparedLayouts[index]:preparedLayout
@@ -147,22 +153,36 @@ import SwiftUI
     func checkpoint() {undoStack.append(page.layers);undoDocuments.append(page);if undoStack.count>60{undoStack.removeFirst();undoDocuments.removeFirst()};redoStack=[];redoDocuments=[]}
     func change(persist:Bool=true,_ body:(inout EditorLayer)->Void) {guard let i=page.layers.firstIndex(where:{$0.id==selected}),!page.layers[i].isLocked else{return};var next=page;let previous=next.layers[i].style;body(&next.layers[i]);if next.layers[i].style != previous && !colorStore.isChoosing{let old=Set(previous.usedColors);for color in next.layers[i].style.usedColors where !old.contains(color){colorStore.record(color)}};next.modified=Date();page=next;if persist{scheduleEditSave()}}
     func add(_ kind:LayerKind,shape:Int=0) {
+        if kind == .drawing{createLayer();return}
+        guard canEditCurrentLayer() else{return}
         let center = !EditorPreferences.smartPosition || visibleCenter == .zero ? CGPoint(x:Double(page.width)/2,y:200):visibleCenter
         var l=EditorLayer(kind:kind,name:kind == .text ? "نص جديد":"طبقة \(page.layers.count+1)");l.frame=Box(x:max(0,Double(center.x)-160),y:max(0,Double(center.y)-65),width:min(320,Double(page.width)),height:130);l.style.boxWidth=l.frame.width;l.style.fontSize=UserDefaults.standard.object(forKey:"default-text-size") as? Double ?? 48;l.shape=shape
         if kind == .text{
-            l.textOrigin = .manual;l.stackID=page.layers.last(where:{$0.kind == .text && $0.textOrigin == .manual})?.stackID ?? UUID();l.stackName="النصوص";l.style=TextStyle.plainText(fontSize:l.style.fontSize,boxWidth:l.frame.width)
+            l.textOrigin = .manual;l.style=TextStyle.plainText(fontSize:l.style.fontSize,boxWidth:l.frame.width)
             do{if let preset=try manualTextStore.manualTextPreset(){l.style=try manualTextStore.resolved(preset.style,from:manualTextStore.directory,into:directory);preset.transform.apply(to:&l)}
                 let bounds=LayerRenderer.bounds(l);l.frame=Box(x:Double(center.x)-Double(bounds.width)/2,y:Double(center.y)-Double(bounds.height)/2,width:bounds.width,height:bounds.height)
             }catch{self.error=error.localizedDescription;return}
         }
         if kind == .drawing{lastDrawingLayer=l.id;l.frame=Box(x:0,y:0,width:Double(page.width),height:Double(page.height))}
-        let insertion=l.stackID.flatMap{stack in page.layers.lastIndex{$0.stackID==stack}}.map{$0+1} ?? selected.flatMap{id in page.layers.firstIndex{$0.id==id}}.map{$0+1} ?? page.layers.count
-        checkpoint();page.layers.insert(l,at:insertion);selected=l.id;save();if kind == .text{panel = .content}
+        checkpoint();attachToCurrentLayer(&l);insertInCurrentLayer(l);save();if kind == .text{panel = .content}
+
     }
     @discardableResult func confirmTextSettings()->Bool {
         do{if let active{try manualTextStore.rememberManualText(active,from:directory);for color in active.style.usedColors{colorStore.record(color)}};return true}catch{self.error=error.localizedDescription;return false}
     }
-    func delete() {guard stylePreviewLayer==nil,active?.isLocked==false else{return};let ids=selectedLayerObjects;guard !page.layers.contains(where:{ids.contains($0.id) && $0.isLocked}) else{return};checkpoint();page.layers.removeAll{ids.contains($0.id)};self.selected=nil;save()}
+    func delete() {
+        guard stylePreviewLayer==nil,active?.isLocked==false else{return}
+        let ids=selectedLayerObjects;guard !page.layers.contains(where:{ids.contains($0.id) && $0.isLocked}) else{return}
+        let layerID=currentLayerID ?? page.id,name=currentLayerTitle
+        checkpoint();page.layers.removeAll{ids.contains($0.id)}
+        if layerID==page.id,stackSelection{page.baseHidden=true}
+        if !page.layers.contains(where:{($0.stackID ?? $0.id)==layerID}),page.baseHidden==true,page.layers.isEmpty{
+            var empty=EditorLayer(kind:.drawing,name:name);empty.stackID=layerID;empty.stackName=name
+            empty.frame=Box(x:0,y:0,width:Double(page.width),height:Double(page.height));page.layers=[empty]
+        }
+        selected=nil;recoverCurrentLayer();save()
+    }
+
     func duplicate() {
         guard stylePreviewLayer==nil,let active else{return};let ids=selectedLayerObjects
         let originals=page.layers.filter{ids.contains($0.id)};guard let index=page.layers.lastIndex(where:{ids.contains($0.id)}) else{return}
@@ -179,8 +199,8 @@ import SwiftUI
         do{try library.persist(page);return true}
         catch{let message="تعذر حفظ آخر تعديل؛ احتُفظ بملفات المشروع على الجهاز. "+error.localizedDescription;self.error=message;library.error=message;return false}
     }
-    func undo(){guard let previous=undoStack.popLast() else{return};redoStack.append(page.layers);redoDocuments.append(page);if let document=undoDocuments.popLast(){page=document}else{page.layers=previous};if textMaskDraft==nil{selected=nil};save()}
-    func redo(){guard let next=redoStack.popLast() else{return};undoStack.append(page.layers);undoDocuments.append(page);if let document=redoDocuments.popLast(){page=document}else{page.layers=next};if textMaskDraft==nil{selected=nil};save()}
+    func undo(){guard let previous=undoStack.popLast() else{return};redoStack.append(page.layers);redoDocuments.append(page);if let document=undoDocuments.popLast(){page=document}else{page.layers=previous};if textMaskDraft==nil{selected=nil};recoverCurrentLayer();save()}
+    func redo(){guard let next=redoStack.popLast() else{return};undoStack.append(page.layers);undoDocuments.append(page);if let document=redoDocuments.popLast(){page=document}else{page.layers=next};if textMaskDraft==nil{selected=nil};recoverCurrentLayer();save()}
     private var continuousEditing=false
     func setContinuousEditing(_ editing:Bool){
         continuousEditing=editing

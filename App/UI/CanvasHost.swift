@@ -62,7 +62,7 @@ struct CanvasHost:UIViewRepresentable {
             s.setContentOffset(CGPoint(x:x,y:y),animated:false)
         }
 
-        func hit(_ point:CGPoint)->EditorLayer?{model.page.layers.reversed().first{l in guard l.isVisible,!l.isLocked,l.kind != .drawing else{return false};let b=LayerRenderer.bounds(l);return b.insetBy(dx:-18/max(0.01,model.zoom),dy:-36/max(0.01,model.zoom)).contains(point.applying(LayerRenderer.transform(l).inverted()))}}
+        func hit(_ point:CGPoint)->EditorLayer?{model.page.layers.reversed().first{l in guard l.isVisible,!l.isLocked,l.kind != .drawing,l.isWorkingImage != true else{return false};let b=LayerRenderer.bounds(l);return b.insetBy(dx:-18/max(0.01,model.zoom),dy:-36/max(0.01,model.zoom)).contains(point.applying(LayerRenderer.transform(l).inverted()))}}
         func gestureRecognizer(_ gesture:UIGestureRecognizer,shouldReceive touch:UITouch)->Bool {
             if gesture === panGesture{touchOrigin=touch.location(in:canvas);touchedHandle=canvas.handle(at:touchOrigin!);var view=touch.view;while let current=view{if let id=current.accessibilityIdentifier,id.hasPrefix("selection-"){touchedHandle=String(id.dropFirst(10));break};view=current.superview}}
             if gesture is UITapGestureRecognizer{var view=touch.view;while let current=view{if current is UIControl{return false};view=current.superview}}

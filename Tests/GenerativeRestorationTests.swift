@@ -57,3 +57,29 @@ final class GenerativeRestorationTests:XCTestCase {
         XCTAssertEqual(WhiteningPreferences.provider(defaults:d),.balanced)
     }
 }
+
+extension GenerativeRestorationTests {
+    func testFreeHostedAlternativeUsesMaskAndNoPersonalQuotaOrCredentials()async throws{
+        let client=session();defer{client.invalidateAndCancel()}
+        let png=try XCTUnwrap(UIImage(cgImage:generated()).pngData());var calls=0
+        GenerativeMock.respond={request in
+            calls+=1;XCTAssertEqual(request.url?.path,"/api/v1/inpaint");XCTAssertNil(request.value(forHTTPHeaderField:"Authorization"))
+            // URLProtocol can deliver request bytes through either body API.
+            if let data=request.httpBody{let body=try XCTUnwrap(JSONSerialization.jsonObject(with:data) as? [String:String]);XCTAssertNotNil(body["image"]);XCTAssertNotNil(body["mask"]);XCTAssertEqual(body["hd_strategy"],"Original")}
+            return(200,[:],png)
+        }
+        for _ in 0..<2{
+            let original=source(),selection=mask(),patch=try await HostedTextureRestoration.repair(source:original,mask:selection,endpoint:URL(string:"https://free.test/api/v1/inpaint"),session:client)
+            XCTAssertEqual(patch.width,80);XCTAssertEqual(patch.height,100)
+            let bytes=try BigLaMaSession.rgba(patch),ink=try BigLaMaSession.rgba(selection)
+            for p in stride(from:0,to:bytes.count,by:4){if ink[p]==0{XCTAssertEqual(bytes[p+3],0)}else{XCTAssertEqual(bytes[p+3],255)}}
+        }
+        XCTAssertEqual(calls,2)
+        GenerativeMock.respond={_ in calls+=1;return(429,[:],Data())}
+        do{_ = try await HostedTextureRestoration.repair(source:source(),mask:mask(),endpoint:URL(string:"https://free.test/api/v1/inpaint"),session:client);XCTFail("Busy service accepted")}
+        catch{XCTAssertTrue(error.localizedDescription.contains("سعتها المشتركة"))}
+        XCTAssertEqual(calls,3,"Never retry or rotate hosts to bypass service capacity")
+        GenerativeMock.respond={_ in(200,[:],Data("not an image".utf8))}
+        do{_ = try await HostedTextureRestoration.repair(source:source(),mask:mask(),endpoint:URL(string:"https://free.test/api/v1/inpaint"),session:client);XCTFail("Invalid response accepted")}catch{}
+    }
+}

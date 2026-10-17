@@ -32,6 +32,7 @@ struct FontLibraryView:View {
     }.sorted{if filter=="آخر استخدام"{return (recent.firstIndex(of:$0.lastPathComponent) ?? Int.max)<(recent.firstIndex(of:$1.lastPathComponent) ?? Int.max)};return $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending}}
     var body:some View {
         NavigationStack{ZStack{if !embedded{Ambient()};VStack(spacing:embedded ? 8:12){
+            if embedded{HStack(spacing:10){Text("مكتبة الخطوط").font(.system(size:15,weight:.semibold));Spacer();Button{picker=true}label:{Image(systemName:"plus").frame(width:36,height:36)}.accessibilityLabel("استيراد خطوط").accessibilityIdentifier("font-import");Button{if let onClose{onClose()}else{dismiss()}}label:{Image(systemName:"xmark").frame(width:36,height:36)}.accessibilityLabel("إغلاق").accessibilityIdentifier("font-close")}.buttonStyle(.plain).padding(.horizontal,12)}
             if !embedded{HStack(spacing:10){SurfaceSymbol(icon:"textformat.alt",size:36);VStack(alignment:.leading,spacing:3){Text("اختر صوت الحوار").font(.system(size:15,weight:.semibold));Text("\(catalogue.count) خطوط · معاينة مباشرة على الصورة").font(.system(size:10)).foregroundStyle(Palette.secondary)};Spacer(minLength:0)}.padding(.horizontal,16)}
 
             SearchBar(placeholder:"البحث في الخطوط",text:$query).padding(.horizontal,20)
@@ -40,7 +41,7 @@ struct FontLibraryView:View {
             if !embedded || !selected.isEmpty{HStack{Text("\(selected.count) للتنظيم");Spacer();Button("مجموعة جديدة"){naming=true}.disabled(selected.isEmpty);Button("تصدير"){exportFonts()}.disabled(selected.isEmpty);if let output{ShareLink(item:output){Image(systemName:"square.and.arrow.up")}}}.font(.system(size:12)).padding(14).glass(0)}
 
         }}.foregroundStyle(Palette.pale).navigationTitle("مكتبة الخطوط").navigationBarTitleDisplayMode(.inline)
-        .toolbar{ToolbarItem(placement:.topBarLeading){Button("إغلاق"){if let onClose{onClose()}else{dismiss()}}.accessibilityIdentifier("font-close")};ToolbarItem(placement:.topBarTrailing){Button{picker=true}label:{Image(systemName:"plus")}.accessibilityLabel("استيراد خطوط").accessibilityIdentifier("font-import")}}
+        .toolbar{if !embedded{ToolbarItem(placement:.topBarLeading){Button("إغلاق"){if let onClose{onClose()}else{dismiss()}}.accessibilityIdentifier("font-close")};ToolbarItem(placement:.topBarTrailing){Button{picker=true}label:{Image(systemName:"plus")}.accessibilityLabel("استيراد خطوط").accessibilityIdentifier("font-import")}}}
         .disabled(importing).overlay{if importing{ProgressView("جارٍ استيراد الخطوط…").padding(20).glass(20)}}
         .cookiesFileImporter(isPresented:$picker,allowedContentTypes:[.data],allowsMultipleSelection:true){result in do{importFonts(try result.get())}catch{self.error=error.localizedDescription}}
         .cookiesAlert("مجموعة خطوط",isPresented:$naming){TextField("اسم المجموعة",text:$groupName);Button("حفظ"){let name=groupName.trimmingCharacters(in:.whitespacesAndNewlines);if !name.isEmpty{groups[name]=selected.sorted();saveGroups();filter=name;groupName=""}};Button("إلغاء",role:.cancel){}}

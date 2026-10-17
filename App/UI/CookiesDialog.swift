@@ -101,31 +101,29 @@ private struct CookiesDialogCard<Actions:View,Message:View>:View {
             ZStack {
                 Color.black.opacity(0.65).ignoresSafeArea().accessibilityHidden(true)
                 ScrollView {
-                    VStack(alignment:.leading,spacing:22){
-                        HStack(alignment:.top,spacing:14){
-                            Image(systemName:"sparkle").font(.system(size:21,weight:.medium))
-                                .foregroundStyle(Palette.gold).frame(width:46,height:46)
-                                .background(Palette.gold.opacity(0.1),in:RoundedRectangle(cornerRadius:15))
+                    VStack(alignment:.leading,spacing:16){
+                        HStack(alignment:.center,spacing:12){
+                            Image("CookiesLogo").resizable().scaledToFit().frame(width:34,height:34).clipShape(Circle()).accessibilityHidden(true)
                             VStack(alignment:.leading,spacing:6){
                                 Text("COOKIES EDITOR").font(.system(size:9,weight:.semibold)).tracking(2).foregroundStyle(Palette.quiet)
-                                Text(title).font(.title3.weight(.semibold)).fixedSize(horizontal:false,vertical:true)
+                                Text(title).font(.system(size:18,weight:.semibold)).fixedSize(horizontal:false,vertical:true)
                                     .accessibilityAddTraits(.isHeader).accessibilityIdentifier("cookies-dialog-title")
                             }
                             Spacer(minLength:0)
-                            Button(action:cancel){Image(systemName:"xmark").font(.system(size:13,weight:.semibold)).frame(width:36,height:36).background(.white.opacity(0.06),in:Circle())}
+                            Button(action:cancel){Image(systemName:"xmark").font(.system(size:13,weight:.semibold)).frame(width:40,height:40).background(.white.opacity(0.06),in:Circle())}
                                 .buttonStyle(.plain).accessibilityLabel("إغلاق النافذة").accessibilityIdentifier("cookies-dialog-close")
                         }
-                        message().font(.subheadline).foregroundStyle(Palette.secondary)
-                            .fixedSize(horizontal:false,vertical:true).lineSpacing(5)
+                        message().font(.system(size:14)).foregroundStyle(Palette.secondary)
+                            .fixedSize(horizontal:false,vertical:true).lineSpacing(4)
                         Rectangle().fill(LinearGradient(colors:[Palette.gold.opacity(0.4),.white.opacity(0.04)],startPoint:.leading,endPoint:.trailing)).frame(height:1).accessibilityHidden(true)
-                        VStack(spacing:12){actions()}
+                        VStack(spacing:10){actions()}
                             .textFieldStyle(CookiesDialogFieldStyle())
                             .buttonStyle(CookiesDialogActionStyle(choose:choose))
                     }
-                    .padding(24).foregroundStyle(Palette.pale)
-                    .background(reduceTransparency ? AnyShapeStyle(Palette.ink):AnyShapeStyle(.ultraThinMaterial),in:RoundedRectangle(cornerRadius:30,style:.continuous))
-                    .glass(30).shadow(color:.black.opacity(0.45),radius:32,y:18)
-                    .frame(maxWidth:480).padding(20)
+                    .padding(20).foregroundStyle(Palette.pale)
+                    .background(reduceTransparency ? AnyShapeStyle(Palette.ink):AnyShapeStyle(.ultraThinMaterial),in:RoundedRectangle(cornerRadius:24,style:.continuous))
+                    .glass(24).shadow(color:.black.opacity(0.45),radius:32,y:18)
+                    .frame(maxWidth:440).padding(18)
                     .frame(maxWidth:.infinity,minHeight:geometry.size.height)
                 }.scrollBounceBehavior(.basedOnSize)
             }

@@ -26,7 +26,7 @@ struct LayerSheet:View {
         }
     }
     private func members(_ item:EditorLayer)->[EditorLayer]{Array(model.layerObjects(item.id).reversed())}
-    private func isSelected(_ item:EditorLayer)->Bool{model.selected==item.id || (model.stackSelection && item.stackID != nil && model.active?.stackID==item.stackID)}
+    private func isSelected(_ item:EditorLayer)->Bool{model.currentLayerID==(item.stackID ?? item.id)}
     private var activeIndex:Int?{model.page.layers.firstIndex{$0.id==model.selected}}
     private var editable:Bool{model.active?.isLocked==false && !model.busy}
     var body:some View {
@@ -84,10 +84,10 @@ struct LayerSheet:View {
             ForEach(layers){item in
                 row(item)
                 if let stack=item.stackID,expandedStacks.contains(stack){ForEach(members(item)){object in
-                    Button{model.selected=object.id;model.tool = .text;model.panel=nil}label:{HStack(spacing:10){Image(systemName:"text.bubble");Text(object.textContent).lineLimit(2);Spacer();if model.selected==object.id && !model.stackSelection{Image(systemName:"checkmark.circle.fill").foregroundStyle(Palette.gold)}}.font(.system(size:11)).padding(.vertical,10).padding(.leading,24)}.buttonStyle(.plain).listRowBackground(Color.white.opacity(0.025)).accessibilityIdentifier("layer-object-"+object.id.uuidString)
+                    Button{model.selected=object.id;model.tool = object.kind == .text ? .text:.move;model.panel=nil}label:{HStack(spacing:10){Image(systemName:object.kind == .text ? "text.bubble":object.kind == .image ? "photo":"paintbrush.pointed");Text(object.kind == .text ? object.textContent:object.name).lineLimit(2);Spacer();if model.selected==object.id && !model.stackSelection{Image(systemName:"checkmark.circle.fill").foregroundStyle(Palette.gold)}}.font(.system(size:11)).padding(.vertical,10).padding(.leading,24)}.buttonStyle(.plain).listRowBackground(Color.white.opacity(0.025)).accessibilityIdentifier("layer-object-"+object.id.uuidString)
                 }}
             }.onMove{source,destination in model.reorderLayerStacks(layers.map(\.id),from:source,to:destination)}
-            if !model.page.layers.contains(where:{$0.isWorkingImage==true}){backgroundRow}
+            if !model.page.layers.contains(where:{$0.isWorkingImage==true || $0.stackID==model.page.id}){backgroundRow}
             if model.page.baseHidden==true{HStack(spacing:12){Image(systemName:"square.on.square");VStack(alignment:.leading,spacing:3){Text("خلفية اللوحة").font(.system(size:12));Text("تُحفظ أيضًا في الصورة المصدّرة").font(.system(size:9)).foregroundStyle(Palette.quiet)};Spacer();Menu{Button("بيضاء"){model.setPaperWhite(true)};Button("شفافة"){model.setPaperWhite(false)}}label:{Text(model.page.paperWhite==true ? "بيضاء":"شفافة").font(.system(size:11)).padding(8).background(.white.opacity(0.05),in:Capsule())}}.padding(.vertical,5).listRowBackground(Color.clear)}
         }.listStyle(.plain).scrollContentBackground(.hidden).environment(\.editMode,.constant(.active)).buttonStyle(.borderless)
         .overlay{if layers.isEmpty && filter != "all"{Text("لا توجد طبقات في هذا القسم").font(.footnote).foregroundStyle(Palette.quiet).allowsHitTesting(false)}}
@@ -103,12 +103,12 @@ struct LayerSheet:View {
                         .overlay(RoundedRectangle(cornerRadius:9).stroke(isSelected(item) ? Palette.gold.opacity(0.6):.white.opacity(0.1),lineWidth:1))
                     VStack(alignment:.leading,spacing:5){
                         HStack(spacing:6){Text("\((model.page.layers.firstIndex{$0.id==item.id} ?? 0)+1)").font(.system(size:10,design:.monospaced)).foregroundStyle(Palette.quiet);Text(item.stackName ?? item.name).font(.system(size:12,weight:.medium)).lineLimit(1)}
-                        Text(item.stackID != nil ? "\(members(item).count) نصوص قابلة للتحرير":item.kind == .text ? item.textContent:"\(Int(item.opacity*100))% · "+item.blend.title).font(.system(size:10)).foregroundStyle(Palette.secondary).lineLimit(1)
+                        Text(item.stackID != nil ? "\(members(item).count) عناصر":item.kind == .text ? item.textContent:"\(Int(item.opacity*100))% · "+item.blend.title).font(.system(size:10)).foregroundStyle(Palette.secondary).lineLimit(1)
                         if let group=item.groupName{Label(group,systemImage:"folder").font(.system(size:9)).foregroundStyle(Palette.quiet)}
                     }.frame(maxWidth:.infinity,alignment:.leading)
                 }.contentShape(Rectangle())
             }.buttonStyle(.plain)
-            if let stack=item.stackID{Button{if expandedStacks.contains(stack){expandedStacks.remove(stack)}else{expandedStacks.insert(stack)}}label:{Image(systemName:expandedStacks.contains(stack) ? "chevron.up":"chevron.down").frame(width:24,height:36)}.accessibilityLabel("عناصر طبقة النص")}
+            if let stack=item.stackID{Button{if expandedStacks.contains(stack){expandedStacks.remove(stack)}else{expandedStacks.insert(stack)}}label:{Image(systemName:expandedStacks.contains(stack) ? "chevron.up":"chevron.down").frame(width:24,height:36)}.accessibilityLabel("عناصر الطبقة")}
             Button{model.setStackLocked(item.id,!item.isLocked)}label:{Image(systemName:item.isLocked ? "lock.fill":"lock.open").font(.system(size:13)).frame(width:30,height:44).foregroundStyle(item.isLocked ? Palette.pale:Palette.quiet)}
                 .accessibilityLabel("قفل الطبقة").accessibilityIdentifier("layer-lock-"+item.id.uuidString).accessibilityValue(item.isLocked ? "locked":"unlocked")
         }
@@ -117,25 +117,25 @@ struct LayerSheet:View {
         .listRowBackground(isSelected(item) ? Palette.gold.opacity(0.09):.clear)
         .contextMenu{
             Button{preview=item}label:{Label("معاينة مكبرة",systemImage:"viewfinder")}
-            Button{model.selected=item.id;layerName=item.name;renaming=true}label:{Label("إعادة التسمية",systemImage:"pencil")}
-            Button{model.selected=item.id;model.duplicate()}label:{Label("نسخ الطبقة",systemImage:"doc.on.doc")}
-            Button(role:.destructive){model.selected=item.id;model.delete()}label:{Label("حذف الطبقة",systemImage:"trash")}.disabled(item.isLocked)
+            Button{model.selectLogicalLayer(item);layerName=item.stackName ?? item.name;renaming=true}label:{Label("إعادة التسمية",systemImage:"pencil")}
+            Button{model.selectLogicalLayer(item);model.duplicate()}label:{Label("نسخ الطبقة",systemImage:"doc.on.doc")}
+            Button(role:.destructive){model.selectLogicalLayer(item);model.delete()}label:{Label("حذف الطبقة",systemImage:"trash")}.disabled(item.isLocked)
         }
     }
     private func select(_ item:EditorLayer) {
         if multiple{
-            let ids:Set<UUID>=item.groupID.map{group in Set(model.page.layers.filter{$0.groupID==group}.map(\.id))} ?? [item.id]
+            let ids:Set<UUID>=item.groupID.map{group in Set(model.page.layers.filter{$0.groupID==group}.map(\.id))} ?? Set(model.layerObjects(item.id).map(\.id))
             if selection.contains(item.id){selection.subtract(ids)}else{selection.formUnion(ids)}
-        }else{model.selected=item.id;model.stackSelection=item.stackID != nil;model.panel=nil;model.tool = .move}
+        }else{model.selectLogicalLayer(item)}
     }
     private var backgroundRow:some View {
         HStack(spacing:10){
             Image(systemName:"photo").frame(width:32,height:44)
-            VStack(alignment:.leading,spacing:4){Text("الصورة الأصلية").font(.system(size:12));Text("\(model.page.width) × \(model.page.height)").font(.system(size:10,design:.monospaced)).foregroundStyle(Palette.quiet)}
+            Button{model.selectOriginalLayer()}label:{VStack(alignment:.leading,spacing:4){Text("الصورة الأصلية").font(.system(size:12));Text("\(model.page.width) × \(model.page.height)").font(.system(size:10,design:.monospaced)).foregroundStyle(Palette.quiet)}.frame(maxWidth:.infinity,alignment:.leading).contentShape(Rectangle())}.buttonStyle(.plain).accessibilityIdentifier("layer-original-select")
             Spacer(minLength:2)
             Button{model.checkpoint();model.page.baseHidden = !(model.page.baseHidden ?? false);model.save()}label:{Image(systemName:model.page.baseHidden==true ? "eye.slash":"eye").frame(width:34,height:44)}
                 .accessibilityIdentifier("layer-base-visibility")
-            Button{model.selected=nil;if model.prepareEraserTarget(){filter="all"}}label:{Image(systemName:"square.and.pencil").frame(width:34,height:44)}
+            Button{model.selectOriginalLayer();if model.prepareEraserTarget(){filter="all"}}label:{Image(systemName:"square.and.pencil").frame(width:34,height:44)}
                 .disabled(model.page.baseHidden==true || model.busy).accessibilityLabel("تحويل الأصل إلى طبقة قابلة للتعديل")
         }.listRowBackground(Color.clear)
     }
@@ -158,7 +158,7 @@ struct LayerSheet:View {
         ScrollView(showsIndicators:false){VStack(spacing:5){
             command("arrow.up","أعلى",id:"layer-move-up",enabled:editable && (activeIndex ?? -1)<model.page.layers.count-1){model.moveActiveLayer(by:1)}
             command("arrow.down","أسفل",id:"layer-move-down",enabled:editable && (activeIndex ?? 0)>0){model.moveActiveLayer(by:-1)}
-            command("move.3d","تحويل",id:"layer-transform",enabled:editable){model.tool = .move;model.panel=nil;close()}
+            command("move.3d","تحويل",id:"layer-transform",enabled:editable){model.tool = .move;model.objectControlsOpen=true;model.panel=nil;close()}
             command("arrow.left.and.right.righttriangle.left.righttriangle.right","قلب أفقي",id:"layer-flip-horizontal",enabled:editable){model.flipActiveLayer(horizontal:true)}
             command("arrow.up.and.down.righttriangle.up.righttriangle.down","قلب رأسي",id:"layer-flip-vertical",enabled:editable){model.flipActiveLayer(horizontal:false)}
             command("square.3.layers.3d.down.right","دمج لأسفل",id:"layer-merge-down",enabled:editable && (activeIndex ?? 0)>0){Task{await model.mergeActiveDown()}}
@@ -194,7 +194,7 @@ struct LayerSheet:View {
     }
     private var footer:some View {
         HStack(spacing:10){
-            IconButton(icon:"plus",title:"طبقة رسم"){model.add(.drawing);filter="all"}.accessibilityIdentifier("layer-add")
+            IconButton(icon:"plus",title:"طبقة رسم"){model.createLayer();filter="all"}.accessibilityIdentifier("layer-add")
             if let onImport{IconButton(icon:"photo.badge.plus",title:"استيراد صورة"){onImport()}.accessibilityIdentifier("layer-import-image")}
             IconButton(icon:"doc.on.doc",title:"نسخ الطبقة"){model.duplicate()}.disabled(model.active==nil || model.busy).accessibilityIdentifier("layer-duplicate")
             Spacer(minLength:0)

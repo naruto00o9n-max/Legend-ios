@@ -38,12 +38,12 @@ struct EditorView:View {
         }
 
         .overlay(alignment:.bottom){if model.imageEffectsOpen,model.active?.kind == .image{ImageEffectsPanel(model:model).frame(maxWidth:560).frame(height:420).padding(.horizontal,12).padding(.bottom,8)}}
-        .safeAreaInset(edge:.top,spacing:0){HStack(spacing:4){IconButton(icon:"chevron.right",title:"العودة"){model.save();dismiss()};VStack(alignment:.leading,spacing:2){Text(model.page.title).font(.system(size:12,weight:.medium)).lineLimit(1);Text(verbatim:"\(model.page.width) × \(model.page.height) · \(Int(model.zoom*100))%").font(.system(size:9,design:.monospaced)).foregroundStyle(Palette.quiet).accessibilityIdentifier("canvas-zoom")};Spacer(minLength:4);IconButton(icon:"arrow.uturn.backward",title:"تراجع"){model.undo()}.disabled(model.undoStack.isEmpty).accessibilityIdentifier("undo");IconButton(icon:"arrow.uturn.forward",title:"إعادة"){model.redo()}.disabled(model.redoStack.isEmpty).accessibilityIdentifier("redo");IconButton(icon:"square.3.layers.3d",title:"الطبقات"){model.panel=nil;layers=true}.accessibilityIdentifier("layers-header");IconButton(icon:"square.and.arrow.up",title:"تصدير"){showExport=true}.accessibilityIdentifier("export")}.padding(.horizontal,4).glass(0).frame(height:52)}
+        .safeAreaInset(edge:.top,spacing:0){HStack(spacing:4){IconButton(icon:"chevron.right",title:"العودة"){model.save();dismiss()};VStack(alignment:.leading,spacing:2){Text(model.page.title).font(.system(size:12,weight:.medium)).lineLimit(1);Text(model.currentLayerTitle).font(.system(size:10)).foregroundStyle(Palette.secondary).lineLimit(1).accessibilityIdentifier("active-layer-name");Text(verbatim:"\(model.page.width) × \(model.page.height) · \(Int(model.zoom*100))%").font(.system(size:9,design:.monospaced)).foregroundStyle(Palette.quiet).accessibilityIdentifier("canvas-zoom")};Spacer(minLength:4);IconButton(icon:"arrow.uturn.backward",title:"تراجع"){model.undo()}.disabled(model.undoStack.isEmpty || model.busy).accessibilityIdentifier("undo");IconButton(icon:"arrow.uturn.forward",title:"إعادة"){model.redo()}.disabled(model.redoStack.isEmpty || model.busy).accessibilityIdentifier("redo");IconButton(icon:"plus.square.on.square",title:"طبقة جديدة"){model.createLayer()}.accessibilityIdentifier("create-layer");IconButton(icon:"square.3.layers.3d",title:"الطبقات"){model.panel=nil;layers=true}.accessibilityIdentifier("layers-header");IconButton(icon:"square.and.arrow.up",title:"تصدير"){showExport=true}.accessibilityIdentifier("export")}.padding(.horizontal,4).glass(0).frame(height:52)}
         .safeAreaInset(edge:.bottom,spacing:0){VStack(spacing:0){
             if [.brush,.eraser,.cleaner].contains(model.tool){HStack(spacing:12){Button{brushSettings=true}label:{Circle().fill(Color(uiColor:UIColor(hex:model.brushColor))).frame(width:24,height:24).overlay(Circle().stroke(Palette.gold.opacity(0.5),lineWidth:1))}.accessibilityLabel("إعدادات الفرشاة");StepSlider(value:$model.brushWidth,in:1...160,onEditingChanged:{model.brushSizePreview=$0}).tint(Palette.gold);Text("\(Int(model.brushWidth))").font(.system(size:10,design:.monospaced)).frame(width:30)}.padding(.horizontal,16).frame(height:38)}
             if model.tool == .text {
                 ScrollView(.horizontal,showsIndicators:false){HStack(spacing:2){
-                    toolButton("chevron.right","رجوع",id:"text-back"){guard model.confirmTextSettings() else{return};model.panel=nil;model.gradientTarget=nil;model.tool = .move}
+                    toolButton("chevron.right","رجوع",id:"text-back"){guard model.confirmTextSettings() else{return};model.finishObjectEditing()}
                     if model.active?.kind == .text{toolButton(Panel.styles.icon,Panel.styles.title,id:"panel-styles",selected:model.panel == .styles){model.panel=model.panel == .styles ? nil:.styles}}
                     toolButton("plus","إضافة نص",id:"text-add"){model.add(.text)}
                     gridControl
@@ -51,16 +51,16 @@ struct EditorView:View {
                 }.padding(.horizontal,8)}.frame(height:68*min(1.15,max(0.85,toolbarScale))).accessibilityIdentifier("panel-strip")
             }else if [.brush,.eraser].contains(model.tool){
                 ScrollView(.horizontal,showsIndicators:false){HStack(spacing:2){
-                    toolButton("chevron.right","رجوع",id:"brush-back"){model.tool = .move}
+                    toolButton("chevron.right","رجوع",id:"brush-back"){model.finishObjectEditing()}
                     toolButton("paintbrush.pointed","فرشاة",id:"tool-brush",selected:model.tool == .brush){model.tool = .brush}
                     toolButton("eraser","ممحاة",id:"tool-eraser",selected:model.tool == .eraser){model.tool = .eraser}
                     toolButton("paintpalette","اللون والحجم",id:"brush-settings"){brushSettings=true}
                     gridControl
                     toolButton("square.3.layers.3d","الطبقات",id:"tool-layers"){model.panel=nil;layers=true}
                 }.padding(.horizontal,8)}.frame(height:68*min(1.15,max(0.85,toolbarScale))).accessibilityIdentifier("tool-strip")
-            }else if model.tool == .move,[LayerKind.image,.shape].contains(model.active?.kind ?? .text){
+            }else if model.tool == .move,model.objectControlsOpen,[LayerKind.image,.shape].contains(model.active?.kind ?? .text){
                 ScrollView(.horizontal,showsIndicators:false){HStack(spacing:2){
-                    toolButton("chevron.right","رجوع",id:"object-back"){objectPanel=nil;model.selected=nil}
+                    toolButton("chevron.right","رجوع",id:"object-back"){objectPanel=nil;model.finishObjectEditing()}
                     toolButton("move.3d","الموضع",id:"object-position",selected:objectPanel == .position){objectPanel=objectPanel == .position ? nil:.position}
                     toolButton("circle.lefthalf.filled","الشفافية",id:"object-opacity",selected:objectPanel == .opacity){objectPanel=objectPanel == .opacity ? nil:.opacity}
                     if model.active?.kind == .image{toolButton("sparkles","تأثيرات الصورة",id:"image-effects-open",selected:model.imageEffectsOpen){Task{await model.openImageEffects()}}}
@@ -118,6 +118,10 @@ struct EditorView:View {
             case .success(let urls):if let url=urls.first{Task{defer{try? FileManager.default.removeItem(at:url)};await model.importImageLayer(url)}}}
         }}
 
+        .cookiesConfirmationDialog("المسح من الطبقة كاملة؟",isPresented:Binding(get:{model.layerRasterizationRequested},set:{model.layerRasterizationRequested=$0;if !$0{model.tool = .move}})){
+            Button("تحويل الطبقة والمسح"){Task{await model.rasterizeCurrentLayerForErasing()}}
+            Button("إلغاء",role:.cancel){model.tool = .move}
+        }message:{Text("تحتوي الطبقة نصوصًا أو أشكالًا قابلة للتحرير. لتحرير بكسلات الطبقة كاملة ستُحوّل محتوياتها إلى صورة بدقة المشروع الأصلية، دون إنشاء طبقة جديدة. يمكنك التراجع لاستعادة النصوص القابلة للتحرير.")}
         .cookiesAlert("تعذر إكمال العملية",isPresented:Binding(get:{model.error != nil},set:{if !$0{model.error=nil}})){Button("حسنًا"){model.error=nil}}message:{Text(model.error ?? "")}
         .onDisappear{model.cancelWhitening();model.commitTextMask();model.discardCleaning();model.save()}
     }
@@ -141,6 +145,6 @@ struct EditorView:View {
 
     }
     private var gridControl:some View{toolButton("grid","الشبكة",id:"tool-grid",selected:CanvasGridSettings.decode(gridData).enabled){var value=CanvasGridSettings.decode(gridData);value.enabled.toggle();gridData=value.data;if value.enabled{gridSettingsOpen=true}}.contextMenu{Button("إعدادات الشبكة"){gridSettingsOpen=true}}}
-    func toolButton(_ icon:String,_ title:String,id:String,selected:Bool=false,action:@escaping ()->Void)->some View{Button(action:action){VStack(spacing:6){Image(systemName:icon).font(.system(size:20*min(1.2,max(0.8,iconScale)),weight:.regular));Text(title).font(.system(size:10*min(1.3,max(0.85,labelScale)))).lineLimit(1)}.frame(width:62,height:60*min(1.15,max(0.85,toolbarScale))).background(selected ? Palette.gold.opacity(0.16):.clear,in:RoundedRectangle(cornerRadius:12))}.accessibilityIdentifier(id).accessibilityLabel(title)}
-    func select(_ tool:Tool){model.sniperMode=false;model.bubbleShape=nil;model.gradientTarget=nil;model.tool=tool;switch tool{case .layers:layers=true;case .shapes:shapes=true;case .text:if model.active?.kind != .text{model.add(.text)}else{model.panel = .content};case .brush:_ = model.prepareBrushTarget();case .eraser:break;default:break}}
+    func toolButton(_ icon:String,_ title:String,id:String,selected:Bool=false,action:@escaping ()->Void)->some View{Button(action:action){VStack(spacing:6){Image(systemName:icon).font(.system(size:20*min(1.2,max(0.8,iconScale)),weight:.regular));Text(title).font(.system(size:10*min(1.3,max(0.85,labelScale)))).lineLimit(1)}.frame(width:62,height:60*min(1.15,max(0.85,toolbarScale))).background(selected ? Palette.gold.opacity(0.16):.clear,in:RoundedRectangle(cornerRadius:12))}.disabled(model.busy).accessibilityIdentifier(id).accessibilityLabel(title)}
+    func select(_ tool:Tool){model.sniperMode=false;model.bubbleShape=nil;model.gradientTarget=nil;model.tool=tool;switch tool{case .layers:layers=true;case .shapes:shapes=true;case .text:if model.selected==nil || model.active?.kind != .text{model.add(.text)}else{model.panel = .content};case .brush:_ = model.prepareBrushTarget();case .eraser:_ = model.prepareEraserTarget();default:break}}
 }

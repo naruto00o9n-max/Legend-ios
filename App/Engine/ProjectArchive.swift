@@ -10,7 +10,7 @@ enum ProjectArchive {
         let customFonts=Set(page.layers.map{ $0.style.fontPath })
         for font in Fonts.userFiles where customFonts.contains(font.lastPathComponent){let folder=temporary.appendingPathComponent("Fonts",isDirectory:true);try FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true);try FileManager.default.copyItem(at:font,to:folder.appendingPathComponent(font.lastPathComponent))}
         try JSONEncoder().encode(page).write(to:temporary.appendingPathComponent("page.json"))
-        let output=FileManager.default.temporaryDirectory.appendingPathComponent("Cookies-\(page.id).cookies")
+        let output=try ExportNames.temporary(page.title,extension:"cookies")
         try? FileManager.default.removeItem(at:output);try FileManager.default.zipItem(at:temporary,to:output,shouldKeepParent:false)
         return output
     }
