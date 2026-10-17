@@ -47,10 +47,10 @@ enum GenerativeRestoration {
         try Task.checkCancellation()
         guard let http=response as? HTTPURLResponse else{throw LaMaFailure.message("تعذر قراءة نتيجة الترميم")}
         let reason=(try? JSONSerialization.jsonObject(with:data) as? [String:String])?["error"]
-        if reason=="provider_account_capacity_reached"{throw LaMaFailure.message("توقفت استضافة هذا الأسلوب عند حد حساب الخدمة، وليس حد استخدامك الشخصي. استخدم الترميم المتوازن مؤقتًا")}
+        if reason=="provider_account_capacity_reached"{throw LaMaFailure.message("توقفت استضافة هذا الأسلوب عند حد حساب الخدمة، وليس حد استخدامك الشخصي. اختر «ترميم بديل مجاني» أو «ترميم متوازن»")}
         if http.statusCode==429{
             let message:String
-            switch reason{case "client_daily_capacity_reached":message="بلغ هذا الاتصال حد الاستخدام اليومي لهذا الأسلوب؛ يمكنك استعمال الترميم المتوازن";case "service_monthly_capacity_reached":message="بلغت الخدمة ميزانية الاستضافة الشهرية؛ يمكنك استعمال الترميم المتوازن";case "service_daily_capacity_reached","daily_capacity_reached":message="بلغت الخدمة سعتها المشتركة اليوم؛ يمكنك استعمال الترميم المتوازن";default:message="الخدمة مشغولة بفقاعة أخرى؛ أعد المحاولة بعد قليل"}
+            switch reason{case "client_daily_capacity_reached":message="بلغ هذا الاتصال حد الاستخدام اليومي لهذا الأسلوب؛ يمكنك اختيار الترميم البديل المجاني أو المتوازن";case "service_monthly_capacity_reached":message="بلغت الخدمة ميزانية الاستضافة الشهرية؛ يمكنك اختيار الترميم البديل المجاني أو المتوازن";case "service_daily_capacity_reached","daily_capacity_reached":message="بلغت الخدمة سعتها المشتركة اليوم؛ يمكنك اختيار الترميم البديل المجاني أو المتوازن";default:message="الخدمة مشغولة بفقاعة أخرى؛ أعد المحاولة بعد قليل"}
             throw LaMaFailure.message(message)
         }
         guard http.statusCode==200 else{throw LaMaFailure.message("تعذر إكمال إعادة البناء الآن. جرّب الترميم المتوازن؛ لم تتغير الصورة الأصلية")}

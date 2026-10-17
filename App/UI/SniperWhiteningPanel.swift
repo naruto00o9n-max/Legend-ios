@@ -42,7 +42,7 @@ struct SniperWhiteningPanel:View {
         HStack(spacing:12){ForEach([RestorationExecution.cloud,.device]){execution in Button{setExecution(execution,target:target.id)}label:{Label(execution.title,systemImage:execution == .device ? "ipad.and.iphone":"network")}.buttonStyle(CapsuleActionStyle(selected:target.restorationExecution==execution)).disabled(execution == .device && (!assets.ready || assets.installing || assets.removing)).accessibilityIdentifier("whitening-execution-\(execution.rawValue)")}}
         Text(target.restorationExecution == .device ? "يُستخدم التنزيل المحفوظ على جهازك ولا تُرسل الصور. قد تتطلب المعالجة ذاكرة ووقتًا إضافيين.":"خدمة تتطلب الإنترنت. تُرسل منطقة الفقاعة وقناع النص فقط للمعالجة، ولا يُرسل الفصل كاملًا.").font(.system(size:11)).foregroundStyle(Palette.secondary).lineSpacing(4).accessibilityIdentifier("whitening-execution-explanation")
         if !assets.ready{Label("يتاح «دون إنترنت» بعد اكتمال التنزيل والتحقق منه أدناه.",systemImage:"arrow.down.circle").font(.system(size:11)).foregroundStyle(Palette.secondary)}
-        if target.restorationExecution == .cloud && !CloudRestoration.configured{Text("خدمة الذكاء الاصطناعي غير مهيأة في هذه النسخة").font(.system(size:11)).foregroundStyle(Palette.secondary)}
+        if target.restorationExecution == .cloud && target.restorationProvider != .texture && !CloudRestoration.configured{Text("خدمة الذكاء الاصطناعي غير مهيأة في هذه النسخة").font(.system(size:11)).foregroundStyle(Palette.secondary)}
         if target.restorationExecution == .cloud {
             Text("أسلوب الترميم لهذه الفقاعة").font(.system(size:12,weight:.semibold))
             ForEach(RestorationProvider.allCases){provider in

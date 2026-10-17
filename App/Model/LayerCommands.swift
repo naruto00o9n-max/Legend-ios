@@ -146,8 +146,8 @@ extension EditorModel {
     /// pictures/shapes the mask replaces prior marks without altering the source.
     func clearActiveLayer() {
         guard let active,!active.isLocked else{return};checkpoint()
-        let bounds=LayerRenderer.bounds(active)
         changeLayerObjects{layer in
+            let bounds=LayerRenderer.bounds(layer)
             switch layer.kind {
             case .drawing:layer.strokes=[];layer.erasures=nil
             case .text:layer.textContent="";layer.textMask=nil;layer.erasures=nil

@@ -373,7 +373,7 @@ final class EditorUITests:XCTestCase {
         let show=app.buttons["dialog-show-delete"]
         XCTAssertTrue(show.waitForExistence(timeout:15));show.tap()
         let confirm=app.buttons["vault-confirm-delete"]
-        XCTAssertTrue(confirm.waitForExistence(timeout:5));XCTAssertTrue(confirm.isHittable)
+        XCTAssertTrue(confirm.waitForExistence(timeout:5));XCTAssertTrue(confirm.isHittable);XCTAssertLessThan(confirm.frame.height,76,"Dialog actions must not inherit nested padding");XCTAssertLessThanOrEqual(confirm.frame.width,440)
         XCTAssertTrue(app.staticTexts.containing(NSPredicate(format:"label CONTAINS %@","فصل الاختبار")).firstMatch.exists)
         XCTAssertTrue(app.descendants(matching:.any)["cookies-dialog"].exists,"The modal must expose our own Cookies card; accessibility correctly identifies a modal as an alert")
         capture("glass-vault-confirmation")

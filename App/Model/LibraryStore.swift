@@ -229,7 +229,7 @@ import SwiftUI
         }.value}catch{self.error=error.localizedDescription}
     }
     func clean(_ stroke:Stroke) async {
-        guard !busy,!stroke.points.isEmpty else{return};busy=true;defer{busy=false}
+        guard !busy,!stroke.points.isEmpty,canEditCurrentLayer() else{return};busy=true;defer{busy=false}
         let xs=stroke.points.map(\.x),ys=stroke.points.map(\.y),padding=stroke.width+20
         let region=CGRect(x:max(0,(xs.min() ?? 0)-padding),y:max(0,(ys.min() ?? 0)-padding),width:(xs.max() ?? 0)-(xs.min() ?? 0)+padding*2,height:(ys.max() ?? 0)-(ys.min() ?? 0)+padding*2).intersection(CGRect(x:0,y:0,width:page.width,height:page.height)).integral
         guard region.width*region.height<=4_194_304 else{error="اختر مساحة تنظيف أصغر";return}

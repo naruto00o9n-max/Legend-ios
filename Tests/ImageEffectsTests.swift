@@ -91,7 +91,7 @@ final class ImageEffectsTests:XCTestCase {
         let (page,dir,root,raw)=try fixture();defer{try? FileManager.default.removeItem(at:root)}
         let library=LibraryStore(root:root);library.add(page,parent:nil);let model=EditorModel(page:page,library:library)
         let original=try Data(contentsOf:dir.appendingPathComponent(page.source))
-        await model.openImageEffects();XCTAssertNil(model.error);XCTAssertEqual(model.page.layers.count,1);XCTAssertTrue(model.page.baseHidden==true)
+        await model.openImageEffects();XCTAssertNil(model.error);XCTAssertEqual(model.page.layers.count,1);XCTAssertTrue(model.page.baseHidden==true);XCTAssertEqual(model.logicalLayerCount,1);XCTAssertEqual(model.active?.imagePath,page.source)
         let layerID=try XCTUnwrap(model.selected),duo=try XCTUnwrap(model.addImageEffect(.duotone)),grain=try XCTUnwrap(model.addImageEffect(.grain))
         model.moveImageEffect(grain,by:-1);XCTAssertEqual(model.active?.imageEffects?.first?.id,grain)
         model.undo();model.selected=layerID;XCTAssertEqual(model.active?.imageEffects?.first?.id,duo)

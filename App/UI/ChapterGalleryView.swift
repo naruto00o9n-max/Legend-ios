@@ -176,9 +176,9 @@ struct ChapterExportSheet:View {
     func savePhotos(){task=Task{busy=true;completed=0;total=ids.count;defer{busy=false};do{try await library.withProjectFiles(ids){for id in ids{try Task.checkCancellation();let page=try library.load(id),directory=library.directory(id);let file=try await BackgroundWork.run{try ImagePipeline.exportPNG(page,directory:directory)};defer{try? FileManager.default.removeItem(at:file)};try await PhotoSave.save(file);completed+=1}}}catch is CancellationError{}catch{failure=error.localizedDescription}}}
     func export(){task=Task{busy=true;completed=0;total=ids.count;defer{busy=false};do{
         try await library.withProjectFiles(ids){
-        let pages=try ids.map{try library.load($0)},root=library.root,format=self.format,prefix=self.prefix,quality=self.quality,keepNames=self.preserveNames,h=smart ? Int(maxHeight):nil
+        let pages=try ids.map{try library.load($0)},root=library.root,format=self.format,prefix=self.prefix,quality=self.quality,keepNames=self.preserveNames,bundleName=library.chapter(chapter)?.title ?? "تصدير المشاريع",h=smart ? Int(maxHeight):nil
         if format=="فصل قابل للتعديل",var item=library.chapter(chapter){item.pages=ids;output=try await BackgroundWork.run{try ChapterArchive.export(item,root:root)}}
-        else{output=try await BackgroundWork.run{try BatchExport.export(pages:pages,root:root,format:format,quality:quality,prefix:prefix,preserveNames:keepNames,smartHeight:h){done,count in Task{@MainActor in completed=done;total=count}}}}
+        else{output=try await BackgroundWork.run{try BatchExport.export(pages:pages,root:root,format:format,quality:quality,prefix:prefix,preserveNames:keepNames,archiveName:bundleName,smartHeight:h){done,count in Task{@MainActor in completed=done;total=count}}}}
         }
     }catch is CancellationError{}catch{failure=error.localizedDescription}}}
     func prepareDrive(){guard !ids.isEmpty else{failure="حدد صورًا أولًا";return};task=Task{busy=true;completed=0;total=ids.count;defer{busy=false}

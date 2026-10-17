@@ -10,7 +10,7 @@ enum PhotoSave {
     }
 }
 enum BatchExport {
-    static func export(pages:[EditorPage],root:URL,format:String,quality:Double=0.95,prefix:String="صفحة",preserveNames:Bool=true,smartHeight:Int?=nil,progress:@escaping(Int,Int)->Void)throws->URL {
+    static func export(pages:[EditorPage],root:URL,format:String,quality:Double=0.95,prefix:String="صفحة",preserveNames:Bool=true,archiveName:String="تصدير المشاريع",smartHeight:Int?=nil,progress:@escaping(Int,Int)->Void)throws->URL {
         guard !pages.isEmpty else{throw ImageFailure.message("اختر صفحات للتصدير")}
         let folder=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString,isDirectory:true)
         try FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true);defer{try? FileManager.default.removeItem(at:folder)}
@@ -31,7 +31,7 @@ enum BatchExport {
             let target=ExportNames.unique(title,extension:file.pathExtension,in:folder,used:&used)
             try FileManager.default.copyItem(at:file,to:target);progress(index+1,selected.count)
         }
-        let output=FileManager.default.temporaryDirectory.appendingPathComponent("Cookies-Export-\(UUID()).zip")
+        let output=try ExportNames.temporary(archiveName,extension:"zip")
         try FileManager.default.zipItem(at:folder,to:output,shouldKeepParent:false);return output
     }
 }

@@ -84,7 +84,7 @@ extension EditorModel {
             let name="pixels-"+UUID().uuidString+".png",target=directory.appendingPathComponent(name)
             try FileManager.default.moveItem(at:file,to:target)
             var layer=EditorLayer(kind:.image,name:currentLayerTitle)
-            layer.id=contents[0].id;layer.stackID=layerID;layer.stackName=currentLayerTitle;layer.imagePath=name
+            layer.id=contents[0].id;layer.groupID=contents[0].groupID;layer.groupName=contents[0].groupName;layer.stackID=layerID;layer.stackName=currentLayerTitle;layer.imagePath=name
             layer.isWorkingImage=includesOriginal || contents.contains{$0.isWorkingImage==true}
             layer.frame=Box(x:0,y:0,width:Double(page.width),height:Double(page.height))
             let ids=Set(contents.map(\.id)),index=page.layers.firstIndex{ids.contains($0.id)} ?? page.layers.count

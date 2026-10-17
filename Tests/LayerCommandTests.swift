@@ -1,5 +1,6 @@
 import XCTest
 import UIKit
+import ZIPFoundation
 @testable import CookiesEditor
 
 final class LayerCommandTests:XCTestCase {
@@ -256,5 +257,11 @@ extension LayerCommandTests {
         var used=Set<String>();XCTAssertEqual(ExportNames.unique(page.title,extension:"png",in:root,used:&used).lastPathComponent,"الفصل 20 - 001.png")
         XCTAssertEqual(ExportNames.unique(page.title,extension:"png",in:root,used:&used).lastPathComponent,"الفصل 20 - 001 (2).png")
         XCTAssertFalse(ExportNames.stem("../فصل/001.png").contains("/"))
+        let jpeg=try ImagePipeline.exportJPEG(page,directory:directory,quality:0.95);defer{try? FileManager.default.removeItem(at:jpeg.deletingLastPathComponent())};XCTAssertEqual(jpeg.lastPathComponent,"الفصل 20 - 001.jpg")
+        let bundle=try BatchExport.export(pages:[page,page],root:root,format:"PNG",archiveName:"الفصل 20"){_,_ in};defer{try? FileManager.default.removeItem(at:bundle.deletingLastPathComponent())}
+        XCTAssertEqual(bundle.lastPathComponent,"الفصل 20.zip")
+        let extracted=root.appendingPathComponent("exports");try FileManager.default.unzipItem(at:bundle,to:extracted)
+        XCTAssertEqual(Set(try FileManager.default.contentsOfDirectory(atPath:extracted.path)),["الفصل 20 - 001.png","الفصل 20 - 001 (2).png"])
+        for name in try FileManager.default.contentsOfDirectory(atPath:extracted.path){XCTAssertEqual(try Data(contentsOf:extracted.appendingPathComponent(name)),try Data(contentsOf:directory.appendingPathComponent(page.source)))}
     }
 }

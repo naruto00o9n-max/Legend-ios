@@ -151,7 +151,6 @@ private struct CookiesDialogActionLabel<Label:View>:View {
     private var cancel:Bool{role == .cancel}
     var body:some View {
         HStack(spacing:10){
-            if role == .destructive{Image(systemName:"trash").foregroundStyle(Palette.gold).accessibilityHidden(true)}
             label.multilineTextAlignment(.center)
         }
         .font(.system(size:15,weight:cancel ? .medium:.semibold))

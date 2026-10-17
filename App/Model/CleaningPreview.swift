@@ -35,7 +35,7 @@ extension EditorModel {
         cleanCandidates=[];cleanPreviewID=nil
     }
     func acceptCleaning(){
-        guard let selected=cleanPreviewID,let preview=cleanCandidates.first(where:{$0.id==selected}) else{return}
+        guard canEditCurrentLayer(),let selected=cleanPreviewID,let preview=cleanCandidates.first(where:{$0.id==selected}) else{return}
         if let baseline=preview.baseline,baseline != page{error="تغيرت الصفحة منذ المعاينة؛ أعد التبييض على حالتها الحالية";return}
         var next=page
         insertCleaning(preview,into:&next)
@@ -47,7 +47,7 @@ extension EditorModel {
         cleanCandidates=[];cleanPreviewID=nil;save()
     }
     func whitenSniperTargets()async {
-        guard !busy,!sniperTargets.isEmpty else{return}
+        guard !busy,!sniperTargets.isEmpty,canEditCurrentLayer() else{return}
         let targets=sniperTargets,snapshot=page,directory=self.directory
         guard targets.count<=40 else{error="عالِج حتى 40 فقاعة في المرة الواحدة لتقليل استهلاك الذاكرة";return}
         guard snapshot.baseHidden != true || snapshot.layers.contains(where:{$0.isWorkingImage==true && $0.isVisible}) else{error="أظهر الصورة الأصلية قبل تبييض نصها";return}

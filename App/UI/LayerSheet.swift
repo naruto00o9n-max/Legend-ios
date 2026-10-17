@@ -53,7 +53,7 @@ struct LayerSheet:View {
         .cookiesAlert(confirmation?.title ?? "",isPresented:Binding(get:{confirmation != nil},set:{if !$0{confirmation=nil}})){
             Button("تنفيذ",role:.destructive){performConfirmation()};Button("إلغاء",role:.cancel){confirmation=nil}
         }message:{Text(confirmation?.detail ?? "")}
-        .onAppear{model.organizeLegacyTextLayers()}
+        .onAppear{model.organizeLegacyTextLayers();model.recoverCurrentLayer();if let item=model.currentLayerObjects.last{model.selectLogicalLayer(item)}}
         .onChange(of:model.page.layers.map(\.id)){_,ids in selection.formIntersection(Set(ids))}
         .onChange(of:model.selected){_,_ in shared=nil}
     }
