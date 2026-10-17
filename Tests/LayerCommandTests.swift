@@ -265,3 +265,20 @@ extension LayerCommandTests {
         for name in try FileManager.default.contentsOfDirectory(atPath:extracted.path){XCTAssertEqual(try Data(contentsOf:extracted.appendingPathComponent(name)),try Data(contentsOf:directory.appendingPathComponent(page.source)))}
     }
 }
+
+extension LayerCommandTests {
+    @MainActor func testCurrentLayerSurvivesProjectImportAndCroppingWithoutExtraLayer()throws{
+        let(page,root,directory)=try fixture();defer{try? FileManager.default.removeItem(at:root)}
+        let model=EditorModel(page:page,library:LibraryStore(root:root));defer{model.cancelPendingSaves()}
+        model.add(.text);model.change{$0.textContent="نص محفوظ"};model.finishObjectEditing()
+        let archive=try ProjectArchive.export(model.page,directory:directory);defer{try? FileManager.default.removeItem(at:archive.deletingLastPathComponent())}
+        let imported=try ProjectArchive.importFile(archive,root:root)
+        XCTAssertNotEqual(imported.id,page.id);XCTAssertEqual(imported.baseLayerID,page.baseLayerID)
+        let reopened=EditorModel(page:imported,library:model.library);defer{reopened.cancelPendingSaves()}
+        XCTAssertEqual(reopened.logicalLayerCount,1);XCTAssertEqual(reopened.currentLayerID,model.currentLayerID)
+        reopened.add(.text);XCTAssertEqual(reopened.logicalLayerCount,1)
+        let cropped=try PageOperations.cropped(model.page,rect:CGRect(x:0,y:0,width:80,height:100),root:root)
+        let editor=EditorModel(page:cropped,library:model.library);defer{editor.cancelPendingSaves()}
+        XCTAssertEqual(editor.logicalLayerCount,1);XCTAssertEqual(editor.page.width,80);XCTAssertEqual(editor.page.height,100)
+    }
+}

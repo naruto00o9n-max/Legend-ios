@@ -10,7 +10,7 @@ extension EditorLayer {
 }
 
 extension EditorModel {
-    var logicalLayerCount:Int{var ids=Set(page.layers.map{$0.stackID ?? $0.id});if page.baseHidden != true{ids.insert(page.id)};return ids.count}
+    var logicalLayerCount:Int{var ids=Set(page.layers.map{$0.stackID ?? $0.id});if page.baseHidden != true{ids.insert(page.baseLayerID)};return ids.count}
     /// Older documents encoded each text object as a stack row. Adjacent text
     /// objects can share a logical text layer without rasterization or reordering.
     func organizeLegacyTextLayers(){
@@ -66,7 +66,7 @@ extension EditorModel {
     }
     func setStackVisibility(_ id:UUID,_ visible:Bool){
         let objects=layerObjects(id),ids=Set(objects.map(\.id));checkpoint()
-        if objects.first?.stackID==page.id,!objects.contains(where:{$0.isWorkingImage==true}){page.baseHidden = !visible}
+        if objects.first?.stackID==page.baseLayerID,!objects.contains(where:{$0.isWorkingImage==true}){page.baseHidden = !visible}
         for index in page.layers.indices where ids.contains(page.layers[index].id){page.layers[index].isVisible=visible};save()
     }
     func setStackLocked(_ id:UUID,_ locked:Bool){
@@ -99,7 +99,7 @@ extension EditorModel {
     @discardableResult func prepareEraserTarget()->Bool {
         guard canEditCurrentLayer() else{return false}
         let contents=currentLayerObjects.filter{$0.kind != .drawing || !$0.strokes.isEmpty || !($0.erasures ?? []).isEmpty}
-        if contents.count+(currentLayerID==page.id && page.baseHidden != true ? 1:0)>1{
+        if contents.count+(currentLayerID==page.baseLayerID && page.baseHidden != true ? 1:0)>1{
             if contents.contains(where:{$0.kind == .text || $0.kind == .shape}){layerRasterizationRequested=true}
             else if !busy{Task{await rasterizeCurrentLayerForErasing()}}
             return false
@@ -112,7 +112,7 @@ extension EditorModel {
         }
         // The only implicit backing is the existing original image, by
         // reference. A missing selection never falls through to brush creation.
-        guard currentLayerID==page.id,page.baseHidden != true else{error="هذه الطبقة فارغة؛ لا يوجد شيء لمسحه";return false}
+        guard currentLayerID==page.baseLayerID,page.baseHidden != true else{error="هذه الطبقة فارغة؛ لا يوجد شيء لمسحه";return false}
         checkpoint();materializeCurrentLayer();page.paperWhite=true
         if let item=currentLayerObjects.first{selected=item.id};save();return active != nil
     }

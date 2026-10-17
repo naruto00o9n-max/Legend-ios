@@ -6,12 +6,12 @@ extension EditorModel {
         if let active,active.kind == .image {guard !active.isLocked else{return};imageEffectsOpen=true;return}
         if let existing=page.layers.first(where:{$0.isWorkingImage==true && $0.isVisible}){guard !existing.isLocked else{error="افتح قفل طبقة صورة العمل لتعديل التأثيرات";return};selected=existing.id;tool = .move;imageEffectsOpen=true;return}
         guard page.baseHidden != true else{error="اختر طبقة الصورة التي تريد تعديل تأثيراتها";return}
-        let sourceObjects=page.layers.filter{$0.stackID==page.id}
+        let sourceObjects=page.layers.filter{$0.stackID==page.baseLayerID}
         guard !sourceObjects.contains(where:{$0.isLocked || !$0.isVisible}) else{error="أظهر طبقة الصورة الأصلية وافتح قفلها أولًا";return}
         // Promote the existing source layer by reference. Opening effects does
         // not duplicate its file or create a separate user-visible layer.
         var layer=EditorLayer(kind:.image,name:"الصورة الأصلية");layer.imagePath=page.source;layer.isWorkingImage=true
-        layer.stackID=page.id;layer.stackName=sourceObjects.first?.stackName ?? "الصورة الأصلية"
+        layer.stackID=page.baseLayerID;layer.stackName=sourceObjects.first?.stackName ?? "الصورة الأصلية"
         layer.imagePixelFile=page.raw;layer.imagePixelWidth=page.width;layer.imagePixelHeight=page.height
         layer.frame=Box(x:0,y:0,width:Double(page.width),height:Double(page.height))
         checkpoint();page.layers.insert(layer,at:0);page.baseHidden=true;selected=layer.id;tool = .move;save();imageEffectsOpen=true

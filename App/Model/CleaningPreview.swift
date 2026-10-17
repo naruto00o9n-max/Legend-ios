@@ -12,7 +12,7 @@ extension EditorModel {
     /// A cleaning patch is content of the active layer. Keep the preview and
     /// committed order identical: above its raster background, below its text.
     private func insertCleaning(_ preview:CleaningCandidate,into value:inout EditorPage){
-        let id=currentLayerID ?? value.id
+        let id=currentLayerID ?? value.baseLayerID
         let title=currentLayerTitle
         let objects=preview.allLayers.map{item -> EditorLayer in var copy=item;copy.stackID=id;copy.stackName=title;return copy}
         let members=value.layers.indices.filter{(value.layers[$0].stackID ?? value.layers[$0].id)==id}

@@ -17,7 +17,7 @@ extension EditorModel {
         page.activeLayerID=currentLayerID;panel=nil;tool = .move;scheduleEditSave()
     }
     func selectOriginalLayer(){
-        selected=nil;currentLayerID=page.id;currentContentID=page.layers.first{$0.isWorkingImage==true}?.id
+        selected=nil;currentLayerID=page.baseLayerID;currentContentID=page.layers.first{$0.isWorkingImage==true}?.id
         page.activeLayerID=currentLayerID;panel=nil;tool = .move;scheduleEditSave()
     }
     /// Hides object editing handles; the selected paint layer and its target
@@ -25,23 +25,23 @@ extension EditorModel {
     func finishObjectEditing(){objectControlsOpen=false;panel=nil;gradientTarget=nil;imageEffectsOpen=false;selected=nil;tool = .move}
     @discardableResult func canEditCurrentLayer()->Bool{
         guard !currentLayerObjects.contains(where:{$0.isLocked}) else{error="الطبقة مقفلة؛ افتح قفلها أولًا";return false}
-        guard !(currentLayerID==page.id && page.baseHidden==true && currentLayerObjects.isEmpty),!currentLayerObjects.contains(where:{!$0.isVisible}) else{error="الطبقة مخفية؛ أظهرها أولًا";return false}
+        guard !(currentLayerID==page.baseLayerID && page.baseHidden==true && currentLayerObjects.isEmpty),!currentLayerObjects.contains(where:{!$0.isVisible}) else{error="الطبقة مخفية؛ أظهرها أولًا";return false}
         return true
     }
     /// The untouched source already is a layer. Materializing it is a reference
     /// to the original asset, never a duplicate image or an additional stack row.
     func materializeCurrentLayer(){
-        if currentLayerID==nil{currentLayerID=page.layers.last.map{$0.stackID ?? $0.id} ?? page.id}
-        guard currentLayerID==page.id,!currentLayerObjects.contains(where:{$0.kind != .drawing || !$0.strokes.isEmpty}),page.baseHidden != true else{return}
+        if currentLayerID==nil{currentLayerID=page.layers.last.map{$0.stackID ?? $0.id} ?? page.baseLayerID}
+        guard currentLayerID==page.baseLayerID,!currentLayerObjects.contains(where:{$0.kind != .drawing || !$0.strokes.isEmpty}),page.baseHidden != true else{return}
         var original=EditorLayer(kind:.image,name:"الصورة الأصلية")
-        original.stackID=page.id;original.stackName="الصورة الأصلية";original.imagePath=page.source;original.isWorkingImage=true
+        original.stackID=page.baseLayerID;original.stackName="الصورة الأصلية";original.imagePath=page.source;original.isWorkingImage=true
         original.imagePixelFile=page.raw;original.imagePixelWidth=page.width;original.imagePixelHeight=page.height
         original.frame=Box(x:0,y:0,width:Double(page.width),height:Double(page.height))
         page.layers.insert(original,at:0);page.baseHidden=true
     }
     func attachToCurrentLayer(_ item:inout EditorLayer){
         if currentLayerID==nil{recoverCurrentLayer()}
-        let id=currentLayerID ?? page.id;item.stackID=id
+        let id=currentLayerID ?? page.baseLayerID;item.stackID=id
         item.stackName=currentLayerObjects.first.map{$0.stackName ?? $0.name} ?? "الصورة الأصلية"
     }
     func insertInCurrentLayer(_ item:EditorLayer){
@@ -59,8 +59,8 @@ extension EditorModel {
         page.layers.insert(item,at:index);selected=item.id;lastDrawingLayer=item.id;page.activeLayerID=currentLayerID;panel=nil;tool = .move;save()
     }
     func recoverCurrentLayer(){
-        if let id=currentLayerID,(id==page.id && page.baseHidden != true) || page.layers.contains(where:{($0.stackID ?? $0.id)==id}){return}
-        currentLayerID=page.activeLayerID.flatMap{id in ((id==page.id && page.baseHidden != true) || page.layers.contains(where:{($0.stackID ?? $0.id)==id})) ? id:nil} ?? page.layers.last.map{$0.stackID ?? $0.id} ?? page.id
+        if let id=currentLayerID,(id==page.baseLayerID && page.baseHidden != true) || page.layers.contains(where:{($0.stackID ?? $0.id)==id}){return}
+        currentLayerID=page.activeLayerID.flatMap{id in ((id==page.baseLayerID && page.baseHidden != true) || page.layers.contains(where:{($0.stackID ?? $0.id)==id})) ? id:nil} ?? page.layers.last.map{$0.stackID ?? $0.id} ?? page.baseLayerID
         currentContentID=currentLayerObjects.last?.id
     }
 }
@@ -75,7 +75,7 @@ extension EditorModel {
         guard !contents.isEmpty else{return}
         busy=true;defer{busy=false}
         let before=page,directory=self.directory
-        let includesOriginal=layerID==page.id && page.baseHidden != true
+        let includesOriginal=layerID==page.baseLayerID && page.baseHidden != true
         var isolated=page;isolated.layers=contents;isolated.baseHidden = !includesOriginal;isolated.paperWhite=false
         do{
             let file=try await BackgroundWork.run{try ImagePipeline.exportPNG(isolated,directory:directory)}

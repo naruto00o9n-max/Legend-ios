@@ -30,14 +30,14 @@ enum PageOperations {
             let input=source.appendingPathComponent(name),target=UUID().uuidString+"."+input.pathExtension
             try FileManager.default.copyItem(at:input,to:destination.appendingPathComponent(target));map[name]=target;return target
         }
-        return try layers.map{layer in var next=layer;next.id=UUID();next.frame.x+=offset.x;next.frame.y+=offset.y;next.imagePath=try copy(next.imagePath);next.style.texturePath=try copy(next.style.texturePath);for i in next.strokes.indices{if let texture=next.strokes[i].texturePath,!texture.isEmpty{next.strokes[i].texturePath=try copy(texture)}};return next}
+        return try layers.map{layer in var next=layer;next.id=UUID();next.imagePixelFile=nil;next.imagePixelWidth=nil;next.imagePixelHeight=nil;next.frame.x+=offset.x;next.frame.y+=offset.y;next.imagePath=try copy(next.imagePath);next.style.texturePath=try copy(next.style.texturePath);for i in next.strokes.indices{if let texture=next.strokes[i].texturePath,!texture.isEmpty{next.strokes[i].texturePath=try copy(texture)}};return next}
     }
     static func cropped(_ page:EditorPage,rect:CGRect,root:URL)throws->EditorPage {
         let region=rect.integral.intersection(CGRect(x:0,y:0,width:page.width,height:page.height))
         guard !region.isEmpty,region.width>=1,region.height>=1 else{throw ImageFailure.message("منطقة القص خارج الصورة")}
         let source=root.appendingPathComponent(page.id.uuidString)
         var output=try build(title:page.title,width:Int(region.width),height:Int(region.height),root:root,profile:source.appendingPathComponent(page.source)){y,count in try ImagePipeline.tile(source.appendingPathComponent(page.raw),width:page.width,height:page.height,rect:CGRect(x:region.minX,y:region.minY+CGFloat(y),width:region.width,height:CGFloat(count)))}
-        output.baseHidden=page.baseHidden;output.layers=try copyLayers(page.layers,from:source,to:root.appendingPathComponent(output.id.uuidString),offset:CGPoint(x:-region.minX,y:-region.minY))
+        output.sourceLayerID=page.baseLayerID;output.paperWhite=page.paperWhite;output.activeLayerID=page.activeLayerID;output.baseHidden=page.baseHidden;output.layers=try copyLayers(page.layers,from:source,to:root.appendingPathComponent(output.id.uuidString),offset:CGPoint(x:-region.minX,y:-region.minY))
         try persist(output,root:root);return output
     }
     static func canvasResized(_ page:EditorPage,width:Int,height:Int,root:URL)throws->EditorPage {
@@ -48,7 +48,7 @@ enum PageOperations {
             if copyWidth>0,copyRows>0{let pixels=try ImagePipeline.tile(source.appendingPathComponent(page.raw),width:page.width,height:page.height,rect:CGRect(x:sourceX,y:sourceY,width:copyWidth,height:copyRows));for row in 0..<copyRows{let start=((destY-y+row)*width+destX)*4;data.replaceSubrange(start..<start+copyWidth*4,with:pixels[row*copyWidth*4..<(row+1)*copyWidth*4])}}
             return data
         }
-        output.baseHidden=page.baseHidden;output.layers=try copyLayers(page.layers,from:source,to:root.appendingPathComponent(output.id.uuidString),offset:CGPoint(x:dx,y:dy));try persist(output,root:root);return output
+        output.sourceLayerID=page.baseLayerID;output.paperWhite=page.paperWhite;output.activeLayerID=page.activeLayerID;output.baseHidden=page.baseHidden;output.layers=try copyLayers(page.layers,from:source,to:root.appendingPathComponent(output.id.uuidString),offset:CGPoint(x:dx,y:dy));try persist(output,root:root);return output
     }
     static func split(_ page:EditorPage,maximumHeight:Int,root:URL)throws->[EditorPage] {
         guard maximumHeight>0 else{throw ImageFailure.message("اكتب طول الجزء")}
@@ -84,7 +84,7 @@ enum PageOperations {
             // The renderer produced premultiplied pixels; libpng expects straight RGBA.
             for i in stride(from:0,to:band.count,by:4){let alpha=Int(band[i+3]);if alpha>0 && alpha<255{for c in 0..<3{band[i+c]=UInt8(min(255,Int(band[i+c])*255/alpha))}}};return band
         }
-        output.baseHidden=page.baseHidden;output.layers=try copyLayers(page.layers,from:source,to:root.appendingPathComponent(output.id.uuidString)).map{layer in
+        output.sourceLayerID=page.baseLayerID;output.paperWhite=page.paperWhite;output.activeLayerID=page.activeLayerID;output.baseHidden=page.baseHidden;output.layers=try copyLayers(page.layers,from:source,to:root.appendingPathComponent(output.id.uuidString)).map{layer in
             var next=layer;let b=LayerRenderer.bounds(layer),scaled=LayerRenderer.transform(layer).concatenating(CGAffineTransform(scaleX:sx,y:sy))
             let center=CGPoint(x:b.midX,y:b.midY).applying(scaled)
             let x=hypot(Double(scaled.a),Double(scaled.b))*(layer.scaleX<0 ? -1:1),y=Double(scaled.a*scaled.d-scaled.b*scaled.c)/x

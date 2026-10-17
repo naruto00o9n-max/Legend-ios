@@ -14,7 +14,7 @@ enum PSDWriter {
         var background=EditorLayer(kind:.image,name:"الصورة الأصلية");background.isVisible=page.baseHidden != true;background.frame=Box(x:0,y:0,width:Double(page.width),height:Double(page.height))
         try ImagePipeline.ensureDecoded(directory.appendingPathComponent(page.raw),width:page.width,height:page.height)
         var items:[Item]=[]
-        let sourceGrouped=page.layers.contains{$0.stackID==page.id}
+        let sourceGrouped=page.layers.contains{$0.stackID==page.baseLayerID}
         if !sourceGrouped{items.append(Item(layer:background,rect:CGRect(x:0,y:0,width:page.width,height:page.height),raw:directory.appendingPathComponent(page.raw)))}
         let documentSpace=ImagePipeline.colorSpace(directory.appendingPathComponent(page.source))
         var exportedLayers=page.layers;var paperID:UUID?
@@ -23,7 +23,7 @@ enum PSDWriter {
         for layer in exportedLayers{
             if let stack=layer.stackID,let index=groups.firstIndex(where:{$0.first?.stackID==stack}){groups[index].append(layer)}else{groups.append([layer])}
         }
-        if sourceGrouped,page.baseHidden != true,let index=groups.firstIndex(where:{$0.first?.stackID==page.id}){
+        if sourceGrouped,page.baseHidden != true,let index=groups.firstIndex(where:{$0.first?.stackID==page.baseLayerID}){
             var source=background;source.isVisible=true;source.imagePath=page.source;source.imagePixelFile=page.raw;source.imagePixelWidth=page.width;source.imagePixelHeight=page.height;source.isWorkingImage=true
             groups[index].insert(source,at:0)
         }

@@ -97,6 +97,8 @@ struct EditorPage: Codable, Equatable, Identifiable {
     var baseHidden:Bool?
     var paperWhite:Bool?
     var activeLayerID:UUID?
+    var sourceLayerID:UUID?
+    var baseLayerID:UUID{sourceLayerID ?? id}
     var source = "source.png"; var raw = "pixels.rgba"; var layers: [EditorLayer] = []; var modified = Date()
 }
 struct LibraryItem: Codable, Equatable, Identifiable {

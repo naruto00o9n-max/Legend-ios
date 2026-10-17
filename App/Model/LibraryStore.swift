@@ -115,14 +115,14 @@ import SwiftUI
     var stylePreviewLayer:UUID?
     private var previewTask:Task<Void,Never>?
     private var editSaveTask:Task<Void,Never>?
-    init(page:EditorPage,library:LibraryStore){self.page=page;self.library=library;let saved=page.activeLayerID.flatMap{id in (id==page.id && page.baseHidden != true) || page.layers.contains(where:{($0.stackID ?? $0.id)==id}) ? id:nil};let layerID=saved ?? page.layers.last.map{$0.stackID ?? $0.id} ?? page.id;currentLayerID=layerID;currentContentID=page.layers.last(where:{($0.stackID ?? $0.id)==layerID})?.id;colorStore=library.root.standardizedFileURL==AppStorageManager.root.standardizedFileURL ? .shared:ColorLibraryStore(directory:library.root.appendingPathComponent("Colors"));manualTextStore=StyleStore(directory:library.root.appendingPathComponent("Styles"))}
+    init(page:EditorPage,library:LibraryStore){self.page=page;self.library=library;let saved=page.activeLayerID.flatMap{id in (id==page.baseLayerID && page.baseHidden != true) || page.layers.contains(where:{($0.stackID ?? $0.id)==id}) ? id:nil};let layerID=saved ?? page.layers.last.map{$0.stackID ?? $0.id} ?? page.baseLayerID;currentLayerID=layerID;currentContentID=page.layers.last(where:{($0.stackID ?? $0.id)==layerID})?.id;colorStore=library.root.standardizedFileURL==AppStorageManager.root.standardizedFileURL ? .shared:ColorLibraryStore(directory:library.root.appendingPathComponent("Colors"));manualTextStore=StyleStore(directory:library.root.appendingPathComponent("Styles"))}
     var directory:URL {library.directory(page.id)}
     var active:EditorLayer? {page.layers.first{$0.id==selected}}
     @discardableResult func insertDialogues(_ values:[(String,TextStyle?)],targets:[SniperTarget]=[],bubbleLayout:BubbleLayoutRequest?=nil,preparedLayout:EditorLayer?=nil,preparedLayouts:[EditorLayer]=[],transforms:[TextLayerTransform]=[])throws->[UUID] {
         guard !values.isEmpty else{return []}
         var inserted:[UUID]=[];var next=page
         guard canEditCurrentLayer() else{throw ImageFailure.message(error ?? "اختر طبقة قابلة للتعديل")}
-        let textStack=currentLayerID ?? page.id
+        let textStack=currentLayerID ?? page.baseLayerID
         let center = !EditorPreferences.smartPosition || visibleCenter == .zero ? CGPoint(x:Double(page.width)/2,y:200):visibleCenter
         for (index,value) in values.enumerated() {
             var item=EditorLayer(kind:.text,name:value.0);item.textContent=value.0
@@ -173,9 +173,9 @@ import SwiftUI
     func delete() {
         guard stylePreviewLayer==nil,active?.isLocked==false else{return}
         let ids=selectedLayerObjects;guard !page.layers.contains(where:{ids.contains($0.id) && $0.isLocked}) else{return}
-        let layerID=currentLayerID ?? page.id,name=currentLayerTitle
+        let layerID=currentLayerID ?? page.baseLayerID,name=currentLayerTitle
         checkpoint();page.layers.removeAll{ids.contains($0.id)}
-        if layerID==page.id,stackSelection{page.baseHidden=true}
+        if layerID==page.baseLayerID,stackSelection{page.baseHidden=true}
         if !page.layers.contains(where:{($0.stackID ?? $0.id)==layerID}),page.baseHidden==true,page.layers.isEmpty{
             var empty=EditorLayer(kind:.drawing,name:name);empty.stackID=layerID;empty.stackName=name
             empty.frame=Box(x:0,y:0,width:Double(page.width),height:Double(page.height));page.layers=[empty]

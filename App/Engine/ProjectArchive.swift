@@ -27,6 +27,7 @@ enum ProjectArchive {
             guard [page.source,page.raw].allSatisfy({!$0.isEmpty && !$0.contains("/") && !$0.contains("..")}),page.layers.allSatisfy({l in ([l.imagePath,l.style.texturePath,l.imagePixelFile ?? ""]+(l.strokes+(l.erasures ?? [])).compactMap(\.texturePath)).allSatisfy{$0.isEmpty || (!$0.contains("/") && !$0.contains(".."))}}) else{throw ImageFailure.message("مسارات أصول المشروع غير صالحة")}
             let fontFolder=destination.appendingPathComponent("Fonts",isDirectory:true)
             let fonts=((try? FileManager.default.contentsOfDirectory(at:fontFolder,includingPropertiesForKeys:nil)) ?? []).filter{["ttf","otf"].contains($0.pathExtension.lowercased())}
+            page.sourceLayerID=page.baseLayerID
             page.id=UUID(uuidString:destination.lastPathComponent)!
             var width:Int32=0,height:Int32=0,error=[CChar](repeating:0,count:512)
             guard LIImportPNG(destination.appendingPathComponent(page.source).path,destination.appendingPathComponent(page.raw).path,&width,&height,&error,error.count)==1,Int(width)==page.width,Int(height)==page.height else{throw ImageFailure.message("أبعاد الصورة لا تطابق المشروع")}
